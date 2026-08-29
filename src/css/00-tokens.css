@@ -1,0 +1,88 @@
+/*
+  مصدر واحد للمظهر. أي لون أو مسافة في المشروع يأتي من هنا حصرًا.
+  لماذا؟ لأن تغيير هوية المنصة لاحقًا يجب أن يكون تعديل ملف واحد لا مطاردة ألوان في كل مكان.
+*/
+:root{
+  /* الخط: نعتمد خطوط النظام لأن أي خط خارجي = طلب شبكة = كسر شرط العمل بلا إنترنت */
+  --font: "Segoe UI", "Noto Sans Arabic", "Dubai", "Tahoma", system-ui, -apple-system, sans-serif;
+  --font-num: "Segoe UI", system-ui, sans-serif;
+
+  /* الأساس المحايد — الوضع الفاتح هو الافتراضي */
+  --bg:        #f6f7fb;
+  --bg-soft:   #eef0f7;
+  --surface:   #ffffff;
+  --surface-2: #f9fafc;
+  --line:      #e3e6ef;
+  --line-soft: #eef0f6;
+
+  --text:      #16192b;
+  --text-2:    #4d5470;
+  --text-3:    #838aa5;
+
+  /* اللون الأساسي للمنصة */
+  --brand:      #3b5bdb;
+  --brand-2:    #5a78ef;
+  --brand-soft: #e7ecfd;
+  --on-brand:   #ffffff;
+
+  /* ألوان الحالة — تُستعمل دائمًا مع أيقونة لا مع اللون وحده (شرط إمكانية الوصول) */
+  --ok:      #12855f;
+  --ok-soft: #dcf5ec;
+  --warn:      #a8620a;
+  --warn-soft: #fdeed6;
+  --bad:      #c0362c;
+  --bad-soft: #fbe3e1;
+  --star:     #d99400;
+
+  /* المسافات — سلّم واحد لا أرقام عشوائية */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 20px; --s6: 24px; --s7: 32px; --s8: 48px;
+
+  /* الأنصاف والظلال */
+  --r1: 8px; --r2: 12px; --r3: 16px; --r4: 22px; --r-pill: 999px;
+  --sh1: 0 1px 2px rgba(16,20,45,.06), 0 1px 3px rgba(16,20,45,.04);
+  --sh2: 0 4px 12px rgba(16,20,45,.08), 0 2px 4px rgba(16,20,45,.04);
+  --sh3: 0 12px 32px rgba(16,20,45,.14);
+
+  /* المقاسات */
+  --wrap: 980px;
+  --topbar-h: 56px;
+  --tabbar-h: 60px;
+
+  /* الحركة — خفيفة، وتُلغى لمن يطلب تقليل الحركة */
+  --t-fast: 120ms;
+  --t: 200ms;
+  --ease: cubic-bezier(.4,0,.2,1);
+
+  /* ألوان المواد الافتراضية — يختار المشرف واحدًا منها لكل مادة */
+  --subject-1: #3b5bdb; --subject-2: #0d9488; --subject-3: #b45309;
+  --subject-4: #9333ea; --subject-5: #be123c; --subject-6: #0369a1;
+}
+
+/* الوضع الليلي اختياري: يُفعّل بصريح اختيار المستخدم [data-theme="dark"] */
+:root[data-theme="dark"]{
+  --bg:        #0f1117;
+  --bg-soft:   #151824;
+  --surface:   #191d2a;
+  --surface-2: #1f2432;
+  --line:      #2b3142;
+  --line-soft: #232838;
+
+  --text:      #eef1f8;
+  --text-2:    #aab2c8;
+  --text-3:    #767f99;
+
+  --brand:      #7b93f7;
+  --brand-2:    #96a9fa;
+  --brand-soft: #1e2748;
+  --on-brand:   #0f1117;
+
+  --ok:      #35c99a; --ok-soft:   #123328;
+  --warn:    #e0a336; --warn-soft: #3a2c12;
+  --bad:     #f28b82; --bad-soft:  #3a1e1c;
+  --star:    #f2c14e;
+
+  --sh1: 0 1px 2px rgba(0,0,0,.4);
+  --sh2: 0 4px 14px rgba(0,0,0,.45);
+  --sh3: 0 14px 36px rgba(0,0,0,.6);
+}

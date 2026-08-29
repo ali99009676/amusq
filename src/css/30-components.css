@@ -1,0 +1,80 @@
+/* مكوّنات مشتركة — تُستعمل في كل الشاشات فلا يُكتب تنسيق خاص بشاشة واحدة */
+
+.card{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r3);
+  padding:var(--s5); box-shadow:var(--sh1);
+}
+.card--flat{ box-shadow:none; }
+.card__head{ display:flex; align-items:center; justify-content:space-between; gap:var(--s3); margin-bottom:var(--s3); }
+
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:var(--s2);
+  padding:var(--s3) var(--s5); border-radius:var(--r-pill); border:1px solid transparent;
+  background:var(--brand); color:var(--on-brand); font-weight:700; cursor:pointer;
+  min-height:44px;                  /* مساحة لمس آمنة على الجوال */
+  transition:transform var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
+}
+.btn:hover{ text-decoration:none; filter:brightness(1.06); }
+.btn:active{ transform:translateY(1px); }
+.btn[disabled],.btn[aria-disabled="true"]{ opacity:.5; cursor:not-allowed; }
+.btn--ghost{ background:transparent; color:var(--text); border-color:var(--line); }
+.btn--soft{ background:var(--brand-soft); color:var(--brand); }
+.btn--sm{ padding:var(--s2) var(--s4); min-height:36px; font-size:.9rem; }
+.btn--block{ width:100%; }
+
+.iconbtn{
+  width:40px; height:40px; display:grid; place-items:center; cursor:pointer;
+  background:transparent; border:1px solid var(--line); border-radius:var(--r-pill); color:var(--text-2);
+}
+.iconbtn:hover{ background:var(--surface-2); color:var(--text); }
+.iconbtn__ico{ font-size:1.05rem; line-height:1; }
+
+.field{ display:block; margin-bottom:var(--s4); }
+.field__label{ display:block; font-weight:600; font-size:.9rem; margin-bottom:var(--s2); color:var(--text-2); }
+.input{
+  width:100%; padding:var(--s3) var(--s4); min-height:46px;
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r2); color:var(--text);
+}
+.input::placeholder{ color:var(--text-3); }
+.field__hint{ font-size:.82rem; color:var(--text-3); margin-top:var(--s1); }
+
+.badge{
+  display:inline-flex; align-items:center; gap:var(--s1);
+  padding:2px var(--s2); border-radius:var(--r-pill);
+  font-size:.75rem; font-weight:700; background:var(--surface-2); color:var(--text-2); border:1px solid var(--line);
+}
+.badge--ok{ background:var(--ok-soft); color:var(--ok); border-color:transparent; }
+.badge--warn{ background:var(--warn-soft); color:var(--warn); border-color:transparent; }
+.badge--bad{ background:var(--bad-soft); color:var(--bad); border-color:transparent; }
+
+/* الحالة الفارغة: المرحلة ٠ كلها شاشات فارغة، فهذا المكوّن هو بطلها */
+.empty{ text-align:center; padding:var(--s7) var(--s4); color:var(--text-2); }
+.empty__ico{ font-size:2.2rem; line-height:1; display:block; margin-bottom:var(--s3); opacity:.7; }
+.empty__title{ font-weight:700; color:var(--text); margin-bottom:var(--s2); }
+.empty__text{ max-width:44ch; margin-inline:auto; font-size:.95rem; }
+
+.page__head{ margin-bottom:var(--s5); }
+.page__title{ margin-bottom:var(--s1); }
+.page__sub{ color:var(--text-2); font-size:.95rem; margin:0; }
+
+.stack{ display:flex; flex-direction:column; gap:var(--s4); }
+.row{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
+.spacer{ flex:1; }
+
+.tabs{ display:flex; gap:var(--s1); border-bottom:1px solid var(--line); margin-bottom:var(--s5); overflow-x:auto; }
+.tabs__btn{
+  background:none; border:0; border-bottom:2px solid transparent; cursor:pointer;
+  padding:var(--s3) var(--s4); color:var(--text-2); font-weight:600; white-space:nowrap;
+}
+.tabs__btn[aria-selected="true"]{ color:var(--brand); border-bottom-color:var(--brand); }
+
+.toast{
+  position:fixed; inset-inline:0; bottom:calc(var(--tabbar-h) + var(--s4)); margin-inline:auto;
+  width:max-content; max-width:88vw; z-index:60;
+  background:var(--text); color:var(--bg); padding:var(--s3) var(--s5); border-radius:var(--r-pill);
+  box-shadow:var(--sh3); opacity:0; transform:translateY(8px); pointer-events:none;
+  transition:opacity var(--t) var(--ease), transform var(--t) var(--ease);
+}
+.toast.is-on{ opacity:1; transform:translateY(0); }
+
+.divider{ height:1px; background:var(--line); border:0; margin-block:var(--s5); }
