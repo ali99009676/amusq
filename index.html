@@ -1,0 +1,2796 @@
+<!doctype html>
+<!-- ملف AMUSQ المبني — لا تحرّره يدويًا. مصدره في src/ ويُدمج بـ node src/build.js -->
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="AMUSQ — منصة مراجعة تفاعلية لطلاب التخصصات الصحية">
+<meta name="theme-color" content="#3b5bdb">
+<link rel="manifest" href="manifest.webmanifest">
+<title>AMUSQ · منصة المراجعة</title>
+<style>
+
+/* ===== 00-tokens.css ===== */
+/*
+  مصدر واحد للمظهر. أي لون أو مسافة في المشروع يأتي من هنا حصرًا.
+  لماذا؟ لأن تغيير هوية المنصة لاحقًا يجب أن يكون تعديل ملف واحد لا مطاردة ألوان في كل مكان.
+*/
+:root{
+  /* الخط: نعتمد خطوط النظام لأن أي خط خارجي = طلب شبكة = كسر شرط العمل بلا إنترنت */
+  --font: "Segoe UI", "Noto Sans Arabic", "Dubai", "Tahoma", system-ui, -apple-system, sans-serif;
+  --font-num: "Segoe UI", system-ui, sans-serif;
+
+  /* الأساس المحايد — الوضع الفاتح هو الافتراضي */
+  --bg:        #f6f7fb;
+  --bg-soft:   #eef0f7;
+  --surface:   #ffffff;
+  --surface-2: #f9fafc;
+  --line:      #e3e6ef;
+  --line-soft: #eef0f6;
+
+  --text:      #16192b;
+  --text-2:    #4d5470;
+  --text-3:    #838aa5;
+
+  /* اللون الأساسي للمنصة */
+  --brand:      #3b5bdb;
+  --brand-2:    #5a78ef;
+  --brand-soft: #e7ecfd;
+  --on-brand:   #ffffff;
+
+  /* ألوان الحالة — تُستعمل دائمًا مع أيقونة لا مع اللون وحده (شرط إمكانية الوصول) */
+  --ok:      #12855f;
+  --ok-soft: #dcf5ec;
+  --warn:      #a8620a;
+  --warn-soft: #fdeed6;
+  --bad:      #c0362c;
+  --bad-soft: #fbe3e1;
+  --star:     #d99400;
+
+  /* المسافات — سلّم واحد لا أرقام عشوائية */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 20px; --s6: 24px; --s7: 32px; --s8: 48px;
+
+  /* الأنصاف والظلال */
+  --r1: 8px; --r2: 12px; --r3: 16px; --r4: 22px; --r-pill: 999px;
+  --sh1: 0 1px 2px rgba(16,20,45,.06), 0 1px 3px rgba(16,20,45,.04);
+  --sh2: 0 4px 12px rgba(16,20,45,.08), 0 2px 4px rgba(16,20,45,.04);
+  --sh3: 0 12px 32px rgba(16,20,45,.14);
+
+  /* المقاسات */
+  --wrap: 980px;
+  --topbar-h: 56px;
+  --tabbar-h: 60px;
+
+  /* الحركة — خفيفة، وتُلغى لمن يطلب تقليل الحركة */
+  --t-fast: 120ms;
+  --t: 200ms;
+  --ease: cubic-bezier(.4,0,.2,1);
+
+  /* ألوان المواد الافتراضية — يختار المشرف واحدًا منها لكل مادة */
+  --subject-1: #3b5bdb; --subject-2: #0d9488; --subject-3: #b45309;
+  --subject-4: #9333ea; --subject-5: #be123c; --subject-6: #0369a1;
+}
+
+/* الوضع الليلي اختياري: يُفعّل بصريح اختيار المستخدم [data-theme="dark"] */
+:root[data-theme="dark"]{
+  --bg:        #0f1117;
+  --bg-soft:   #151824;
+  --surface:   #191d2a;
+  --surface-2: #1f2432;
+  --line:      #2b3142;
+  --line-soft: #232838;
+
+  --text:      #eef1f8;
+  --text-2:    #aab2c8;
+  --text-3:    #767f99;
+
+  --brand:      #7b93f7;
+  --brand-2:    #96a9fa;
+  --brand-soft: #1e2748;
+  --on-brand:   #0f1117;
+
+  --ok:      #35c99a; --ok-soft:   #123328;
+  --warn:    #e0a336; --warn-soft: #3a2c12;
+  --bad:     #f28b82; --bad-soft:  #3a1e1c;
+  --star:    #f2c14e;
+
+  --sh1: 0 1px 2px rgba(0,0,0,.4);
+  --sh2: 0 4px 14px rgba(0,0,0,.45);
+  --sh3: 0 14px 36px rgba(0,0,0,.6);
+}
+
+
+/* ===== 10-base.css ===== */
+/* الأساسيات: تصفير مضبوط + تنسيق عربي RTL + جوال أولًا */
+*,*::before,*::after{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; }
+body{
+  margin:0;
+  font-family:var(--font);
+  font-size:16px;
+  line-height:1.75;                 /* سطر مريح للعربية، فحروفها متصلة وتحتاج تنفّسًا */
+  color:var(--text);
+  background:var(--bg);
+  /* لماذا هنا؟ لأن أي تمرير أفقي على جوال ٣٦٠ بكسل يُعدّ عيبًا في معايير القبول */
+  overflow-x:hidden;
+  min-height:100vh;
+  display:flex; flex-direction:column;
+  transition:background var(--t) var(--ease), color var(--t) var(--ease);
+}
+h1,h2,h3,h4{ margin:0 0 var(--s3); line-height:1.4; font-weight:700; }
+h1{ font-size:1.5rem; } h2{ font-size:1.25rem; } h3{ font-size:1.05rem; }
+p{ margin:0 0 var(--s3); }
+a{ color:var(--brand); text-decoration:none; }
+a:hover{ text-decoration:underline; }
+ul,ol{ margin:0 0 var(--s3); padding-inline-start:var(--s5); }
+button,input,select,textarea{ font:inherit; color:inherit; }
+img,svg{ max-width:100%; height:auto; }
+
+/* الأرقام تبقى لاتينية داخل النصوص العربية لسهولة قراءة النتائج والنسب */
+.num,[data-num]{ font-family:var(--font-num); font-variant-numeric:tabular-nums; direction:ltr; unicode-bidi:isolate; }
+/* نصوص الأسئلة تبقى بلغتها الأصلية واتجاهها */
+.ltr{ direction:ltr; text-align:left; unicode-bidi:isolate; }
+
+:focus-visible{ outline:3px solid var(--brand); outline-offset:2px; border-radius:var(--r1); }
+
+.skip{
+  position:absolute; inset-inline-start:-9999px; top:0; z-index:99;
+  background:var(--brand); color:var(--on-brand); padding:var(--s3) var(--s4); border-radius:0 0 var(--r2) var(--r2);
+}
+.skip:focus{ inset-inline-start:var(--s4); }
+
+.wrap{ width:100%; max-width:var(--wrap); margin-inline:auto; padding-inline:var(--s4); }
+
+/* احترام تفضيل تقليل الحركة شرط في معايير القبول، لا تحسين اختياري */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation-duration:.001ms !important; transition-duration:.001ms !important; }
+}
+
+
+/* ===== 20-layout.css ===== */
+/* الهيكل: شريط علوي ثابت، محتوى، شريط تبويب سفلي على الجوال، تذييل */
+.topbar{
+  position:sticky; top:0; z-index:20;
+  height:var(--topbar-h);
+  background:color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter:saturate(180%) blur(12px);
+  border-bottom:1px solid var(--line);
+}
+.topbar__in{ height:100%; display:flex; align-items:center; justify-content:space-between; gap:var(--s3); }
+.topbar__actions{ display:flex; align-items:center; gap:var(--s2); }
+
+.brand{ display:inline-flex; align-items:center; gap:var(--s2); color:var(--text); font-weight:800; letter-spacing:.5px; }
+.brand:hover{ text-decoration:none; }
+.brand__mark{
+  width:30px; height:30px; border-radius:9px; display:grid; place-items:center;
+  background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:var(--on-brand);
+  font-family:var(--font-num); font-weight:800; font-size:.95rem;
+}
+.brand__text{ font-family:var(--font-num); }
+
+.main{
+  flex:1 0 auto;
+  padding-block:var(--s5) var(--s8);
+  /* مساحة أسفل تكفي شريط التبويب السفلي كي لا يغطّي آخر بطاقة */
+  padding-bottom:calc(var(--tabbar-h) + var(--s8));
+}
+
+.tabbar{
+  position:fixed; inset-inline:0; bottom:0; z-index:20;
+  height:calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+  display:flex; align-items:stretch;
+  background:color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter:saturate(180%) blur(12px);
+  border-top:1px solid var(--line);
+}
+.tabbar__item{
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+  color:var(--text-3); font-size:.72rem; font-weight:600; padding:var(--s1);
+  min-width:0;                       /* يمنع تمدّد النص فيكسر الشريط على ٣٦٠ بكسل */
+}
+.tabbar__item:hover{ text-decoration:none; color:var(--text-2); }
+.tabbar__item[aria-current="page"]{ color:var(--brand); }
+.tabbar__ico{ font-size:1.15rem; line-height:1; }
+.tabbar__lbl{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+
+.footer{
+  flex:0 0 auto;
+  padding-block:var(--s5);
+  padding-bottom:calc(var(--tabbar-h) + var(--s5));
+  border-top:1px solid var(--line);
+  background:var(--bg-soft);
+  color:var(--text-3); font-size:.85rem; text-align:center;
+}
+.footer__credit{ margin:0; }
+.footer__credit a{ font-weight:700; }
+
+.grid{ display:grid; gap:var(--s4); grid-template-columns:1fr; }
+@media (min-width:640px){ .grid--2{ grid-template-columns:repeat(2,1fr); } }
+@media (min-width:900px){ .grid--3{ grid-template-columns:repeat(3,1fr); } }
+
+/* على الشاشات الكبيرة يختفي الشريط السفلي وتظهر روابط أعلى */
+@media (min-width:820px){
+  .tabbar{ display:none; }
+  .main{ padding-bottom:var(--s8); }
+  .footer{ padding-bottom:var(--s5); }
+}
+
+
+/* ===== 30-components.css ===== */
+/* مكوّنات مشتركة — تُستعمل في كل الشاشات فلا يُكتب تنسيق خاص بشاشة واحدة */
+
+.card{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r3);
+  padding:var(--s5); box-shadow:var(--sh1);
+}
+.card--flat{ box-shadow:none; }
+.card__head{ display:flex; align-items:center; justify-content:space-between; gap:var(--s3); margin-bottom:var(--s3); }
+
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:var(--s2);
+  padding:var(--s3) var(--s5); border-radius:var(--r-pill); border:1px solid transparent;
+  background:var(--brand); color:var(--on-brand); font-weight:700; cursor:pointer;
+  min-height:44px;                  /* مساحة لمس آمنة على الجوال */
+  transition:transform var(--t-fast) var(--ease), filter var(--t-fast) var(--ease);
+}
+.btn:hover{ text-decoration:none; filter:brightness(1.06); }
+.btn:active{ transform:translateY(1px); }
+.btn[disabled],.btn[aria-disabled="true"]{ opacity:.5; cursor:not-allowed; }
+.btn--ghost{ background:transparent; color:var(--text); border-color:var(--line); }
+.btn--soft{ background:var(--brand-soft); color:var(--brand); }
+.btn--sm{ padding:var(--s2) var(--s4); min-height:36px; font-size:.9rem; }
+.btn--block{ width:100%; }
+
+.iconbtn{
+  width:40px; height:40px; display:grid; place-items:center; cursor:pointer;
+  background:transparent; border:1px solid var(--line); border-radius:var(--r-pill); color:var(--text-2);
+}
+.iconbtn:hover{ background:var(--surface-2); color:var(--text); }
+.iconbtn__ico{ font-size:1.05rem; line-height:1; }
+
+.field{ display:block; margin-bottom:var(--s4); }
+.field__label{ display:block; font-weight:600; font-size:.9rem; margin-bottom:var(--s2); color:var(--text-2); }
+.input{
+  width:100%; padding:var(--s3) var(--s4); min-height:46px;
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r2); color:var(--text);
+}
+.input::placeholder{ color:var(--text-3); }
+.field__hint{ font-size:.82rem; color:var(--text-3); margin-top:var(--s1); }
+
+.badge{
+  display:inline-flex; align-items:center; gap:var(--s1);
+  padding:2px var(--s2); border-radius:var(--r-pill);
+  font-size:.75rem; font-weight:700; background:var(--surface-2); color:var(--text-2); border:1px solid var(--line);
+}
+.badge--ok{ background:var(--ok-soft); color:var(--ok); border-color:transparent; }
+.badge--warn{ background:var(--warn-soft); color:var(--warn); border-color:transparent; }
+.badge--bad{ background:var(--bad-soft); color:var(--bad); border-color:transparent; }
+
+/* الحالة الفارغة: المرحلة ٠ كلها شاشات فارغة، فهذا المكوّن هو بطلها */
+.empty{ text-align:center; padding:var(--s7) var(--s4); color:var(--text-2); }
+.empty__ico{ font-size:2.2rem; line-height:1; display:block; margin-bottom:var(--s3); opacity:.7; }
+.empty__title{ font-weight:700; color:var(--text); margin-bottom:var(--s2); }
+.empty__text{ max-width:44ch; margin-inline:auto; font-size:.95rem; }
+
+.page__head{ margin-bottom:var(--s5); }
+.page__title{ margin-bottom:var(--s1); }
+.page__sub{ color:var(--text-2); font-size:.95rem; margin:0; }
+
+.stack{ display:flex; flex-direction:column; gap:var(--s4); }
+.row{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
+.spacer{ flex:1; }
+
+.tabs{ display:flex; gap:var(--s1); border-bottom:1px solid var(--line); margin-bottom:var(--s5); overflow-x:auto; }
+.tabs__btn{
+  background:none; border:0; border-bottom:2px solid transparent; cursor:pointer;
+  padding:var(--s3) var(--s4); color:var(--text-2); font-weight:600; white-space:nowrap;
+}
+.tabs__btn[aria-selected="true"]{ color:var(--brand); border-bottom-color:var(--brand); }
+
+.toast{
+  position:fixed; inset-inline:0; bottom:calc(var(--tabbar-h) + var(--s4)); margin-inline:auto;
+  width:max-content; max-width:88vw; z-index:60;
+  background:var(--text); color:var(--bg); padding:var(--s3) var(--s5); border-radius:var(--r-pill);
+  box-shadow:var(--sh3); opacity:0; transform:translateY(8px); pointer-events:none;
+  transition:opacity var(--t) var(--ease), transform var(--t) var(--ease);
+}
+.toast.is-on{ opacity:1; transform:translateY(0); }
+
+.divider{ height:1px; background:var(--line); border:0; margin-block:var(--s5); }
+
+
+/* ===== 40-screens.css ===== */
+/* تنسيقات الشاشات المركّبة: اللوحة، معالج الرفع، المادة، الاختبار — كلها من المتغيّرات */
+
+/* أرقام اللوحة السريعة */
+.stat{ text-align:center; padding:var(--s4); }
+.stat__num{ display:block; font-size:1.6rem; font-weight:800; color:var(--brand); }
+.stat__lbl{ font-size:.82rem; color:var(--text-2); }
+
+/* صف قابل للضغط في الجداول */
+.rowbtn{ width:100%; background:none; border:0; border-bottom:1px solid var(--line-soft);
+  padding:var(--s3) var(--s1); cursor:pointer; text-align:start; min-height:44px; }
+.rowbtn:hover{ background:var(--surface-2); }
+
+.input--sm{ min-height:38px; padding:var(--s2) var(--s3); width:auto; }
+
+/* خطوات المعالج */
+.steps{ display:flex; gap:var(--s2); list-style:none; padding:0; margin:0 0 var(--s5);
+  overflow-x:auto; }
+.steps__item{ display:flex; align-items:center; gap:var(--s2); padding:var(--s2) var(--s3);
+  border-radius:var(--r-pill); border:1px solid var(--line); color:var(--text-3);
+  font-size:.85rem; font-weight:600; white-space:nowrap; }
+.steps__item.is-on{ background:var(--brand-soft); color:var(--brand); border-color:transparent; }
+.steps__item.is-done{ color:var(--ok); }
+.steps__num{ width:22px; height:22px; border-radius:50%; display:grid; place-items:center;
+  background:var(--surface-2); font-size:.75rem; font-weight:800; }
+.is-on .steps__num{ background:var(--brand); color:var(--on-brand); }
+.is-done .steps__num{ background:var(--ok-soft); color:var(--ok); }
+
+/* منطقة الإسقاط */
+.drop{ border:2px dashed var(--line); border-radius:var(--r3); padding:var(--s7) var(--s4);
+  text-align:center; cursor:pointer; background:var(--surface); transition:border-color var(--t) var(--ease); }
+.drop:hover,.drop.is-over{ border-color:var(--brand); }
+
+/* شريط التقدّم «٨٠ من ٣٠٠» */
+.meter{ height:10px; border-radius:var(--r-pill); background:var(--bg-soft); overflow:hidden; }
+.meter__fill{ height:100%; background:linear-gradient(90deg,var(--brand),var(--brand-2));
+  border-radius:inherit; transition:width var(--t) var(--ease); }
+
+/* بطاقة السؤال وخياراته */
+.q__text{ font-weight:600; margin:0; white-space:pre-wrap; }
+.q__opts{ gap:var(--s2); }
+.opt{ display:flex; align-items:flex-start; gap:var(--s3); width:100%; text-align:start;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r2);
+  padding:var(--s3) var(--s4); cursor:pointer; min-height:44px; }
+.opt:hover{ border-color:var(--brand); }
+/* الإجابة الصحيحة: لون + أيقونة معًا — لا لون وحده (شرط إمكانية الوصول) */
+.opt.is-answer{ background:var(--ok-soft); border-color:var(--ok); font-weight:700; }
+.opt.is-wrong{ background:var(--bad-soft); border-color:var(--bad); }
+.opt__mark{ min-width:1.2em; font-weight:800; color:var(--ok); }
+.is-wrong .opt__mark{ color:var(--bad); }
+
+/* بطاقة المادة في الرئيسية */
+.subj{ position:relative; overflow:hidden; cursor:pointer; }
+.subj__bar{ position:absolute; inset-inline-start:0; top:0; bottom:0; width:5px; }
+.subj__ico{ font-size:1.6rem; }
+.subj__meter{ height:6px; border-radius:var(--r-pill); background:var(--bg-soft); overflow:hidden; }
+.subj__meter > div{ height:100%; border-radius:inherit; }
+.subj.is-past{ opacity:.72; }
+.stamp{ display:inline-block; padding:2px var(--s3); border:2px solid var(--ok); color:var(--ok);
+  border-radius:var(--r1); font-weight:800; font-size:.8rem; transform:rotate(-3deg); }
+
+/* البطاقات المقلوبة ثلاثية الأبعاد لوضع الحفظ */
+.flip{ perspective:900px; min-height:150px; cursor:pointer; }
+.flip__in{ position:relative; width:100%; height:100%; min-height:150px;
+  transform-style:preserve-3d; transition:transform .5s var(--ease); }
+.flip.is-flipped .flip__in{ transform:rotateY(180deg); }
+.flip__face{ position:absolute; inset:0; backface-visibility:hidden;
+  display:flex; flex-direction:column; justify-content:center; gap:var(--s2);
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r3); padding:var(--s5); }
+.flip__face--back{ transform:rotateY(180deg); background:var(--brand-soft); }
+
+/* شاشة النتيجة */
+.result__pct{ font-size:3rem; font-weight:800; color:var(--brand); }
+.result__grade{ font-size:1.2rem; font-weight:700; }
+
+/* عدّاد تنازلي وموقّت */
+.timer{ font-weight:800; font-variant-numeric:tabular-nums; }
+.timer.is-low{ color:var(--bad); }
+
+/* أقسام مطوية */
+.fold > summary{ cursor:pointer; font-weight:700; padding:var(--s3) 0; list-style:none; }
+.fold > summary::before{ content:'◂'; display:inline-block; margin-inline-end:var(--s2);
+  transition:transform var(--t) var(--ease); color:var(--text-3); }
+.fold[open] > summary::before{ transform:rotate(-90deg); }
+
+
+/* ===== 90-print.css ===== */
+/*
+  تنسيق الطباعة مستقل تمامًا عن الشاشة (شرط في المواصفات).
+  المرحلة ٠ تضع الأساس فقط: إخفاء عناصر التنقّل وتثبيت التذييل.
+*/
+@media print{
+  :root{ --bg:#fff; --surface:#fff; --text:#000; --text-2:#333; --line:#bbb; }
+  .topbar,.tabbar,.skip,.toast,.iconbtn,.btn{ display:none !important; }
+  body{ background:#fff; color:#000; }
+  .main{ padding:0; }
+  .card{ box-shadow:none; border:1px solid #ccc; break-inside:avoid; }
+  /* السؤال لا ينقسم بين صفحتين */
+  .q{ break-inside:avoid; page-break-inside:avoid; }
+  .footer{ position:fixed; bottom:0; inset-inline:0; border-top:1px solid #ccc; padding:6px 0; font-size:11px; }
+}
+
+/* وثيقة الطباعة: مخفية على الشاشة وتظهر وحدها على الورق */
+.print-root{ display:none; }
+.print-dialog{ position:fixed; inset-inline:0; top:10vh; margin-inline:auto; max-width:420px;
+  z-index:70; box-shadow:var(--sh3); max-height:80vh; overflow-y:auto; }
+@media print{
+  body > *:not(.print-root){ display:none !important; }
+  .print-root{ display:block; padding:0 4mm; }
+  .print-head{ border-bottom:4px solid #333; padding-bottom:4mm; margin-bottom:5mm; }
+  .print-head h1{ margin:0; font-size:18pt; }
+  .print-q{ break-inside:avoid; page-break-inside:avoid; margin-bottom:5mm;
+    border:1px solid #ddd; border-radius:8px; padding:3mm; }
+  .print-opt{ margin:1mm 0 1mm 6mm; }
+  .print-ans{ font-weight:700; }
+  .print-expl{ color:#444; font-size:10pt; border-top:1px dashed #ccc; padding-top:2mm; }
+  .print--eco .print-q{ border:none; padding:1mm; margin-bottom:3mm; }
+  .print-foot{ position:fixed; bottom:0; inset-inline:0; text-align:center;
+    font-size:9pt; color:#555; border-top:1px solid #ccc; padding-top:1mm; }
+}
+
+</style>
+</head>
+<body>
+<!-- الهيكل ثابت هنا، والمحتوى يُحقن من الموجّه. السبب: تجنّب وميض الصفحة عند أول رسم -->
+<a class="skip" href="#main">تخطَّ إلى المحتوى</a>
+
+<header class="topbar" id="topbar">
+  <div class="wrap topbar__in">
+    <a class="brand" href="#/" aria-label="AMUSQ الرئيسية">
+      <span class="brand__mark" aria-hidden="true">A</span>
+      <span class="brand__text">AMUSQ</span>
+    </a>
+    <div class="topbar__actions">
+      <button class="iconbtn" id="themeBtn" type="button" aria-label="تبديل الوضع الليلي" title="الوضع الليلي">
+        <span class="iconbtn__ico" aria-hidden="true" data-theme-icon>☾</span>
+      </button>
+      <a class="btn btn--ghost btn--sm" href="#/login" data-nav="#/login">دخول</a>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="wrap main" tabindex="-1"></main>
+
+<nav class="tabbar" id="tabbar" aria-label="التنقّل الرئيسي"></nav>
+
+<footer class="footer">
+  <div class="wrap">
+    <p class="footer__credit">
+      برمجة وتصميم
+      <a href="https://wa.me/966580805553" target="_blank" rel="noopener noreferrer">علي الصقور</a>
+    </p>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+window.AMUSQ_INJECTED_CONFIG = {"url":"https://gbgjadqwqzxxyhydlgtj.supabase.co","anonKey":"sb_publishable_WzJcaG6ypeLZDZiyuZ1LyQ_rVSXokoQ"};
+(function(){
+"use strict";
+
+/* ===== 00-core.js ===== */
+/*
+  النواة: مساحة الاسم، أدوات DOM، والتخزين.
+  لماذا مساحة اسم واحدة على window؟ لأن الفحوص الآلية (jsdom) تحتاج بابًا واحدًا
+  تدخل منه إلى المنطق دون فتح كل شيء للعالم.
+*/
+const AMUSQ = { version: '0.1.0', stage: 0 };
+
+/* --- أدوات DOM مختصرة --- */
+const $  = (sel, root) => (root || document).querySelector(sel);
+const $$ = (sel, root) => Array.prototype.slice.call((root || document).querySelectorAll(sel));
+
+function el(tag, attrs, children){
+  const node = document.createElement(tag);
+  if (attrs) Object.keys(attrs).forEach(k => {
+    const v = attrs[k];
+    if (v === null || v === undefined || v === false) return;
+    if (k === 'class') node.className = v;
+    else if (k === 'text') node.textContent = v;
+    else if (k === 'html') node.innerHTML = v;   // يُستعمل فقط مع نصوص نبنيها نحن
+    else node.setAttribute(k, v === true ? '' : String(v));
+  });
+  if (children) [].concat(children).forEach(c => {
+    if (c === null || c === undefined) return;
+    node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  });
+  return node;
+}
+
+/* تهريب النصوص قبل حقنها — قاعدة أمان ثابتة: أي نص من ملف أو قاعدة بيانات يمرّ من هنا */
+function esc(s){
+  return String(s === null || s === undefined ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+/* --- التخزين المحلي: التقدّم والإعدادات في localStorage (خفيفة).
+       الأسئلة لاحقًا في IndexedDB لأن سقف localStorage ≈ ٥ ميغابايت لا يكفي مئات الأسئلة. --- */
+const Store = {
+  NS: 'amusq:',
+  get(key, fallback){
+    try{
+      const raw = localStorage.getItem(Store.NS + key);
+      return raw === null ? fallback : JSON.parse(raw);
+    } catch(e){ return fallback; }   // وضع التصفح الخاص قد يمنع القراءة، فلا نُسقط التطبيق
+  },
+  set(key, value){
+    try{ localStorage.setItem(Store.NS + key, JSON.stringify(value)); return true; }
+    catch(e){ return false; }
+  },
+  remove(key){
+    try{ localStorage.removeItem(Store.NS + key); return true; } catch(e){ return false; }
+  },
+  clearAll(){
+    try{
+      Object.keys(localStorage)
+        .filter(k => k.indexOf(Store.NS) === 0)
+        .forEach(k => localStorage.removeItem(k));
+      return true;
+    } catch(e){ return false; }
+  }
+};
+
+/* --- رسالة عابرة --- */
+let toastTimer = null;
+function toast(msg, ms){
+  const box = $('#toast');
+  if (!box) return;
+  box.textContent = msg;
+  box.classList.add('is-on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => box.classList.remove('is-on'), ms || 2400);
+}
+
+AMUSQ.dom = { $, $$, el, esc };
+AMUSQ.store = Store;
+AMUSQ.toast = toast;
+
+
+/* ===== 10-theme.js ===== */
+/*
+  الوضع الليلي اختياري لا تلقائي: نحترم اختيار المستخدم أولًا،
+  وإن لم يختر شيئًا نتبع نظام جهازه. السبب: طلاب يذاكرون ليلًا وطلاب يطبعون نهارًا.
+*/
+const Theme = {
+  KEY: 'theme',
+  apply(mode){
+    // mode: 'light' | 'dark' | 'auto'
+    const root = document.documentElement;
+    const isDark = mode === 'dark' || (mode === 'auto' && Theme.prefersDark());
+    if (isDark) root.setAttribute('data-theme','dark');
+    else root.setAttribute('data-theme','light');
+    const ico = document.querySelector('[data-theme-icon]');
+    if (ico) ico.textContent = isDark ? '☀' : '☾';
+    return isDark ? 'dark' : 'light';
+  },
+  prefersDark(){
+    try{ return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); }
+    catch(e){ return false; }
+  },
+  current(){ return AMUSQ.store.get(Theme.KEY, 'auto'); },
+  set(mode){ AMUSQ.store.set(Theme.KEY, mode); return Theme.apply(mode); },
+  toggle(){
+    const now = document.documentElement.getAttribute('data-theme') === 'dark';
+    return Theme.set(now ? 'light' : 'dark');
+  },
+  init(){
+    Theme.apply(Theme.current());
+    const btn = document.getElementById('themeBtn');
+    if (btn) btn.addEventListener('click', () => Theme.toggle());
+  }
+};
+AMUSQ.theme = Theme;
+
+
+/* ===== 12-config.js ===== */
+/*
+  الإعداد: رابط Supabase والمفتاح العام (anon) فقط.
+  المفتاح العام مصمَّم ليكون في المتصفح — RLS هي الحماية الحقيقية.
+  أما مفاتيح الخدمة والذكاء فلا تقترب من هذا الملف: مكانها متغيرات بيئة Vercel حصرًا.
+*/
+const Config = {
+  KEY: 'config',
+  get(){
+    // الأولوية: ما حُقن وقت البناء (config.json) ثم ما حفظه المشرف في الجهاز
+    const injected = (typeof window !== 'undefined' && window.AMUSQ_INJECTED_CONFIG) || null;
+    return injected || AMUSQ.store.get(Config.KEY, null);
+  },
+  set(url, anonKey){
+    if (!/^https:\/\//.test(url || '')) return { ok:false, err:'الرابط يجب أن يبدأ بـ https://' };
+    if (!anonKey || anonKey.length < 20) return { ok:false, err:'المفتاح العام غير صحيح' };
+    AMUSQ.store.set(Config.KEY, { url: url.replace(/\/+$/,''), anonKey });
+    return { ok:true };
+  },
+  ready(){ const c = Config.get(); return !!(c && c.url && c.anonKey); }
+};
+AMUSQ.config = Config;
+
+
+/* ===== 14-api.js ===== */
+/*
+  طبقة Supabase بلا مكتبات: fetch خام إلى /auth/v1 و /rest/v1.
+  لماذا بلا supabase-js؟ لأن قاعدة «لا مكتبة خارجية في المتصفح» ثابتة،
+  والذي نحتاجه فعلًا (دخول، جلسة، تجديد، REST، RPC) يغطيه fetch مباشرة.
+*/
+const Api = {
+  SESSION_KEY: 'session',
+  _fetch: null,   // باب حقن للفحوص: تستبدل fetch بواحد وهمي
+
+  fetchFn(){ return Api._fetch || (typeof fetch !== 'undefined' ? fetch.bind(window) : null); },
+
+  session(){ return AMUSQ.store.get(Api.SESSION_KEY, null); },
+  saveSession(s){
+    if (!s) return AMUSQ.store.remove(Api.SESSION_KEY);
+    // نحفظ وقت الانتهاء المطلق كي نعرف متى نجدّد دون الرجوع للخادم
+    s.expires_abs = Date.now() + (s.expires_in ? s.expires_in * 1000 : 3600 * 1000);
+    AMUSQ.store.set(Api.SESSION_KEY, s);
+  },
+  user(){ const s = Api.session(); return s && s.user ? s.user : null; },
+
+  headers(){
+    const c = AMUSQ.config.get() || {};
+    const s = Api.session();
+    return {
+      'apikey': c.anonKey || '',
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (s && s.access_token ? s.access_token : (c.anonKey || ''))
+    };
+  },
+
+  async raw(path, opts){
+    const c = AMUSQ.config.get();
+    const f = Api.fetchFn();
+    if (!c || !f) return { ok:false, offline:true, data:null };
+    try{
+      // جلسة على وشك الانتهاء؟ نجدّدها قبل الطلب لا بعد فشله
+      const s = Api.session();
+      if (s && s.refresh_token && s.expires_abs && Date.now() > s.expires_abs - 60000 && path.indexOf('/auth/') === -1) {
+        await Api.auth.refresh();
+      }
+      const res = await f(c.url + path, Object.assign({ headers: Api.headers() }, opts || {}));
+      const text = await res.text();
+      let data = null;
+      try{ data = text ? JSON.parse(text) : null; } catch(e){ data = text; }
+      return { ok: res.ok, status: res.status, data };
+    } catch(e){
+      return { ok:false, offline:true, data:null, err: e.message };
+    }
+  },
+
+  rest(path, opts){ return Api.raw('/rest/v1/' + path, opts); },
+  rpc(name, args){
+    return Api.raw('/rest/v1/rpc/' + name, { method:'POST', body: JSON.stringify(args || {}) });
+  },
+
+  auth: {
+    // دخول برابط سحري: Supabase يرسل بريدًا فيه رابط يعود إلى موقعنا حاملًا الرموز في الهاش
+    magic(email){
+      return Api.raw('/auth/v1/otp', {
+        method:'POST',
+        body: JSON.stringify({ email, create_user: true })
+      });
+    },
+    // دخول جوجل/آبل: توجيه كامل للصفحة — يصلح للويب والتطبيق معًا
+    oauthUrl(provider){
+      const c = AMUSQ.config.get();
+      if (!c) return null;
+      const back = (typeof location !== 'undefined') ? location.origin + location.pathname : '';
+      return c.url + '/auth/v1/authorize?provider=' + provider + '&redirect_to=' + encodeURIComponent(back);
+    },
+    // عند العودة من رابط سحري أو OAuth تصل الرموز في هاش الصفحة
+    captureFromHash(hash){
+      const h = String(hash || '');
+      if (h.indexOf('access_token=') === -1) return false;
+      const p = {};
+      h.replace(/^#/,'').split('&').forEach(kv => {
+        const [k,v] = kv.split('=');
+        p[k] = decodeURIComponent(v || '');
+      });
+      if (!p.access_token) return false;
+      Api.saveSession({
+        access_token: p.access_token,
+        refresh_token: p.refresh_token || '',
+        expires_in: parseInt(p.expires_in || '3600', 10),
+        user: Api.auth.decodeUser(p.access_token)
+      });
+      return true;
+    },
+    // نقرأ هوية المستخدم من الـJWT نفسه — بلا نداء شبكة إضافي
+    decodeUser(jwt){
+      try{
+        const payload = JSON.parse(
+          decodeURIComponent(escape(atob(jwt.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))))
+        );
+        return { id: payload.sub, email: payload.email || '' };
+      } catch(e){ return null; }
+    },
+    async refresh(){
+      const s = Api.session();
+      if (!s || !s.refresh_token) return { ok:false };
+      const r = await Api.raw('/auth/v1/token?grant_type=refresh_token', {
+        method:'POST', body: JSON.stringify({ refresh_token: s.refresh_token })
+      });
+      if (r.ok && r.data && r.data.access_token) {
+        r.data.user = r.data.user || Api.auth.decodeUser(r.data.access_token);
+        Api.saveSession(r.data);
+      } else if (!r.offline) {
+        Api.saveSession(null);   // رمز تجديد ميت: جلسة منتهية فعلًا
+      }
+      return r;
+    },
+    async signOut(){
+      await Api.raw('/auth/v1/logout', { method:'POST' });
+      Api.saveSession(null);
+    },
+    async deleteMe(){
+      const r = await Api.rpc('delete_me');
+      if (r.ok) { Api.saveSession(null); AMUSQ.store.clearAll(); }
+      return r;
+    }
+  },
+
+  /* --- ملف المستخدم الشخصي --- */
+  async myProfile(){
+    const u = Api.user();
+    if (!u) return { ok:false };
+    const r = await Api.rest('profiles?id=eq.' + u.id + '&select=*');
+    return r.ok && r.data && r.data[0] ? { ok:true, data:r.data[0] } : r;
+  },
+  saveProfile(fields){
+    const u = Api.user();
+    if (!u) return Promise.resolve({ ok:false });
+    return Api.rest('profiles?id=eq.' + u.id, { method:'PATCH', body: JSON.stringify(fields) });
+  }
+};
+AMUSQ.api = Api;
+
+
+/* ===== 16-data.js ===== */
+/*
+  مخزن المحتوى المحلي: الأسئلة في IndexedDB لأن مادة واحدة بمئات الأسئلة
+  تتجاوز سقف localStorage (≈ ٥ ميغابايت). عند غياب IndexedDB (فحوص jsdom،
+  أو تصفح خاص متشدد) نسقط إلى ذاكرة مؤقتة فلا تنكسر المنصة — تعمل بلا حفظ فقط.
+*/
+const Data = {
+  DB_NAME: 'amusq', DB_VER: 1,
+  _db: null,
+  _mem: { questions: new Map(), meta: new Map() },
+  hasIDB(){ return typeof indexedDB !== 'undefined'; },
+
+  open(){
+    if (!Data.hasIDB()) return Promise.resolve(null);
+    if (Data._db) return Promise.resolve(Data._db);
+    return new Promise((resolve) => {
+      const req = indexedDB.open(Data.DB_NAME, Data.DB_VER);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains('questions')) {
+          const st = db.createObjectStore('questions', { keyPath:'id' });
+          st.createIndex('subject_id', 'subject_id');   // الجلب دائمًا بمادة كاملة
+        }
+        if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath:'k' });
+      };
+      req.onsuccess = () => { Data._db = req.result; resolve(Data._db); };
+      req.onerror = () => resolve(null);   // فشل الفتح لا يُسقط المنصة
+    });
+  },
+
+  async putQuestions(subjectId, questions){
+    if (!Data.hasIDB()) {
+      questions.forEach(q => Data._mem.questions.set(q.id, q));
+      Data._mem.meta.set('subj:' + subjectId, Date.now());
+      return true;
+    }
+    const db = await Data.open();
+    if (!db) return false;
+    return new Promise((resolve) => {
+      const tx = db.transaction(['questions','meta'], 'readwrite');
+      const st = tx.objectStore('questions');
+      questions.forEach(q => st.put(q));
+      tx.objectStore('meta').put({ k:'subj:' + subjectId, at: Date.now() });
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    });
+  },
+
+  async getQuestions(subjectId){
+    if (!Data.hasIDB()) {
+      return Array.from(Data._mem.questions.values())
+        .filter(q => q.subject_id === subjectId)
+        .sort((a,b) => (a.ord||0) - (b.ord||0));
+    }
+    const db = await Data.open();
+    if (!db) return [];
+    return new Promise((resolve) => {
+      const tx = db.transaction('questions', 'readonly');
+      const idx = tx.objectStore('questions').index('subject_id');
+      const req = idx.getAll(subjectId);
+      req.onsuccess = () => resolve((req.result || []).sort((a,b) => (a.ord||0) - (b.ord||0)));
+      req.onerror = () => resolve([]);
+    });
+  },
+
+  async hasSubject(subjectId){
+    if (!Data.hasIDB()) return Data._mem.meta.has('subj:' + subjectId);
+    const db = await Data.open();
+    if (!db) return false;
+    return new Promise((resolve) => {
+      const req = db.transaction('meta','readonly').objectStore('meta').get('subj:' + subjectId);
+      req.onsuccess = () => resolve(!!req.result);
+      req.onerror = () => resolve(false);
+    });
+  },
+
+  async clearAll(){
+    Data._mem.questions.clear(); Data._mem.meta.clear();
+    if (!Data.hasIDB()) return true;
+    const db = await Data.open();
+    if (!db) return true;
+    return new Promise((resolve) => {
+      const tx = db.transaction(['questions','meta'], 'readwrite');
+      tx.objectStore('questions').clear();
+      tx.objectStore('meta').clear();
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => resolve(false);
+    });
+  },
+
+  /* --- المحتوى المنشور: قائمة المواد خفيفة في localStorage، والأسئلة عند الطلب --- */
+  pack(){ return AMUSQ.store.get('pack', { subjects: [], settings: {} }); },
+  savePack(p){ AMUSQ.store.set('pack', p); },
+
+  async refreshPack(){
+    const r = await AMUSQ.api.rpc('content_pack');
+    if (r.ok && r.data && r.data.subjects) { Data.savePack(r.data); return { ok:true, data:r.data }; }
+    return r;   // فشل أو بلا إنترنت: نبقى على النسخة المخزّنة — هذا جوهر العمل دون اتصال
+  },
+
+  // أسئلة مادة: من الجهاز إن سبق جلبها، وإلا من الخادم ثم تُخزَّن — «تحميل على مراحل»
+  async subjectQuestions(subjectId){
+    if (await Data.hasSubject(subjectId)) {
+      const local = await Data.getQuestions(subjectId);
+      if (local.length) return { ok:true, data:local, from:'device' };
+    }
+    const r = await AMUSQ.api.rpc('subject_questions', { sid: subjectId });
+    if (r.ok && Array.isArray(r.data)) {
+      await Data.putQuestions(subjectId, r.data);
+      return { ok:true, data:r.data, from:'network' };
+    }
+    return { ok:false, offline: r.offline, data: [] };
+  }
+};
+AMUSQ.data = Data;
+
+
+/* ===== 18-progress.js ===== */
+/*
+  التقدّم: محلي أولًا وفورًا، ثم يُدفع للحساب بتأخير ٢٫٥ ثانية بعد آخر نقرة.
+  لماذا التأخير؟ طالب يقلّب ٣٠ بطاقة في دقيقة = ٣٠ كتابة شبكية بلا فائدة؛
+  دفعة واحدة بعد سكونه تكفي وتوفّر البطارية والبيانات.
+*/
+const Progress = {
+  KEY: 'progress',
+  PUSH_DELAY: 2500,
+  _timer: null,
+  _pushFn: null,   // باب حقن للفحوص
+
+  blank(){ return {}; },
+  all(){ return AMUSQ.store.get(Progress.KEY, Progress.blank()); },
+  save(p){ AMUSQ.store.set(Progress.KEY, p); Progress.schedulePush(); },
+
+  forSubject(sid){
+    const p = Progress.all();
+    return p[sid] || { seen:{}, wrong:{}, star:{}, exams:0, best:0 };
+  },
+  _update(sid, fn){
+    const p = Progress.all();
+    const s = p[sid] || { seen:{}, wrong:{}, star:{}, exams:0, best:0 };
+    fn(s); p[sid] = s; Progress.save(p);
+    return s;
+  },
+
+  markSeen(sid, qid){ return Progress._update(sid, s => { s.seen[qid] = 1; }); },
+  markWrong(sid, qid){ return Progress._update(sid, s => { s.wrong[qid] = (s.wrong[qid]||0) + 1; s.seen[qid] = 1; }); },
+  clearWrong(sid, qid){ return Progress._update(sid, s => { delete s.wrong[qid]; }); },
+  toggleStar(sid, qid){
+    let on = false;
+    Progress._update(sid, s => { if (s.star[qid]) delete s.star[qid]; else { s.star[qid] = 1; on = true; } });
+    return on;
+  },
+  recordExam(sid, pct){ return Progress._update(sid, s => { s.exams += 1; if (pct > s.best) s.best = pct; }); },
+
+  pctDone(sid, totalQ){
+    if (!totalQ) return 0;
+    const seen = Object.keys(Progress.forSubject(sid).seen).length;
+    return Math.min(100, Math.round(seen / totalQ * 100));
+  },
+
+  /* --- الدمج بلا حذف: اتحاد المُشاهد والنجوم، الأعلى يفوز في النتائج، والمجموع في العدّادات.
+         القاعدة: لا يخسر أحد تقدّمه أبدًا — لا عند جهاز جديد ولا عند تعارض. --- */
+  merge(local, remote){
+    const out = {};
+    const sids = new Set(Object.keys(local || {}).concat(Object.keys(remote || {})));
+    sids.forEach(sid => {
+      const a = (local  || {})[sid] || { seen:{}, wrong:{}, star:{}, exams:0, best:0 };
+      const b = (remote || {})[sid] || { seen:{}, wrong:{}, star:{}, exams:0, best:0 };
+      out[sid] = {
+        seen:  Object.assign({}, b.seen,  a.seen),
+        star:  Object.assign({}, b.star,  a.star),
+        wrong: (function(){
+          // عدّاد الأخطاء: الأعلى يفوز — تكرار الخطأ معلومة تهم ترتيب المراجعة
+          const w = Object.assign({}, b.wrong);
+          Object.keys(a.wrong || {}).forEach(k => { w[k] = Math.max(w[k] || 0, a.wrong[k]); });
+          return w;
+        })(),
+        exams: (a.exams || 0) + (b.exams || 0),
+        best:  Math.max(a.best || 0, b.best || 0)
+      };
+    });
+    return out;
+  },
+
+  schedulePush(){
+    if (Progress._timer) clearTimeout(Progress._timer);
+    Progress._timer = setTimeout(() => { Progress._timer = null; Progress.push(); }, Progress.PUSH_DELAY);
+  },
+  async push(){
+    if (Progress._pushFn) return Progress._pushFn(Progress.all());
+    if (!AMUSQ.api.user()) return { ok:false };   // زائر: يبقى تقدّمه في جهازه حتى يسجّل
+    return AMUSQ.api.rest('progress?on_conflict=user_id', {
+      method:'POST',
+      headers: Object.assign(AMUSQ.api.headers(), { 'Prefer':'resolution=merge-duplicates' }),
+      body: JSON.stringify({ user_id: AMUSQ.api.user().id, data: Progress.all(), updated_at: new Date().toISOString() })
+    });
+  },
+  // عند أول دخول على جهاز: نجلب تقدّم الحساب وندمجه مع تقدّم الجهاز ثم ندفع الناتج
+  async pull(){
+    const u = AMUSQ.api.user();
+    if (!u) return { ok:false };
+    const r = await AMUSQ.api.rest('progress?user_id=eq.' + u.id + '&select=data');
+    if (r.ok && r.data && r.data[0]) {
+      const merged = Progress.merge(Progress.all(), r.data[0].data || {});
+      AMUSQ.store.set(Progress.KEY, merged);
+      await Progress.push();
+      return { ok:true, merged:true };
+    }
+    if (r.ok) { await Progress.push(); return { ok:true, merged:false }; }
+    return r;
+  }
+};
+AMUSQ.progress = Progress;
+
+
+/* ===== 20-gate.js ===== */
+/*
+  بوابة المحتوى — تفصل المجاني عن المدفوع (المرحلة ٥).
+  القرار النهائي في قاعدة البيانات (can_access + RLS)؛ نسخة العميل هنا
+  للعرض فقط: تخفي أزرار ما لا يملكه الطالب وتعرض بطاقة الشراء بدلها.
+  النموذج: مادة مفردة أو حزمة فصل تنتهي بنهاية الفصل — لا اشتراك شهري.
+*/
+const Gate = {
+  KEY: 'entitlements',
+  list(){ return AMUSQ.store.get(Gate.KEY, []); },
+  save(rows){ AMUSQ.store.set(Gate.KEY, rows || []); },
+
+  async refresh(){
+    const u = AMUSQ.api.user();
+    if (!u) return { ok:false };
+    const r = await AMUSQ.api.rest('entitlements?select=subject_id,kind,expires_at&expires_at=gt.' + new Date().toISOString());
+    if (r.ok && Array.isArray(r.data)) { Gate.save(r.data); return { ok:true }; }
+    return r;
+  },
+
+  // متاحة؟ مجانية للجميع، أو استحقاق ساري المفعول (مادة مفردة أو حزمة فصل)
+  canAccess(sub, now){
+    if (!sub) return false;
+    if (sub.free) return true;
+    if (AMUSQ.store.get('is_admin_check', {}).ok) return true;
+    const t = now || Date.now();
+    return Gate.list().some(e =>
+      new Date(e.expires_at).getTime() > t &&
+      (e.kind === 'semester' || e.subject_id === sub.id));
+  },
+
+  // بطاقة الشراء — تحترم قاعدة المتاجر: داخل التطبيق لا إحالة للموقع
+  paywallCard(sub){
+    const isApp = !!(typeof window !== 'undefined' && window.AMUSQ_NATIVE_APP);
+    return el('div', { class:'card', style:'text-align:center' }, [
+      el('span', { class:'empty__ico', 'aria-hidden':'true', text:'🔒' }),
+      el('p', { class:'empty__title', text:'«' + sub.name + '» مادة مدفوعة' }),
+      el('p', { class:'empty__text', text:'اشترِ المادة وحدها أو حزمة الفصل كاملة — صالحة حتى نهاية الفصل، بلا اشتراك شهري.' }),
+      isApp
+        ? el('button', { class:'btn btn--block', type:'button', 'data-buy': sub.id, text:'اشترِ من داخل التطبيق' })
+        : el('a', { class:'btn btn--block', href:'https://www.alsoqoor.com', target:'_blank', rel:'noopener noreferrer', text:'اشترِ من الموقع (مدى / Apple Pay)' }),
+      el('p', { class:'field__hint', text:'لديك حساب اشترى من قبل؟ سجّل دخولك وسيُفتح المحتوى تلقائيًا.' })
+    ]);
+  }
+};
+AMUSQ.gate = Gate;
+
+
+/* ===== 20-router.js ===== */
+/*
+  الموجّه: يعتمد على hash لا على History API.
+  لماذا؟ لأن المنصة يجب أن تعمل بفتح index.html مباشرة من القرص (file://)
+  وهناك pushState لا يعمل، بينما #/ يعمل في كل مكان.
+*/
+const Router = {
+  routes: {},
+  notFound: null,
+  current: null,
+
+  add(path, def){ Router.routes[path] = def; return Router; },
+
+  parse(hash){
+    // نُحوّل "#/admin/students?x=1" إلى { path:'#/admin', rest:['students'], query:{x:'1'} }
+    const raw = (hash || '#/').replace(/^#?/, '#');
+    const [beforeQ, qs] = raw.split('?');
+    const parts = beforeQ.replace(/^#\/?/, '').split('/').filter(Boolean);
+    const query = {};
+    (qs || '').split('&').filter(Boolean).forEach(pair => {
+      const [k, v] = pair.split('=');
+      query[decodeURIComponent(k)] = decodeURIComponent(v || '');
+    });
+
+    if (!parts.length) return { path:'#/', rest:[], query, raw:beforeQ };
+
+    // نطابق أطول مسار مُعرَّف أولًا حتى لا يبتلع "#/admin" مسار "#/admin/login"
+    let path = '#/' + parts.join('/');
+    let rest = [];
+    while (parts.length && !Router.routes[path]) {
+      rest.unshift(parts.pop());
+      path = '#/' + parts.join('/');
+    }
+    // لم يُطابَق شيء: نُرجع المسار كما هو ليصل إلى صفحة ٤٠٤،
+    // ولا نُسقطه على الجذر — وإلا صار كل رابط خاطئ يفتح الرئيسية بصمت.
+    if (!parts.length) return { path: beforeQ, rest:[], query, raw: beforeQ };
+    return { path, rest, query, raw: beforeQ };
+  },
+
+  resolve(hash){
+    const m = Router.parse(hash);
+    const def = Router.routes[m.path];
+    return def ? Object.assign({}, m, { def }) : Object.assign({}, m, { def: Router.notFound });
+  },
+
+  render(hash){
+    const main = document.getElementById('main');
+    if (!main) return null;
+    const r = Router.resolve(hash);
+    Router.current = r;
+
+    main.innerHTML = '';
+    const view = r.def && typeof r.def.view === 'function' ? r.def.view(r) : null;
+    if (view) main.appendChild(view);
+
+    document.title = (r.def && r.def.title ? r.def.title + ' · ' : '') + 'AMUSQ';
+    Router.paintNav(r.path);
+    // نُعيد التركيز إلى المحتوى كي يعرف قارئ الشاشة أن الصفحة تبدّلت
+    if (Router.booted) { try { main.focus(); } catch(e){} }
+    Router.booted = true;
+    return r;
+  },
+
+  paintNav(path){
+    Array.prototype.forEach.call(document.querySelectorAll('[data-nav]'), a => {
+      const isOn = a.getAttribute('data-nav') === path;
+      if (isOn) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current');
+    });
+  },
+
+  go(hash){
+    if (location.hash === hash) Router.render(hash);   // نفس الوجهة: نُعيد الرسم يدويًا
+    else location.hash = hash;
+  },
+
+  init(){
+    window.addEventListener('hashchange', () => Router.render(location.hash));
+    Router.render(location.hash || '#/');
+  }
+};
+AMUSQ.router = Router;
+
+
+/* ===== 24-exam.js ===== */
+/*
+  محرك الاختبار التجريبي — منطق نقي بلا DOM كي يُفحص بمعزل عن الواجهة.
+  المبدآن الثابتان:
+  ١) خلط فيشر-ييتس للأسئلة ولمواضع الخيارات — عادل رياضيًا.
+  ٢) تتبّع الإجابة الصحيحة بالموضع الرقمي لا بالحرف — الحروف تنكسر عند الخلط.
+*/
+const Exam = {
+  // rng قابل للحقن: الفحوص تمرّر مولّدًا حتميًا فتصير النتائج قابلة للتكرار
+  shuffle(arr, rng){
+    const r = rng || Math.random;
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(r() * (i + 1));
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  },
+
+  /* اختيار الأسئلة: النطاق ثم أولوية ما أُخطئ فيه سابقًا */
+  select(questions, opts){
+    opts = opts || {};
+    let pool = questions.slice();
+    if (opts.scope === 'topic' && opts.topic) pool = pool.filter(q => q.topic === opts.topic);
+    if (opts.scope === 'important') pool = pool.filter(q => q.important);
+    if (opts.scope === 'wrong') pool = pool.filter(q => (opts.wrongMap || {})[q.id]);
+
+    const wrongMap = opts.wrongMap || {};
+    // الأسئلة الخاطئة سابقًا تتقدّم: نخلط كل فئة على حدة ثم نقدّم الخاطئة
+    const wrong = Exam.shuffle(pool.filter(q => wrongMap[q.id]), opts.rng);
+    const rest  = Exam.shuffle(pool.filter(q => !wrongMap[q.id]), opts.rng);
+    let picked = wrong.concat(rest);
+    if (opts.count && opts.count < picked.length) picked = picked.slice(0, opts.count);
+    return picked;
+  },
+
+  create(questions, opts){
+    opts = opts || {};
+    const picked = Exam.select(questions, opts);
+    const items = picked.map(q => {
+      // خلط مواضع الخيارات مع تتبّع موضع الصحيح رقميًا
+      const order = Exam.shuffle(q.options.map((_, i) => i), opts.rng);
+      return {
+        id: q.id, q: q.q, topic: q.topic || '',
+        options: order.map(i => q.options[i]),
+        correct: order.indexOf(q.answer),   // الموضع الجديد للإجابة الصحيحة
+        translation: q.translation || '', expl_ar: q.expl_ar || ''
+      };
+    });
+    return {
+      items,
+      i: 0,
+      answers: new Array(items.length).fill(null),
+      mode: opts.mode || 'instant',        // فوري (افتراضي) أو بعد الانتهاء
+      timerMin: opts.timerMin || 0,
+      startedAt: opts.now || Date.now(),
+      finished: false
+    };
+  },
+
+  answer(exam, choice){
+    if (exam.finished || exam.answers[exam.i] !== null) return null;
+    const item = exam.items[exam.i];
+    const correct = choice === item.correct;
+    exam.answers[exam.i] = { choice, correct };
+    return { correct, correctIndex: item.correct };
+  },
+
+  next(exam){ if (exam.i < exam.items.length - 1) exam.i++; return exam.i; },
+  prev(exam){ if (exam.i > 0) exam.i--; return exam.i; },
+
+  grade(pct){
+    if (pct >= 90) return 'ممتاز';
+    if (pct >= 80) return 'جيد جدًا';
+    if (pct >= 70) return 'جيد';
+    if (pct >= 60) return 'مقبول';
+    return 'يحتاج مراجعة';
+  },
+
+  finish(exam, now){
+    exam.finished = true;
+    const total = exam.items.length;
+    const correct = exam.answers.filter(a => a && a.correct).length;
+    const pct = total ? Math.round(correct / total * 1000) / 10 : 0;
+
+    // تحليل حسب المحاور: أين القوة وأين الخلل
+    const byTopic = {};
+    exam.items.forEach((item, idx) => {
+      const t = item.topic || 'عام';
+      byTopic[t] = byTopic[t] || { total:0, correct:0 };
+      byTopic[t].total++;
+      if (exam.answers[idx] && exam.answers[idx].correct) byTopic[t].correct++;
+    });
+
+    return {
+      total, correct, pct,
+      grade: Exam.grade(pct),
+      duration_s: Math.round(((now || Date.now()) - exam.startedAt) / 1000),
+      byTopic,
+      wrongIds: exam.items.filter((it, idx) => !exam.answers[idx] || !exam.answers[idx].correct).map(it => it.id),
+      review: exam.items.map((it, idx) => ({
+        q: it.q, options: it.options, correct: it.correct,
+        chosen: exam.answers[idx] ? exam.answers[idx].choice : null,
+        ok: !!(exam.answers[idx] && exam.answers[idx].correct),
+        expl_ar: it.expl_ar
+      }))
+    };
+  }
+};
+AMUSQ.exam = Exam;
+
+
+/* ===== 30-views.js ===== */
+/*
+  شاشات المرحلة ٠: فارغة عمدًا.
+  لا مواد ولا أسئلة مكتوبة داخل الكود — المحتوى يأتي كلّه لاحقًا من قاعدة البيانات
+  بعد أن يعتمده المشرف. هذه الشاشات تُثبت أن الهيكل والتنقّل والمظهر يعملون.
+*/
+// el و esc معرّفتان في 00-core.js داخل نفس النطاق، فلا نُعيد تعريفهما
+
+function page(title, sub, body){
+  const head = el('header', { class:'page__head' }, [
+    el('h1', { class:'page__title', text:title }),
+    sub ? el('p', { class:'page__sub', text:sub }) : null
+  ]);
+  return el('div', { class:'page' }, [head].concat(body || []));
+}
+
+function empty(ico, title, text, action){
+  return el('div', { class:'card' }, [
+    el('div', { class:'empty' }, [
+      el('span', { class:'empty__ico', 'aria-hidden':'true', text:ico }),
+      el('p', { class:'empty__title', text:title }),
+      el('p', { class:'empty__text', text:text }),
+      action || null
+    ])
+  ]);
+}
+
+function stageNote(){
+  return el('p', { class:'row' }, [
+    el('span', { class:'badge badge--warn', text:'المرحلة ٠ · الهيكل' }),
+    el('span', { class:'badge', text:'المحتوى يُضاف من لوحة التحكم' })
+  ]);
+}
+
+/* ١ · الرئيسية — بطاقات المواد: «موادي» ثم «مواد أخرى متاحة» */
+function subjectColor(c){
+  // اللون اسم متغيّر من نظام التصميم — لا hex حر من قاعدة البيانات
+  return /^subject-[1-6]$/.test(c || '') ? 'var(--' + c + ')' : 'var(--subject-1)';
+}
+function daysLeft(dateStr, now){
+  if (!dateStr) return null;
+  const d = new Date(dateStr).getTime() - (now || Date.now());
+  return Math.ceil(d / 86400000);
+}
+function mySubjects(){ return AMUSQ.store.get('my_subjects', []); }
+
+function subjectCard(sub){
+  const mine = mySubjects().indexOf(sub.id) !== -1;
+  const left = daysLeft(sub.exam_date);
+  const past = left !== null && left < 0;
+  const pct = AMUSQ.progress.pctDone(sub.id, sub.q_count);
+  const color = subjectColor(sub.color);
+
+  const card = el('article', { class:'card subj' + (past ? ' is-past' : ''), tabindex:'0', role:'link',
+    'aria-label':'مادة ' + sub.name }, [
+    el('div', { class:'subj__bar', style:'background:' + color, 'aria-hidden':'true' }),
+    el('div', { class:'row' }, [
+      el('span', { class:'subj__ico', 'aria-hidden':'true', text: sub.icon || '▤' }),
+      el('div', {}, [
+        el('h3', { style:'margin:0', text: sub.name }),
+        el('span', { class:'badge num', text: sub.q_count + ' سؤالًا' })
+      ]),
+      el('span', { class:'spacer' }),
+      past ? el('span', { class:'stamp', text:'تم الانتهاء ✓' })
+           : (left !== null ? el('span', { class:'badge badge--warn num', text:'الاختبار بعد ' + left + ' يوم' }) : null),
+      sub.free ? el('span', { class:'badge badge--ok', text:'مجانية' }) : null
+    ]),
+    el('div', { class:'subj__meter', 'aria-label':'أنجزت ' + pct + '٪' }, [
+      el('div', { style:'width:' + pct + '%;background:' + color })
+    ])
+  ]);
+  card.addEventListener('click', () => AMUSQ.router.go('#/subject/' + sub.id));
+  card.addEventListener('keydown', e => { if (e.key === 'Enter') AMUSQ.router.go('#/subject/' + sub.id); });
+  return card;
+}
+
+const ViewHome = {
+  title:'الرئيسية',
+  view(){
+    const pack = AMUSQ.data.pack();
+    const subjects = (pack.subjects || []).slice();
+    const body = [];
+
+    if (pack.settings && pack.settings.welcome_text)
+      body.push(el('div', { class:'card' }, [ el('p', { style:'margin:0', text: pack.settings.welcome_text }) ]));
+
+    if (!subjects.length) {
+      body.push(empty('▤', 'لا مواد بعد',
+        AMUSQ.config.ready()
+          ? 'لم تُنشر مواد حتى الآن — عد قريبًا، أو تأكد من الاتصال لمزامنة الجديد.'
+          : 'المنصة تبدأ فارغة عن قصد. يضيف المشرف المواد من لوحة التحكم وستظهر هنا فور نشرها.',
+        el('div', { class:'row', style:'justify-content:center;margin-top:16px' }, [
+          el('a', { class:'btn', href:'#/admin', text:'افتح لوحة التحكم' })
+        ])));
+      body.push(el('div', { class:'grid grid--2', id:'subjectsGrid' }));
+      return page('موادي', 'اختر مادة لتبدأ المراجعة.', body);
+    }
+
+    // المنتهية تنزل آخر القائمة تلقائيًا
+    const order = arr => arr.slice().sort((x, y) => {
+      const px = (daysLeft(x.exam_date) ?? 1) < 0 ? 1 : 0;
+      const py = (daysLeft(y.exam_date) ?? 1) < 0 ? 1 : 0;
+      return px - py || (x.ord || 0) - (y.ord || 0);
+    });
+    const mineIds = mySubjects();
+    const mine = order(subjects.filter(su => mineIds.indexOf(su.id) !== -1));
+    const other = order(subjects.filter(su => mineIds.indexOf(su.id) === -1));
+
+    if (mine.length) {
+      body.push(el('h2', { text:'موادي' }));
+      body.push(el('div', { class:'grid grid--2', id:'subjectsGrid' }, mine.map(subjectCard)));
+    }
+    if (other.length) {
+      body.push(el('h2', { text: mine.length ? 'مواد أخرى متاحة' : 'المواد المتاحة' }));
+      body.push(el('div', { class:'grid grid--2', id: mine.length ? null : 'subjectsGrid' }, other.map(su => {
+        const c = subjectCard(su);
+        const add = el('button', { class:'btn btn--sm btn--soft', type:'button',
+          'aria-label':'أضف ' + su.name + ' إلى موادي', text:'+ أضف إلى موادي' });
+        add.addEventListener('click', e => {
+          e.stopPropagation();
+          const list = mySubjects();
+          if (list.indexOf(su.id) === -1) { list.push(su.id); AMUSQ.store.set('my_subjects', list); }
+          AMUSQ.api.rest('enrollments', { method:'POST', body: JSON.stringify({
+            user_id: (AMUSQ.api.user() || {}).id, subject_id: su.id }) });
+          AMUSQ.toast('أُضيفت «' + su.name + '» إلى موادك');
+          AMUSQ.router.render('#/');
+        });
+        c.appendChild(el('div', { class:'row', style:'margin-top:8px' }, [add]));
+        return c;
+      })));
+    }
+    return page('موادي', 'اختر مادة لتبدأ المراجعة.', body);
+  }
+};
+
+/* ٢ · دخول الطالب — رابط سحري + جوجل + آبل */
+function loginCard(opts){
+  // بطاقة دخول واحدة للطالب والمشرف — الفرق في العنوان والوجهة بعد النجاح فقط
+  const email = el('input', { class:'input', type:'email', id:opts.emailId,
+    placeholder:'name@example.com', dir:'ltr', autocomplete:'email' });
+  const btn = el('button', { class:'btn btn--block', type:'button', text:'أرسل رابط الدخول' });
+  const msg = el('p', { class:'field__hint', role:'status' });
+
+  async function send(){
+    const val = (email.value || '').trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val)) { msg.textContent = 'اكتب بريدًا صحيحًا أولًا.'; email.focus(); return; }
+    if (!AMUSQ.config.ready()) { msg.textContent = 'المنصة غير موصولة بالخادم بعد — يضبطها المشرف من الإعدادات.'; return; }
+    btn.setAttribute('aria-disabled','true'); btn.textContent = 'جارٍ الإرسال…';
+    const r = await AMUSQ.api.auth.magic(val);
+    btn.removeAttribute('aria-disabled'); btn.textContent = 'أرسل رابط الدخول';
+    if (r.ok) { msg.textContent = 'تم! افتح بريدك واضغط رابط الدخول.'; AMUSQ.toast('أُرسل رابط الدخول'); }
+    else if (r.offline) msg.textContent = 'لا اتصال بالإنترنت — الدخول يحتاج اتصالًا مرة واحدة فقط.';
+    else msg.textContent = 'تعذّر الإرسال. تحقق من البريد وحاول ثانية.';
+  }
+  btn.addEventListener('click', send);
+  email.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+
+  const gBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب جوجل' });
+  const aBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب آبل' });
+  gBtn.addEventListener('click', () => { const u = AMUSQ.api.auth.oauthUrl('google'); if (u) location.href = u; else AMUSQ.toast('المنصة غير موصولة بالخادم بعد'); });
+  aBtn.addEventListener('click', () => { const u = AMUSQ.api.auth.oauthUrl('apple');  if (u) location.href = u; else AMUSQ.toast('المنصة غير موصولة بالخادم بعد'); });
+
+  return el('div', { class:'card stack' }, [
+    el('label', { class:'field', style:'margin:0' }, [
+      el('span', { class:'field__label', text: opts.label }),
+      email,
+      el('span', { class:'field__hint', text:'يصلك رابط دخول بلا كلمة مرور.' })
+    ]),
+    btn, msg,
+    el('hr', { class:'divider', style:'margin:0' }),
+    gBtn, aBtn
+  ]);
+}
+
+const ViewLogin = {
+  title:'دخول الطالب',
+  view(){
+    if (AMUSQ.api.user()) { return page('حسابي', null, [ AMUSQ.views.accountBody() ]); }
+    return page('دخول الطالب', 'سجّل ليُحفظ تقدّمك في حسابك ويتزامن بين أجهزتك.', [
+      loginCard({ emailId:'loginEmail', label:'البريد الإلكتروني' }),
+      el('div', { class:'card' }, [
+        el('p', { class:'page__sub', text:'ليس لديك حساب؟ جرّب المادة المجانية أولًا بلا تسجيل.' }),
+        el('a', { class:'btn btn--soft btn--block', href:'#/', text:'تصفّح كزائر' })
+      ])
+    ]);
+  }
+};
+
+/* ٣ · دخول المشرف — نفس آلية الدخول بواجهة مستقلة، والتخويل في قاعدة البيانات */
+const ViewAdminLogin = {
+  title:'دخول المشرف',
+  view(){
+    return page('دخول المشرف', 'واجهة منفصلة، والتحقق من الصلاحية في قاعدة البيانات عبر is_admin() لا في المتصفح.', [
+      loginCard({ emailId:'adminEmail', label:'بريد المشرف' })
+    ]);
+  }
+};
+
+/* ٥ · الإعدادات */
+const ViewSettings = {
+  title:'الإعدادات',
+  view(){
+    const themeRow = el('div', { class:'row' }, [
+      el('span', { text:'الوضع الليلي' }),
+      el('span', { class:'spacer' }),
+      el('button', { class:'btn btn--soft btn--sm', type:'button', id:'setThemeBtn', text:'تبديل' })
+    ]);
+    themeRow.querySelector('#setThemeBtn').addEventListener('click', () => {
+      const mode = AMUSQ.theme.toggle();
+      AMUSQ.toast(mode === 'dark' ? 'الوضع الليلي مُفعَّل' : 'الوضع الفاتح مُفعَّل');
+    });
+
+    const resetRow = el('div', { class:'row' }, [
+      el('span', { text:'تصفير بيانات هذا الجهاز' }),
+      el('span', { class:'spacer' }),
+      el('button', { class:'btn btn--ghost btn--sm', type:'button', id:'resetBtn', text:'تصفير' })
+    ]);
+    resetRow.querySelector('#resetBtn').addEventListener('click', () => {
+      AMUSQ.store.clearAll();
+      AMUSQ.theme.apply('auto');
+      AMUSQ.toast('حُذفت بيانات هذا الجهاز');
+    });
+
+    return page('الإعدادات', 'تخصّ هذا الجهاز، ولا تُغيّر حسابك.', [
+      el('div', { class:'card stack' }, [ themeRow, el('hr', { class:'divider' }), resetRow ]),
+      el('div', { class:'card' }, [
+        el('h2', { text:'عن المنصة' }),
+        el('p', { class:'page__sub', text:'AMUSQ — منصة مراجعة تفاعلية لطلاب التخصصات الصحية. الإصدار ' + AMUSQ.version + ' · المرحلة ' + AMUSQ.stage })
+      ])
+    ]);
+  }
+};
+
+/* ٦ · صفحة غير موجودة */
+const ViewNotFound = {
+  title:'الصفحة غير موجودة',
+  view(){
+    return page('الصفحة غير موجودة', null, [
+      empty('؟', 'لم نجد هذه الصفحة', 'ربما تغيّر الرابط. عد إلى الرئيسية وتابع من هناك.',
+        el('div', { class:'row', style:'justify-content:center;margin-top:16px' }, [
+          el('a', { class:'btn', href:'#/', text:'الرئيسية' })
+        ]))
+    ]);
+  }
+};
+
+AMUSQ.views = { ViewHome, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects };
+
+
+/* ===== 31-account.js ===== */
+/*
+  شاشة «حسابي»: الاسم، الصورة الرمزية، التقدّم، المزامنة، الخروج، الحذف النهائي.
+  الحذف شرط متجر آبل — زر حقيقي يمسح كل شيء، لا وعد شكلي.
+*/
+const AVATARS = ['🧑‍⚕️','👩‍⚕️','🩺','🚑','💉','🧠','🫀','🦴','🔬','📚'];
+
+function accountBody(){
+  const u = AMUSQ.api.user();
+  if (!u) return el('div');
+  const prof = AMUSQ.store.get('profile', { name:'', avatar: AVATARS[0] });
+
+  const nameInput = el('input', { class:'input', id:'accName', value: prof.name || '', placeholder:'اسمك الظاهر في المنصة' });
+  const avatarRow = el('div', { class:'row', role:'radiogroup', 'aria-label':'الصورة الرمزية' },
+    AVATARS.map(a => {
+      const b = el('button', { class:'iconbtn', type:'button', role:'radio',
+        'aria-checked': a === (prof.avatar || AVATARS[0]) ? 'true' : 'false', 'aria-label':'صورة ' + a }, [
+        el('span', { class:'iconbtn__ico', text:a })
+      ]);
+      b.addEventListener('click', () => {
+        avatarRow.querySelectorAll('[role="radio"]').forEach(x => x.setAttribute('aria-checked','false'));
+        b.setAttribute('aria-checked','true');
+      });
+      return b;
+    })
+  );
+
+  const saveBtn = el('button', { class:'btn btn--block', type:'button', text:'احفظ' });
+  saveBtn.addEventListener('click', async () => {
+    const picked = avatarRow.querySelector('[aria-checked="true"] .iconbtn__ico');
+    const data = { name: nameInput.value.trim(), avatar: picked ? picked.textContent : AVATARS[0] };
+    AMUSQ.store.set('profile', data);
+    const r = await AMUSQ.api.saveProfile(data);
+    AMUSQ.toast(r.ok ? 'حُفظ ملفك' : 'حُفظ في جهازك، وسيتزامن عند الاتصال');
+  });
+
+  // تقدّمي في كل مادة — من الحزمة المحلية، فيعمل بلا إنترنت
+  const pack = AMUSQ.data.pack();
+  const progList = el('div', { class:'stack' },
+    (pack.subjects || []).map(s => {
+      const pct = AMUSQ.progress.pctDone(s.id, s.q_count);
+      return el('div', { class:'row' }, [
+        el('span', { text: (s.icon || '▤') + ' ' + s.name }),
+        el('span', { class:'spacer' }),
+        el('span', { class:'badge num', text: pct + '٪' })
+      ]);
+    })
+  );
+
+  const syncBtn = el('button', { class:'btn btn--soft btn--block', type:'button', text:'زامن الآن' });
+  syncBtn.addEventListener('click', async () => {
+    const r = await AMUSQ.progress.pull();
+    AMUSQ.toast(r.ok ? 'تمت المزامنة والدمج' : 'تعذّرت المزامنة — لا اتصال');
+  });
+
+  const outBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'تسجيل الخروج' });
+  outBtn.addEventListener('click', async () => {
+    await AMUSQ.api.auth.signOut();
+    AMUSQ.toast('خرجت من حسابك — تقدّمك باقٍ في جهازك');
+    AMUSQ.router.go('#/');
+  });
+
+  // الحذف النهائي: تأكيد بكتابة كلمة صريحة — خطوة لا تُتراجَع
+  const delBtn = el('button', { class:'btn btn--ghost btn--block', type:'button',
+    style:'color:var(--bad);border-color:var(--bad)', text:'احذف حسابي نهائيًا' });
+  delBtn.addEventListener('click', async () => {
+    const word = (typeof prompt === 'function') ? prompt('سيُحذف حسابك وكل بياناتك نهائيًا ولا رجوع. اكتب «حذف» للتأكيد:') : null;
+    if (word !== 'حذف') { AMUSQ.toast('أُلغي الحذف'); return; }
+    const r = await AMUSQ.api.auth.deleteMe();
+    if (r.ok) { await AMUSQ.data.clearAll(); AMUSQ.toast('حُذف حسابك وكل بياناته'); AMUSQ.router.go('#/'); }
+    else AMUSQ.toast('تعذّر الحذف — تحقق من الاتصال');
+  });
+
+  return el('div', { class:'stack' }, [
+    el('div', { class:'card stack' }, [
+      el('p', { class:'page__sub num', text: u.email || '' }),
+      el('label', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'الاسم' }), nameInput
+      ]),
+      el('div', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'الصورة الرمزية' }), avatarRow
+      ]),
+      saveBtn
+    ]),
+    el('div', { class:'card' }, [ el('h2', { text:'تقدّمي' }), progList ]),
+    el('div', { class:'card stack' }, [ syncBtn, outBtn, el('hr', { class:'divider', style:'margin:0' }), delBtn ])
+  ]);
+}
+
+const ViewAccount = {
+  title:'حسابي',
+  view(){
+    if (!AMUSQ.api.user()) return AMUSQ.views.ViewLogin.view();
+    return AMUSQ.views.page('حسابي', null, [ accountBody() ]);
+  }
+};
+
+AMUSQ.views.accountBody = accountBody;
+AMUSQ.views.ViewAccount = ViewAccount;
+AMUSQ.views.AVATARS = AVATARS;
+
+
+/* ===== 32-board.js ===== */
+/*
+  لوحة المتصدرين — بيانات مجمّعة فقط من دالة board() في قاعدة البيانات:
+  لا يرى طالب تفاصيل طالب آخر، فقط الاسم المعروض وأفضل نسبة.
+*/
+const ViewBoard = {
+  title:'المتصدرون',
+  view(){
+    const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
+    AMUSQ.api.rpc('board', { lim: 10 }).then(r => {
+      if (!body.isConnected) return;
+      body.innerHTML = '';
+      if (!r.ok) { body.appendChild(AMUSQ.views.empty('🏆', 'تعذّر الجلب', r.offline ? 'المتصدرون يحتاجون اتصالًا.' : 'حاول لاحقًا.')); return; }
+      if (r.data && r.data.disabled) { body.appendChild(AMUSQ.views.empty('🏆', 'اللوحة موقوفة', 'أوقفها المشرف مؤقتًا.')); return; }
+      const rows = (r.data && r.data.rows) || [];
+      body.appendChild(el('p', { class:'row' }, [
+        el('span', { class:'badge badge--ok num', text:'● متواجد الآن: ' + ((r.data && r.data.online) || 0) })
+      ]));
+      if (!rows.length) { body.appendChild(AMUSQ.views.empty('🏆', 'لا نتائج بعد', 'أول اختبار تجريبي يفتح اللوحة.')); return; }
+      body.appendChild(el('div', { class:'card stack' }, rows.map((row, i) => el('div', { class:'row' }, [
+        el('span', { class:'badge num', text:'#' + (i + 1) }),
+        el('span', { text: (row.avatar || '👤') + ' ' + row.name }),
+        el('span', { class:'spacer' }),
+        el('span', { class:'badge badge--ok num', text: row.best + '٪' }),
+        el('span', { class:'badge num', text: row.attempts + ' اختبار' })
+      ]))));
+    });
+    return AMUSQ.views.page('المتصدرون', 'أفضل النتائج — بأسماء العرض فقط.', [body]);
+  }
+};
+AMUSQ.views.ViewBoard = ViewBoard;
+
+
+/* ===== 33-admin.js ===== */
+/*
+  لوحة تحكم المشرف — قلب المشروع.
+  البوابة الحقيقية هي قاعدة البيانات (RLS + is_admin)؛ الواجهة هنا مجرد مرآة:
+  حتى لو عبث أحد بالمتصفح فلن يقرأ صفًا واحدًا ليس له.
+*/
+const Admin = {
+  /* هل الجلسة الحالية لمشرف؟ نسأل قاعدة البيانات مرة ونخزّن الجواب للجلسة */
+  async check(){
+    if (!AMUSQ.api.user()) return false;
+    const cached = AMUSQ.store.get('is_admin_check', null);
+    if (cached && cached.uid === AMUSQ.api.user().id) return cached.ok;
+    const r = await AMUSQ.api.myProfile();
+    const ok = !!(r.ok && r.data && r.data.is_admin);
+    AMUSQ.store.set('is_admin_check', { uid: AMUSQ.api.user().id, ok });
+    return ok;
+  },
+
+  /* رابط دوال الخادم: على Vercel هو نفس الأصل، ومن file:// يضبطه المشرف مرة واحدة */
+  apiBase(){
+    const c = AMUSQ.store.get('api_base', '');
+    if (c) return c.replace(/\/+$/,'');
+    return (typeof location !== 'undefined' && location.protocol.indexOf('http') === 0) ? '' : null;
+  },
+  async server(path, body){
+    const base = Admin.apiBase();
+    const f = AMUSQ.api.fetchFn();
+    if (base === null || !f) return { ok:false, offline:true };
+    try{
+      const res = await f(base + path, {
+        method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(body || {})
+      });
+      const data = await res.json().catch(() => null);
+      return { ok: res.ok, status: res.status, data };
+    } catch(e){ return { ok:false, offline:true, err:e.message }; }
+  },
+
+  /* ===== معالج الرفع — أربع خطوات، حالته قابلة للفحص بمعزل عن الواجهة ===== */
+  BATCH: 25,   // حد دفعة الذكاء — يحمي من مهلة الخادم ويسمح باستئناف الرفع
+  chunk(arr, n){
+    const out = [];
+    for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
+    return out;
+  },
+  newWizard(){
+    return { step:1, filename:'', raw:[], enriched:[], draftId:null, done:0, total:0, error:'' };
+  },
+  // تقدير التكلفة قبل التشغيل: عدد الأسئلة والدفعات — يقرّر المشرف على بيّنة
+  estimate(w){
+    return { questions: w.raw.length, batches: Admin.chunk(w.raw, Admin.BATCH).length };
+  },
+
+  async wizardIngest(w, filename, base64){
+    const r = await Admin.server('/api/ingest', { filename, content_base64: base64 });
+    if (!r.ok) { w.error = (r.data && r.data.error) || 'تعذّر الاتصال بالخادم'; return w; }
+    w.filename = filename; w.raw = r.data.questions; w.total = r.data.total;
+    w.step = 2; w.error = '';
+    return w;
+  },
+
+  // «افهمه بالذكاء» على دفعات: المسوّدة تُحفظ بعد كل دفعة فيمكن إغلاق الصفحة والعودة
+  async wizardEnrich(w, onProgress){
+    const batches = Admin.chunk(w.raw, Admin.BATCH);
+    for (let i = 0; i < batches.length; i++) {
+      // لا إعادة معالجة لما اكتمل — الاستئناف يبدأ من حيث توقّف
+      if (w.done >= (i + 1) * Admin.BATCH) continue;
+      const r = await Admin.server('/api/ai', { questions: batches[i] });
+      if (!r.ok) { w.error = (r.data && r.data.error) || 'انقطعت الدفعة ' + (i + 1); return w; }
+      w.enriched = w.enriched.concat(r.data.questions);
+      w.done = Math.min(w.enriched.length, w.total);
+      await Admin.saveDraft(w);
+      if (onProgress) onProgress(w.done, w.total);
+    }
+    if (w.done >= w.total) { w.step = 3; w.error = ''; }
+    return w;
+  },
+
+  async saveDraft(w){
+    const body = {
+      name: w.filename.replace(/\.[^.]+$/, ''),
+      source_name: w.filename,
+      status: w.done >= w.total ? 'reviewing' : 'processing',
+      payload: w.enriched, total: w.total, done: w.done,
+      updated_at: new Date().toISOString()
+    };
+    if (w.draftId) {
+      return AMUSQ.api.rest('drafts?id=eq.' + w.draftId, { method:'PATCH', body: JSON.stringify(body) });
+    }
+    body.created_by = (AMUSQ.api.user() || {}).id;
+    const r = await AMUSQ.api.rest('drafts?select=id', {
+      method:'POST',
+      headers: Object.assign(AMUSQ.api.headers(), { 'Prefer':'return=representation' }),
+      body: JSON.stringify(body)
+    });
+    if (r.ok && r.data && r.data[0]) w.draftId = r.data[0].id;
+    return r;
+  },
+
+  // الاعتماد: نداء واحد ذرّي في قاعدة البيانات — إما كل شيء أو لا شيء
+  approve(w, publish){
+    return AMUSQ.api.rpc('approve_draft', { draft_id: w.draftId, publish });
+  },
+
+  // كشف المكرر بتشابه نصي بسيط: نفس الأحرف الدنيا بعد إزالة الفراغات — يوسم لا يحذف
+  findDuplicates(questions){
+    const seen = new Map(), dups = [];
+    questions.forEach((q, i) => {
+      const key = String(q.q || '').toLowerCase().replace(/\s+/g, ' ').trim();
+      if (seen.has(key)) dups.push({ index: i, firstIndex: seen.get(key) });
+      else seen.set(key, i);
+    });
+    return dups;
+  }
+};
+
+/* ===== الواجهة ===== */
+function adminStat(label, value){
+  return el('div', { class:'card card--flat stat' }, [
+    el('span', { class:'stat__num num', text: String(value) }),
+    el('span', { class:'stat__lbl', text: label })
+  ]);
+}
+
+function adminStudentsTab(box){
+  box.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
+  Promise.all([ AMUSQ.api.rpc('admin_stats'), AMUSQ.api.rpc('admin_students', { page:0, page_size:50, search:'' }) ])
+    .then(([st, rows]) => {
+      if (!box.isConnected) return;   // غادر المشرف الشاشة قبل وصول الرد
+      box.innerHTML = '';
+      if (!st.ok || (st.data && st.data.error)) {
+        box.appendChild(AMUSQ.views.empty('⚠', 'تعذّر الجلب', st.offline ? 'لا اتصال بالإنترنت.' : 'تأكد أن حسابك مشرف وأن قاعدة البيانات مجهزة.'));
+        return;
+      }
+      const s = st.data;
+      box.appendChild(el('div', { class:'grid grid--2 stats' }, [
+        adminStat('طالبًا', s.students), adminStat('نشط آخر ٧ أيام', s.active_7d),
+        adminStat('اختبارًا', s.attempts), adminStat('متوسط النتائج ٪', s.avg_pct)
+      ]));
+      const list = (rows.ok && rows.data && rows.data.rows) || [];
+      if (!list.length) { box.appendChild(AMUSQ.views.empty('👥', 'لا طلاب بعد', 'سيظهر الطلاب هنا فور تسجيلهم.')); return; }
+      const tbl = el('div', { class:'card stack' }, list.map(r => {
+        const row = el('button', { class:'row rowbtn', type:'button' }, [
+          el('span', { text: (r.avatar || '👤') + ' ' + (r.name || 'بلا اسم') }),
+          el('span', { class:'spacer' }),
+          el('span', { class:'badge num', text: r.attempts + ' اختبار' }),
+          el('span', { class:'badge badge--ok num', text: 'أفضل ' + Math.round(r.best) + '٪' })
+        ]);
+        row.addEventListener('click', async () => {
+          const at = await AMUSQ.api.rpc('admin_attempts', { uid: r.id });
+          const items = (at.ok && Array.isArray(at.data)) ? at.data : [];
+          const det = el('div', { class:'card stack' },
+            items.length ? items.map(a => el('div', { class:'row' }, [
+              el('span', { text: a.subject }),
+              el('span', { class:'spacer' }),
+              el('span', { class:'badge num', text: Math.round(a.pct) + '٪' }),
+              el('span', { class:'badge num', text: Math.round(a.duration_s / 60) + ' د' })
+            ])) : [el('p', { class:'page__sub', text:'لا محاولات لهذا الطالب.' })]);
+          row.parentNode.insertBefore(det, row.nextSibling);
+        }, { once:true });
+        return row;
+      }));
+      box.appendChild(tbl);
+    });
+}
+
+function adminContentTab(box){
+  const upBtn = el('button', { class:'btn btn--block', type:'button', text:'⇪ ارفع ملف أسئلة جديدًا' });
+  upBtn.addEventListener('click', () => AMUSQ.router.go('#/admin/upload'));
+  box.appendChild(upBtn);
+  const listBox = el('div', { class:'stack', style:'margin-top:16px' });
+  box.appendChild(listBox);
+  listBox.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
+
+  Promise.all([
+    AMUSQ.api.rest('subjects?select=id,name,color,icon,q_count,published,free,ord,exam_date&order=ord'),
+    // قوائم المسوّدات بلا payload — الحمولة كبيرة ولا تلزم القائمة
+    AMUSQ.api.rest('drafts?select=id,name,status,total,done,updated_at&order=updated_at.desc')
+  ]).then(([subs, drs]) => {
+    if (!listBox.isConnected) return;
+    listBox.innerHTML = '';
+    const subjects = (subs.ok && subs.data) || [];
+    const drafts = (drs.ok && drs.data) || [];
+
+    if (drafts.length) {
+      listBox.appendChild(el('h2', { text:'المسوّدات' }));
+      drafts.forEach(d => {
+        if (d.status === 'approved') return;
+        listBox.appendChild(el('div', { class:'card row' }, [
+          el('span', { text: d.name || 'بلا اسم' }),
+          el('span', { class:'badge ' + (d.status === 'reviewing' ? 'badge--warn' : ''), text:
+            d.status === 'reviewing' ? 'بانتظار المراجعة' : 'قيد المعالجة ' + d.done + ' من ' + d.total }),
+          el('span', { class:'spacer' }),
+          el('a', { class:'btn btn--sm btn--soft', href:'#/admin/upload?draft=' + d.id, text:'أكمل' })
+        ]));
+      });
+    }
+
+    listBox.appendChild(el('h2', { text:'المواد' }));
+    if (!subjects.length) {
+      listBox.appendChild(AMUSQ.views.empty('▤', 'لا مواد بعد', 'ارفع أول ملف أسئلة وسيظهر هنا بعد الاعتماد.'));
+      return;
+    }
+    subjects.forEach(sub => {
+      const pubBtn = el('button', { class:'btn btn--sm ' + (sub.published ? 'btn--soft' : ''), type:'button',
+        text: sub.published ? 'أخفِ' : 'انشر' });
+      pubBtn.addEventListener('click', async () => {
+        const r = await AMUSQ.api.rest('subjects?id=eq.' + sub.id,
+          { method:'PATCH', body: JSON.stringify({ published: !sub.published }) });
+        AMUSQ.toast(r.ok ? 'تم' : 'تعذّر التعديل');
+        if (r.ok) AMUSQ.router.render('#/admin/content');
+      });
+      const dateIn = el('input', { class:'input input--sm', type:'date',
+        value: sub.exam_date ? String(sub.exam_date).slice(0,10) : '', 'aria-label':'موعد اختبار ' + sub.name });
+      dateIn.addEventListener('change', async () => {
+        await AMUSQ.api.rest('subjects?id=eq.' + sub.id,
+          { method:'PATCH', body: JSON.stringify({ exam_date: dateIn.value || null }) });
+        AMUSQ.toast('حُفظ الموعد');
+      });
+      const freeBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button',
+        text: sub.free ? '★ مجانية' : 'اجعلها مجانية' });
+      freeBtn.addEventListener('click', async () => {
+        await AMUSQ.api.rest('subjects?id=eq.' + sub.id,
+          { method:'PATCH', body: JSON.stringify({ free: !sub.free }) });
+        AMUSQ.router.render('#/admin/content');
+      });
+      listBox.appendChild(el('div', { class:'card stack' }, [
+        el('div', { class:'row' }, [
+          el('span', { text: (sub.icon || '▤') + ' ' + sub.name }),
+          el('span', { class:'badge num', text: sub.q_count + ' سؤالًا' }),
+          sub.published ? el('span', { class:'badge badge--ok', text:'منشورة ✓' })
+                        : el('span', { class:'badge', text:'مخفية' }),
+          el('span', { class:'spacer' }), pubBtn
+        ]),
+        el('div', { class:'row' }, [ dateIn, freeBtn ])
+      ]));
+    });
+  });
+}
+
+function adminSettingsTab(box){
+  // إعداد الربط: يعمل حتى قبل الدخول — هو أول ما يفعله المشرف عند التركيب
+  const c = AMUSQ.config.get() || {};
+  const urlIn = el('input', { class:'input', dir:'ltr', id:'cfgUrl', value: c.url || '', placeholder:'https://xxxx.supabase.co' });
+  const keyIn = el('input', { class:'input', dir:'ltr', id:'cfgKey', value: c.anonKey || '', placeholder:'anon key' });
+  const apiIn = el('input', { class:'input', dir:'ltr', id:'cfgApi', value: AMUSQ.store.get('api_base',''), placeholder:'https://amusq.vercel.app (اتركه فارغًا على نفس الموقع)' });
+  const saveCfg = el('button', { class:'btn btn--block', type:'button', text:'احفظ الربط' });
+  saveCfg.addEventListener('click', () => {
+    const r = AMUSQ.config.set(urlIn.value.trim(), keyIn.value.trim());
+    AMUSQ.store.set('api_base', apiIn.value.trim());
+    AMUSQ.toast(r.ok ? 'حُفظ الربط — المنصة موصولة' : r.err);
+  });
+  box.appendChild(el('div', { class:'card stack' }, [
+    el('h2', { text:'ربط الخادم' }),
+    el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'رابط Supabase' }), urlIn ]),
+    el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'المفتاح العام (anon) — عام بطبيعته، والحماية في RLS' }), keyIn ]),
+    el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'رابط دوال الخادم (Vercel)' }), apiIn ]),
+    saveCfg
+  ]));
+
+  // إعدادات المنصة من قاعدة البيانات
+  const setBox = el('div', { class:'card stack' }, [ el('h2', { text:'إعدادات المنصة' }),
+    el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
+  box.appendChild(setBox);
+  AMUSQ.api.rest('settings?id=eq.1').then(r => {
+    if (!setBox.isConnected) return;
+    const s = (r.ok && r.data && r.data[0]) || null;
+    setBox.innerHTML = '';
+    setBox.appendChild(el('h2', { text:'إعدادات المنصة' }));
+    if (!s) { setBox.appendChild(el('p', { class:'page__sub', text:'تُجلب بعد ربط الخادم والدخول كمشرف.' })); return; }
+    const welcome = el('textarea', { class:'input', rows:'3', id:'setWelcome' }); welcome.value = s.welcome_text || '';
+    const boardBtn = el('button', { class:'btn btn--sm ' + (s.board_enabled ? 'btn--soft' : 'btn--ghost'), type:'button',
+      text: s.board_enabled ? 'لوحة المتصدرين: مفعّلة' : 'لوحة المتصدرين: موقوفة' });
+    const limitIn = el('input', { class:'input', type:'number', min:'1', max:'10', value: String(s.device_limit || 3), 'aria-label':'حد الأجهزة' });
+    let boardOn = !!s.board_enabled;
+    boardBtn.addEventListener('click', () => {
+      boardOn = !boardOn;
+      boardBtn.textContent = boardOn ? 'لوحة المتصدرين: مفعّلة' : 'لوحة المتصدرين: موقوفة';
+    });
+    const save = el('button', { class:'btn btn--block', type:'button', text:'احفظ الإعدادات' });
+    save.addEventListener('click', async () => {
+      const rr = await AMUSQ.api.rest('settings?id=eq.1', { method:'PATCH', body: JSON.stringify({
+        welcome_text: welcome.value, board_enabled: boardOn, device_limit: parseInt(limitIn.value || '3', 10)
+      }) });
+      AMUSQ.toast(rr.ok ? 'حُفظت الإعدادات' : 'تعذّر الحفظ');
+    });
+    setBox.appendChild(el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'نص الترحيب' }), welcome ]));
+    setBox.appendChild(boardBtn);
+    setBox.appendChild(el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'حد الأجهزة لكل حساب' }), limitIn ]));
+    setBox.appendChild(save);
+  });
+}
+
+const ADMIN_TABS = [
+  { id:'students', label:'الطلاب',   fill: adminStudentsTab },
+  { id:'content',  label:'المحتوى',  fill: adminContentTab },
+  { id:'settings', label:'الإعدادات', fill: adminSettingsTab }
+];
+
+const AdminView = {
+  title:'لوحة التحكم',
+  view(route){
+    const u = AMUSQ.api.user();
+    // بلا جلسة: نعرض دخول المشرف — إلا الإعدادات فهي تعمل محليًا لضبط الربط الأول
+    if (!u && route.rest[0] !== 'settings') return AMUSQ.views.ViewAdminLogin.view();
+
+    const active = ADMIN_TABS.some(t => t.id === route.rest[0]) ? route.rest[0] : 'students';
+    const tabs = el('div', { class:'tabs', role:'tablist' },
+      ADMIN_TABS.map(t => el('button', {
+        class:'tabs__btn', type:'button', role:'tab', 'data-tab':t.id,
+        'aria-selected': t.id === active ? 'true' : 'false', text: t.label })));
+    tabs.addEventListener('click', e => {
+      const b = e.target.closest('[data-tab]');
+      if (b) AMUSQ.router.go('#/admin/' + b.getAttribute('data-tab'));
+    });
+    const body = el('div', { class:'stack', id:'adminBody' });
+    ADMIN_TABS.filter(t => t.id === active)[0].fill(body);
+    return AMUSQ.views.page('لوحة التحكم', 'كل ما يظهر للطالب يمرّ من هنا أولًا.', [tabs, body]);
+  }
+};
+
+AMUSQ.admin = Admin;
+AMUSQ.views.ViewAdmin = AdminView;
+
+
+/* ===== 34-upload.js ===== */
+/*
+  معالج رفع الأسئلة — أربع خطوات ظاهرة للمشرف:
+  ١ اقرأ الملف · ٢ افهمه بالذكاء · ٣ راجِع · ٤ انشر.
+  المنطق في AMUSQ.admin (قابل للفحص)؛ هنا الواجهة فقط.
+*/
+let wizard = null;   // حالة المعالج تعيش بين إعادة الرسم داخل الجلسة
+
+function stepsBar(current){
+  const names = ['اقرأ الملف','افهمه بالذكاء','راجِع','انشر'];
+  return el('ol', { class:'steps' }, names.map((n, i) =>
+    el('li', { class:'steps__item' + (i + 1 === current ? ' is-on' : '') + (i + 1 < current ? ' is-done' : ''),
+      'aria-current': i + 1 === current ? 'step' : null }, [
+      el('span', { class:'steps__num num', text: String(i + 1) }),
+      el('span', { text: n })
+    ])));
+}
+
+/* الخطوة ١: سحب وإفلات أو اختيار ملف */
+function stepRead(box, rerender){
+  const drop = el('div', { class:'drop', tabindex:'0', role:'button', 'aria-label':'اختر ملف أسئلة' }, [
+    el('span', { class:'empty__ico', 'aria-hidden':'true', text:'⇪' }),
+    el('p', { class:'empty__title', text:'أسقط ملف الأسئلة هنا أو اضغط للاختيار' }),
+    el('p', { class:'empty__text', text:'PDF أو DOCX أو TXT — حتى ١٥ ميغابايت. يفهم شكلين: خيارات A-D، وقوائم سؤال-ثم-إجابة.' })
+  ]);
+  const fileIn = el('input', { type:'file', accept:'.pdf,.docx,.txt', style:'display:none', 'aria-hidden':'true' });
+  const msg = el('p', { class:'field__hint', role:'status' });
+
+  async function handle(file){
+    if (!file) return;
+    msg.textContent = 'جارٍ قراءة «' + file.name + '»…';
+    const b64 = await new Promise(resolve => {
+      const rd = new FileReader();
+      rd.onload = () => resolve(String(rd.result).split(',')[1] || '');
+      rd.readAsDataURL(file);
+    });
+    wizard = await AMUSQ.admin.wizardIngest(wizard, file.name, b64);
+    if (wizard.error) { msg.textContent = '⚠ ' + wizard.error; return; }
+    rerender();
+  }
+  drop.addEventListener('click', () => fileIn.click());
+  drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileIn.click(); });
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('is-over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('is-over'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('is-over'); handle(e.dataTransfer.files[0]); });
+  fileIn.addEventListener('change', () => handle(fileIn.files[0]));
+
+  box.appendChild(drop); box.appendChild(fileIn); box.appendChild(msg);
+}
+
+/* الخطوة ٢: التقدير ثم التشغيل بدفعات مع شريط «٨٠ من ٣٠٠» */
+function stepEnrich(box, rerender){
+  const est = AMUSQ.admin.estimate(wizard);
+  const bar = el('div', { class:'meter', role:'progressbar', 'aria-valuemin':'0',
+    'aria-valuemax': String(wizard.total), 'aria-valuenow': String(wizard.done) }, [
+    el('div', { class:'meter__fill', style:'width:' + (wizard.total ? wizard.done / wizard.total * 100 : 0) + '%' })
+  ]);
+  const label = el('p', { class:'page__sub num', text: wizard.done + ' من ' + wizard.total });
+  const msg = el('p', { class:'field__hint', role:'status' });
+  const go = el('button', { class:'btn btn--block', type:'button',
+    text: wizard.done ? 'أكمل من حيث توقفت (' + wizard.done + ')' : 'شغّل الذكاء الآن' });
+
+  go.addEventListener('click', async () => {
+    go.setAttribute('aria-disabled','true'); go.textContent = 'جارٍ المعالجة…';
+    wizard = await AMUSQ.admin.wizardEnrich(wizard, (done, total) => {
+      label.textContent = done + ' من ' + total;
+      bar.setAttribute('aria-valuenow', String(done));
+      bar.firstChild.style.width = (done / total * 100) + '%';
+    });
+    if (wizard.error) { msg.textContent = '⚠ ' + wizard.error + ' — المحفوظ لا يضيع، أعد المحاولة.'; go.removeAttribute('aria-disabled'); go.textContent = 'أعد المحاولة'; return; }
+    rerender();
+  });
+
+  box.appendChild(el('div', { class:'card stack' }, [
+    el('h2', { text:'قبل التشغيل — التقدير' }),
+    el('div', { class:'row' }, [
+      el('span', { class:'badge num', text: est.questions + ' سؤالًا' }),
+      el('span', { class:'badge num', text: est.batches + ' دفعة ذكاء' }),
+      el('span', { class:'badge', text:'المسوّدة تُحفظ بعد كل دفعة' })
+    ]),
+    bar, label, go, msg
+  ]));
+}
+
+/* الخطوة ٣: المراجعة — بطاقة لكل سؤال، تغيير الإجابة بضغطة، وسوم حمراء للمستنتَج */
+function stepReview(box, rerender){
+  const dups = AMUSQ.admin.findDuplicates(wizard.enriched);
+  const dupSet = new Set(dups.map(d => d.index));
+  if (dups.length) box.appendChild(el('p', { class:'row' }, [
+    el('span', { class:'badge badge--warn num', text: 'تنبيه: ' + dups.length + ' سؤالًا مكررًا — موسوم لا محذوف' })
+  ]));
+
+  wizard.enriched.forEach((q, qi) => {
+    const opts = el('div', { class:'stack q__opts' }, q.options.map((opt, oi) => {
+      const b = el('button', { class:'opt' + (q.answer === oi ? ' is-answer' : ''), type:'button' }, [
+        el('span', { class:'opt__mark', 'aria-hidden':'true', text: q.answer === oi ? '✓' : '' }),
+        el('span', { class:'ltr', text: opt })
+      ]);
+      // المشرف يغيّر الإجابة بضغطة على أي خيار — والتغيير يمسح وسم «مستنتجة»
+      b.addEventListener('click', () => { q.answer = oi; q.derived = false; rerender(); });
+      return b;
+    }));
+    const badges = el('div', { class:'row' }, [
+      el('span', { class:'badge num', text:'س' + (qi + 1) }),
+      q.derived ? el('span', { class:'badge badge--bad', text:'⚠ إجابة مستنتجة' }) : null,
+      q.opts_built ? el('span', { class:'badge badge--bad', text:'⚠ خيارات مبنية' }) : null,
+      dupSet.has(qi) ? el('span', { class:'badge badge--warn', text:'مكرر' }) : null,
+      q.topic ? el('span', { class:'badge', text: q.topic }) : null
+    ]);
+    const impBtn = el('button', { class:'btn btn--sm ' + (q.important ? 'btn--soft' : 'btn--ghost'), type:'button',
+      text: q.important ? '★ مهم' : 'وسمه مهمًا' });
+    impBtn.addEventListener('click', () => { q.important = !q.important; rerender(); });
+    box.appendChild(el('article', { class:'card stack q' }, [
+      badges,
+      el('p', { class:'ltr q__text', text: q.q }),
+      opts,
+      el('div', { class:'row' }, [ impBtn ])
+    ]));
+  });
+
+  const next = el('button', { class:'btn btn--block', type:'button', text:'راجعتُ الكل — تابع للنشر' });
+  next.addEventListener('click', async () => { wizard.step = 4; await AMUSQ.admin.saveDraft(wizard); rerender(); });
+  box.appendChild(next);
+}
+
+/* الخطوة ٤: زران — اعتماد ذرّي أو حفظ مخفي */
+function stepPublish(box){
+  const derived = wizard.enriched.filter(q => q.derived).length;
+  const pub = el('button', { class:'btn btn--block', type:'button', text:'اعتمد وانشر للطلاب' });
+  const hide = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'احفظ مخفية' });
+  const msg = el('p', { class:'field__hint', role:'status' });
+  async function fire(publish){
+    const r = await AMUSQ.admin.approve(wizard, publish);
+    if (r.ok) { AMUSQ.toast(publish ? 'نُشرت المادة للطلاب' : 'حُفظت مخفية'); wizard = null; AMUSQ.router.go('#/admin/content'); }
+    else msg.textContent = '⚠ ' + ((r.data && r.data.message) || 'تعذّر الاعتماد — لم يتغير شيء في قاعدة البيانات.');
+  }
+  pub.addEventListener('click', () => fire(true));
+  hide.addEventListener('click', () => fire(false));
+  box.appendChild(el('div', { class:'card stack' }, [
+    el('h2', { text:'الاعتماد' }),
+    el('p', { class:'page__sub num', text: wizard.total + ' سؤالًا جاهزًا' +
+      (derived ? ' — منها ' + derived + ' بإجابة مستنتجة راجعتَها' : '') }),
+    el('p', { class:'field__hint', text:'الاعتماد عملية ذرّية: إما تُنشأ المادة وكل أسئلتها أو لا يتغير شيء.' }),
+    pub, hide, msg
+  ]));
+}
+
+const ViewUpload = {
+  title:'رفع الأسئلة',
+  view(route){
+    if (!AMUSQ.api.user()) return AMUSQ.views.ViewAdminLogin.view();
+    if (!wizard) wizard = AMUSQ.admin.newWizard();
+    // استئناف مسوّدة من القائمة: نجلبها بحمولتها ونقفز للخطوة الصحيحة
+    if (route.query.draft && wizard.draftId !== route.query.draft) {
+      wizard = AMUSQ.admin.newWizard();
+      wizard.draftId = route.query.draft;
+      AMUSQ.api.rest('drafts?id=eq.' + route.query.draft + '&select=*').then(r => {
+        if (r.ok && r.data && r.data[0]) {
+          const d = r.data[0];
+          wizard.filename = d.source_name; wizard.enriched = d.payload || [];
+          wizard.total = d.total; wizard.done = d.done;
+          wizard.step = d.done >= d.total ? 3 : 2;
+          AMUSQ.router.render(location.hash);
+        }
+      });
+    }
+    const body = el('div', { class:'stack' });
+    const rerender = () => AMUSQ.router.render(location.hash);
+    [null, stepRead, stepEnrich, stepReview, stepPublish][wizard.step](body, rerender);
+    return AMUSQ.views.page('رفع الأسئلة', 'من ملف الدكتور إلى مادة يذاكرها الطلاب — بأربع خطوات.', [
+      stepsBar(wizard.step), body
+    ]);
+  },
+  _reset(){ wizard = null; },       // للفحوص
+  _get(){ return wizard; },
+  _set(w){ wizard = w; }
+};
+AMUSQ.views.ViewUpload = ViewUpload;
+
+
+/* ===== 35-subject.js ===== */
+/*
+  صفحة المادة — أربعة تبويبات: نظرة عامة · الشرح · بنك الأسئلة · طريقة الحفظ.
+  الأسئلة تُجلب مرة واحدة ثم من جهاز الطالب (IndexedDB) — تعمل بعدها بلا إنترنت.
+  البنك مصمَّم لخمسمئة سؤال: عرض على دفعات، وأقسام مطوية افتراضيًا.
+*/
+const SUBJ_TABS = [
+  { id:'overview', label:'نظرة عامة' },
+  { id:'explain',  label:'الشرح' },
+  { id:'bank',     label:'بنك الأسئلة' },
+  { id:'memo',     label:'طريقة الحفظ' }
+];
+const BANK_PAGE = 50;   // دفعة العرض — التمرير يطلب المزيد بدل رسم ٥٠٠ عنصر دفعة واحدة
+
+function findSubject(sid){
+  return (AMUSQ.data.pack().subjects || []).filter(s => s.id === sid)[0] || null;
+}
+
+/* شريط سؤال واحد في البنك (وضع القائمة) */
+function bankRow(sub, q, prog){
+  const starred = !!prog.star[q.id];
+  const starBtn = el('button', { class:'iconbtn', type:'button',
+    'aria-label': starred ? 'أزل النجمة' : 'ميّز بنجمة', 'aria-pressed': String(starred) }, [
+    el('span', { class:'iconbtn__ico', text: starred ? '★' : '☆',
+      style: starred ? 'color:var(--star)' : '' })
+  ]);
+  starBtn.addEventListener('click', () => {
+    AMUSQ.progress.toggleStar(sub.id, q.id);
+    AMUSQ.router.render(location.hash);
+  });
+
+  const opts = el('div', { class:'stack q__opts', hidden:true },
+    q.options.map((opt, oi) => el('div', { class:'opt' + (oi === q.answer ? ' is-answer' : '') }, [
+      el('span', { class:'opt__mark', 'aria-hidden':'true', text: oi === q.answer ? '✓' : '' }),
+      el('span', { class:'ltr', text: opt })
+    ])));
+  const trans = el('p', { class:'field__hint', hidden:true, text: q.translation || 'لا ترجمة بعد.' });
+  const transBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'عرض الترجمة' });
+  transBtn.addEventListener('click', () => {
+    trans.hidden = !trans.hidden;
+    transBtn.textContent = trans.hidden ? 'عرض الترجمة' : 'إخفاء الترجمة';
+  });
+
+  const head = el('button', { class:'rowbtn', type:'button', 'aria-expanded':'false' }, [
+    el('span', { class:'ltr q__text', text: q.q })
+  ]);
+  head.addEventListener('click', () => {
+    const open = opts.hidden;
+    opts.hidden = !open;
+    head.setAttribute('aria-expanded', String(open));
+    if (open) AMUSQ.progress.markSeen(sub.id, q.id);   // فتح السؤال = رُوجع
+  });
+
+  return el('article', { class:'q', 'data-qid': q.id }, [
+    el('div', { class:'row' }, [
+      head, starBtn,
+      prog.wrong[q.id] ? el('span', { class:'badge badge--bad num', text:'أخطأت ×' + prog.wrong[q.id] }) : null,
+      q.important ? el('span', { class:'badge badge--warn', text:'مهم' }) : null
+    ]),
+    opts, el('div', { class:'row' }, [transBtn]), trans
+  ]);
+}
+
+/* بطاقة مقلوبة (وضع البطاقات) */
+function flipCard(sub, q){
+  const card = el('div', { class:'flip', tabindex:'0', role:'button', 'aria-label':'بطاقة: اضغط لقلبها' }, [
+    el('div', { class:'flip__in' }, [
+      el('div', { class:'flip__face' }, [ el('p', { class:'ltr q__text', text: q.q }) ]),
+      el('div', { class:'flip__face flip__face--back' }, [
+        el('p', { class:'ltr', style:'font-weight:700', text: q.options[q.answer] }),
+        q.expl_ar ? el('p', { class:'field__hint', text: q.expl_ar }) : null
+      ])
+    ])
+  ]);
+  const flip = () => {
+    card.classList.toggle('is-flipped');
+    AMUSQ.progress.markSeen(sub.id, q.id);
+  };
+  card.addEventListener('click', flip);
+  card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
+  return card;
+}
+
+/* تبويب البنك: بحث + فلاتر + وضعان + أقسام مطوية بالمحاور */
+function bankTab(sub, questions){
+  const state = AMUSQ.store.get('bank_ui', { filter:'all', mode:'list' });
+  const prog = AMUSQ.progress.forSubject(sub.id);
+  const box = el('div', { class:'stack' });
+
+  const search = el('input', { class:'input', type:'search', id:'bankSearch',
+    placeholder:'ابحث في ' + questions.length + ' سؤالًا…', 'aria-label':'بحث في بنك الأسئلة' });
+
+  const FILTERS = [
+    ['all','الكل'], ['unseen','لم أراجعه'], ['wrong','أخطأت فيه'], ['star','بنجمة']
+  ];
+  const filters = el('div', { class:'row', role:'group', 'aria-label':'تصفية الأسئلة' },
+    FILTERS.map(([id, label]) => {
+      const b = el('button', { class:'btn btn--sm ' + (state.filter === id ? 'btn--soft' : 'btn--ghost'),
+        type:'button', 'aria-pressed': String(state.filter === id), text: label });
+      b.addEventListener('click', () => {
+        state.filter = id; AMUSQ.store.set('bank_ui', state);
+        AMUSQ.router.render(location.hash);
+      });
+      return b;
+    }));
+
+  const modeBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button',
+    text: state.mode === 'list' ? 'وضع البطاقات ▦' : 'وضع القائمة ☰' });
+  modeBtn.addEventListener('click', () => {
+    state.mode = state.mode === 'list' ? 'cards' : 'list';
+    AMUSQ.store.set('bank_ui', state);
+    AMUSQ.router.render(location.hash);
+  });
+  filters.appendChild(el('span', { class:'spacer' }));
+  filters.appendChild(modeBtn);
+
+  const listBox = el('div', { class:'stack', id:'bankList' });
+
+  function applyFilters(){
+    const term = (search.value || '').trim().toLowerCase();
+    return questions.filter(q => {
+      if (state.filter === 'unseen' && prog.seen[q.id]) return false;
+      if (state.filter === 'wrong' && !prog.wrong[q.id]) return false;
+      if (state.filter === 'star' && !prog.star[q.id]) return false;
+      if (term && (q.q + ' ' + q.options.join(' ')).toLowerCase().indexOf(term) === -1) return false;
+      return true;
+    });
+  }
+
+  function render(){
+    listBox.innerHTML = '';
+    const filtered = applyFilters();
+    if (!filtered.length) {
+      listBox.appendChild(AMUSQ.views.empty('؟', 'لا نتائج', 'جرّب فلترًا آخر أو كلمة بحث أقصر.'));
+      return;
+    }
+    // أقسام حسب المحاور — مطوية افتراضيًا مع عدد أسئلة كل قسم
+    const topics = {};
+    filtered.forEach(q => { const t = q.topic || 'عام'; (topics[t] = topics[t] || []).push(q); });
+    Object.keys(topics).forEach(t => {
+      const qs = topics[t];
+      const inner = el('div', { class: state.mode === 'cards' ? 'grid grid--2' : 'stack' });
+      let shown = 0;
+      const more = el('button', { class:'btn btn--soft btn--block', type:'button' });
+      function fill(){
+        // دفعات العرض: ٥٠ سؤالًا في كل طلب — البنك يظل سلسًا على ٥٠٠ سؤال
+        const next = qs.slice(shown, shown + BANK_PAGE);
+        next.forEach(q => inner.appendChild(state.mode === 'cards' ? flipCard(sub, q) : bankRow(sub, q, prog)));
+        shown += next.length;
+        more.textContent = 'عرض المزيد (' + (qs.length - shown) + ' متبقٍ)';
+        more.hidden = shown >= qs.length;
+      }
+      more.addEventListener('click', fill);
+      fill();
+      const fold = el('details', { class:'fold' }, [
+        el('summary', {}, [ t + ' ', el('span', { class:'badge num', text: qs.length + ' سؤالًا' }) ]),
+        inner, more
+      ]);
+      if (Object.keys(topics).length === 1) fold.setAttribute('open','');
+      listBox.appendChild(fold);
+    });
+  }
+  let debounce = null;
+  search.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(render, 150); });
+
+  render();
+  box.appendChild(search); box.appendChild(filters); box.appendChild(listBox);
+  return box;
+}
+
+/* تبويب الشرح: مطوي لكل سؤال — لماذا الصحيح صحيح ولماذا غيره خاطئ */
+function explainTab(sub, questions){
+  return el('div', { class:'stack' }, questions.map((q, i) =>
+    el('details', { class:'fold card card--flat' }, [
+      el('summary', {}, [ el('span', { class:'badge num', text:'س' + (i + 1) }), ' ',
+        el('span', { class:'ltr', text: q.q.slice(0, 90) + (q.q.length > 90 ? '…' : '') }) ]),
+      el('div', { class:'stack' }, [
+        el('p', { class:'ltr', style:'font-weight:700;color:var(--ok)', text:'✓ ' + q.options[q.answer] }),
+        el('p', { text: q.expl_ar || 'الشرح يُضاف من لوحة التحكم.' }),
+        q.expl_en ? el('p', { class:'ltr field__hint', text: q.expl_en }) : null
+      ])
+    ])));
+}
+
+/* تبويب طريقة الحفظ: البطاقة الذهنية لكل سؤال */
+function memoTab(sub, questions){
+  const withMemo = questions.filter(q => q.mnemonic && (q.mnemonic.cue || q.mnemonic.key));
+  if (!withMemo.length) return AMUSQ.views.empty('🧠', 'لا بطاقات حفظ بعد', 'تُبنى بطاقات الحفظ مع معالجة الذكاء وتظهر هنا.');
+  return el('div', { class:'stack' }, withMemo.map(q => {
+    const m = q.mnemonic;
+    return el('div', { class:'card stack' }, [
+      el('div', { class:'row' }, [
+        el('span', { class:'badge', text:'الكلمة الدالة' }),
+        el('span', { class:'ltr', style:'font-weight:700', text: m.cue || '—' }),
+        el('span', { 'aria-hidden':'true', text:'←' }),
+        el('span', { class:'badge badge--ok', text:'المفتاح' }),
+        el('span', { class:'ltr', style:'font-weight:700', text: m.key || '—' })
+      ]),
+      m.link ? el('p', { style:'margin:0', text:'🔗 ' + m.link }) : null,
+      m.strike ? el('p', { class:'field__hint', style:'margin:0', text:'✂ ' + m.strike }) : null
+    ]);
+  }));
+}
+
+/* تبويب النظرة العامة */
+function overviewTab(sub, questions){
+  const prog = AMUSQ.progress.forSubject(sub.id);
+  const pct = AMUSQ.progress.pctDone(sub.id, questions.length);
+  return el('div', { class:'stack' }, [
+    sub.descr ? el('div', { class:'card' }, [ el('p', { style:'margin:0', text: sub.descr }) ]) : null,
+    el('div', { class:'card stack' }, [
+      el('h2', { text:'تقدّمك' }),
+      el('div', { class:'subj__meter' }, [ el('div', { style:'width:' + pct + '%;background:' + AMUSQ.views.subjectColor(sub.color) }) ]),
+      el('div', { class:'row' }, [
+        el('span', { class:'badge num', text:'راجعت ' + Object.keys(prog.seen).length + ' من ' + questions.length }),
+        el('span', { class:'badge badge--bad num', text:'أخطاء ' + Object.keys(prog.wrong).length }),
+        el('span', { class:'badge num', text:'اختبارات ' + prog.exams }),
+        prog.best ? el('span', { class:'badge badge--ok num', text:'أفضل نتيجة ' + prog.best + '٪' }) : null
+      ])
+    ]),
+    (sub.topics && sub.topics.length) ? el('div', { class:'card' }, [
+      el('h2', { text:'المحاور' }),
+      el('div', { class:'row' }, sub.topics.map(t => el('span', { class:'badge', text: t })))
+    ]) : null
+  ]);
+}
+
+const ViewSubject = {
+  title:'المادة',
+  view(route){
+    const sid = route.rest[0];
+    const sub = findSubject(sid);
+    if (!sub) return AMUSQ.views.page('المادة', null, [
+      AMUSQ.views.empty('؟', 'المادة غير موجودة', 'ربما أُخفيت أو تغيّر رابطها.',
+        el('a', { class:'btn', href:'#/', text:'الرئيسية' })) ]);
+
+    // بوابة المحتوى: مادة غير مملوكة تعرض بطاقة الشراء لا المحتوى
+    if (!AMUSQ.gate.canAccess(sub)) {
+      return AMUSQ.views.page(sub.name, null, [ AMUSQ.gate.paywallCard(sub) ]);
+    }
+
+    const active = SUBJ_TABS.some(t => t.id === route.rest[1]) ? route.rest[1] : 'overview';
+    const tabs = el('div', { class:'tabs', role:'tablist' }, SUBJ_TABS.map(t =>
+      el('button', { class:'tabs__btn', type:'button', role:'tab', 'data-tab': t.id,
+        'aria-selected': String(t.id === active), text: t.label })));
+    tabs.addEventListener('click', e => {
+      const b = e.target.closest('[data-tab]');
+      if (b) AMUSQ.router.go('#/subject/' + sid + '/' + b.getAttribute('data-tab'));
+    });
+
+    const body = el('div', { class:'stack', id:'subjBody' },
+      [ el('p', { class:'page__sub', text:'جارٍ تجهيز الأسئلة…' }) ]);
+
+    AMUSQ.data.subjectQuestions(sid).then(r => {
+      if (!body.isConnected) return;
+      body.innerHTML = '';
+      if (!r.ok && !r.data.length) {
+        body.appendChild(AMUSQ.views.empty('⇣', 'الأسئلة لم تُنزَّل بعد',
+          'افتح المادة مرة واحدة بإنترنت لتُخزَّن أسئلتها في جهازك، ثم تعمل بلا اتصال.'));
+        return;
+      }
+      const qs = r.data;
+      const fill = { overview: overviewTab, explain: explainTab, bank: bankTab, memo: memoTab }[active];
+      body.appendChild(fill(sub, qs));
+    });
+
+    const examBtn = el('a', { class:'btn', href:'#/exam/' + sid, text:'▶ اختبار تجريبي' });
+    const printBtn = el('button', { class:'btn btn--ghost', type:'button', text:'🖨 طباعة / PDF' });
+    printBtn.addEventListener('click', () => AMUSQ.views.openPrintDialog(sub));
+
+    return AMUSQ.views.page(sub.name, (sub.q_count || 0) + ' سؤالًا · المذاكرة تعمل بلا إنترنت بعد أول فتح.', [
+      el('div', { class:'row' }, [examBtn, printBtn]),
+      tabs, body
+    ]);
+  }
+};
+AMUSQ.views.ViewSubject = ViewSubject;
+AMUSQ.views.bankTab = bankTab;
+
+
+/* ===== 36-examview.js ===== */
+/*
+  واجهة الاختبار التجريبي — المادة مثبّتة من مسار الدخول فلا خطوة اختيار.
+  المحرك في 24-exam.js؛ هنا الشاشات الثلاث: الإعداد ← الأسئلة ← النتيجة.
+*/
+let examState = null;   // {exam, sub, timerId, secondsLeft}
+
+function examSetup(sub, questions){
+  const prog = AMUSQ.progress.forSubject(sub.id);
+  const topics = Array.from(new Set(questions.map(q => q.topic || 'عام')));
+
+  const scopeSel = el('select', { class:'input', id:'exScope', 'aria-label':'نطاق الاختبار' }, [
+    el('option', { value:'all', text:'كل الأسئلة (' + questions.length + ')' }),
+    el('option', { value:'important', text:'الأسئلة المهمة (' + questions.filter(q => q.important).length + ')' }),
+    el('option', { value:'wrong', text:'أخطائي السابقة (' + Object.keys(prog.wrong).length + ')' })
+  ].concat(topics.map(t => el('option', { value:'topic:' + t, text:'قسم: ' + t }))));
+
+  const timerSel = el('select', { class:'input', id:'exTimer', 'aria-label':'المؤقت' }, [
+    el('option', { value:'0', text:'بلا مؤقت' }),
+    el('option', { value:'10', text:'١٠ دقائق' }),
+    el('option', { value:'20', text:'٢٠ دقيقة' }),
+    el('option', { value:'45', text:'٤٥ دقيقة' })
+  ]);
+
+  // التصحيح الفوري بعد كل سؤال هو الافتراضي
+  const modeSel = el('select', { class:'input', id:'exMode', 'aria-label':'نمط التصحيح' }, [
+    el('option', { value:'instant', text:'تصحيح فوري بعد كل سؤال (الافتراضي)' }),
+    el('option', { value:'end', text:'التصحيح بعد الانتهاء' })
+  ]);
+
+  const start = el('button', { class:'btn btn--block', type:'button', text:'ابدأ الاختبار' });
+  start.addEventListener('click', () => {
+    const sv = scopeSel.value;
+    const opts = {
+      scope: sv.indexOf('topic:') === 0 ? 'topic' : sv,
+      topic: sv.indexOf('topic:') === 0 ? sv.slice(6) : '',
+      mode: modeSel.value,
+      timerMin: parseInt(timerSel.value, 10),
+      wrongMap: prog.wrong
+    };
+    const exam = AMUSQ.exam.create(questions, opts);
+    if (!exam.items.length) { AMUSQ.toast('لا أسئلة في هذا النطاق'); return; }
+    examState = { exam, sub, secondsLeft: opts.timerMin * 60, timerId: null };
+    if (opts.timerMin) {
+      examState.timerId = setInterval(() => {
+        examState.secondsLeft--;
+        const t = document.getElementById('exClock');
+        if (t) {
+          t.textContent = Math.floor(examState.secondsLeft / 60) + ':' + String(examState.secondsLeft % 60).padStart(2,'0');
+          t.classList.toggle('is-low', examState.secondsLeft <= 60);
+        }
+        if (examState.secondsLeft <= 0) finishExam();   // انتهى الوقت: تسليم تلقائي
+      }, 1000);
+    }
+    AMUSQ.router.render(location.hash);
+  });
+
+  return el('div', { class:'card stack' }, [
+    el('h2', { text:'إعداد الاختبار' }),
+    el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'النطاق' }), scopeSel ]),
+    el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'المؤقت' }), timerSel ]),
+    el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'التصحيح' }), modeSel ]),
+    el('p', { class:'field__hint', text:'الأسئلة التي أخطأت فيها سابقًا لها أولوية الظهور، والخيارات تُخلط في كل مرة.' }),
+    start
+  ]);
+}
+
+function finishExam(){
+  const st = examState;
+  if (!st || st.exam.finished) return;
+  if (st.timerId) clearInterval(st.timerId);
+  st.result = AMUSQ.exam.finish(st.exam);
+  // تسجيل المحاولة: محليًا فورًا، وللحساب في الخلفية
+  AMUSQ.progress.recordExam(st.sub.id, st.result.pct);
+  st.result.wrongIds.forEach(qid => AMUSQ.progress.markWrong(st.sub.id, qid));
+  st.exam.items.forEach((it, i) => {
+    if (st.exam.answers[i] && st.exam.answers[i].correct) AMUSQ.progress.clearWrong(st.sub.id, it.id);
+  });
+  if (AMUSQ.api.user()) AMUSQ.api.rest('attempts', { method:'POST', body: JSON.stringify({
+    user_id: AMUSQ.api.user().id, subject_id: st.sub.id, scope:'all', topic:'',
+    correct: st.result.correct, total: st.result.total, pct: st.result.pct,
+    duration_s: st.result.duration_s }) });
+  AMUSQ.router.render(location.hash);
+}
+
+function examRunner(){
+  const st = examState;
+  const exam = st.exam;
+  const item = exam.items[exam.i];
+  const answered = exam.answers[exam.i];
+
+  const opts = el('div', { class:'stack q__opts' }, item.options.map((opt, oi) => {
+    let cls = 'opt', mark = '';
+    if (answered && exam.mode === 'instant') {
+      // فوري: اللون والأيقونة معًا — ✓ للصحيح و ✗ للاختيار الخاطئ
+      if (oi === item.correct) { cls += ' is-answer'; mark = '✓'; }
+      else if (oi === answered.choice) { cls += ' is-wrong'; mark = '✗'; }
+    } else if (answered && answered.choice === oi) { cls += ' is-answer'; mark = '●'; }
+    const b = el('button', { class: cls, type:'button', disabled: answered ? true : null }, [
+      el('span', { class:'opt__mark', 'aria-hidden':'true', text: mark }),
+      el('span', { class:'ltr', text: opt })
+    ]);
+    b.addEventListener('click', () => {
+      AMUSQ.exam.answer(exam, oi);
+      AMUSQ.router.render(location.hash);
+    });
+    return b;
+  }));
+
+  const answeredCount = exam.answers.filter(a => a !== null).length;
+  const nav = el('div', { class:'row' }, [
+    el('button', { class:'btn btn--ghost btn--sm', type:'button', id:'exPrev',
+      disabled: exam.i === 0 ? true : null, text:'→ السابق' }),
+    el('span', { class:'spacer' }),
+    el('span', { class:'badge num', text: (exam.i + 1) + ' / ' + exam.items.length }),
+    st.secondsLeft ? el('span', { class:'timer badge num', id:'exClock',
+      text: Math.floor(st.secondsLeft / 60) + ':' + String(st.secondsLeft % 60).padStart(2,'0') }) : null,
+    el('span', { class:'spacer' }),
+    exam.i < exam.items.length - 1
+      ? el('button', { class:'btn btn--sm', type:'button', id:'exNext', text:'التالي ←' })
+      : el('button', { class:'btn btn--sm', type:'button', id:'exFinish',
+          text:'أنهِ الاختبار (' + answeredCount + '/' + exam.items.length + ')' })
+  ]);
+  nav.addEventListener('click', e => {
+    if (e.target.id === 'exPrev') { AMUSQ.exam.prev(exam); AMUSQ.router.render(location.hash); }
+    if (e.target.id === 'exNext') { AMUSQ.exam.next(exam); AMUSQ.router.render(location.hash); }
+    if (e.target.id === 'exFinish') finishExam();
+  });
+
+  return el('div', { class:'stack' }, [
+    el('div', { class:'card stack q' }, [
+      el('p', { class:'ltr q__text', text: item.q }), opts,
+      (answered && exam.mode === 'instant' && item.expl_ar)
+        ? el('p', { class:'field__hint', text: item.expl_ar }) : null
+    ]),
+    nav
+  ]);
+}
+
+function examResult(){
+  const st = examState, r = st.result;
+  const topicRows = Object.keys(r.byTopic).map(t => {
+    const d = r.byTopic[t];
+    const pct = Math.round(d.correct / d.total * 100);
+    return el('div', { class:'row' }, [
+      el('span', { text: t }),
+      el('span', { class:'spacer' }),
+      el('span', { class:'badge num ' + (pct >= 70 ? 'badge--ok' : 'badge--bad'), text: d.correct + '/' + d.total })
+    ]);
+  });
+  const retryWrong = el('button', { class:'btn btn--soft btn--block', type:'button',
+    text:'أعد اختبار الأخطاء فقط (' + r.wrongIds.length + ')' , disabled: r.wrongIds.length ? null : true });
+  retryWrong.addEventListener('click', async () => {
+    const qs = (await AMUSQ.data.subjectQuestions(st.sub.id)).data;
+    const wrongSet = {};
+    r.wrongIds.forEach(id => wrongSet[id] = 1);
+    const exam = AMUSQ.exam.create(qs, { scope:'wrong', wrongMap: wrongSet, mode: st.exam.mode });
+    examState = { exam, sub: st.sub, secondsLeft: 0, timerId: null };
+    AMUSQ.router.render(location.hash);
+  });
+
+  const review = el('details', { class:'fold' }, [
+    el('summary', {}, ['مراجعة كاملة للأسئلة']),
+    el('div', { class:'stack' }, r.review.map((rv, i) => el('div', { class:'card card--flat stack q' }, [
+      el('div', { class:'row' }, [
+        el('span', { class:'badge num', text:'س' + (i + 1) }),
+        rv.ok ? el('span', { class:'badge badge--ok', text:'✓ صحيح' })
+              : el('span', { class:'badge badge--bad', text:'✗ خطأ' })
+      ]),
+      el('p', { class:'ltr q__text', text: rv.q }),
+      el('div', { class:'stack q__opts' }, rv.options.map((o, oi) =>
+        el('div', { class:'opt' + (oi === rv.correct ? ' is-answer' : (oi === rv.chosen ? ' is-wrong' : '')) }, [
+          el('span', { class:'opt__mark', 'aria-hidden':'true', text: oi === rv.correct ? '✓' : (oi === rv.chosen ? '✗' : '') }),
+          el('span', { class:'ltr', text: o })
+        ]))),
+      rv.expl_ar ? el('p', { class:'field__hint', text: rv.expl_ar }) : null
+    ])))
+  ]);
+
+  return el('div', { class:'stack' }, [
+    el('div', { class:'card', style:'text-align:center' }, [
+      el('div', { class:'result__pct num', text: r.pct + '٪' }),
+      el('div', { class:'result__grade', text: r.grade }),
+      el('p', { class:'page__sub num', text: r.correct + ' من ' + r.total + ' · ' + Math.round(r.duration_s / 60) + ' دقيقة' })
+    ]),
+    el('div', { class:'card stack' }, [ el('h2', { text:'حسب المحاور' }) ].concat(topicRows)),
+    retryWrong, review,
+    el('a', { class:'btn btn--ghost btn--block', href:'#/subject/' + st.sub.id, text:'عودة إلى المادة' })
+  ]);
+}
+
+const ViewExam = {
+  title:'اختبار تجريبي',
+  view(route){
+    const sid = route.rest[0];
+    const sub = (AMUSQ.data.pack().subjects || []).filter(s => s.id === sid)[0];
+    if (!sub) return AMUSQ.views.page('اختبار', null, [
+      AMUSQ.views.empty('؟', 'المادة غير موجودة', '', el('a', { class:'btn', href:'#/', text:'الرئيسية' })) ]);
+
+    if (!AMUSQ.gate.canAccess(sub)) {
+      return AMUSQ.views.page(sub.name, null, [ AMUSQ.gate.paywallCard(sub) ]);
+    }
+
+    // مادة مثبّتة — لا خطوة اختيار مادة
+    if (examState && examState.sub.id === sid) {
+      if (examState.exam.finished) return AMUSQ.views.page('نتيجتك — ' + sub.name, null, [examResult()]);
+      return AMUSQ.views.page('اختبار — ' + sub.name, null, [examRunner()]);
+    }
+    const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ التجهيز…' }) ]);
+    AMUSQ.data.subjectQuestions(sid).then(r => {
+      if (!body.isConnected) return;
+      body.innerHTML = '';
+      if (!r.data.length) { body.appendChild(AMUSQ.views.empty('⇣', 'لا أسئلة متاحة', 'افتح المادة أولًا بإنترنت.')); return; }
+      body.appendChild(examSetup(sub, r.data));
+    });
+    return AMUSQ.views.page('اختبار — ' + sub.name, 'خلط عادل، وأولوية لأخطائك السابقة.', [body]);
+  },
+  _reset(){ if (examState && examState.timerId) clearInterval(examState.timerId); examState = null; },
+  _state(){ return examState; },
+  _set(s){ examState = s; },
+  _finish: finishExam
+};
+AMUSQ.views.ViewExam = ViewExam;
+
+
+/* ===== 37-print.js ===== */
+/*
+  الطباعة / PDF — تنسيق مستقل تمامًا عن الشاشة:
+  يبني وثيقة داخل حاوية مخفية تظهر وحدها عند الطباعة، بترويسة بلون المادة،
+  وأسئلة لا تنقسم بين صفحتين، وتذييل يتكرر أسفل كل صفحة.
+*/
+function buildPrintDoc(sub, questions, opts){
+  const root = el('div', { class:'print-root' + (opts.economic ? ' print--eco' : ''), dir:'rtl' });
+  root.appendChild(el('header', { class:'print-head', style: opts.economic ? '' :
+    'border-color:' + AMUSQ.views.subjectColor(sub.color) }, [
+    el('h1', { text: sub.name }),
+    el('p', { text: { bank:'بنك الأسئلة', explain:'الشرح', memo:'بطاقات الحفظ', overview:'نظرة عامة' }[opts.what] })
+  ]));
+
+  let qs = questions;
+  if (opts.range === 'important') qs = qs.filter(q => q.important);
+  if (opts.range === 'starred') {
+    const star = AMUSQ.progress.forSubject(sub.id).star;
+    qs = qs.filter(q => star[q.id]);
+  }
+
+  if (opts.what === 'overview') {
+    root.appendChild(el('p', { text: sub.descr || '' }));
+    (sub.topics || []).forEach(t => root.appendChild(el('p', { text:'• ' + t })));
+  } else if (opts.what === 'memo') {
+    qs.forEach((q, i) => {
+      const m = q.mnemonic || {};
+      if (!m.cue && !m.key) return;
+      root.appendChild(el('div', { class:'q print-q' }, [
+        el('p', { text: (i + 1) + ') ' + (m.cue || '') + ' ← ' + (m.key || '') }),
+        m.link ? el('p', { text:'🔗 ' + m.link }) : null
+      ]));
+    });
+  } else {
+    qs.forEach((q, i) => {
+      const block = el('div', { class:'q print-q' }, [
+        el('p', { class:'ltr', style:'font-weight:700', text: (i + 1) + ') ' + q.q })
+      ]);
+      q.options.forEach((o, oi) => {
+        const isAns = oi === q.answer && opts.answers;
+        block.appendChild(el('p', { class:'ltr print-opt' + (isAns ? ' print-ans' : ''),
+          text: String.fromCharCode(65 + oi) + ') ' + o + (isAns ? '  ✓' : '') }));
+      });
+      if (opts.expl && q.expl_ar) block.appendChild(el('p', { class:'print-expl', text: q.expl_ar }));
+      if (opts.translation && q.translation) block.appendChild(el('p', { class:'print-expl', text: q.translation }));
+      root.appendChild(block);
+    });
+  }
+
+  // التذييل الثابت أسفل كل صفحة — يفرضه تنسيق الطباعة
+  root.appendChild(el('footer', { class:'print-foot', text:'برمجة وتصميم علي الصقور' }));
+  return root;
+}
+
+function openPrintDialog(sub){
+  const old = document.querySelector('.print-root, .print-dialog');
+  if (old) old.remove();
+
+  const what = el('select', { class:'input' }, [
+    el('option', { value:'bank', text:'بنك الأسئلة' }),
+    el('option', { value:'explain', text:'الشرح' }),
+    el('option', { value:'memo', text:'بطاقات الحفظ' }),
+    el('option', { value:'overview', text:'نظرة عامة' })
+  ]);
+  const range = el('select', { class:'input' }, [
+    el('option', { value:'all', text:'كل الأسئلة' }),
+    el('option', { value:'important', text:'المهمة فقط' }),
+    el('option', { value:'starred', text:'ما ميّزته بنجمة' })
+  ]);
+  function check(label, checked){
+    const c = el('input', { type:'checkbox' });
+    c.checked = checked;
+    return { node: el('label', { class:'row' }, [c, el('span', { text: label })]), input: c };
+  }
+  const ans = check('إظهار الإجابات', true);
+  const expl = check('إظهار الشرح', false);
+  const trans = check('إظهار الترجمة', false);
+  const eco = check('وضع اقتصادي (حبر أقل)', false);
+
+  const go = el('button', { class:'btn btn--block', type:'button', text:'اطبع الآن' });
+  const cancel = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'إلغاء' });
+  const dialog = el('div', { class:'card print-dialog', role:'dialog', 'aria-label':'خيارات الطباعة' }, [
+    el('h2', { text:'طباعة / PDF' }),
+    el('label', { class:'field' }, [ el('span', { class:'field__label', text:'ماذا تطبع؟' }), what ]),
+    el('label', { class:'field' }, [ el('span', { class:'field__label', text:'النطاق' }), range ]),
+    ans.node, expl.node, trans.node, eco.node, go, cancel
+  ]);
+  cancel.addEventListener('click', () => dialog.remove());
+  go.addEventListener('click', async () => {
+    const r = await AMUSQ.data.subjectQuestions(sub.id);
+    const doc = buildPrintDoc(sub, r.data, {
+      what: what.value, range: range.value,
+      answers: ans.input.checked, expl: expl.input.checked,
+      translation: trans.input.checked, economic: eco.input.checked
+    });
+    document.body.appendChild(doc);
+    dialog.remove();
+    window.print();
+    // بعد الطباعة تُزال الوثيقة كي لا تبقى في DOM
+    setTimeout(() => doc.remove(), 500);
+  });
+  document.body.appendChild(dialog);
+}
+
+AMUSQ.views.openPrintDialog = openPrintDialog;
+AMUSQ.views.buildPrintDoc = buildPrintDoc;
+
+
+/* ===== 40-app.js ===== */
+/*
+  الإقلاع: تسجيل المسارات، بناء شريط التبويب، تشغيل المظهر والموجّه.
+  ترتيب مقصود: المظهر أولًا كي لا يرى المستخدم وميض الأبيض قبل الوضع الليلي.
+*/
+const NAV = [
+  { path:'#/',         label:'الرئيسية',  ico:'▤' },
+  { path:'#/board',    label:'المتصدرون', ico:'🏆' },
+  { path:'#/settings', label:'الإعدادات', ico:'☰' },
+  { path:'#/account',  label:'حسابي',     ico:'◍' }
+];
+
+function buildTabbar(){
+  const bar = document.getElementById('tabbar');
+  if (!bar) return;
+  bar.innerHTML = '';
+  NAV.forEach(item => {
+    bar.appendChild(AMUSQ.dom.el('a', { class:'tabbar__item', href:item.path, 'data-nav':item.path }, [
+      AMUSQ.dom.el('span', { class:'tabbar__ico', 'aria-hidden':'true', text:item.ico }),
+      AMUSQ.dom.el('span', { class:'tabbar__lbl', text:item.label })
+    ]));
+  });
+}
+
+function registerRoutes(){
+  const V = AMUSQ.views;
+  AMUSQ.router
+    .add('#/',            V.ViewHome)
+    .add('#/login',       V.ViewLogin)
+    .add('#/admin',       V.ViewAdmin)
+    .add('#/admin/login', V.ViewAdminLogin)
+    .add('#/settings',    V.ViewSettings)
+    .add('#/account',     V.ViewAccount)
+    .add('#/admin/upload', V.ViewUpload)
+    .add('#/subject',      V.ViewSubject)
+    .add('#/exam',         V.ViewExam)
+    .add('#/board',        V.ViewBoard);
+  AMUSQ.router.notFound = V.ViewNotFound;
+}
+
+function boot(){
+  if (AMUSQ.ready) return;   // الإقلاع مرة واحدة مهما تكرّر نداؤه
+  AMUSQ.theme.init();
+
+  // رموز الدخول تعود من Supabase في هاش الصفحة — نلتقطها قبل أن يفسّرها الموجّه كمسار
+  if (AMUSQ.api.auth.captureFromHash(location.hash)) {
+    try { history.replaceState(null, '', location.pathname + location.search + '#/'); }
+    catch(e) { location.hash = '#/'; }
+    AMUSQ.toast('تم تسجيل الدخول');
+  }
+
+  buildTabbar();
+  registerRoutes();
+  AMUSQ.router.init();
+  registerSW();
+  AMUSQ.ready = true;
+
+  // أعمال الخلفية: لا تُعطّل الرسم الأول ولا تكسر العمل بلا إنترنت
+  if (AMUSQ.api.user()) {
+    AMUSQ.progress.pull();                       // دمج تقدّم الحساب مع الجهاز — بلا حذف
+    AMUSQ.gate.refresh();                        // الاستحقاقات: ما اشتراه الطالب
+    AMUSQ.api.rpc('heartbeat', { device_label: navigator.userAgent.slice(0, 60) });
+  }
+  if (AMUSQ.config.ready()) {
+    AMUSQ.data.refreshPack().then(r => {         // تحديث قائمة المواد إن توفّر اتصال
+      if (r.ok && AMUSQ.router.current && AMUSQ.router.current.path === '#/') AMUSQ.router.render('#/');
+    });
+  }
+}
+
+// PWA: عامل الخدمة يُسجَّل على https فقط — file:// يعمل بلا حاجة إليه أصلًا
+function registerSW(){
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return false;
+  if (location.protocol !== 'https:') return false;
+  navigator.serviceWorker.register('sw.js').catch(() => {});   // فشله لا يعطل المنصة
+  return true;
+}
+
+AMUSQ.registerSW = registerSW;
+AMUSQ.nav = NAV;
+AMUSQ.boot = boot;
+window.AMUSQ = AMUSQ;
+
+// jsdom في الفحوص يُحمّل الصفحة كاملة قبل تنفيذ السكربت، لذا نتحقق من الحالتين
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
+
+})();
+
+</script>
+</body>
+</html>
