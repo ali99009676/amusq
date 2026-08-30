@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="مراجعة — بنك الأسئلة · منصة مراجعة تفاعلية لطلاب التخصصات الصحية">
+<meta name="description" content="مراجعة — بنك الأسئلة · بنوك أسئلة لكل التخصصات، يرفعها طلاب الجامعات العربية ويراجعون منها">
 <meta name="theme-color" content="#8c2f39">
 <link rel="manifest" href="manifest.webmanifest">
 <title>مراجعة · بنك الأسئلة</title>
@@ -67,6 +67,17 @@
   --sh2: 0 2px 4px rgba(60,40,25,.05), 0 8px 20px rgba(60,40,25,.09);
   --sh3: 0 4px 8px rgba(60,40,25,.06), 0 20px 48px rgba(60,40,25,.14);
   --ring: 0 0 0 3px rgba(140,47,57,.24);
+
+  /* قياسات القراءة الأكاديمية.
+     العرض ٦٤ محرفًا لأن السطر الأطول يُفقد العين موضعها عند الانتقال للسطر التالي،
+     والارتفاع ٢ لأن نصوص الأسئلة إنجليزية طبية داخل واجهة عربية وتحتاج نفَسًا. */
+  --measure: 64ch;
+  --read-lh: 2;
+  --read-size: 1.02rem;
+
+  /* خط هامش الورقة — كخط الهامش المطبوع على كرّاسات الامتحان */
+  --rule: color-mix(in srgb, var(--brand) 30%, transparent);
+  --rule-soft: color-mix(in srgb, var(--brand) 12%, transparent);
 
   --wrap: 1040px;
   --topbar-h: 60px;
@@ -395,19 +406,61 @@ img,svg{ max-width:100%; height:auto; }
   border-radius:inherit; transition:width var(--t) var(--ease); }
 
 /* بطاقة السؤال وخياراته */
-.q__text{ font-weight:600; margin:0; white-space:pre-wrap; }
-.q__opts{ gap:var(--s2); }
-.opt{ display:flex; align-items:flex-start; gap:var(--s3); width:100%; text-align:start;
-  background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r2);
-  padding:var(--s3) var(--s4); cursor:pointer; min-height:44px; }
-.opt:hover{ border-color:var(--brand); }
-/* الإجابة الصحيحة: لون + أيقونة معًا — لا لون وحده (شرط إمكانية الوصول) */
-.opt.is-answer{ background:var(--ok-soft); border-color:var(--ok); font-weight:700; }
-.opt.is-wrong{ background:var(--bad-soft); border-color:var(--bad); }
-.opt__mark{ min-width:1.2em; font-weight:800; color:var(--ok); }
-.is-wrong .opt__mark{ color:var(--bad); }
+/* ═══ ورقة الامتحان ═══
+   المرجع البصري هنا ليس تطبيقًا بل كرّاسة الامتحان التي جلس عليها كل طالب:
+   خط هامش، ورقم السؤال في الهامش خارج كتلة النص، وخيارات بأحرف أ ب ج د،
+   ومفتاح إجابة يعلّم الصحيح. الطالب يعرف هذه اللغة قبل أن يقرأ سطرًا. */
+.qitem{
+  position:relative;
+  padding-inline-start:var(--s7);
+  border-inline-start:2px solid var(--rule);
+}
+.qitem + .qitem{ margin-top:var(--s6); }
+/* رقم السؤال في الهامش: يجعل الطالب يقول «سؤال ٤٧» لزميله بدل أن يصفه */
+.qitem__n{
+  position:absolute; inset-inline-start:0; top:2px;
+  width:var(--s7); text-align:center;
+  font-family:var(--font-num); font-size:.82rem; font-weight:700;
+  color:var(--brand); opacity:.75;
+}
+.q__text{
+  margin:0 0 var(--s4);
+  max-width:var(--measure);
+  font-size:var(--read-size); line-height:var(--read-lh); font-weight:500;
+  white-space:pre-wrap; text-wrap:pretty;
+}
+.q__opts{ gap:var(--s2); max-width:var(--measure); }
 
-/* بطاقة المادة في الرئيسية */
+/* الخيار: حرفه أولًا كما في كل ورقة امتحان، ثم نصّه */
+.opt{
+  display:flex; align-items:flex-start; gap:var(--s3); width:100%; text-align:start;
+  padding:var(--s3) var(--s4); border-radius:var(--r2); min-height:44px;
+  background:var(--surface); border:1px solid var(--line); color:var(--text);
+  line-height:1.8; transition:border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.opt:hover{ border-color:var(--brand); }
+.opt__l{
+  flex:0 0 auto; width:26px; height:26px; border-radius:50%;
+  display:grid; place-items:center; margin-top:1px;
+  font-family:var(--font-display); font-size:.8rem; font-weight:700;
+  background:var(--bg-soft); color:var(--text-2); border:1px solid var(--line);
+}
+.opt__mark{ flex:0 0 auto; min-width:1.1em; font-weight:800; margin-inline-start:auto; }
+
+/* مفتاح الإجابة: لون وأيقونة وحرف مملوء — ثلاث إشارات لا لون وحده */
+.opt.is-answer{ background:var(--ok-soft); border-color:var(--ok); font-weight:600; }
+.opt.is-answer .opt__l{ background:var(--ok); color:var(--on-brand); border-color:var(--ok); }
+.opt.is-answer .opt__mark{ color:var(--ok); }
+.opt.is-wrong{ background:var(--bad-soft); border-color:var(--bad); }
+.opt.is-wrong .opt__l{ background:var(--bad); color:var(--on-brand); border-color:var(--bad); }
+.opt.is-wrong .opt__mark{ color:var(--bad); }
+
+/* وسم «الإجابة» — يُقرأ بلا لون ولا أيقونة */
+.opt__tag{
+  flex:0 0 auto; font-size:.7rem; font-weight:700; padding:2px 8px;
+  border-radius:var(--r-pill); background:var(--ok); color:var(--on-brand);
+}
+
 .subj{ position:relative; overflow:hidden; cursor:pointer; }
 .subj__bar{ position:absolute; inset-inline-start:0; top:0; bottom:0; width:5px; }
 .subj__ico{ font-size:1.6rem; }
@@ -440,6 +493,31 @@ img,svg{ max-width:100%; height:auto; }
 .fold > summary::before{ content:'◂'; display:inline-block; margin-inline-end:var(--s2);
   transition:transform var(--t) var(--ease); color:var(--text-3); }
 .fold[open] > summary::before{ transform:rotate(-90deg); }
+
+/* ═══ بطاقة المادة: سطر في خطة مقرّر ═══ */
+.subj__id{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+/* رمز المقرر أولًا كما يُكتب في الجدول الدراسي — يعرفه الطالب قبل الاسم */
+.subj__code{
+  font-family:var(--font-num); font-size:.7rem; font-weight:700;
+  color:var(--text-3); letter-spacing:.06em;
+}
+.subj__name{ margin:0; font-family:var(--font-display); font-size:1rem; line-height:1.45; }
+
+.subj__facts{
+  display:flex; align-items:baseline; gap:var(--s4); flex-wrap:wrap;
+  margin:var(--s3) 0 var(--s2);
+  font-size:.8rem; color:var(--text-2);
+}
+.subj__pct{ margin-inline-start:auto; font-weight:700; color:var(--brand); }
+
+/* موعد الاختبار كموعد نهائي لا كوسم: الرقم يكبر لأنه ما يقرأه الطالب أولًا */
+.deadline{
+  flex:0 0 auto; display:flex; flex-direction:column; align-items:center;
+  padding:var(--s2) var(--s3); border-radius:var(--r2);
+  background:var(--warn-soft); border:1px solid var(--warn); line-height:1.1;
+}
+.deadline__n{ font-size:1.15rem; font-weight:800; color:var(--warn); }
+.deadline__l{ font-size:.64rem; font-weight:700; color:var(--warn); }
 
 
 /* ===== 50-landing.css ===== */
@@ -867,6 +945,161 @@ img,svg{ max-width:100%; height:auto; }
 .modecard__t::before{ content:'○ '; color:var(--text-3); }
 .modecard[aria-checked="true"] .modecard__t::before{ content:'● '; color:var(--brand); }
 .modecard__d{ display:block; font-size:.82rem; color:var(--text-2); line-height:1.6; }
+
+/* ===== دعوة رفع مادة ===== */
+.upsell{
+  display:flex; align-items:center; gap:var(--s4);
+  padding:var(--s4) var(--s5); border-radius:var(--r3);
+  background:var(--gold-soft); border:1px solid var(--gold);
+  color:var(--text); margin-bottom:var(--s5);
+  transition:transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+}
+.upsell:hover{ text-decoration:none; transform:translateY(-1px); box-shadow:var(--sh2); }
+.upsell__ico{
+  width:42px; height:42px; flex:0 0 auto; border-radius:var(--r2);
+  display:grid; place-items:center; font-size:1.3rem;
+  background:var(--surface); color:var(--brand); box-shadow:var(--sh1);
+}
+.upsell__x{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.upsell__t{ font-weight:800; font-family:var(--font-display); }
+.upsell__d{ font-size:.84rem; color:var(--text-2); line-height:1.7; }
+.upsell__go{ flex:0 0 auto; color:var(--brand); font-size:1.2rem; }
+@media (max-width:420px){
+  .upsell{ padding:var(--s4); gap:var(--s3); }
+  .upsell__go{ display:none; }          /* على الجوال البطاقة كلها قابلة للضغط، فالسهم زخرفة */
+}
+
+/* ═══ شاشة الاستكشاف ═══ */
+.ex-bar{ display:flex; gap:var(--s3); margin-bottom:var(--s4); flex-wrap:wrap; }
+.ex-bar .input[type="search"]{ flex:1; min-width:200px; }
+.ex-bar select{ width:auto; min-width:150px; }
+
+.ex-filters{ display:grid; gap:var(--s3); margin-bottom:var(--s4); }
+.ex-frow{ display:flex; align-items:flex-start; gap:var(--s3); }
+.ex-flabel{ flex:0 0 auto; font-size:.78rem; font-weight:700; color:var(--text-3); padding-top:7px; min-width:48px; }
+/* تمرير أفقي للشرائح وحدها — الصفحة نفسها لا تتزحزح على ٣٦٠ بكسل */
+.ex-chips{ flex:1; min-width:0; display:flex; gap:var(--s2); overflow-x:auto; padding-bottom:var(--s1); scrollbar-width:thin; }
+.chip{
+  flex:0 0 auto; display:inline-flex; align-items:center; gap:var(--s2);
+  padding:var(--s2) var(--s3); border-radius:var(--r-pill); min-height:34px;
+  background:var(--surface); border:1px solid var(--line); color:var(--text-2);
+  font-size:.82rem; font-weight:600; cursor:pointer; white-space:nowrap;
+}
+.chip:hover{ border-color:var(--brand); color:var(--brand); }
+.chip.is-on{ background:var(--brand); border-color:var(--brand); color:var(--on-brand); }
+.chip__n{ font-size:.72rem; opacity:.7; }
+
+.ex-grid{ display:grid; gap:var(--s4); grid-template-columns:1fr; }
+@media (min-width:600px){ .ex-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (min-width:960px){ .ex-grid{ grid-template-columns:repeat(3,1fr); } }
+
+.excard{
+  position:relative; overflow:hidden; display:flex; flex-direction:column; gap:var(--s2);
+  padding:var(--s5) var(--s4) var(--s4); border-radius:var(--r3);
+  background:var(--surface); border:1px solid var(--line); box-shadow:var(--sh1);
+  color:var(--text); transition:transform var(--t-fast) var(--ease), box-shadow var(--t-fast) var(--ease);
+}
+.excard:hover{ text-decoration:none; transform:translateY(-2px); box-shadow:var(--sh2); }
+.excard__bar{ position:absolute; inset-inline:0; top:0; height:4px; }
+.excard__head{ display:flex; align-items:center; gap:var(--s2); }
+.excard__ico{ font-size:1.2rem; }
+.excard__t{ font-family:var(--font-display); font-weight:800; line-height:1.4; }
+.excard__where{ font-size:.78rem; color:var(--brand); font-weight:700; }
+.excard__d{
+  font-size:.84rem; color:var(--text-2); line-height:1.7;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.excard__meta{ display:flex; gap:var(--s2); flex-wrap:wrap; margin-top:auto; padding-top:var(--s2); }
+
+.ex-pager{ display:flex; align-items:center; justify-content:center; gap:var(--s4); margin-top:var(--s6); }
+.ex-pageno{ font-size:.85rem; color:var(--text-3); }
+
+/* ═══ دليل التنسيق ═══ */
+.fmt{
+  border:1px solid var(--line); border-radius:var(--r3);
+  background:var(--surface); margin:var(--s4) 0; overflow:hidden;
+}
+.fmt__sum{
+  display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap;
+  padding:var(--s4) var(--s5); cursor:pointer; min-height:52px;
+  font-family:var(--font-display); font-weight:800; list-style:none;
+}
+.fmt__sum::-webkit-details-marker{ display:none; }
+.fmt__sum::before{ content:'▸'; color:var(--brand); transition:transform var(--t-fast) var(--ease); }
+.fmt[open] .fmt__sum::before{ transform:rotate(-90deg); }
+.fmt__hint{ font-family:var(--font); font-weight:600; font-size:.78rem; color:var(--text-3); }
+.fmt__body{ padding:0 var(--s5) var(--s5); display:grid; gap:var(--s4); }
+
+/* خطوات ما يحدث للملف — ترقيم حقيقي لأنها تسلسل فعلي لا زينة */
+.fmt__pipe{ list-style:none; margin:0; padding:0; display:grid; gap:var(--s3); }
+.fmt__pipe li{ display:flex; gap:var(--s3); align-items:flex-start; }
+.fmt__pn{
+  flex:0 0 auto; width:24px; height:24px; border-radius:50%;
+  display:grid; place-items:center; font-size:.78rem; font-weight:700;
+  background:var(--brand-soft); color:var(--brand);
+}
+.fmt__pd{ display:block; font-size:.84rem; color:var(--text-2); line-height:1.75; }
+
+.fmt__card{
+  border:1px solid var(--line); border-radius:var(--r2);
+  padding:var(--s4); background:var(--bg);
+}
+.fmt__card--check{ background:var(--gold-soft); border-color:var(--gold); }
+.fmt__t{ margin:0 0 var(--s1); font-family:var(--font-display); font-size:.95rem; }
+.fmt__when{ margin:0 0 var(--s3); font-size:.82rem; color:var(--text-2); }
+.fmt__rules{ margin:0 0 var(--s3); padding-inline-start:var(--s5); font-size:.84rem; color:var(--text-2); line-height:1.9; }
+
+/* القالب: نصّ ملف حقيقي — أحادي المسافة وقابل للتمرير أفقيًا وحده */
+.fmt__code{
+  margin:0 0 var(--s3); padding:var(--s3) var(--s4);
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r1);
+  font-family:var(--font-num); font-size:.78rem; line-height:1.9;
+  overflow-x:auto; white-space:pre; color:var(--text);
+}
+.fmt__out{ margin:var(--s3) 0 0; font-size:.85rem; font-weight:700; min-height:1.2em; }
+.fmt__out.is-ok{ color:var(--ok); }
+.fmt__out.is-no{ color:var(--bad); }
+
+/* صفّ فرعي داخل صفّ — تفاصيل تُفتح تحت السطر لا تزاحمه */
+.ad-sub{
+  display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap;
+  padding:var(--s3) 0 0; margin-top:var(--s2);
+  border-top:1px dashed var(--line-soft);
+}
+.ad-inline{ display:flex; align-items:center; gap:var(--s2); }
+.ad-inline__l{ font-size:.76rem; font-weight:700; color:var(--text-3); white-space:nowrap; }
+.ad-inline .input{ width:auto; }
+
+/* ═══ صندوق التكلفة ═══ */
+.costbox{
+  display:grid; gap:var(--s1);
+  padding:var(--s4); border-radius:var(--r2);
+  background:var(--gold-soft); border:1px solid var(--gold);
+}
+.costbox__l{ font-size:.78rem; font-weight:700; color:var(--text-2); }
+.costbox__n{ font-family:var(--font-num); font-size:1.35rem; font-weight:700; color:var(--brand); }
+.costbox__s{ font-size:.78rem; color:var(--text-2); line-height:1.7; }
+
+/* ═══ مساران للنشر ═══ */
+.paths{ display:grid; gap:var(--s3); }
+@media (min-width:640px){ .paths{ grid-template-columns:1fr 1fr; } }
+.path{
+  display:flex; flex-direction:column; gap:var(--s2); text-align:start; cursor:pointer;
+  padding:var(--s4); border-radius:var(--r2);
+  background:var(--surface); border:2px solid var(--line); color:var(--text);
+}
+.path:hover{ border-color:var(--brand); }
+.path[aria-checked="true"]{ border-color:var(--brand); background:var(--brand-soft); }
+.path__h{ display:flex; align-items:baseline; justify-content:space-between; gap:var(--s2); }
+.path__t{ font-family:var(--font-display); font-weight:800; }
+.path__t::before{ content:'○ '; color:var(--text-3); }
+.path[aria-checked="true"] .path__t::before{ content:'● '; color:var(--brand); }
+.path__p{ font-weight:700; color:var(--brand); white-space:nowrap; }
+.path__d{ font-size:.84rem; color:var(--text-2); line-height:1.75; }
+/* ما ينقص المسار — يُقال بصراحة لا يُخبأ */
+.path__m{ font-size:.78rem; color:var(--text-3); line-height:1.7; }
+.path.is-blocked{ opacity:.55; cursor:not-allowed; }
+.path.is-blocked:hover{ border-color:var(--line); }
 
 
 /* ===== 90-print.css ===== */
@@ -1847,6 +2080,20 @@ function stageNote(){
 }
 
 /* ١ · الرئيسية — بطاقات المواد: «موادي» ثم «مواد أخرى متاحة» */
+/*
+  أحرف الخيارات بالعربية: أ ب ج د — لا A B C D.
+  هذه لغة ورقة الامتحان التي جلس عليها الطالب طوال دراسته، ويقول بها
+  «الجواب ج» لزميله. والحرف عرضٌ فقط: موضع الإجابة يبقى رقمًا في القاعدة
+  فلا ينكسر شيء عند خلط الخيارات.
+*/
+const OPT_LETTERS = ['أ','ب','ج','د','هـ','و','ز','ح','ط','ي'];
+function optLetter(i){ return OPT_LETTERS[i] || String(i + 1); }
+
+/* الأرقام العربية الهندية — كما تُطبع في الكتاب المدرسي العربي */
+function arNum(n){
+  return String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
+}
+
 function subjectColor(c){
   // اللون اسم متغيّر من نظام التصميم — لا hex حر من قاعدة البيانات
   return /^subject-[1-6]$/.test(c || '') ? 'var(--' + c + ')' : 'var(--subject-1)';
@@ -1865,19 +2112,32 @@ function subjectCard(sub){
   const pct = QBANK.progress.pctDone(sub.id, sub.q_count);
   const color = subjectColor(sub.color);
 
+  // العدد المطلق قبل النسبة: «٤٧ من ١٢٠» يقول للطالب ما بقي عليه فعلًا،
+  // والنسبة وحدها تخفي أن ٩٠٪ من مادة صغيرة أقل عملًا من ٣٠٪ من مادة كبيرة.
+  const done = Math.round((sub.q_count || 0) * pct / 100);
+  const topics = (sub.topics && sub.topics.length) || 0;
+
   const card = el('article', { class:'card subj' + (past ? ' is-past' : ''), tabindex:'0', role:'link',
     'aria-label':'مادة ' + sub.name }, [
     el('div', { class:'subj__bar', style:'background:' + color, 'aria-hidden':'true' }),
     el('div', { class:'row' }, [
       el('span', { class:'subj__ico', 'aria-hidden':'true', text: sub.icon || '▤' }),
-      el('div', {}, [
-        el('h3', { style:'margin:0', text: sub.name }),
-        el('span', { class:'badge num', text: sub.q_count + ' سؤالًا' })
+      el('div', { class:'subj__id' }, [
+        sub.course_code ? el('span', { class:'subj__code', text: sub.course_code }) : null,
+        el('h3', { class:'subj__name', text: sub.name })
       ]),
       el('span', { class:'spacer' }),
-      past ? el('span', { class:'stamp', text:'تم الانتهاء ✓' })
-           : (left !== null ? el('span', { class:'badge badge--warn num', text:'الاختبار بعد ' + left + ' يوم' }) : null),
+      past ? el('span', { class:'stamp', text:'انتهى موعده' })
+           : (left !== null ? el('span', { class:'deadline num' }, [
+               el('span', { class:'deadline__n', text: QBANK.views.arNum(left) }),
+               el('span', { class:'deadline__l', text: left === 1 ? 'يوم' : 'أيام' })
+             ]) : null),
       sub.free ? el('span', { class:'badge badge--ok', text:'مجانية' }) : null
+    ]),
+    el('div', { class:'subj__facts num' }, [
+      el('span', { text: QBANK.views.arNum(done) + ' من ' + QBANK.views.arNum(sub.q_count || 0) + ' سؤالًا' }),
+      topics ? el('span', { text: QBANK.views.arNum(topics) + ' محاور' }) : null,
+      el('span', { class:'subj__pct', text: QBANK.views.arNum(pct) + '٪' })
     ]),
     el('div', { class:'subj__meter', 'aria-label':'أنجزت ' + pct + '٪' }, [
       el('div', { style:'width:' + pct + '%;background:' + color })
@@ -1898,6 +2158,16 @@ const ViewHome = {
     const pack = QBANK.data.pack();
     const subjects = (pack.subjects || []).slice();
     const body = [];
+
+    // دعوة الرفع أعلى الشاشة: الطالب لا يبحث عن ميزة لا يعرف بوجودها
+    body.push(el('a', { class:'upsell', href:'#/upload' }, [
+      el('span', { class:'upsell__ico', 'aria-hidden':'true', text:'⇪' }),
+      el('span', { class:'upsell__x' }, [
+        el('span', { class:'upsell__t', text:'عندك بنك أسئلة لمادة ناقصة؟' }),
+        el('span', { class:'upsell__d', text:'ارفعه، وجرّبه عشر دقائق مجانًا، وشاركه مع زملائك بكوينز لك على كل بيعة.' })
+      ]),
+      el('span', { class:'upsell__go', 'aria-hidden':'true', text:'←' })
+    ]));
 
     if (pack.settings && pack.settings.welcome_text)
       body.push(el('div', { class:'card' }, [ el('p', { style:'margin:0', text: pack.settings.welcome_text }) ]));
@@ -2043,7 +2313,7 @@ const ViewSettings = {
       el('div', { class:'card stack' }, [ themeRow, el('hr', { class:'divider' }), resetRow ]),
       el('div', { class:'card' }, [
         el('h2', { text:'عن المنصة' }),
-        el('p', { class:'page__sub', text:'QBANK — منصة مراجعة تفاعلية لطلاب التخصصات الصحية. الإصدار ' + QBANK.version + ' · المرحلة ' + QBANK.stage })
+        el('p', { class:'page__sub', text:'مراجعة — بنك أسئلة تفاعلي لطلاب الجامعات العربية. الإصدار ' + QBANK.version + ' · المرحلة ' + QBANK.stage })
       ])
     ]);
   }
@@ -2062,7 +2332,7 @@ const ViewNotFound = {
   }
 };
 
-QBANK.views = { ViewHome, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects };
+QBANK.views = { ViewHome, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects, optLetter, arNum };
 
 
 /* ===== 31-account.js ===== */
@@ -2160,7 +2430,8 @@ const ViewAccount = {
     if (!QBANK.api.user()) return QBANK.views.ViewLogin.view();
     // المحفظة تُبنى في 47-wallet.js — تُلحق هنا حين تكون محمّلة
     const wallet = (QBANK.wallet && QBANK.wallet.body) ? QBANK.wallet.body() : null;
-    return QBANK.views.page('حسابي', null, [ accountBody(), wallet ]);
+    const links  = (QBANK.wallet && QBANK.wallet.links) ? QBANK.wallet.links() : null;
+    return QBANK.views.page('حسابي', null, [ accountBody(), wallet, links ]);
   }
 };
 
@@ -2241,7 +2512,9 @@ const Admin = {
   },
 
   /* ===== معالج الرفع — أربع خطوات، حالته قابلة للفحص بمعزل عن الواجهة ===== */
-  BATCH: 25,   // حد دفعة الذكاء — يحمي من مهلة الخادم ويسمح باستئناف الرفع
+  // ٤٠ لا ٢٥: تعليمات النظام تُرسل مرة لكل دفعة، فالدفعة الأكبر توزّع كلفتها
+  // على أسئلة أكثر. والسقف يبقى دون مهلة الخادم ويسمح باستئناف الرفع.
+  BATCH: 40,
   chunk(arr, n){
     const out = [];
     for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
@@ -2249,7 +2522,9 @@ const Admin = {
   },
   newWizard(){
     // strict افتراضًا: قاعدة القداسة هي الأصل، والتحسين اختيار صريح من الرافع
-    return { step:1, filename:'', subjectName:'', slug:'', mode:'strict',
+    // enrich=false افتراضًا: المسار المجاني هو الأصل، والإثراء اختيار واعٍ يُدفع ثمنه
+    return { step:1, filename:'', subjectName:'', slug:'', mode:'strict', enrich:false,
+             country:'', university:'', college:'', courseCode:'',
              raw:[], enriched:[], draftId:null, done:0, total:0, error:'' };
   },
   // تقدير التكلفة قبل التشغيل: عدد الأسئلة والدفعات — يقرّر المشرف على بيّنة
@@ -2269,15 +2544,65 @@ const Admin = {
   },
 
   // «افهمه بالذكاء» على دفعات: المسوّدة تُحفظ بعد كل دفعة فيمكن إغلاق الصفحة والعودة
+  /*
+    المسار المجاني: نبني الأسئلة من المقسّم مباشرة بلا نداء ذكاء.
+    ما ينقصها هو الشرح والترجمة وبطاقة الحفظ — والسؤال بلا إجابة معلنة
+    يبقى بلا إجابة، فنوسمه ليصحّحه صاحبه بيده في المحرر.
+  */
+  plainEnrich(w){
+    w.enriched = w.raw.map(q => ({
+      q: q.q, q_original: q.q, sanctity_mode: 'strict',
+      options: q.has_options ? q.options.slice() : [String(q.answer_text || '—')],
+      options_original: q.has_options ? q.options.slice() : [],
+      answer: (q.has_options && typeof q.answer === 'number' && q.answer >= 0) ? q.answer : 0,
+      derived: !(q.has_options && typeof q.answer === 'number' && q.answer >= 0),
+      opts_built: !q.has_options,
+      expl_ar:'', expl_en:'', translation:'', mnemonic:{}, topic:'', important:false
+    }));
+    w.done = w.total; w.step = 3; w.error = '';
+    return w;
+  },
+
+  /* كم كوينًا يلزم لإثراء هذا الملف */
+  creditsNeeded(w, costPerQ){
+    return Math.max(0, (w.raw.length - w.done)) * Math.max(0, costPerQ || 1);
+  },
+
   async wizardEnrich(w, onProgress){
+    // المسار المجاني لا يمرّ بالخادم إطلاقًا — لا تكلفة ولا انتظار
+    if (!w.enrich) { const r = Admin.plainEnrich(w); await Admin.saveDraft(r); return r; }
+
     const batches = Admin.chunk(w.raw, Admin.BATCH);
     for (let i = 0; i < batches.length; i++) {
       // لا إعادة معالجة لما اكتمل — الاستئناف يبدأ من حيث توقّف
       if (w.done >= (i + 1) * Admin.BATCH) continue;
+
+      /*
+        الحسم قبل النداء لا بعده. لو حسمنا بعده لكان كل انقطاع إثراءً مجانيًا،
+        ولو تعطّل الخادم بعد الحسم رددنا الرصيد في السطر التالي.
+      */
+      const need = batches[i].length * (w.costPerQ || 1);
+      const pay = await QBANK.api.rpc('spend_credits',
+        { n: need, p_reason: 'إثراء ' + batches[i].length + ' سؤالًا', p_draft: w.draftId });
+      if (!pay.ok || !pay.data || !pay.data.ok) {
+        const d = (pay.data) || {};
+        w.error = d.reason === 'insufficient'
+          ? 'رصيدك ' + (d.balance || 0) + ' كوين ولا يكفي — يلزم ' + need
+          : (d.reason === 'closed' ? 'الإثراء موقوف مؤقتًا' : 'تعذّر حسم الرصيد');
+        w.needCoins = d.reason === 'insufficient' ? need - (d.balance || 0) : 0;
+        return w;
+      }
+
       const r = await Admin.server('/api/ai', { questions: batches[i], sanctity_mode: w.mode || 'strict' });
-      if (!r.ok) { w.error = (r.data && r.data.error) || 'انقطعت الدفعة ' + (i + 1); return w; }
+      if (!r.ok) {
+        // الطالب لا يدفع ثمن عطل عندنا
+        await QBANK.api.rpc('refund_credits', { n: need, p_reason: 'تعذّرت الدفعة', p_draft: w.draftId });
+        w.error = (r.data && r.data.error) || 'انقطعت الدفعة ' + (i + 1) + ' — رُدّ رصيدها';
+        return w;
+      }
       w.enriched = w.enriched.concat(r.data.questions);
       w.done = Math.min(w.enriched.length, w.total);
+      if (r.data.usage) w.usage = r.data.usage;
       await Admin.saveDraft(w);
       if (onProgress) onProgress(w.done, w.total);
     }
@@ -2319,12 +2644,25 @@ const Admin = {
   async stamp(subjectId, w){
     if (!subjectId) return { ok:false };
     const u = QBANK.api.user() || {};
-    return QBANK.api.rest('subjects?id=eq.' + subjectId, { method:'PATCH', body: JSON.stringify({
+    const body = {
       created_by: u.id || null,
       sanctity_mode: w.mode === 'enhanced' ? 'enhanced' : 'strict',
       slug: w.slug || null,
-      status: 'published'
-    }) });
+      status: 'published',
+      course_code: w.courseCode || ''
+    };
+    // الجامعة والكلية تُنشآن في الخادم إن لم تكونا موجودتين — والتطبيع يمنع التكرار
+    if (w.country && w.university){
+      const r = await QBANK.api.rpc('ensure_university', { p_country: w.country, p_name: w.university });
+      if (r.ok && r.data && typeof r.data === 'string'){
+        body.university_id = r.data;
+        if (w.college){
+          const c = await QBANK.api.rpc('ensure_college', { p_university: r.data, p_name: w.college });
+          if (c.ok && c.data && typeof c.data === 'string') body.college_id = c.data;
+        }
+      }
+    }
+    return QBANK.api.rest('subjects?id=eq.' + subjectId, { method:'PATCH', body: JSON.stringify(body) });
   },
 
   // كشف المكرر بتشابه نصي بسيط: نفس الأحرف الدنيا بعد إزالة الفراغات — يوسم لا يحذف
@@ -2339,11 +2677,16 @@ const Admin = {
   }
 };
 
-/* ===== الواجهة ===== */
-function adminStat(label, value){
-  return el('div', { class:'card card--flat stat' }, [
-    el('span', { class:'stat__num num', text: String(value) }),
-    el('span', { class:'stat__lbl', text: label })
+/* ===== الواجهة =====
+   كل تبويبات اللوحة تستعمل مكوّنات واحدة: ad-kpi للمؤشرات، ad-panel للأقسام،
+   ad-row للصفوف. التفاوت بين التبويبات يجعل اللوحة تبدو مجموعة صفحات لا لوحة. */
+function adminPanel(title, sub, body){
+  return el('section', { class:'ad-panel' }, [
+    el('div', { class:'ad-panel__h' }, [
+      el('h2', { class:'ad-panel__t', text:title }),
+      sub ? el('span', { class:'ad-panel__s', text:sub }) : null
+    ]),
+    body
   ]);
 }
 
@@ -2358,42 +2701,53 @@ function adminStudentsTab(box){
         return;
       }
       const s = st.data;
-      box.appendChild(el('div', { class:'grid grid--2 stats' }, [
-        adminStat('طالبًا', s.students), adminStat('نشط آخر ٧ أيام', s.active_7d),
-        adminStat('اختبارًا', s.attempts), adminStat('متوسط النتائج ٪', s.avg_pct)
+      const K = QBANK.admin.charts.kpi;
+      box.appendChild(el('div', { class:'ad-kpis' }, [
+        K(s.students, 'طالبًا', 'مسجَّل'),
+        K(s.active_7d, 'نشط', 'آخر ٧ أيام', s.active_7d > 0 ? 'live' : null),
+        K(s.attempts, 'اختبارًا', 'منذ الإطلاق'),
+        K(s.avg_pct + '٪', 'متوسط النتائج', s.avg_pct >= 70 ? 'فوق حدّ النجاح' : 'تحت حدّ النجاح',
+          s.avg_pct >= 70 ? 'live' : (s.avg_pct > 0 ? 'warn' : null))
       ]));
       const list = (rows.ok && rows.data && rows.data.rows) || [];
       if (!list.length) { box.appendChild(QBANK.views.empty('👥', 'لا طلاب بعد', 'سيظهر الطلاب هنا فور تسجيلهم.')); return; }
-      const tbl = el('div', { class:'card stack' }, list.map(r => {
-        const row = el('button', { class:'row rowbtn', type:'button' }, [
-          el('span', { text: (r.avatar || '👤') + ' ' + (r.name || 'بلا اسم') }),
-          el('span', { class:'spacer' }),
-          el('span', { class:'badge num', text: r.attempts + ' اختبار' }),
-          el('span', { class:'badge badge--ok num', text: 'أفضل ' + Math.round(r.best) + '٪' })
+      const tbl = el('div', { class:'ad-table' }, list.map(r => {
+        const row = el('button', { class:'ad-row', type:'button' }, [
+          el('span', { class:'ad-feed__av', text: r.avatar || '👤' }),
+          el('span', { class:'ad-row__main' }, [
+            el('span', { class:'ad-row__t', text: r.name || 'بلا اسم' }),
+            el('span', { class:'ad-row__s', text: r.attempts + ' اختبار' })
+          ]),
+          el('span', { class:'badge num ' + (r.best >= 70 ? 'badge--ok' : ''),
+            text: 'أفضل ' + Math.round(r.best) + '٪' })
         ]);
         row.addEventListener('click', async () => {
           const at = await QBANK.api.rpc('admin_attempts', { uid: r.id });
           const items = (at.ok && Array.isArray(at.data)) ? at.data : [];
-          const det = el('div', { class:'card stack' },
-            items.length ? items.map(a => el('div', { class:'row' }, [
-              el('span', { text: a.subject }),
-              el('span', { class:'spacer' }),
-              el('span', { class:'badge num', text: Math.round(a.pct) + '٪' }),
-              el('span', { class:'badge num', text: Math.round(a.duration_s / 60) + ' د' })
-            ])) : [el('p', { class:'page__sub', text:'لا محاولات لهذا الطالب.' })]);
+          const det = el('div', { class:'ad-sub' },
+            items.length ? items.map(a => el('div', { class:'ad-feed__i' }, [
+              el('span', { class:'ad-row__main' }, [ el('span', { class:'ad-row__t', text: a.subject }) ]),
+              el('span', { class:'badge num ' + (a.pct >= 70 ? 'badge--ok' : 'badge--warn'),
+                text: Math.round(a.pct) + '٪' }),
+              el('span', { class:'ad-feed__t', text: Math.round(a.duration_s / 60) + ' د' })
+            ])) : [el('p', { class:'page__sub', style:'margin:0', text:'لا محاولات لهذا الطالب.' })]);
           row.parentNode.insertBefore(det, row.nextSibling);
         }, { once:true });
         return row;
       }));
-      box.appendChild(tbl);
+      box.appendChild(el('div', { class:'ad-panels', style:'margin-top:22px' }, [
+        adminPanel('الطلاب', list.length + ' طالبًا · اضغط أيًّا منهم لمحاولاته', tbl)
+      ]));
     });
 }
 
 function adminContentTab(box){
-  const upBtn = el('button', { class:'btn btn--block', type:'button', text:'⇪ ارفع ملف أسئلة جديدًا' });
-  upBtn.addEventListener('click', () => QBANK.router.go('#/admin/upload'));
-  box.appendChild(upBtn);
-  const listBox = el('div', { class:'stack', style:'margin-top:16px' });
+  const upBtn = el('a', { class:'btn', href:'#/admin/upload', text:'⇪ ارفع ملف أسئلة' });
+  box.appendChild(el('div', { class:'ad-bar' }, [
+    upBtn,
+    el('a', { class:'btn btn--ghost', href:'#/explore', text:'⌕ اعرض ما يراه الطالب' })
+  ]));
+  const listBox = el('div', { class:'ad-panels' });
   box.appendChild(listBox);
   listBox.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
 
@@ -2407,25 +2761,28 @@ function adminContentTab(box){
     const subjects = (subs.ok && subs.data) || [];
     const drafts = (drs.ok && drs.data) || [];
 
-    if (drafts.length) {
-      listBox.appendChild(el('h2', { text:'المسوّدات' }));
-      drafts.forEach(d => {
-        if (d.status === 'approved') return;
-        listBox.appendChild(el('div', { class:'card row' }, [
-          el('span', { text: d.name || 'بلا اسم' }),
-          el('span', { class:'badge ' + (d.status === 'reviewing' ? 'badge--warn' : ''), text:
-            d.status === 'reviewing' ? 'بانتظار المراجعة' : 'قيد المعالجة ' + d.done + ' من ' + d.total }),
-          el('span', { class:'spacer' }),
-          el('a', { class:'btn btn--sm btn--soft', href:'#/admin/upload?draft=' + d.id, text:'أكمل' })
-        ]));
-      });
+    const pending = drafts.filter(d => d.status !== 'approved');
+    if (pending.length) {
+      listBox.appendChild(adminPanel('المسوّدات', pending.length + ' غير معتمدة — لا يراها الطالب',
+        el('div', { class:'ad-table' }, pending.map(d =>
+          el('div', { class:'ad-row', style:'cursor:default' }, [
+            el('span', { class:'ad-row__main' }, [
+              el('span', { class:'ad-row__t', text: d.name || 'بلا اسم' }),
+              el('span', { class:'ad-row__s', text:
+                d.status === 'reviewing' ? 'اكتملت المعالجة — بانتظار مراجعتك'
+                                         : 'قيد المعالجة: ' + d.done + ' من ' + d.total })
+            ]),
+            el('span', { class:'badge ' + (d.status === 'reviewing' ? 'badge--warn' : ''),
+              text: d.status === 'reviewing' ? 'راجِعها' : 'تُعالَج' }),
+            el('a', { class:'btn btn--sm btn--soft', href:'#/admin/upload?draft=' + d.id, text:'أكمل' })
+          ])))));
     }
 
-    listBox.appendChild(el('h2', { text:'المواد' }));
     if (!subjects.length) {
       listBox.appendChild(QBANK.views.empty('▤', 'لا مواد بعد', 'ارفع أول ملف أسئلة وسيظهر هنا بعد الاعتماد.'));
       return;
     }
+    const subTable = el('div', { class:'ad-table' });
     subjects.forEach(sub => {
       const pubBtn = el('button', { class:'btn btn--sm ' + (sub.published ? 'btn--soft' : ''), type:'button',
         text: sub.published ? 'أخفِ' : 'انشر' });
@@ -2449,17 +2806,24 @@ function adminContentTab(box){
           { method:'PATCH', body: JSON.stringify({ free: !sub.free }) });
         QBANK.router.render('#/admin/content');
       });
-      listBox.appendChild(el('div', { class:'card stack' }, [
-        el('div', { class:'row' }, [
-          el('span', { text: (sub.icon || '▤') + ' ' + sub.name }),
-          el('span', { class:'badge num', text: sub.q_count + ' سؤالًا' }),
-          sub.published ? el('span', { class:'badge badge--ok', text:'منشورة ✓' })
-                        : el('span', { class:'badge', text:'مخفية' }),
-          el('span', { class:'spacer' }), pubBtn
+      subTable.appendChild(el('div', { class:'ad-row', style:'cursor:default;flex-wrap:wrap' }, [
+        el('span', { text: sub.icon || '▤' }),
+        el('span', { class:'ad-row__main' }, [
+          el('span', { class:'ad-row__t', text: sub.name }),
+          el('span', { class:'ad-row__s', text: sub.q_count + ' سؤالًا' })
         ]),
-        el('div', { class:'row' }, [ dateIn, freeBtn ])
+        sub.published ? el('span', { class:'badge badge--ok', text:'منشورة' })
+                      : el('span', { class:'badge', text:'مخفية' }),
+        el('a', { class:'btn btn--sm btn--soft', href:'#/admin/subject/' + sub.id, text:'حرّر' }),
+        pubBtn,
+        el('span', { class:'ad-sub', style:'flex:1 0 100%' }, [
+          el('label', { class:'ad-inline' }, [
+            el('span', { class:'ad-inline__l', text:'موعد الاختبار' }), dateIn ]),
+          freeBtn
+        ])
       ]));
     });
+    listBox.appendChild(adminPanel('المواد', subjects.length + ' مادة على المنصة', subTable));
   });
 }
 
@@ -2596,17 +2960,124 @@ function subjectMeta(){
       return b;
     }));
 
+  /* أين تُدرَّس؟ — بلا هذا تضيع المادة في بحر المنصة ولا يجدها من يحتاجها.
+     نكتب الاسم ولا نختار من قائمة: الجامعات العربية أكثر من أن تُحصى سلفًا،
+     والخادم يوحّد الإملاء فلا تنقسم الجامعة الواحدة إلى عشر. */
+  const countryIn = el('select', { class:'input', 'aria-label':'الدولة' });
+  countryIn.appendChild(el('option', { value:'', text:'— اختر الدولة —' }));
+  Object.keys(QBANK.explore ? { SA:1,EG:1,JO:1,AE:1,KW:1,QA:1,BH:1,OM:1,IQ:1,MA:1,DZ:1,TN:1,SD:1,YE:1,LY:1,SY:1,LB:1,PS:1 } : {})
+    .forEach(c => countryIn.appendChild(el('option', { value:c, text: QBANK.explore.countryName(c) })));
+  countryIn.value = wizard.country || '';
+  countryIn.addEventListener('change', () => { wizard.country = countryIn.value; });
+
+  const uniIn = el('input', { class:'input', value: wizard.university || '',
+    placeholder:'مثال: جامعة نجران', list:'uniList' });
+  uniIn.addEventListener('input', () => { wizard.university = uniIn.value; });
+
+  const colIn = el('input', { class:'input', value: wizard.college || '',
+    placeholder:'مثال: كلية العلوم الطبية التطبيقية' });
+  colIn.addEventListener('input', () => { wizard.college = colIn.value; });
+
+  const codeIn = el('input', { class:'input', dir:'ltr', value: wizard.courseCode || '',
+    placeholder:'EMS 301' });
+  codeIn.addEventListener('input', () => { wizard.courseCode = codeIn.value; });
+
   return el('div', { class:'card stack' }, [
     el('label', { class:'field', style:'margin:0' }, [
       el('span', { class:'field__label', text:'اسم المادة' }), nameIn ]),
+    el('div', { class:'ad-edit ad-edit--2' }, [
+      el('label', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'الدولة' }), countryIn ]),
+      el('label', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'الجامعة' }), uniIn ]),
+      el('label', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'الكلية' }), colIn ]),
+      el('label', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'رمز المقرر — اختياري' }), codeIn ])
+    ]),
+    el('p', { class:'field__hint', style:'margin:0',
+      text:'هذه البيانات هي ما يجعل زميلك في جامعتك يجد مادتك. اكتبها ولو تقريبية.' }),
     el('span', { class:'field__label', text:'كيف نعالج أسئلتك؟' }),
     wrap
   ]);
 }
 
+/* ═══ دليل التنسيق: قالبان جاهزان وفاحص فوري ═══
+   الطالب اليوم يكتشف أن ملفه غير مفهوم بعد الرفع والانتظار. هنا يعرف قبلها. */
+function formatGuide(){
+  const box = el('details', { class:'fmt' });
+  box.appendChild(el('summary', { class:'fmt__sum' }, [
+    el('span', { text:'كيف أجهّز ملفي؟' }),
+    el('span', { class:'fmt__hint', text:'قالبان جاهزان وفاحص فوري' })
+  ]));
+
+  const body = el('div', { class:'fmt__body' });
+
+  // ما يحدث للملف — خطوات لا وعود
+  body.appendChild(el('ol', { class:'fmt__pipe' }, QBANK.formats.pipeline.map((p, i) =>
+    el('li', {}, [
+      el('span', { class:'fmt__pn num', text: QBANK.views.arNum(i + 1) }),
+      el('span', {}, [
+        el('b', { text: p[0] }),
+        el('span', { class:'fmt__pd', text: p[1] })
+      ])
+    ]))));
+
+  // القالبان
+  QBANK.formats.list.forEach(f => {
+    const pre = el('pre', { class:'fmt__code', dir:'auto' }, [ el('code', { text: f.sample }) ]);
+    const copy = el('button', { class:'btn btn--sm', type:'button', text:'انسخ القالب' });
+    copy.addEventListener('click', () => {
+      const done = (navigator.clipboard && navigator.clipboard.writeText)
+        ? (navigator.clipboard.writeText(f.sample), true)
+        : (function(){ try{
+              const ta = document.createElement('textarea'); ta.value = f.sample;
+              document.body.appendChild(ta); ta.select();
+              const r = document.execCommand('copy'); ta.remove(); return r;
+            } catch(e){ return false; } })();
+      QBANK.toast(done ? 'نُسخ القالب — الصقه في ملفك' : 'حدّد النص وانسخه يدويًا');
+    });
+    body.appendChild(el('section', { class:'fmt__card', 'data-fmt': f.id }, [
+      el('h3', { class:'fmt__t', text: f.title }),
+      el('p', { class:'fmt__when', text: f.when }),
+      el('ul', { class:'fmt__rules' }, f.rules.map(r => el('li', { text: r }))),
+      pre,
+      el('div', { class:'row' }, [ copy ])
+    ]));
+  });
+
+  // الفاحص: يلصق الطالب جزءًا من ملفه فيرى النتيجة فورًا
+  const ta = el('textarea', { class:'input', rows:'4',
+    placeholder:'الصق هنا سؤالين أو ثلاثة من ملفك…', 'aria-label':'فاحص التنسيق' });
+  const out = el('p', { class:'fmt__out', role:'status' });
+  ta.addEventListener('input', () => {
+    const v = ta.value.trim();
+    if (!v){ out.textContent = ''; out.className = 'fmt__out'; return; }
+    const r = QBANK.formats.check(v);
+    if (!r.ok){
+      out.className = 'fmt__out is-no';
+      out.textContent = 'لم نتعرّف على سؤال واحد. تأكد أن كل سؤال يبدأ برقمه ثم نقطة، مثل ‎1.‎';
+      return;
+    }
+    out.className = 'fmt__out is-ok';
+    out.textContent = 'وجدنا ' + QBANK.views.arNum(r.questions) + ' سؤالًا · '
+      + QBANK.views.arNum(r.withOptions) + ' بخيارات · '
+      + QBANK.views.arNum(r.withAnswer) + ' بإجابة معروفة';
+  });
+  body.appendChild(el('section', { class:'fmt__card fmt__card--check' }, [
+    el('h3', { class:'fmt__t', text:'افحص تنسيقك الآن' }),
+    el('p', { class:'fmt__when', text:'الصق جزءًا من ملفك — لا يُرفع شيء، الفحص في جهازك.' }),
+    ta, out
+  ]));
+
+  box.appendChild(body);
+  return box;
+}
+
 /* الخطوة ١: سحب وإفلات أو اختيار ملف */
 function stepRead(box, rerender){
   box.appendChild(subjectMeta());
+  box.appendChild(formatGuide());
   const drop = el('div', { class:'drop', tabindex:'0', role:'button', 'aria-label':'اختر ملف أسئلة' }, [
     el('span', { class:'empty__ico', 'aria-hidden':'true', text:'⇪' }),
     el('p', { class:'empty__title', text:'أسقط ملف الأسئلة هنا أو اضغط للاختيار' }),
@@ -2660,14 +3131,87 @@ function stepEnrich(box, rerender){
     rerender();
   });
 
+  /*
+    مساران، والفرق بينهما معروض لا مخبوء.
+    الطالب لا يعرف ما «الإثراء» حتى يرى ماذا ينقصه بدونه — فنقوله بالأسماء.
+  */
+  const withoutOpts = wizard.raw.filter(q => !q.has_options).length;
+  const noAnswer = wizard.raw.filter(q =>
+    !(q.has_options && typeof q.answer === 'number' && q.answer >= 0) && !q.answer_text).length;
+
+  const paths = el('div', { class:'paths', role:'radiogroup', 'aria-label':'طريقة المعالجة' });
+  const creditBox = el('div', { class:'costbox', hidden:true });
+  const N = QBANK.views.arNum;
+
+  function paint(credits){
+    const cost = QBANK.admin.creditsNeeded(wizard, (credits && credits.cost_per_q) || 1);
+    const bal = (credits && credits.balance) || 0;
+    const enough = bal >= cost;
+    wizard.costPerQ = (credits && credits.cost_per_q) || 1;
+
+    paths.innerHTML = '';
+    [
+      { id:false, t:'انشر بلا إثراء', price:'مجانًا',
+        d:'أسئلتك وخياراتها كما وصلت، جاهزة للمراجعة والاختبار حالًا.',
+        miss: 'بلا شرح لكل إجابة، ولا ترجمة، ولا بطاقات حفظ'
+              + (noAnswer ? '. و' + N(noAnswer) + ' سؤالًا بلا إجابة معلنة في ملفك ستحتاج ضبطها بيدك' : '') },
+      { id:true, t:'انشر مع الإثراء', price: N(cost) + ' كوين',
+        d:'شرح لكل إجابة، وترجمة عربية، وبطاقة حفظ، وتصنيف بالمحاور.',
+        miss: noAnswer ? 'ويستنتج الذكاء إجابات ' + N(noAnswer) + ' سؤالًا لم تُعلَن في ملفك'
+                       : 'وكل أسئلتك فيها إجاباتها أصلًا — فلن يُغيّر الذكاء إجابة واحدة' }
+    ].forEach(o => {
+      const on = wizard.enrich === o.id;
+      const blocked = o.id && !enough;
+      const b = el('button', { class:'path' + (on ? ' is-on' : '') + (blocked ? ' is-blocked' : ''),
+        type:'button', role:'radio', 'data-path': String(o.id),
+        'aria-checked': on ? 'true' : 'false' }, [
+        el('span', { class:'path__h' }, [
+          el('span', { class:'path__t', text:o.t }),
+          el('span', { class:'path__p num', text:o.price })
+        ]),
+        el('span', { class:'path__d', text:o.d }),
+        el('span', { class:'path__m', text:o.miss })
+      ]);
+      b.addEventListener('click', () => {
+        if (blocked) return;
+        wizard.enrich = o.id;
+        paint(credits);
+      });
+      paths.appendChild(b);
+    });
+
+    creditBox.hidden = !wizard.enrich;
+    creditBox.innerHTML = '';
+    if (wizard.enrich){
+      creditBox.appendChild(el('span', { class:'costbox__l', text:'رصيدك' }));
+      creditBox.appendChild(el('span', { class:'costbox__n num',
+        text: N(bal) + ' كوين' + (enough ? '' : ' — لا يكفي') }));
+      creditBox.appendChild(el('span', { class:'costbox__s',
+        text: enough ? 'سيتبقى لك ' + N(bal - cost) + ' كوين بعد الإثراء.'
+                     : 'ينقصك ' + N(cost - bal) + ' كوين لإثراء هذا الملف.' }));
+      if (!enough)
+        creditBox.appendChild(el('a', { class:'btn btn--sm', href:'#/account', text:'اشحن رصيدك' }));
+    }
+    go.textContent = wizard.done ? 'أكمل من حيث توقفت (' + wizard.done + ')'
+                    : (wizard.enrich ? 'أثرِ وانشر' : 'انشر بلا إثراء');
+    go.setAttribute('aria-disabled', (wizard.enrich && !enough) ? 'true' : 'false');
+  }
+
+  paint(null);
+  QBANK.api.rpc('my_credits').then(r => {
+    if (!paths.isConnected) return;
+    if (r.ok && r.data && !r.data.error) paint(r.data);
+  });
+
   box.appendChild(el('div', { class:'card stack' }, [
-    el('h2', { text:'قبل التشغيل — التقدير' }),
+    el('h2', { text:'كيف ننشرها؟' }),
     el('div', { class:'row' }, [
       el('span', { class:'badge num', text: est.questions + ' سؤالًا' }),
-      el('span', { class:'badge num', text: est.batches + ' دفعة ذكاء' }),
+      withoutOpts ? el('span', { class:'badge badge--warn num',
+        text: N(withoutOpts) + ' بلا خيارات' }) : null,
       el('span', { class:'badge', text:'المسوّدة تُحفظ بعد كل دفعة' })
     ]),
-    bar, label, go, msg
+    paths, creditBox, bar, label, go, msg
   ]));
 }
 
@@ -2826,10 +3370,15 @@ function bankRow(sub, q, prog){
   });
 
   const opts = el('div', { class:'stack q__opts', hidden:true },
-    q.options.map((opt, oi) => el('div', { class:'opt' + (oi === q.answer ? ' is-answer' : '') }, [
-      el('span', { class:'opt__mark', 'aria-hidden':'true', text: oi === q.answer ? '✓' : '' }),
-      el('span', { class:'ltr', text: opt })
-    ])));
+    q.options.map((opt, oi) => {
+      const right = oi === q.answer;
+      return el('div', { class:'opt' + (right ? ' is-answer' : '') }, [
+        el('span', { class:'opt__l', 'aria-hidden':'true', text: QBANK.views.optLetter(oi) }),
+        el('span', { class:'ltr', text: opt }),
+        right ? el('span', { class:'opt__tag', text:'الإجابة' }) : null,
+        el('span', { class:'opt__mark', 'aria-hidden':'true', text: right ? '✓' : '' })
+      ]);
+    }));
   const trans = el('p', { class:'field__hint', hidden:true, text: q.translation || 'لا ترجمة بعد.' });
   const transBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'عرض الترجمة' });
   transBtn.addEventListener('click', () => {
@@ -2840,6 +3389,9 @@ function bankRow(sub, q, prog){
   const head = el('button', { class:'rowbtn', type:'button', 'aria-expanded':'false' }, [
     el('span', { class:'ltr q__text', text: q.q })
   ]);
+  // رقم السؤال في الهامش — يُقرأ بصوت مسموع: «افتح سؤال ٤٧»
+  const num = el('span', { class:'qitem__n', 'aria-hidden':'true',
+    text: QBANK.views.arNum((q.ord || 0) + 1) });
   head.addEventListener('click', () => {
     const open = opts.hidden;
     opts.hidden = !open;
@@ -2847,7 +3399,8 @@ function bankRow(sub, q, prog){
     if (open) QBANK.progress.markSeen(sub.id, q.id);   // فتح السؤال = رُوجع
   });
 
-  return el('article', { class:'q', 'data-qid': q.id }, [
+  return el('article', { class:'q qitem', 'data-qid': q.id }, [
+    num,
     el('div', { class:'row' }, [
       head, starBtn,
       prog.wrong[q.id] ? el('span', { class:'badge badge--bad num', text:'أخطأت ×' + prog.wrong[q.id] }) : null,
@@ -3199,8 +3752,9 @@ function examRunner(){
       else if (oi === answered.choice) { cls += ' is-wrong'; mark = '✗'; }
     } else if (answered && answered.choice === oi) { cls += ' is-answer'; mark = '●'; }
     const b = el('button', { class: cls, type:'button', disabled: answered ? true : null }, [
-      el('span', { class:'opt__mark', 'aria-hidden':'true', text: mark }),
-      el('span', { class:'ltr', text: opt })
+      el('span', { class:'opt__l', 'aria-hidden':'true', text: QBANK.views.optLetter(oi) }),
+      el('span', { class:'ltr', text: opt }),
+      el('span', { class:'opt__mark', 'aria-hidden':'true', text: mark })
     ]);
     b.addEventListener('click', () => {
       QBANK.exam.answer(exam, oi);
@@ -3272,8 +3826,10 @@ function examResult(){
       el('p', { class:'ltr q__text', text: rv.q }),
       el('div', { class:'stack q__opts' }, rv.options.map((o, oi) =>
         el('div', { class:'opt' + (oi === rv.correct ? ' is-answer' : (oi === rv.chosen ? ' is-wrong' : '')) }, [
-          el('span', { class:'opt__mark', 'aria-hidden':'true', text: oi === rv.correct ? '✓' : (oi === rv.chosen ? '✗' : '') }),
-          el('span', { class:'ltr', text: o })
+          el('span', { class:'opt__l', 'aria-hidden':'true', text: QBANK.views.optLetter(oi) }),
+          el('span', { class:'ltr', text: o }),
+          oi === rv.correct ? el('span', { class:'opt__tag', text:'الإجابة' }) : null,
+          el('span', { class:'opt__mark', 'aria-hidden':'true', text: oi === rv.correct ? '✓' : (oi === rv.chosen ? '✗' : '') })
         ]))),
       rv.expl_ar ? el('p', { class:'field__hint', text: rv.expl_ar }) : null
     ])))
@@ -3560,6 +4116,8 @@ function landingView(){
   const freeCount = subjects.filter(s => s.free).length;
 
   const root = el('div', { class:'lp' });
+  // عيّنة واحدة للسؤال ولبطاقة الحفظ معًا — لو اختلفتا لبدتا غير مترابطتين
+  const demo = QBANK.demos.at(QBANK.demos.next());
 
   /* ١ · البطل */
   const goSignup = el('a', { class:'btn btn--lg', href:'#/login', text:'ابدأ المراجعة مجانًا' });
@@ -3567,7 +4125,7 @@ function landingView(){
   root.appendChild(el('header', { class:'lp-hero' }, [
     el('span', { class:'lp-hero__badge' }, [
       el('span', { class:'dot', 'aria-hidden':'true' }),
-      'بنك أسئلة لطلاب التخصصات الصحية'
+      'بنك أسئلة لطلاب الجامعات العربية'
     ]),
     el('h1', { class:'lp-hero__title' }, [
       'كل أسئلة موادك ',
@@ -3575,7 +4133,7 @@ function landingView(){
     ]),
     el('p', { class:'lp-hero__sub', text:
       (pack.settings && pack.settings.welcome_text) ||
-      'بنك أسئلة منقّح من ملفات دكاترتك حرفًا بحرف، مع شرح لكل إجابة، وبطاقات حفظ ذكية، واختبارات تجريبية تحاكي الامتحان الحقيقي — وتعمل بلا إنترنت.' }),
+      'أيًّا كان تخصصك — طب أو هندسة أو حاسب أو قانون أو إدارة — بنك أسئلة منقّح من ملفات دكاترتك حرفًا بحرف، مع شرح لكل إجابة، وبطاقات حفظ ذكية، واختبارات تجريبية تحاكي الامتحان الحقيقي. ويعمل بلا إنترنت.' }),
     el('div', { class:'lp-cta' }, [goSignup, goSubjects]),
     shelfSvg(subjects)
   ]));
@@ -3595,12 +4153,12 @@ function landingView(){
   /* ٢-ب · جرّب سؤالًا الآن — الإقناع بالتجربة لا بالكلام */
   root.appendChild(lpSection('جرّبها الآن', 'أجب عن سؤال واحد',
     'هكذا يبدو كل سؤال في «مراجعة»: النص كما ورد، وشرح يوضّح لماذا الإجابة صحيحة ولماذا غيرها خاطئ.',
-    [QBANK.views.lpParts.lpTryQuestion()]));
+    [QBANK.views.lpParts.lpTryQuestion(demo)]));
 
   /* ٢-ج · بطاقة حفظ حيّة */
   root.appendChild(lpSection('طريقة الحفظ', 'بطاقة لكل سؤال',
     'الكلمة الدالة في السؤال ← الكلمة المفتاحية في الإجابة، ورابط ذهني يثبّتها. اقلب البطاقة لترى.',
-    [QBANK.views.lpParts.lpMemoCard()]));
+    [QBANK.views.lpParts.lpMemoCard(demo)]));
 
   /* ٣ · المواد */
   const subjectsBody = subjects.length
@@ -3640,6 +4198,20 @@ function landingView(){
       lpStep(2, 'اختر موادك', 'أضف مواد فصلك، واضبط موعد كل اختبار ليظهر لك العدّ التنازلي.'),
       lpStep(3, 'راجع واحفظ', 'بنك الأسئلة والشرح وبطاقات الحفظ — وتقدّمك يُحفظ تلقائيًا.'),
       lpStep(4, 'اختبر نفسك', 'اختبار تجريبي بنتيجة وتحليل، وأعد اختبار أخطائك حتى تتقنها.')
+    ])
+  ]));
+
+  /* ٥-ج · مواد الطلاب — الميزة التي تجعل المنصة تنمو بلا مشرف */
+  root.appendChild(lpSection('لطلاب المواد الناقصة', 'مادتك ليست هنا؟ ارفعها أنت',
+    'لا تنتظر أحدًا. حوّل ملف أسئلة دكتورك إلى بنك كامل بالشرح وبطاقات الحفظ في دقائق، وجرّبه مجانًا قبل أي التزام.', [
+    el('div', { class:'lp-steps' }, [
+      lpStep(1, 'ارفع ملفك', 'PDF أو Word أو نص. واختر: نحافظ على النص حرفًا بحرف، أو نحسّن صياغته بالذكاء — والأصل يبقى محفوظًا في الحالتين.'),
+      lpStep(2, 'جرّبه عشر دقائق', 'مجانًا وبالكامل. عدّاد ظاهر أمامك، فتعرف ما أخذت وما بقي قبل أن تقرّر.'),
+      lpStep(3, 'شاركه بزملائك', 'يصلك رابط خاص بك جاهز للنسخ — أرسله في مجموعة دفعتك.'),
+      lpStep(4, 'اكسب على كل بيعة', 'كل زميل يشتري عبر رابطك يضيف كوينز إلى رصيدك، وتراها في محفظتك لحظة بلحظة.')
+    ]),
+    el('div', { class:'lp-cta' }, [
+      el('a', { class:'btn btn--lg', href:'#/login', text:'ارفع مادتك الأولى' })
     ])
   ]));
 
@@ -3717,6 +4289,62 @@ function landingView(){
 QBANK.views.landingView = landingView;
 
 
+/* ===== 39-demos.js ===== */
+/*
+  العيّنات التعليمية في صفحة الهبوط.
+
+  ثلاث عيّنات من ثلاثة تخصصات لا واحدة طبية.
+  السبب: أول ما يراه الزائر يقول له «هذه المنصة لك» أو «هذه ليست لك».
+  سؤال إنعاش قلبي وحده يصرف طالب الهندسة قبل أن يقرأ سطرًا، مهما كتبنا
+  في العنوان أنها لكل التخصصات. والعيّنة العربية تُظهر أن المنصة تفهم
+  الأسئلة العربية لا الإنجليزية فقط.
+
+  تدور مع كل زيارة لا عشوائيًا: زائر يعود مرتين يرى تخصصين، فيفهم السعة.
+*/
+const LP_DEMOS = [
+  {
+    tag: 'طب',
+    q: 'What is the recommended chest compression rate for an adult in CPR?',
+    q_ar: 'ما معدّل ضغطات الصدر الموصى به للبالغ في الإنعاش القلبي الرئوي؟',
+    options: ['60–80 / min', '80–100 / min', '100–120 / min', '130–150 / min'],
+    answer: 2,
+    why: 'المعدّل الموصى به عالميًا ١٠٠–١٢٠ ضغطة في الدقيقة. أبطأ من ذلك لا يولّد تدفقًا دمويًا كافيًا، وأسرع منه يمنع القلب من الامتلاء بين الضغطات فيقلّ الناتج القلبي.',
+    wrong: 'الخياران الأول والثاني أبطأ من الموصى به، والرابع أسرع من أن يسمح بامتلاء البطينين.',
+    mnemonic: { cue: 'compression rate', key: '100–120', link: 'إيقاع أغنية Stayin’ Alive' }
+  },
+  {
+    tag: 'حاسب',
+    q: 'What is the time complexity of binary search on a sorted array of n elements?',
+    q_ar: 'ما التعقيد الزمني للبحث الثنائي في مصفوفة مرتّبة من n عنصرًا؟',
+    options: ['O(1)', 'O(log n)', 'O(n)', 'O(n log n)'],
+    answer: 1,
+    why: 'كل مقارنة تُسقط نصف المجال المتبقي، فعدد الخطوات هو عدد مرات قسمة n على ٢ حتى نصل إلى عنصر واحد — وهذا لوغاريتم n للأساس ٢.',
+    wrong: 'الأول يعني خطوة واحدة مهما كبرت المصفوفة، والثالث هو المسح الخطي الذي يفحص كل عنصر، والرابع رتبة الفرز لا البحث.',
+    mnemonic: { cue: 'binary search', key: 'log n', link: 'كل سؤال يقصّ نصف الاحتمالات — كلعبة «خمّن الرقم»' }
+  },
+  {
+    tag: 'محاسبة',
+    q: 'في المعادلة المحاسبية الأساسية، بماذا تتساوى الأصول؟',
+    q_ar: '',
+    options: ['الخصوم فقط', 'حقوق الملكية فقط', 'الخصوم + حقوق الملكية', 'الإيرادات − المصروفات'],
+    answer: 2,
+    why: 'المعادلة المحاسبية الأساسية: الأصول = الخصوم + حقوق الملكية. فكل ما تملكه المنشأة مموَّل إمّا بدَينٍ عليها (خصوم) أو بحقٍّ لمُلّاكها (حقوق ملكية)، ولا ثالث لهما.',
+    wrong: 'الخصوم وحدها تتجاهل تمويل المُلّاك، وحقوق الملكية وحدها تتجاهل الدَّين، والإيرادات ناقص المصروفات هي صافي الدخل لا الأصول.',
+    mnemonic: { cue: 'الأصول', key: 'خصوم + ملكية', link: 'ما تملكه = ما عليك + ما لك' }
+  }
+];
+
+/* الدوران: عدّاد محفوظ لا عشوائية — العشوائية قد تُعيد نفس العيّنة مرّتين */
+function nextDemoIndex(){
+  const i = QBANK.store.get('lp_demo', 0) || 0;
+  QBANK.store.set('lp_demo', (i + 1) % LP_DEMOS.length);
+  return i % LP_DEMOS.length;
+}
+function demoAt(i){ return LP_DEMOS[((i % LP_DEMOS.length) + LP_DEMOS.length) % LP_DEMOS.length]; }
+
+QBANK.demos = { list: LP_DEMOS, next: nextDemoIndex, at: demoAt };
+
+
 /* ===== 39-landing-parts.js ===== */
 /*
   الأجزاء النافعة في صفحة الهبوط — لا تسويق بل أدوات يستفيد منها الطالب قبل التسجيل:
@@ -3748,18 +4376,10 @@ function lpExams(subjects){
 }
 
 /* ===== ٢ · سؤال تجريبي حقيقي — يجيب عنه الزائر ويرى الشرح فورًا =====
-   عيّنة تعليمية موسومة بوضوح، لا تُنسب لملف دكتور. */
-const LP_DEMO = {
-  q: 'What is the recommended chest compression rate for an adult in CPR?',
-  q_ar: 'ما معدّل ضغطات الصدر الموصى به للبالغ في الإنعاش القلبي الرئوي؟',
-  options: ['60–80 / min', '80–100 / min', '100–120 / min', '130–150 / min'],
-  answer: 2,
-  why: 'المعدّل الموصى به عالميًا ١٠٠–١٢٠ ضغطة في الدقيقة. أبطأ من ذلك لا يولّد تدفقًا دمويًا كافيًا، وأسرع منه يمنع القلب من الامتلاء بين الضغطات فيقلّ الناتج القلبي.',
-  wrong: 'الخياران الأول والثاني أبطأ من الموصى به، والرابع أسرع من أن يسمح بامتلاء البطينين.',
-  mnemonic: { cue: 'compression rate', key: '100–120', link: 'إيقاع أغنية Stayin’ Alive' }
-};
-
-function lpTryQuestion(){
+   العيّنة تدور بين التخصصات (انظر 39-demos.js)، وموسومة كعيّنة تعليمية
+   لا تُنسب لملف دكتور. */
+function lpTryQuestion(demo){
+  const LP_DEMO = demo || QBANK.demos.at(0);
   const box = el('div', { class:'lp-try' });
   const feedback = el('div', { class:'lp-try__fb', hidden:true, role:'status' });
   let answered = false;
@@ -3798,7 +4418,7 @@ function lpTryQuestion(){
 
   box.appendChild(el('div', { class:'row', style:'margin-bottom:12px' }, [
     el('span', { class:'badge', text:'عيّنة تعليمية' }),
-    el('span', { class:'badge badge--ok', text:'BLS' })
+    el('span', { class:'badge badge--ok', text: LP_DEMO.tag })
   ]));
   box.appendChild(el('p', { class:'lp-try__q ltr', text: LP_DEMO.q }));
   box.appendChild(opts);
@@ -3809,8 +4429,8 @@ function lpTryQuestion(){
 }
 
 /* ===== ٣ · بطاقة حفظ حيّة — يقلبها الزائر ليرى كيف تعمل ===== */
-function lpMemoCard(){
-  const m = LP_DEMO.mnemonic;
+function lpMemoCard(demo){
+  const m = (demo || QBANK.demos.at(0)).mnemonic;
   let flipped = false;
   const card = el('div', { class:'lp-memo', tabindex:'0', role:'button', 'aria-label':'بطاقة حفظ — اضغط لقلبها' });
 
@@ -3865,7 +4485,7 @@ const LP_FAQ = [
    'نعم، بزر واحد من صفحة حسابي — يُحذف الحساب وكل بياناته نهائيًا في الحال.']
 ];
 
-QBANK.views.lpParts = { lpExams, lpTryQuestion, lpMemoCard, LP_TIPS, LP_FAQ, LP_DEMO };
+QBANK.views.lpParts = { lpExams, lpTryQuestion, lpMemoCard, LP_TIPS, LP_FAQ };
 
 
 /* ===== 40-app.js ===== */
@@ -3875,7 +4495,9 @@ QBANK.views.lpParts = { lpExams, lpTryQuestion, lpMemoCard, LP_TIPS, LP_FAQ, LP_
 */
 const NAV = [
   { path:'#/',         label:'الرئيسية',  ico:'▤' },
-  { path:'#/board',    label:'المتصدرون', ico:'🏆' },
+  // «ارفع مادة» في الشريط لا مدفونة في صفحة الحساب: ميزة لا يراها الطالب ميزة لا وجود لها
+  { path:'#/explore',  label:'استكشف',    ico:'⌕' },
+  { path:'#/upload',   label:'ارفع مادة', ico:'⇪' },
   { path:'#/settings', label:'الإعدادات', ico:'☰' },
   { path:'#/account',  label:'حسابي',     ico:'◍' }
 ];
@@ -3902,6 +4524,8 @@ function registerRoutes(){
     .add('#/settings',    V.ViewSettings)
     .add('#/account',     V.ViewAccount)
     .add('#/admin/upload', V.ViewUpload)
+    .add('#/upload',       V.ViewUpload)   // المسار الذي يُعطى للطالب — والقديم يبقى للمشرف
+    .add('#/explore',      V.ViewExplore)
     .add('#/admin/subject', V.ViewAdminSubject)
     .add('#/s',            V.ViewShare)      // رابط المشاركة: يقبل #s/slug و #/s/slug معًا
     .add('#/subject',      V.ViewSubject)
@@ -5021,7 +5645,15 @@ function walletBody(){
   return box;
 }
 
-QBANK.wallet = { body: walletBody, subjectRow: walletSubjectRow };
+/* المتصدرون خرجوا من شريط التنقّل ليتّسع للاستكشاف — فبابهم هنا */
+function walletLinks(){
+  return el('div', { class:'row', style:'margin-top:16px' }, [
+    el('a', { class:'btn btn--soft', href:'#/board', text:'🏆 لوحة المتصدرين' }),
+    el('a', { class:'btn btn--ghost', href:'#/explore', text:'⌕ استكشف المواد' })
+  ]);
+}
+
+QBANK.wallet = { body: walletBody, subjectRow: walletSubjectRow, links: walletLinks };
 
 
 /* ===== 48-admin-ugc.js ===== */
@@ -5120,6 +5752,394 @@ function adminUgcTab(box){
 
 QBANK.admin.ugcTab = adminUgcTab;
 QBANK.views.ADMIN_TABS.splice(2, 0, { id:'ugc', label:'مواد الطلاب', fill: adminUgcTab });
+
+
+/* ===== 48-cost.js ===== */
+/*
+  حاسبة التكلفة — كم سيكلّف إثراء هذا الملف، قبل تشغيله لا بعده.
+
+  لماذا في الواجهة؟ لأن المشرف اليوم يضغط «شغّل الذكاء» وهو لا يعرف إن كان
+  سيدفع ريالًا أو عشرين. الرقم المعروض تقدير مبني على أسعار معلنة وعلى متوسط
+  أرصدناه من ملفات حقيقية — ويظهر بعده الاستهلاك الفعلي الذي يبلّغ به الخادم،
+  فيصحّح المشرف تقديره بنفسه مع الوقت.
+*/
+const AI_PRICES = {
+  // دولار لكل مليون رمز — من صفحة أسعار Anthropic
+  'claude-haiku-4-5':  { in: 1,  out: 5,  label: 'Haiku 4.5' },
+  'claude-sonnet-5':   { in: 2,  out: 10, label: 'Sonnet 5' },
+  'claude-sonnet-4-5': { in: 3,  out: 15, label: 'Sonnet 4.5' },
+  'claude-opus-5':     { in: 5,  out: 25, label: 'Opus 5' }
+};
+const AI_DEFAULT = 'claude-haiku-4-5';
+
+/*
+  متوسطات لكل سؤال. مبنية على ملفات AMSU الحقيقية:
+  سؤال بخياراته ≈ ١٥٠ رمز دخلًا، والإخراج (شرح عربي + ترجمة + بطاقة حفظ + محور)
+  ≈ ٣٥٠ رمزًا. السؤال بلا خيارات يخرج أكثر لأن الذكاء يبني له ثلاثة مشتتات.
+*/
+const TOK_IN = 150, TOK_OUT = 350, TOK_OUT_BUILT = 470;
+const SYS_TOKENS = 420;            // تعليمات النظام، تُرسل مرة لكل دفعة
+const USD_SAR = 3.75;              // الريال مربوط بالدولار — سعر ثابت لا يتغيّر
+
+function estimateCost(opts){
+  const n = Math.max(0, opts.questions || 0);
+  const built = Math.max(0, Math.min(opts.withoutOptions || 0, n));
+  const batch = Math.max(1, opts.batchSize || 40);
+  const p = AI_PRICES[opts.model || AI_DEFAULT] || AI_PRICES[AI_DEFAULT];
+  const batches = Math.ceil(n / batch) || 0;
+
+  const inQ  = n * TOK_IN;
+  const outQ = (n - built) * TOK_OUT + built * TOK_OUT_BUILT;
+
+  /*
+    التعليمات: الدفعة الأولى كتابة ذاكرة (‎1.25x‎) والباقي قراءة (‎0.1x‎).
+    بلا تخزين كانت تُحسب كاملة مع كل دفعة — والفرق يكبر مع كبر الملف.
+  */
+  const sysFirst = batches ? SYS_TOKENS * 1.25 : 0;
+  const sysRest  = batches > 1 ? SYS_TOKENS * 0.1 * (batches - 1) : 0;
+  const sysNoCache = batches * SYS_TOKENS;
+
+  const usd = ((inQ + sysFirst + sysRest) * p.in + outQ * p.out) / 1e6;
+  const usdNoCache = ((inQ + sysNoCache) * p.in + outQ * p.out) / 1e6;
+
+  return {
+    model: p.label, batches,
+    usd, sar: usd * USD_SAR,
+    saved: Math.max(0, usdNoCache - usd),          // ما وفّره التخزين المؤقت
+    tokensIn: Math.round(inQ + sysFirst + sysRest),
+    tokensOut: outQ
+  };
+}
+
+/* مقارنة النماذج — يرى المشرف ثمن اختياره بدل أن يخمّنه */
+function compareModels(opts){
+  return Object.keys(AI_PRICES).map(k => {
+    const c = estimateCost(Object.assign({}, opts, { model: k }));
+    return { id: k, label: c.model, usd: c.usd, sar: c.sar };
+  }).sort((a, b) => a.usd - b.usd);
+}
+
+/* عرض المبلغ: الريال أولًا لأنه عملة الطالب، والدولار بين قوسين للمرجع */
+function money(c){
+  const sar = c.sar < 1 ? c.sar.toFixed(2) : c.sar.toFixed(1);
+  return sar + ' ريال (' + (c.usd < 1 ? '$' + c.usd.toFixed(3) : '$' + c.usd.toFixed(2)) + ')';
+}
+
+QBANK.cost = { estimate: estimateCost, compare: compareModels, money,
+               prices: AI_PRICES, DEFAULT: AI_DEFAULT };
+
+
+/* ===== 49-formats.js ===== */
+/*
+  دليل التنسيق — ما يفهمه المقسّم، وقوالب جاهزة، وفاحص فوري في المتصفح.
+
+  لماذا فاحص في المتصفح والمقسّم في الخادم؟
+  لأن الطالب يكتشف اليوم أن ملفه غير مفهوم بعد أن يرفعه وينتظر ويدفع من رصيد
+  الذكاء. الفاحص هنا يخبره في نفس اللحظة: «وجدنا ١٢ سؤالًا، ٨ منها بخيارات».
+  فيصلح ملفه قبل أن يكلّف نفسه أو المنصة شيئًا.
+
+  التعابير أدناه نسخة حرفية من api/_lib/parser.js، وفحص آلي يقارن مصدرها
+  بمصدر الخادم في كل بناء — فلو تغيّر أحدهما وحده انكسر الفحص قبل النشر.
+*/
+const FMT_Q_START   = /^\s*(?:Q\s*\.?\s*)?(\d{1,3})\s*[).\-:]\s+/i;
+const FMT_OPT_START = /^\s*([A-Ea-e])\s*[).]\s+/;
+const FMT_ANS_LINE  = /^\s*(?:ANSWER|ANS|KEY|الاجابة|الإجابة)\s*[:\-.]?\s*([A-Ea-e])\b/i;
+
+/* فحص سريع: كم سؤالًا سيُستخرج من هذا النص؟ */
+function formatCheck(text){
+  const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n');
+  let questions = 0, withOptions = 0, withAnswer = 0;
+  let curOpts = 0, curAns = false, open = false;
+
+  const closeOne = () => {
+    if (!open) return;
+    questions++;
+    if (curOpts >= 2) withOptions++;
+    if (curAns || curOpts < 2) withAnswer++;   // إجابة معلنة، أو الشكل «سؤال ثم إجابة»
+    curOpts = 0; curAns = false;
+  };
+
+  lines.forEach(line => {
+    if (FMT_Q_START.test(line)) { closeOne(); open = true; return; }
+    if (!open) return;
+    if (FMT_ANS_LINE.test(line)) { curAns = true; return; }
+    if (FMT_OPT_START.test(line)) { curOpts++; }
+  });
+  closeOne();
+
+  return { questions, withOptions, withAnswer, ok: questions > 0 };
+}
+
+/*
+  القالبان. كل واحد مأخوذ من ملفات حقيقية ومُختبَر على المقسّم نفسه:
+  فحص آلي يمرّرهما على parser ويتأكد من عدد الأسئلة ومواضع الإجابات.
+*/
+const FORMATS = [
+  {
+    id: 'mcq',
+    title: 'أسئلة بخيارات',
+    when: 'ملف فيه أسئلة اختيار من متعدد، بخيارات A B C D.',
+    rules: [
+      'كل سؤال يبدأ برقمه ثم نقطة أو قوس: ‎1.‎ أو ‎1)‎',
+      'كل خيار في سطر مستقل يبدأ بحرفه: ‎A)‎ أو ‎A.‎ — من A إلى E',
+      'الإجابة اختيارية في سطر: ANSWER: B — وإن غابت استنتجها الذكاء ووسمها لك'
+    ],
+    sample: [
+      '1. Which antidote is used for paracetamol overdose?',
+      'A) N-acetylcysteine',
+      'B) Naloxone',
+      'C) Atropine',
+      'D) Flumazenil',
+      'ANSWER: A',
+      '',
+      '2. ما الوحدة المستخدمة لقياس المقاومة الكهربائية؟',
+      'A) الفولت',
+      'B) الأوم',
+      'C) الأمبير',
+      'D) الواط',
+      'ANSWER: B'
+    ].join('\n')
+  },
+  {
+    id: 'qa',
+    title: 'سؤال ثم إجابته',
+    when: 'ملف مذاكرة أو ملخّص فيه أسئلة وإجاباتها بلا خيارات.',
+    rules: [
+      'كل سؤال يبدأ برقمه: ‎1.‎ أو ‎1)‎',
+      'الإجابة في السطر التالي، أو بعد سطر فارغ',
+      'الذكاء يبني ثلاثة مشتتات معقولة، وتبقى إجابتك بنصّها ويُوسم «خيارات مبنية»'
+    ],
+    sample: [
+      '1. ما ترياق التسمم بالباراسيتامول؟',
+      'N-acetylcysteine',
+      '',
+      '2. عرّف قانون أوم.',
+      'الجهد يساوي التيار مضروبًا في المقاومة.',
+      '',
+      '3. ما التعقيد الزمني للبحث الثنائي؟',
+      'O(log n)'
+    ].join('\n')
+  }
+];
+
+/* خطوات ما يحدث لملفك — يعرفها الطالب قبل أن يسلّمه */
+const PIPELINE = [
+  ['اقرأ الملف', 'نستخرج نصّه فقط. PDF أو Word أو نص — حتى ١٥ ميغابايت. لا نحتفظ بملفك بعد الاستخراج.'],
+  ['قسّمه أسئلة', 'نفصل الأسئلة بأرقامها وخياراتها. هنا ترى العدد قبل أي تكلفة، وتستطيع التوقّف.'],
+  ['افهمه بالذكاء', 'يضيف الشرح والترجمة وبطاقة الحفظ والمحور. ولا يمسّ نصّ سؤالك في النمط الحرفي.'],
+  ['راجع وانشر', 'تتصفّح ما خرج، تصحّح ما شئت، ثم تنشر. والأصل محفوظ في الحالتين.']
+];
+
+QBANK.formats = { list: FORMATS, check: formatCheck, pipeline: PIPELINE,
+                  re: { q: FMT_Q_START, opt: FMT_OPT_START, ans: FMT_ANS_LINE } };
+
+
+/* ===== 50-explore.js ===== */
+/*
+  الاستكشاف — الشاشة التي تجعل المنصة عربية لا جامعية.
+
+  كل شيء هنا يحدث في الخادم: البحث والتصفية والترتيب والترقيم. السبب أن
+  جلب كل المواد ثم تصفيتها في المتصفح يعمل مع خمس مواد وينهار مع خمسة آلاف،
+  ويستهلك باقة الطالب في شيء لن يقرأه.
+
+  والحالة كلها في الرابط (#/explore?q=…&country=…): يشاركه الطالب مع زميله
+  فيفتح نفس النتيجة، ويرجع بزرّ الرجوع فيجد ما كان يتصفّح لا الصفحة الأولى.
+*/
+const COUNTRIES = {
+  SA:'السعودية', EG:'مصر', JO:'الأردن', AE:'الإمارات', KW:'الكويت', QA:'قطر',
+  BH:'البحرين', OM:'عُمان', IQ:'العراق', MA:'المغرب', DZ:'الجزائر', TN:'تونس',
+  SD:'السودان', YE:'اليمن', LY:'ليبيا', SY:'سوريا', LB:'لبنان', PS:'فلسطين'
+};
+const countryName = c => COUNTRIES[c] || c;
+
+const Explore = {
+  PAGE: 24,
+  KEY: 'explore_last',      // آخر اختيار للطالب — يعود إليه بلا إعادة ضبط
+
+  /* الحالة من الرابط أولًا، ثم من آخر زيارة، ثم الافتراضي */
+  stateFrom(query){
+    const saved = QBANK.store.get(Explore.KEY, {}) || {};
+    const has = k => query && Object.prototype.hasOwnProperty.call(query, k);
+    return {
+      q:       has('q')       ? query.q       : '',
+      country: has('country') ? query.country : (saved.country || ''),
+      uni:     has('uni')     ? query.uni     : (saved.uni || ''),
+      col:     has('col')     ? query.col     : (saved.col || ''),
+      sort:    has('sort')    ? query.sort    : (saved.sort || 'popular'),
+      page:    has('page')    ? Math.max(0, parseInt(query.page, 10) || 0) : 0
+    };
+  },
+  toHash(st){
+    const p = [];
+    if (st.q)       p.push('q=' + encodeURIComponent(st.q));
+    if (st.country) p.push('country=' + st.country);
+    if (st.uni)     p.push('uni=' + st.uni);
+    if (st.col)     p.push('col=' + st.col);
+    if (st.sort && st.sort !== 'popular') p.push('sort=' + st.sort);
+    if (st.page)    p.push('page=' + st.page);
+    return '#/explore' + (p.length ? '?' + p.join('&') : '');
+  },
+  remember(st){
+    QBANK.store.set(Explore.KEY, { country: st.country, uni: st.uni, col: st.col, sort: st.sort });
+  },
+
+  search(st){
+    return QBANK.api.rpc('browse_subjects', {
+      q: st.q || '', p_country: st.country || '', p_university: st.uni || null,
+      p_college: st.col || null, p_sort: st.sort || 'popular',
+      p_page: st.page || 0, p_size: Explore.PAGE
+    });
+  },
+  filters(st){
+    return QBANK.api.rpc('catalog_filters', {
+      p_country: st.country || '', p_university: st.uni || null
+    });
+  }
+};
+
+/* بطاقة مادة في نتائج البحث — تختلف عن بطاقة «موادي»:
+   هنا الطالب لا يملكها بعد، فنُظهر أين تُدرَّس وكم سعرها لا تقدّمه فيها */
+function exCard(r){
+  const color = QBANK.views.subjectColor(r.color);
+  const card = el('a', { class:'excard', href:'#s/' + (r.slug || '') , 'data-id': r.id }, [
+    el('span', { class:'excard__bar', style:'background:' + color, 'aria-hidden':'true' }),
+    el('span', { class:'excard__head' }, [
+      el('span', { class:'excard__ico', 'aria-hidden':'true', text: r.icon || '▤' }),
+      el('span', { class:'excard__t', text: r.name })
+    ]),
+    r.university ? el('span', { class:'excard__where',
+      text: r.university + (r.college ? ' · ' + r.college : '') }) : null,
+    r.descr ? el('span', { class:'excard__d', text: r.descr }) : null,
+    el('span', { class:'excard__meta' }, [
+      el('span', { class:'badge num', text: (r.q_count || 0) + ' سؤالًا' }),
+      Number(r.students) > 0 ? el('span', { class:'badge num', text: r.students + ' مشترك' }) : null,
+      r.course_code ? el('span', { class:'badge', text: r.course_code }) : null,
+      r.free ? el('span', { class:'badge badge--ok', text:'مجانية' })
+             : (r.price ? el('span', { class:'badge num', text: r.price + ' ريال' }) : null)
+    ])
+  ]);
+  return card;
+}
+
+function ViewExploreRender(route){
+  const st = Explore.stateFrom(route.query);
+  Explore.remember(st);
+
+  /* شريط البحث — لا يُرسل مع كل حرف: نصف ثانية سكون قبل النداء.
+     بلا هذا نُرسل عشرة نداءات لكلمة من عشرة أحرف. */
+  const qIn = el('input', { class:'input', type:'search', value: st.q,
+    placeholder:'ابحث باسم المادة أو رمز المقرر…', 'aria-label':'بحث في المواد' });
+  let timer = null;
+  qIn.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      st.q = qIn.value; st.page = 0;
+      QBANK.router.go(Explore.toHash(st));
+    }, 500);
+  });
+
+  const sortSel = el('select', { class:'input', 'aria-label':'ترتيب النتائج' });
+  [['popular','الأكثر استخدامًا'],['newest','الأحدث'],['questions','الأكثر أسئلة']]
+    .forEach(o => sortSel.appendChild(el('option', { value:o[0], text:o[1],
+      selected: o[0] === st.sort ? 'selected' : null })));
+  sortSel.value = st.sort;
+  sortSel.addEventListener('change', () => {
+    st.sort = sortSel.value; st.page = 0; QBANK.router.go(Explore.toHash(st));
+  });
+
+  const filterBox = el('div', { class:'ex-filters' });
+  const countEl   = el('p', { class:'page__sub', role:'status' });
+  const grid      = el('div', { class:'ex-grid' });
+  const pager     = el('div', { class:'ex-pager' });
+
+  /* المرشّحات: شرائح لا قوائم منسدلة — أسرع لمسًا على الجوال، وتُظهر العدد */
+  function drawFilters(f){
+    filterBox.innerHTML = '';
+    const chipRow = (label, items, activeVal, onPick) => {
+      if (!items.length) return;
+      const row = el('div', { class:'ex-chips', role:'group', 'aria-label':label });
+      const all = el('button', { class:'chip' + (!activeVal ? ' is-on' : ''), type:'button',
+        text:'الكل', 'aria-pressed': !activeVal ? 'true' : 'false' });
+      all.addEventListener('click', () => onPick(''));
+      row.appendChild(all);
+      items.slice(0, 12).forEach(it => {
+        const on = String(activeVal) === String(it.val);
+        const b = el('button', { class:'chip' + (on ? ' is-on' : ''), type:'button',
+          'aria-pressed': on ? 'true' : 'false' }, [
+          el('span', { text: it.label }),
+          el('span', { class:'chip__n num', text: String(it.n) })
+        ]);
+        b.addEventListener('click', () => onPick(on ? '' : it.val));
+        row.appendChild(b);
+      });
+      filterBox.appendChild(el('div', { class:'ex-frow' }, [
+        el('span', { class:'ex-flabel', text: label }), row
+      ]));
+    };
+
+    chipRow('الدولة', (f.countries || []).map(c => ({ val:c.code, label:countryName(c.code), n:c.n })),
+      st.country, v => { st.country = v; st.uni = ''; st.col = ''; st.page = 0; QBANK.router.go(Explore.toHash(st)); });
+    chipRow('الجامعة', (f.universities || []).map(u => ({ val:u.id, label:u.name, n:u.n })),
+      st.uni, v => { st.uni = v; st.col = ''; st.page = 0; QBANK.router.go(Explore.toHash(st)); });
+    if (st.uni)
+      chipRow('الكلية', (f.colleges || []).map(c => ({ val:c.id, label:c.name, n:c.n })),
+        st.col, v => { st.col = v; st.page = 0; QBANK.router.go(Explore.toHash(st)); });
+  }
+
+  function drawPager(d){
+    pager.innerHTML = '';
+    if (!d.pages || d.pages < 2) return;
+    const go = p => { st.page = p; QBANK.router.go(Explore.toHash(st)); };
+    const prev = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'‹ السابق',
+      disabled: d.page <= 0 ? '' : null });
+    prev.addEventListener('click', () => go(d.page - 1));
+    const next = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'التالي ›',
+      disabled: d.page >= d.pages - 1 ? '' : null });
+    next.addEventListener('click', () => go(d.page + 1));
+    pager.appendChild(prev);
+    pager.appendChild(el('span', { class:'ex-pageno num', text:(d.page + 1) + ' من ' + d.pages }));
+    pager.appendChild(next);
+  }
+
+  grid.appendChild(el('p', { class:'page__sub', text:'جارٍ البحث…' }));
+  Explore.search(st).then(r => {
+    if (!grid.isConnected) return;
+    grid.innerHTML = '';
+    if (!r.ok || !r.data || r.data.error){
+      grid.appendChild(QBANK.views.empty('⚠', 'تعذّر البحث',
+        'تأكد من الاتصال، أو أن ملف CATALOG.sql مُشغَّل على القاعدة.'));
+      return;
+    }
+    const d = r.data;
+    countEl.textContent = d.total
+      ? d.total + ' مادة' + (st.q ? ' لـ «' + st.q + '»' : '')
+      : 'لا نتائج' + (st.q ? ' لـ «' + st.q + '»' : '');
+    if (!d.rows.length){
+      grid.appendChild(QBANK.views.empty('⌕', 'لم نجد شيئًا',
+        'جرّب كلمة أقصر، أو أزل بعض المرشّحات — أو كن أنت من يرفع هذه المادة.',
+        el('a', { class:'btn', href:'#/upload', text:'⇪ ارفع هذه المادة' })));
+      return;
+    }
+    d.rows.forEach(x => grid.appendChild(exCard(x)));
+    drawPager(d);
+  });
+
+  Explore.filters(st).then(r => {
+    if (!filterBox.isConnected) return;
+    if (r.ok && r.data && !r.data.error) drawFilters(r.data);
+  });
+
+  return QBANK.views.page('استكشف', 'بنوك أسئلة رفعها طلاب من جامعات عربية.', [
+    el('div', { class:'ex-bar' }, [ qIn, sortSel ]),
+    filterBox, countEl, grid, pager
+  ]);
+}
+
+const ViewExplore = { title:'استكشف', view: ViewExploreRender };
+
+QBANK.explore = Explore;
+QBANK.explore.countryName = countryName;
+QBANK.views.ViewExplore = ViewExplore;
 
 })();
 
