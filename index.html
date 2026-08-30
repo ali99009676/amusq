@@ -18,7 +18,8 @@
 */
 :root{
   /* الخط: نعتمد خطوط النظام لأن أي خط خارجي = طلب شبكة = كسر شرط العمل بلا إنترنت */
-  --font: "Segoe UI", "Noto Sans Arabic", "Dubai", "Tahoma", system-ui, -apple-system, sans-serif;
+  /* خط كوفي عربي كما في AMSU — نعتمد المتوفر في النظام فقط (لا خط خارجي) */
+  --font: "Noto Kufi Arabic", "Dubai", "Tajawal", "Cairo", "Segoe UI", Tahoma, system-ui, sans-serif;
   --font-num: "Segoe UI", system-ui, sans-serif;
 
   /* الأساس المحايد — الوضع الفاتح هو الافتراضي */
@@ -53,7 +54,7 @@
   --s5: 20px; --s6: 24px; --s7: 32px; --s8: 48px;
 
   /* الأنصاف والظلال */
-  --r1: 8px; --r2: 12px; --r3: 16px; --r4: 22px; --r-pill: 999px;
+  --r1: 10px; --r2: 14px; --r3: 20px; --r4: 26px; --r-pill: 999px;
   --sh1: 0 1px 2px rgba(16,20,45,.06), 0 1px 3px rgba(16,20,45,.04);
   --sh2: 0 4px 12px rgba(16,20,45,.08), 0 2px 4px rgba(16,20,45,.04);
   --sh3: 0 12px 32px rgba(16,20,45,.14);
@@ -388,6 +389,138 @@ img,svg{ max-width:100%; height:auto; }
 .fold[open] > summary::before{ transform:rotate(-90deg); }
 
 
+/* ===== 50-landing.css ===== */
+/*
+  صفحة الهبوط التعريفية — أول ما يراه الزائر قبل التسجيل.
+  الهوية من AMSU: خط كوفي، ألوان هادئة، حواف ناعمة، ظلال خفيفة.
+  البنية من مواقع الدورات العربية: بطل ← أرقام ← مواد ← مزايا ← خطوات ← أسعار ← دعوة.
+*/
+
+.lp{ margin-inline:calc(var(--s4) * -1); }
+
+/* ===== البطل ===== */
+.lp-hero{
+  position:relative; overflow:hidden;
+  padding:var(--s8) var(--s4) var(--s7);
+  text-align:center;
+  background:
+    radial-gradient(1100px 380px at 50% -10%, var(--brand-soft), transparent 70%),
+    linear-gradient(180deg, var(--bg-soft), var(--bg));
+}
+.lp-hero__badge{
+  display:inline-flex; align-items:center; gap:var(--s2);
+  padding:var(--s2) var(--s4); border-radius:var(--r-pill);
+  background:var(--surface); border:1px solid var(--line);
+  font-size:.82rem; font-weight:700; color:var(--brand);
+  box-shadow:var(--sh1); margin-bottom:var(--s5);
+}
+.lp-hero__title{
+  font-size:clamp(1.8rem, 6vw, 3rem); line-height:1.35; font-weight:800;
+  margin:0 0 var(--s4); letter-spacing:-.5px;
+}
+.lp-hero__title em{
+  font-style:normal;
+  background:linear-gradient(120deg, var(--brand), var(--brand-2));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.lp-hero__sub{
+  max-width:56ch; margin:0 auto var(--s6);
+  font-size:clamp(1rem, 2.6vw, 1.15rem); color:var(--text-2); line-height:1.9;
+}
+.lp-cta{ display:flex; gap:var(--s3); justify-content:center; flex-wrap:wrap; }
+.lp-cta .btn{ padding:var(--s4) var(--s7); font-size:1.02rem; }
+.btn--lg{ min-height:52px; }
+
+/* ===== شريط الأرقام ===== */
+.lp-stats{
+  display:grid; grid-template-columns:repeat(2,1fr); gap:var(--s3);
+  max-width:var(--wrap); margin:var(--s7) auto 0; padding-inline:var(--s4);
+}
+.lp-stat{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r3);
+  padding:var(--s5) var(--s3); text-align:center; box-shadow:var(--sh1);
+}
+.lp-stat__n{ display:block; font-size:1.7rem; font-weight:800; color:var(--brand); line-height:1.2; }
+.lp-stat__l{ font-size:.82rem; color:var(--text-2); }
+
+/* ===== أقسام عامة ===== */
+.lp-sec{ max-width:var(--wrap); margin-inline:auto; padding:var(--s8) var(--s4); }
+.lp-sec__head{ text-align:center; margin-bottom:var(--s7); }
+.lp-sec__kicker{
+  display:inline-block; font-size:.8rem; font-weight:800; letter-spacing:1px;
+  color:var(--brand); background:var(--brand-soft);
+  padding:var(--s1) var(--s4); border-radius:var(--r-pill); margin-bottom:var(--s3);
+}
+.lp-sec__title{ font-size:clamp(1.4rem, 4vw, 2rem); margin:0 0 var(--s3); font-weight:800; }
+.lp-sec__sub{ color:var(--text-2); max-width:52ch; margin-inline:auto; }
+
+/* ===== بطاقات المواد (العرض التعريفي) ===== */
+.lp-grid{ display:grid; gap:var(--s4); grid-template-columns:1fr; }
+@media (min-width:640px){ .lp-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (min-width:960px){ .lp-grid--3{ grid-template-columns:repeat(3,1fr); } }
+
+.lp-card{
+  position:relative; overflow:hidden;
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r3);
+  padding:var(--s5); box-shadow:var(--sh1);
+  transition:transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
+  display:flex; flex-direction:column; gap:var(--s3);
+}
+.lp-card:hover{ transform:translateY(-3px); box-shadow:var(--sh2); }
+.lp-card__top{ height:4px; position:absolute; inset-inline:0; top:0; }
+.lp-card__ico{
+  width:52px; height:52px; border-radius:var(--r2); display:grid; place-items:center;
+  font-size:1.5rem; background:var(--surface-2);
+}
+.lp-card__title{ font-size:1.05rem; font-weight:800; margin:0; }
+.lp-card__text{ color:var(--text-2); font-size:.92rem; margin:0; line-height:1.85; }
+.lp-card__meta{ display:flex; gap:var(--s2); flex-wrap:wrap; margin-top:auto; padding-top:var(--s2); }
+
+/* ===== الخطوات ===== */
+.lp-steps{ display:grid; gap:var(--s5); grid-template-columns:1fr; counter-reset:step; }
+@media (min-width:820px){ .lp-steps{ grid-template-columns:repeat(4,1fr); } }
+.lp-step{ text-align:center; }
+.lp-step__n{
+  width:46px; height:46px; margin:0 auto var(--s3); border-radius:50%;
+  display:grid; place-items:center; font-weight:800; font-size:1.05rem;
+  background:var(--brand); color:var(--on-brand); box-shadow:var(--sh2);
+}
+.lp-step__t{ font-weight:800; margin-bottom:var(--s1); }
+.lp-step__d{ color:var(--text-2); font-size:.9rem; margin:0; }
+
+/* ===== الأسعار ===== */
+.lp-price{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r4);
+  padding:var(--s6); box-shadow:var(--sh1); display:flex; flex-direction:column; gap:var(--s3);
+}
+.lp-price--hot{ border-color:var(--brand); box-shadow:var(--sh2); position:relative; }
+.lp-price--hot::before{
+  content:'الأكثر اختيارًا'; position:absolute; top:calc(var(--s4) * -1); inset-inline-start:50%;
+  transform:translateX(50%); background:var(--brand); color:var(--on-brand);
+  font-size:.75rem; font-weight:800; padding:var(--s1) var(--s4); border-radius:var(--r-pill);
+}
+.lp-price__n{ font-size:1.1rem; font-weight:800; }
+.lp-price__v{ font-size:2rem; font-weight:800; color:var(--brand); }
+.lp-price__v small{ font-size:.85rem; color:var(--text-3); font-weight:600; }
+.lp-price ul{ list-style:none; padding:0; margin:0; display:grid; gap:var(--s2); }
+.lp-price li{ display:flex; gap:var(--s2); align-items:flex-start; font-size:.92rem; color:var(--text-2); }
+.lp-price li::before{ content:'✓'; color:var(--ok); font-weight:800; }
+
+/* ===== الدعوة الأخيرة ===== */
+.lp-final{
+  max-width:var(--wrap); margin:var(--s7) auto var(--s8); padding:var(--s8) var(--s5);
+  text-align:center; border-radius:var(--r4);
+  background:linear-gradient(135deg, var(--brand), var(--brand-2));
+  color:var(--on-brand); box-shadow:var(--sh3);
+}
+.lp-final h2{ color:inherit; font-size:clamp(1.3rem, 4vw, 1.9rem); margin-bottom:var(--s3); }
+.lp-final p{ opacity:.92; max-width:48ch; margin:0 auto var(--s5); }
+.lp-final .btn{ background:var(--surface); color:var(--brand); }
+
+/* الطباعة لا تعني صفحة الهبوط */
+@media print{ .lp{ display:none; } }
+
+
 /* ===== 90-print.css ===== */
 /*
   تنسيق الطباعة مستقل تمامًا عن الشاشة (شرط في المواصفات).
@@ -439,7 +572,7 @@ img,svg{ max-width:100%; height:auto; }
       <button class="iconbtn" id="themeBtn" type="button" aria-label="تبديل الوضع الليلي" title="الوضع الليلي">
         <span class="iconbtn__ico" aria-hidden="true" data-theme-icon>☾</span>
       </button>
-      <a class="btn btn--ghost btn--sm" href="#/login" data-nav="#/login">دخول</a>
+      <a class="btn btn--sm" href="#/login" data-nav="#/login">دخول</a>
     </div>
   </div>
 </header>
@@ -660,11 +793,21 @@ const Api = {
   },
 
   auth: {
-    // دخول برابط سحري: Supabase يرسل بريدًا فيه رابط يعود إلى موقعنا حاملًا الرموز في الهاش
+    // عنوان العودة بعد الضغط على الرابط: موقعنا الحالي لا الافتراضي في إعدادات Supabase.
+    // بدونه يعود المستخدم إلى localhost فلا يدخل — وهذا سبب فشل الدخول الأول.
+    redirectTo(){
+      if (typeof location === 'undefined') return '';
+      // نحذف الهاش كي لا يختلط مسار التطبيق برموز الجلسة العائدة
+      return location.origin + location.pathname;
+    },
     magic(email){
-      return Api.raw('/auth/v1/otp', {
+      const back = Api.auth.redirectTo();
+      return Api.raw('/auth/v1/otp' + (back ? '?redirect_to=' + encodeURIComponent(back) : ''), {
         method:'POST',
-        body: JSON.stringify({ email, create_user: true })
+        body: JSON.stringify({
+          email, create_user: true,
+          options: { emailRedirectTo: back }
+        })
       });
     },
     // دخول جوجل/آبل: توجيه كامل للصفحة — يصلح للويب والتطبيق معًا
@@ -1279,6 +1422,10 @@ function subjectCard(sub){
 const ViewHome = {
   title:'الرئيسية',
   view(){
+    // الزائر يرى صفحة تعريفية تشرح وتُقنع؛ والطالب المسجَّل يرى مواده فورًا.
+    // السبب: لكلٍّ حاجة مختلفة — إقناع أولًا، ومذاكرة سريعة ثانيًا.
+    if (!AMUSQ.api.user()) return AMUSQ.views.landingView();
+
     const pack = AMUSQ.data.pack();
     const subjects = (pack.subjects || []).slice();
     const body = [];
@@ -2700,6 +2847,188 @@ function openPrintDialog(sub){
 
 AMUSQ.views.openPrintDialog = openPrintDialog;
 AMUSQ.views.buildPrintDoc = buildPrintDoc;
+
+
+/* ===== 38-landing.js ===== */
+/*
+  صفحة الهبوط التعريفية — تُعرض للزائر غير المسجَّل فقط.
+  الطالب المسجَّل يرى بطاقات مواده مباشرة كما كان، فلا نضيف له خطوة.
+  لماذا؟ لأن الزائر يحتاج إقناعًا وشرحًا، والمسجَّل يحتاج مذاكرة فورية.
+*/
+function lpStat(n, label){
+  return el('div', { class:'lp-stat' }, [
+    el('span', { class:'lp-stat__n num', text: n }),
+    el('span', { class:'lp-stat__l', text: label })
+  ]);
+}
+
+function lpSection(kicker, title, sub, body){
+  return el('section', { class:'lp-sec' }, [
+    el('div', { class:'lp-sec__head' }, [
+      kicker ? el('span', { class:'lp-sec__kicker', text: kicker }) : null,
+      el('h2', { class:'lp-sec__title', text: title }),
+      sub ? el('p', { class:'lp-sec__sub', text: sub }) : null
+    ])
+  ].concat(body || []));
+}
+
+/* بطاقة مادة في العرض التعريفي — تدعو للتسجيل لا للفتح المباشر */
+function lpSubjectCard(sub){
+  const color = AMUSQ.views.subjectColor(sub.color);
+  const left = AMUSQ.views.daysLeft(sub.exam_date);
+  return el('article', { class:'lp-card' }, [
+    el('span', { class:'lp-card__top', style:'background:' + color, 'aria-hidden':'true' }),
+    el('span', { class:'lp-card__ico', 'aria-hidden':'true', text: sub.icon || '▤' }),
+    el('h3', { class:'lp-card__title', text: sub.name }),
+    el('p', { class:'lp-card__text', text: sub.descr || 'بنك أسئلة كامل مع شرح وبطاقات حفظ واختبار تجريبي.' }),
+    el('div', { class:'lp-card__meta' }, [
+      el('span', { class:'badge num', text: (sub.q_count || 0) + ' سؤالًا' }),
+      sub.free ? el('span', { class:'badge badge--ok', text:'مجانية بالكامل' }) : null,
+      (left !== null && left >= 0) ? el('span', { class:'badge badge--warn num', text:'الاختبار بعد ' + left + ' يوم' }) : null,
+      (sub.topics && sub.topics.length) ? el('span', { class:'badge num', text: sub.topics.length + ' محاور' }) : null
+    ])
+  ]);
+}
+
+/* بطاقة ميزة */
+function lpFeature(ico, title, text){
+  return el('article', { class:'lp-card' }, [
+    el('span', { class:'lp-card__ico', 'aria-hidden':'true', text: ico }),
+    el('h3', { class:'lp-card__title', text: title }),
+    el('p', { class:'lp-card__text', text: text })
+  ]);
+}
+
+function lpStep(n, title, desc){
+  return el('div', { class:'lp-step' }, [
+    el('div', { class:'lp-step__n num', text: String(n) }),
+    el('p', { class:'lp-step__t', text: title }),
+    el('p', { class:'lp-step__d', text: desc })
+  ]);
+}
+
+function landingView(){
+  const pack = AMUSQ.data.pack();
+  const subjects = (pack.subjects || []).slice().sort((a,b) => (a.ord||0) - (b.ord||0));
+  const totalQ = subjects.reduce((s, x) => s + (x.q_count || 0), 0);
+  const freeCount = subjects.filter(s => s.free).length;
+
+  const root = el('div', { class:'lp' });
+
+  /* ١ · البطل */
+  const goSignup = el('a', { class:'btn btn--lg', href:'#/login', text:'ابدأ المراجعة مجانًا' });
+  const goSubjects = el('a', { class:'btn btn--ghost btn--lg', href:'#subjects', text:'تصفّح المواد' });
+  root.appendChild(el('header', { class:'lp-hero' }, [
+    el('span', { class:'lp-hero__badge' }, [
+      el('span', { 'aria-hidden':'true', text:'🩺' }), ' منصة مراجعة لطلاب التخصصات الصحية'
+    ]),
+    el('h1', { class:'lp-hero__title' }, [
+      'ذاكر أذكى، ',
+      el('em', { text:'لا أطول' })
+    ]),
+    el('p', { class:'lp-hero__sub', text:
+      (pack.settings && pack.settings.welcome_text) ||
+      'بنك أسئلة منقّح من ملفات دكاترتك حرفًا بحرف، مع شرح لكل إجابة، وبطاقات حفظ ذكية، واختبارات تجريبية تحاكي الامتحان الحقيقي — وتعمل بلا إنترنت.' }),
+    el('div', { class:'lp-cta' }, [goSignup, goSubjects])
+  ]));
+
+  /* ٢ · الأرقام — حقيقية من المحتوى المنشور لا مبالغات */
+  root.appendChild(el('div', { class:'lp-stats' }, [
+    lpStat(subjects.length || '—', 'مادة منشورة'),
+    lpStat(totalQ || '—', 'سؤالًا مراجَعًا'),
+    lpStat(freeCount || '—', 'مادة مجانية'),
+    lpStat('∞', 'مراجعة بلا إنترنت')
+  ]));
+
+  /* ٣ · المواد */
+  const subjectsBody = subjects.length
+    ? [el('div', { class:'lp-grid lp-grid--3' }, subjects.map(lpSubjectCard))]
+    : [AMUSQ.views.empty('▤', 'المواد في الطريق',
+        'نعمل على تجهيز أول المواد. سجّل بريدك الآن ونخبرك فور نشر أول مادة.')];
+  const secSubjects = lpSection('المواد', 'ماذا ستراجع؟',
+    'كل مادة بنك أسئلة كامل: نص السؤال كما ورد من الدكتور، وشرح يوضّح لماذا الإجابة صحيحة ولماذا غيرها خاطئ.',
+    subjectsBody);
+  secSubjects.id = 'subjects';
+  root.appendChild(secSubjects);
+
+  /* ٤ · المزايا */
+  root.appendChild(lpSection('لماذا AMUSQ؟', 'أدوات مراجعة لا مجرد ملفات',
+    'كل ميزة هنا وُلدت من حاجة حقيقية في ليالي الامتحانات.', [
+    el('div', { class:'lp-grid lp-grid--3' }, [
+      lpFeature('📄', 'نص السؤال كما هو',
+        'لا نعيد صياغة سؤال الدكتور ولا نصحّح إملاءه — تراجع ما ستُمتحن فيه بالضبط، حرفًا بحرف.'),
+      lpFeature('🧠', 'بطاقات حفظ ذكية',
+        'لكل سؤال بطاقة: الكلمة الدالة ← الكلمة المفتاحية، ورابط ذهني، وكيف تشطب المشتتات في الورقة.'),
+      lpFeature('📝', 'اختبار يشبه الامتحان',
+        'خلط عادل للأسئلة والخيارات، مؤقّت، تصحيح فوري، وتحليل نتيجتك حسب المحاور.'),
+      lpFeature('🎯', 'أخطاؤك أولًا',
+        'ما أخطأت فيه يتقدّم في الاختبار القادم، وتستطيع إعادة اختبار أخطائك وحدها بضغطة.'),
+      lpFeature('📶', 'يعمل بلا إنترنت',
+        'افتح المادة مرة واحدة متصلًا، ثم راجع في الطائرة أو المستشفى أو أي مكان بلا شبكة.'),
+      lpFeature('🖨', 'اطبع ورقتك',
+        'اختر ما تطبعه ونطاقه وهل تظهر الإجابات — بتنسيق ورقي نظيف لا ينقسم فيه سؤال بين صفحتين.')
+    ])
+  ]));
+
+  /* ٥ · الخطوات */
+  root.appendChild(lpSection('البداية', 'ثلاث دقائق وتبدأ',
+    null, [
+    el('div', { class:'lp-steps' }, [
+      lpStep(1, 'سجّل ببريدك', 'رابط دخول بلا كلمة مرور — أو بحساب جوجل أو آبل.'),
+      lpStep(2, 'اختر موادك', 'أضف مواد فصلك، واضبط موعد كل اختبار ليظهر لك العدّ التنازلي.'),
+      lpStep(3, 'راجع واحفظ', 'بنك الأسئلة والشرح وبطاقات الحفظ — وتقدّمك يُحفظ تلقائيًا.'),
+      lpStep(4, 'اختبر نفسك', 'اختبار تجريبي بنتيجة وتحليل، وأعد اختبار أخطائك حتى تتقنها.')
+    ])
+  ]));
+
+  /* ٦ · الأسعار — نموذج الفصل لا اشتراك شهري */
+  root.appendChild(lpSection('الاشتراك', 'ادفع لفصلك، لا لشهر لن تذاكر فيه',
+    'الطلب موسمي حول الامتحانات، فالاشتراك موسمي مثله.', [
+    el('div', { class:'lp-grid lp-grid--3' }, [
+      el('div', { class:'lp-price' }, [
+        el('span', { class:'lp-price__n', text:'المجانية' }),
+        el('span', { class:'lp-price__v', text:'٠ ﷼' }),
+        el('ul', {}, [
+          el('li', { text:'مادة كاملة مجانًا — بلا حدود' }),
+          el('li', { text:'كل الأدوات: بنك وشرح وحفظ واختبار' }),
+          el('li', { text:'بلا بطاقة ولا التزام' })
+        ]),
+        el('a', { class:'btn btn--soft btn--block', href:'#/login', text:'ابدأ الآن' })
+      ]),
+      el('div', { class:'lp-price lp-price--hot' }, [
+        el('span', { class:'lp-price__n', text:'حزمة الفصل' }),
+        el('span', { class:'lp-price__v' }, ['قريبًا ', el('small', { text:'/ الفصل' })]),
+        el('ul', {}, [
+          el('li', { text:'كل مواد الفصل مفتوحة' }),
+          el('li', { text:'تنتهي بنهاية الفصل — بلا تجديد تلقائي' }),
+          el('li', { text:'الدفع بمدى أو Apple Pay' })
+        ]),
+        el('a', { class:'btn btn--block', href:'#/login', text:'أبلغني عند الإطلاق' })
+      ]),
+      el('div', { class:'lp-price' }, [
+        el('span', { class:'lp-price__n', text:'مادة مفردة' }),
+        el('span', { class:'lp-price__v' }, ['قريبًا ', el('small', { text:'/ مادة' })]),
+        el('ul', {}, [
+          el('li', { text:'ادفع لما تحتاجه فقط' }),
+          el('li', { text:'صالحة حتى نهاية الفصل' }),
+          el('li', { text:'ترقية لحزمة الفصل متى شئت' })
+        ]),
+        el('a', { class:'btn btn--ghost btn--block', href:'#/login', text:'أبلغني' })
+      ])
+    ])
+  ]));
+
+  /* ٧ · الدعوة الأخيرة */
+  root.appendChild(el('section', { class:'lp-final' }, [
+    el('h2', { text:'امتحانك القادم أقرب مما تظن' }),
+    el('p', { text:'ابدأ بالمادة المجانية اليوم، وقرّر بعدها إن كانت AMUSQ تستحق.' }),
+    el('a', { class:'btn btn--lg', href:'#/login', text:'أنشئ حسابك مجانًا' })
+  ]));
+
+  return root;
+}
+
+AMUSQ.views.landingView = landingView;
 
 
 /* ===== 40-app.js ===== */
