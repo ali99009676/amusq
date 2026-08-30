@@ -4,7 +4,7 @@
   المنصة ملف واحد، فالتخزين بسيط: نسخة من الصفحة تُقدَّم عند انقطاع الشبكة.
   لا يُسجَّل إلا على https — فتح file:// لا يمر من هنا أصلًا.
 */
-const CACHE = 'amusq-v1';
+const CACHE = 'qbank-v2';   /* رُفعت مع تغيير الهوية: يجبر المتصفح على جلب البناء الجديد لا الصفحة القديمة */
 const ASSETS = ['./', './index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', e => {

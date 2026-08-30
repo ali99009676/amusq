@@ -1,13 +1,13 @@
 {
-  "name": "AMUSQ — منصة المراجعة",
-  "short_name": "AMUSQ",
-  "description": "منصة مراجعة تفاعلية لطلاب التخصصات الصحية",
+  "name": "مراجعة — بنك الأسئلة",
+  "short_name": "مراجعة",
+  "description": "بنك أسئلة تفاعلي لطلاب التخصصات الصحية — شرح وبطاقات حفظ واختبارات، ويعمل بلا إنترنت.",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "./index.html#/",
   "display": "standalone",
-  "background_color": "#f6f7fb",
-  "theme_color": "#3b5bdb",
+  "background_color": "#fbf7f0",
+  "theme_color": "#8c2f39",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }

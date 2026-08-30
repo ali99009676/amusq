@@ -1,62 +1,72 @@
 <!doctype html>
-<!-- ملف AMUSQ المبني — لا تحرّره يدويًا. مصدره في src/ ويُدمج بـ node src/build.js -->
+<!-- ملف «مراجعة — بنك الأسئلة» المبني — لا تحرّره يدويًا. مصدره في src/ ويُدمج بـ node src/build.js -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="AMUSQ — منصة مراجعة تفاعلية لطلاب التخصصات الصحية">
-<meta name="theme-color" content="#3b5bdb">
+<meta name="description" content="مراجعة — بنك الأسئلة · منصة مراجعة تفاعلية لطلاب التخصصات الصحية">
+<meta name="theme-color" content="#8c2f39">
 <link rel="manifest" href="manifest.webmanifest">
-<title>AMUSQ · منصة المراجعة</title>
+<title>مراجعة · بنك الأسئلة</title>
 <style>
 
 /* ===== 00-tokens.css ===== */
 /*
   مصدر واحد للمظهر. أي لون أو مسافة في المشروع يأتي من هنا حصرًا.
-  الهوية مأخوذة من عالم طب الطوارئ: أخضر المراقبة الحيوية، كهرماني الفرز، وورق عيادي بارد.
+
+  هوية «مراجعة — بنك الأسئلة»: ورق ومكتبة.
+  عنّابي دافئ لون الجلد على كعب الكتاب، ورملي ذهبي لون الحرف المذهّب عليه،
+  وخلفية ورقية لا بيضاء ميتة. المرجع هنا ليس شاشة بل كتاب يُفتح على المكتب.
 */
 :root{
   /* ثلاثة أدوار للخط — لا خط خارجي البتة (شرط العمل بلا إنترنت):
-     العناوين كوفي هندسي مميّز · النص خط أنعم للقراءة الطويلة · الأرقام أحادي المسافة كشاشة المراقبة */
+     العناوين خط عربي عريض له وقار الغلاف · النص أنعم للقراءة الطويلة ·
+     الأرقام أحادي المسافة كي تصطفّ في الجداول ولا ترقص عند تغيّرها */
   --font-display: "Noto Kufi Arabic", "Tajawal", "Cairo", "Segoe UI", system-ui, sans-serif;
   --font: "Dubai", "Segoe UI", "Noto Sans Arabic", Tahoma, system-ui, -apple-system, sans-serif;
   --font-num: "Cascadia Mono", "Consolas", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* الورق العيادي: أبرد من الأبيض الميت وأدفأ من الرمادي */
-  --bg:        #f5f8fa;
-  --bg-soft:   #eaf0f4;
-  --surface:   #ffffff;
-  --surface-2: #f4f8fa;
-  --line:      #dde6ec;
-  --line-soft: #eaf1f5;
+  /* الورق: دافئ لا أبيض. العين تقرأ عليه ساعات بلا إجهاد الأبيض الصريح */
+  --bg:        #fbf7f0;
+  --bg-soft:   #f3ece0;
+  --surface:   #fffdf9;
+  --surface-2: #f8f2e8;
+  --line:      #e6dcc9;
+  --line-soft: #f0e8da;
 
-  --text:      #0f1a20;
-  --text-2:    #4a5a64;
-  --text-3:    #7d8f9a;
+  /* الحبر: بنّي مسودّ لا أسود صريح — كحبر على ورق لا بكسل على زجاج */
+  --text:      #241a15;
+  --text-2:    #5c4a3e;
+  --text-3:    #8b7565;
 
-  /* أخضر المراقبة الحيوية — كان لون «الإجابة الصحيحة» فصار لون الهوية */
-  --brand:      #12805c;
-  --brand-2:    #17a074;
-  --brand-soft: #e2f4ed;
-  --on-brand:   #ffffff;
+  /* العنّابي: لون جلد الكعب. هوية المنصة وزرّها الأساسي */
+  --brand:      #8c2f39;
+  --brand-2:    #a8434d;
+  --brand-soft: #f7e8e6;
+  --on-brand:   #fffdf9;
 
-  /* حالات — تُستعمل دائمًا مع أيقونة لا باللون وحده */
-  --ok:      #12805c; --ok-soft:   #e2f4ed;
-  --warn:    #b45309; --warn-soft: #fdf0dc;   /* كهرماني الفرز */
-  --bad:     #be3428; --bad-soft:  #fceceb;
-  --star:    #c98a06;
+  /* الرملي الذهبي: الحرف المذهّب — للتمييز والنجوم لا للأزرار الأساسية */
+  --gold:      #c9a227;
+  --gold-soft: #fbf1d6;
+
+  /* حالات — تُستعمل دائمًا مع أيقونة لا باللون وحده.
+     الأخضر هنا غامق زيتوني كي لا يصرخ وسط الورق الدافئ */
+  --ok:      #4a7c46; --ok-soft:   #eaf2e6;
+  --warn:    #b06d1e; --warn-soft: #fdf0dc;
+  --bad:     #a3312a; --bad-soft:  #fbeae8;
+  --star:    #c9a227;
 
   /* سلّم مسافات أوسع نفَسًا */
   --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
   --s5: 22px; --s6: 30px; --s7: 44px; --s8: 68px;
 
-  /* حواف أنعم وظلال متعددة الطبقات — الجمال في الطبقات لا في القتامة */
+  /* حواف أنعم وظلال دافئة — الظل هنا بنّي لا رمادي، وإلا بدا الورق متسخًا */
   --r1: 10px; --r2: 14px; --r3: 20px; --r4: 28px; --r-pill: 999px;
-  --sh1: 0 1px 2px rgba(15,26,32,.04), 0 2px 6px rgba(15,26,32,.05);
-  --sh2: 0 2px 4px rgba(15,26,32,.04), 0 8px 20px rgba(15,26,32,.07);
-  --sh3: 0 4px 8px rgba(15,26,32,.05), 0 20px 48px rgba(15,26,32,.12);
-  --ring: 0 0 0 3px rgba(18,128,92,.22);
+  --sh1: 0 1px 2px rgba(60,40,25,.05), 0 2px 6px rgba(60,40,25,.06);
+  --sh2: 0 2px 4px rgba(60,40,25,.05), 0 8px 20px rgba(60,40,25,.09);
+  --sh3: 0 4px 8px rgba(60,40,25,.06), 0 20px 48px rgba(60,40,25,.14);
+  --ring: 0 0 0 3px rgba(140,47,57,.24);
 
   --wrap: 1040px;
   --topbar-h: 60px;
@@ -67,41 +77,45 @@
   --t-slow: 420ms;
   --ease: cubic-bezier(.22,.61,.36,1);
 
-  /* ألوان المواد — مشتقة من نفس العائلة العيادية لا ألوان عشوائية */
-  --subject-1: #12805c; --subject-2: #0f6f8c; --subject-3: #b45309;
-  --subject-4: #6d3fa0; --subject-5: #be3428; --subject-6: #1d5fa8;
+  /* ألوان المواد — كعوب كتب على رفّ: كلها مكتومة من عائلة واحدة،
+     فلا تتنافر مادتان جنبًا إلى جنب كما تتنافر ألوان منتقاة عشوائيًا */
+  --subject-1: #8c2f39; --subject-2: #7a5c1f; --subject-3: #3f5f4a;
+  --subject-4: #5a4a7a; --subject-5: #a15a2b; --subject-6: #2f5a6b;
 }
 
-/* الوضع الليلي: شاشة مراقبة في غرفة مظلمة */
+/* الوضع الليلي: مكتبة على ضوء مصباح — بنّي محروق لا أزرق بارد */
 :root[data-theme="dark"]{
-  --bg:        #0b1116;
-  --bg-soft:   #101a21;
-  --surface:   #14202a;
-  --surface-2: #1a2833;
-  --line:      #23343f;
-  --line-soft: #1d2b35;
+  --bg:        #16110e;
+  --bg-soft:   #1e1815;
+  --surface:   #221b17;
+  --surface-2: #2b221d;
+  --line:      #3a2e27;
+  --line-soft: #2f2621;
 
-  --text:      #e8f1f5;
-  --text-2:    #9fb3bd;
-  --text-3:    #6f8794;
+  --text:      #f2e9dd;
+  --text-2:    #c0ac9a;
+  --text-3:    #93806f;
 
-  --brand:      #2fbf90;
-  --brand-2:    #4ad4a8;
-  --brand-soft: #10322a;
-  --on-brand:   #06120e;
+  --brand:      #d97a83;
+  --brand-2:    #e8949c;
+  --brand-soft: #35211f;
+  --on-brand:   #1a0f10;
 
-  --ok:      #2fbf90; --ok-soft:   #10322a;
-  --warn:    #e0a53a; --warn-soft: #33260f;
-  --bad:     #f2776b; --bad-soft:  #35191a;
-  --star:    #f0bd4e;
+  --gold:      #e0bd52;
+  --gold-soft: #332a12;
 
-  --sh1: 0 1px 2px rgba(0,0,0,.5);
-  --sh2: 0 6px 20px rgba(0,0,0,.5);
-  --sh3: 0 22px 54px rgba(0,0,0,.62);
-  --ring: 0 0 0 3px rgba(47,191,144,.3);
+  --ok:      #7fb06f; --ok-soft:   #1d2a17;
+  --warn:    #dda049; --warn-soft: #33260f;
+  --bad:     #e8756c; --bad-soft:  #351a18;
+  --star:    #e0bd52;
 
-  --subject-1: #2fbf90; --subject-2: #48b4d4; --subject-3: #e0a53a;
-  --subject-4: #a887e0; --subject-5: #f2776b; --subject-6: #6aa8f0;
+  --sh1: 0 1px 2px rgba(0,0,0,.55);
+  --sh2: 0 6px 20px rgba(0,0,0,.55);
+  --sh3: 0 22px 54px rgba(0,0,0,.66);
+  --ring: 0 0 0 3px rgba(217,122,131,.32);
+
+  --subject-1: #d97a83; --subject-2: #d4b45e; --subject-3: #7fb08e;
+  --subject-4: #a898d8; --subject-5: #e0a06a; --subject-6: #6fa8bd;
 }
 
 
@@ -177,12 +191,17 @@ img,svg{ max-width:100%; height:auto; }
 .brand{ display:inline-flex; align-items:center; gap:var(--s2); color:var(--text); font-weight:800; letter-spacing:.5px; }
 .brand:hover{ text-decoration:none; }
 .brand__mark{
-  width:32px; height:32px; border-radius:10px; display:grid; place-items:center;
-  background:linear-gradient(140deg,var(--brand),var(--brand-2)); color:var(--on-brand);
-  font-family:var(--font-num); font-weight:700; font-size:.95rem;
-  box-shadow:0 2px 8px rgba(18,128,92,.28);
+  width:34px; height:34px; border-radius:9px; display:grid; place-items:center;
+  background:var(--brand); color:var(--on-brand);
+  box-shadow:var(--sh1);
+  /* حافة ذهبية رفيعة كحرف مذهّب على غلاف */
+  outline:1px solid var(--gold); outline-offset:-3px;
 }
-.brand__text{ font-family:var(--font-display); font-weight:800; }
+/* الاسم فوق والوصف تحته: «مراجعة» هو الاسم، و«بنك الأسئلة» يشرحه لمن يراه أول مرة */
+.brand__text{ display:flex; flex-direction:column; line-height:1.15; }
+.brand__name{ font-family:var(--font-display); font-weight:800; font-size:1.02rem; letter-spacing:-.01em; }
+.brand__sub{ font-size:.66rem; font-weight:700; color:var(--text-3); letter-spacing:.02em; }
+@media (max-width:360px){ .brand__sub{ display:none; } }   /* على أضيق جوال يبقى الاسم وحده */
 
 .main{
   flex:1 0 auto;
@@ -426,15 +445,15 @@ img,svg{ max-width:100%; height:auto; }
 /* ===== 50-landing.css ===== */
 /*
   صفحة الهبوط التعريفية — أول ما يراه الزائر قبل التسجيل.
-  الهوية من AMSU: خط كوفي، ألوان هادئة، حواف ناعمة، ظلال خفيفة.
+  هوية «مراجعة — بنك الأسئلة»: ورق دافئ، عنّابي وذهبي، وحواف كتاب.
   البنية من مواقع الدورات العربية: بطل ← أرقام ← مواد ← مزايا ← خطوات ← أسعار ← دعوة.
 */
 
 .lp{ margin-inline:calc(var(--s4) * -1); }
 
-/* ===== البطل: شاشة مراقبة حيوية =====
-   التوقيع البصري للمنصة. مأخوذ من أداة يعرفها كل مسعف: الشاشة وخط التخطيط.
-   ليس زخرفة — الأرقام أرقام الطالب الحقيقية معروضة كعلامات حيوية. */
+/* ===== البطل: صفحة كتاب مفتوح =====
+   التوقيع البصري للمنصة. ليس زخرفة: عرض كل كعب كتاب في الرفّ
+   مشتقّ من عدد أسئلة مادته فعلًا، فالصورة تقول ما تقوله الأرقام. */
 .lp-hero{
   position:relative; overflow:hidden;
   padding:var(--s8) var(--s4) var(--s7);
@@ -443,15 +462,13 @@ img,svg{ max-width:100%; height:auto; }
     radial-gradient(900px 300px at 50% 0%, var(--brand-soft), transparent 68%),
     var(--bg);
 }
-/* شبكة ورق تخطيط القلب — باهتة جدًا، تُحسّ ولا تُرى */
+/* سطور دفتر — أفقية فقط لا شبكة، لأن الورق هنا للكتابة لا للرسم البياني */
 .lp-hero::before{
-  content:''; position:absolute; inset:0; pointer-events:none; opacity:.5;
-  background-image:
-    linear-gradient(to left, var(--line-soft) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--line-soft) 1px, transparent 1px);
-  background-size:26px 26px;
-  mask-image:radial-gradient(680px 300px at 50% 0%, black 20%, transparent 78%);
-  -webkit-mask-image:radial-gradient(680px 300px at 50% 0%, black 20%, transparent 78%);
+  content:''; position:absolute; inset:0; pointer-events:none; opacity:.55;
+  background-image:linear-gradient(to bottom, var(--line-soft) 1px, transparent 1px);
+  background-size:100% 30px;
+  mask-image:radial-gradient(680px 320px at 50% 0%, black 18%, transparent 76%);
+  -webkit-mask-image:radial-gradient(680px 320px at 50% 0%, black 18%, transparent 76%);
 }
 .lp-hero > *{ position:relative; }
 
@@ -462,13 +479,14 @@ img,svg{ max-width:100%; height:auto; }
   font-size:.8rem; font-weight:700; color:var(--brand);
   box-shadow:var(--sh1); margin-bottom:var(--s5);
 }
+/* النقطة الذهبية: ختم صغير على الغلاف — تتنفّس بهدوء لا تنبض كقلب */
 .lp-hero__badge .dot{
-  width:7px; height:7px; border-radius:50%; background:var(--brand);
-  animation:lp-beat 1.6s var(--ease) infinite;
+  width:7px; height:7px; border-radius:50%; background:var(--gold);
+  animation:lp-glow 3.2s var(--ease) infinite;
 }
-@keyframes lp-beat{
-  0%,100%{ transform:scale(1); opacity:1; }
-  45%{ transform:scale(1.5); opacity:.55; }
+@keyframes lp-glow{
+  0%,100%{ opacity:1; }
+  50%{ opacity:.45; }
 }
 
 .lp-hero__title{
@@ -482,17 +500,17 @@ img,svg{ max-width:100%; height:auto; }
   font-size:clamp(1rem, 2.4vw, 1.12rem); color:var(--text-2); line-height:1.95;
 }
 
-/* خط التخطيط: يُرسم مرة عند الفتح ثم يسكن */
-.lp-ecg{ width:100%; max-width:640px; margin:var(--s6) auto 0; display:block; height:76px; }
-.lp-ecg path{
-  fill:none; stroke:var(--brand); stroke-width:2.2;
-  stroke-linecap:round; stroke-linejoin:round;
-  stroke-dasharray:1400; stroke-dashoffset:1400;
-  animation:lp-draw 2.6s var(--ease) .25s forwards;
+/* الرفّ: الكتب تصعد واحدًا بعد آخر عند الفتح ثم تسكن */
+.lp-shelf{ width:100%; max-width:640px; margin:var(--s6) auto 0; display:block; height:116px; }
+.lp-shelf__plank{ fill:var(--text-3); opacity:.5; }
+.lp-shelf__book{ transform-origin:center bottom; }
+@media (prefers-reduced-motion: no-preference){
+  .lp-shelf__book{ animation:lp-rise .5s var(--ease) backwards; animation-delay:var(--d, 0ms); }
 }
-@keyframes lp-draw{ to{ stroke-dashoffset:0; } }
-@media (prefers-reduced-motion: reduce){
-  .lp-ecg path{ stroke-dashoffset:0; animation:none; }
+@keyframes lp-rise{
+  from{ transform:scaleY(.05); opacity:0; }
+  to{ transform:scaleY(1); opacity:1; }
+}
   .lp-hero__badge .dot{ animation:none; }
 }
 
@@ -809,6 +827,47 @@ img,svg{ max-width:100%; height:auto; }
 .ad-bar{ display:flex; gap:var(--s2); flex-wrap:wrap; align-items:center; margin-bottom:var(--s4); }
 .ad-bar .input{ width:auto; flex:1; min-width:180px; }
 
+/* ===== شريط التجربة ===== */
+.trialbar{
+  display:flex; align-items:center; gap:var(--s3);
+  padding:var(--s3) var(--s4); border-radius:var(--r2);
+  background:var(--brand-soft); border:1px solid var(--brand);
+  margin-bottom:var(--s4); flex-wrap:wrap;
+}
+.trialbar__ico{ font-size:1.1rem; color:var(--brand); }
+.trialbar__t{ font-weight:700; font-size:.9rem; color:var(--brand); font-family:var(--font-num); }
+.trialbar__m{ flex:1; min-width:90px; height:8px; border-radius:var(--r-pill); background:var(--surface); overflow:hidden; }
+.trialbar__f{ display:block; height:100%; background:var(--brand); border-radius:inherit; transition:width 1s linear; }
+.trialbar.is-low{ background:var(--bad-soft); border-color:var(--bad); }
+.trialbar.is-low .trialbar__t,
+.trialbar.is-low .trialbar__ico{ color:var(--bad); }
+.trialbar.is-low .trialbar__f{ background:var(--bad); }
+@media (prefers-reduced-motion: reduce){ .trialbar__f{ transition:none; } }
+
+/* ===== المحفظة ===== */
+.wallet{
+  display:grid; gap:var(--s3); grid-template-columns:repeat(3,1fr);
+  padding:var(--s4); border-radius:var(--r3);
+  background:var(--brand-soft); border:1px solid var(--brand); text-align:center;
+}
+.wallet__n{ display:block; font-family:var(--font-num); font-size:1.5rem; font-weight:700; color:var(--brand); }
+.wallet__l{ font-size:.74rem; color:var(--text-2); font-weight:700; }
+.sharebox{ display:flex; gap:var(--s2); align-items:center; flex-wrap:wrap; }
+.sharebox .input{ flex:1; min-width:180px; font-family:var(--font-num); font-size:.82rem; }
+
+/* وسم نمط المعالجة */
+.modetag{ font-size:.7rem; padding:2px 8px; border-radius:var(--r-pill); font-weight:700; }
+.modetag--strict{ background:var(--ok-soft); color:var(--ok); }
+.modetag--enhanced{ background:var(--warn-soft); color:var(--warn); }
+
+/* بطاقة اختيار نمط المعالجة */
+.modecard{ text-align:start; cursor:pointer; border:2px solid var(--line); display:block; width:100%; }
+.modecard[aria-checked="true"]{ border-color:var(--brand); background:var(--brand-soft); }
+.modecard__t{ display:block; font-weight:800; margin-bottom:var(--s1); }
+.modecard__t::before{ content:'○ '; color:var(--text-3); }
+.modecard[aria-checked="true"] .modecard__t::before{ content:'● '; color:var(--brand); }
+.modecard__d{ display:block; font-size:.82rem; color:var(--text-2); line-height:1.6; }
+
 
 /* ===== 90-print.css ===== */
 /*
@@ -853,9 +912,21 @@ img,svg{ max-width:100%; height:auto; }
 
 <header class="topbar" id="topbar">
   <div class="wrap topbar__in">
-    <a class="brand" href="#/" aria-label="AMUSQ الرئيسية">
-      <span class="brand__mark" aria-hidden="true">A</span>
-      <span class="brand__text">AMUSQ</span>
+    <a class="brand" href="#/" aria-label="مراجعة — الرئيسية">
+      <span class="brand__mark" aria-hidden="true">
+        <!-- كتاب مفتوح: صفحتان وكعب بينهما — العلامة نفسها في الأيقونة والترويسة -->
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+          <path d="M12 6.2C10.3 5 8.2 4.5 5.5 4.5c-.8 0-1.5.1-2 .2v13c.5-.1 1.2-.2 2-.2 2.7 0 4.8.5 6.5 1.7"
+                stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 6.2C13.7 5 15.8 4.5 18.5 4.5c.8 0 1.5.1 2 .2v13c-.5-.1-1.2-.2-2-.2-2.7 0-4.8.5-6.5 1.7"
+                stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 6.2v13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="brand__text">
+        <span class="brand__name">مراجعة</span>
+        <span class="brand__sub">بنك الأسئلة</span>
+      </span>
     </a>
     <div class="topbar__actions">
       <button class="iconbtn" id="themeBtn" type="button" aria-label="تبديل الوضع الليلي" title="الوضع الليلي">
@@ -882,7 +953,7 @@ img,svg{ max-width:100%; height:auto; }
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
-window.AMUSQ_INJECTED_CONFIG = {"url":"https://gbgjadqwqzxxyhydlgtj.supabase.co","anonKey":"sb_publishable_WzJcaG6ypeLZDZiyuZ1LyQ_rVSXokoQ"};
+window.QBANK_INJECTED_CONFIG = {"url":"https://gbgjadqwqzxxyhydlgtj.supabase.co","anonKey":"sb_publishable_WzJcaG6ypeLZDZiyuZ1LyQ_rVSXokoQ"};
 (function(){
 "use strict";
 
@@ -892,7 +963,7 @@ window.AMUSQ_INJECTED_CONFIG = {"url":"https://gbgjadqwqzxxyhydlgtj.supabase.co"
   لماذا مساحة اسم واحدة على window؟ لأن الفحوص الآلية (jsdom) تحتاج بابًا واحدًا
   تدخل منه إلى المنطق دون فتح كل شيء للعالم.
 */
-const AMUSQ = { version: '0.1.0', stage: 0 };
+const QBANK = { version: '0.1.0', stage: 0 };
 
 /* --- أدوات DOM مختصرة --- */
 /* الجذر قد يختفي إن رجع وعدٌ متأخر بعد تفكيك الصفحة (تنقّل أو إغلاق تبويب) — نُرجِع لا شيء بدل الانهيار */
@@ -927,7 +998,31 @@ function esc(s){
 /* --- التخزين المحلي: التقدّم والإعدادات في localStorage (خفيفة).
        الأسئلة لاحقًا في IndexedDB لأن سقف localStorage ≈ ٥ ميغابايت لا يكفي مئات الأسئلة. --- */
 const Store = {
-  NS: 'amusq:',
+  NS: 'qbank:',
+  OLD_NS: 'amusq:',   // البادئة قبل تغيير الهوية
+
+  /*
+    هجرة تخزين الطالب عند أول فتح بعد التحديث.
+
+    تغيير البادئة وحده كان سيجعل كل طالب يفتح المنصة فيجد تقدّمه ونجومه
+    وأخطاءه المحفوظة قد اختفت — وهي في جهازه لم تُمسّ، لكنها تحت اسم لا نقرؤه.
+    فننقلها مرة واحدة ثم نمسح القديم. من لا شيء عنده لا يدفع ثمن شيء.
+  */
+  migrate(){
+    let moved = 0;
+    try{
+      Object.keys(localStorage)
+        .filter(k => k.indexOf(Store.OLD_NS) === 0)
+        .forEach(k => {
+          const fresh = Store.NS + k.slice(Store.OLD_NS.length);
+          // لا نطمس قيمة جديدة كتبها المستخدم بعد التحديث
+          if (localStorage.getItem(fresh) === null) localStorage.setItem(fresh, localStorage.getItem(k));
+          localStorage.removeItem(k);
+          moved++;
+        });
+    } catch(e){}          // التصفح الخاص قد يمنع الكتابة — لا نُسقط التطبيق
+    return moved;
+  },
   get(key, fallback){
     try{
       const raw = localStorage.getItem(Store.NS + key);
@@ -962,9 +1057,9 @@ function toast(msg, ms){
   toastTimer = setTimeout(() => box.classList.remove('is-on'), ms || 2400);
 }
 
-AMUSQ.dom = { $, $$, el, esc };
-AMUSQ.store = Store;
-AMUSQ.toast = toast;
+QBANK.dom = { $, $$, el, esc };
+QBANK.store = Store;
+QBANK.toast = toast;
 
 
 /* ===== 10-theme.js ===== */
@@ -988,8 +1083,8 @@ const Theme = {
     try{ return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); }
     catch(e){ return false; }
   },
-  current(){ return AMUSQ.store.get(Theme.KEY, 'auto'); },
-  set(mode){ AMUSQ.store.set(Theme.KEY, mode); return Theme.apply(mode); },
+  current(){ return QBANK.store.get(Theme.KEY, 'auto'); },
+  set(mode){ QBANK.store.set(Theme.KEY, mode); return Theme.apply(mode); },
   toggle(){
     const now = document.documentElement.getAttribute('data-theme') === 'dark';
     return Theme.set(now ? 'light' : 'dark');
@@ -1000,7 +1095,7 @@ const Theme = {
     if (btn) btn.addEventListener('click', () => Theme.toggle());
   }
 };
-AMUSQ.theme = Theme;
+QBANK.theme = Theme;
 
 
 /* ===== 12-config.js ===== */
@@ -1013,18 +1108,18 @@ const Config = {
   KEY: 'config',
   get(){
     // الأولوية: ما حُقن وقت البناء (config.json) ثم ما حفظه المشرف في الجهاز
-    const injected = (typeof window !== 'undefined' && window.AMUSQ_INJECTED_CONFIG) || null;
-    return injected || AMUSQ.store.get(Config.KEY, null);
+    const injected = (typeof window !== 'undefined' && window.QBANK_INJECTED_CONFIG) || null;
+    return injected || QBANK.store.get(Config.KEY, null);
   },
   set(url, anonKey){
     if (!/^https:\/\//.test(url || '')) return { ok:false, err:'الرابط يجب أن يبدأ بـ https://' };
     if (!anonKey || anonKey.length < 20) return { ok:false, err:'المفتاح العام غير صحيح' };
-    AMUSQ.store.set(Config.KEY, { url: url.replace(/\/+$/,''), anonKey });
+    QBANK.store.set(Config.KEY, { url: url.replace(/\/+$/,''), anonKey });
     return { ok:true };
   },
   ready(){ const c = Config.get(); return !!(c && c.url && c.anonKey); }
 };
-AMUSQ.config = Config;
+QBANK.config = Config;
 
 
 /* ===== 14-api.js ===== */
@@ -1039,17 +1134,17 @@ const Api = {
 
   fetchFn(){ return Api._fetch || (typeof fetch !== 'undefined' ? fetch.bind(window) : null); },
 
-  session(){ return AMUSQ.store.get(Api.SESSION_KEY, null); },
+  session(){ return QBANK.store.get(Api.SESSION_KEY, null); },
   saveSession(s){
-    if (!s) return AMUSQ.store.remove(Api.SESSION_KEY);
+    if (!s) return QBANK.store.remove(Api.SESSION_KEY);
     // نحفظ وقت الانتهاء المطلق كي نعرف متى نجدّد دون الرجوع للخادم
     s.expires_abs = Date.now() + (s.expires_in ? s.expires_in * 1000 : 3600 * 1000);
-    AMUSQ.store.set(Api.SESSION_KEY, s);
+    QBANK.store.set(Api.SESSION_KEY, s);
   },
   user(){ const s = Api.session(); return s && s.user ? s.user : null; },
 
   headers(){
-    const c = AMUSQ.config.get() || {};
+    const c = QBANK.config.get() || {};
     const s = Api.session();
     return {
       'apikey': c.anonKey || '',
@@ -1059,7 +1154,7 @@ const Api = {
   },
 
   async raw(path, opts){
-    const c = AMUSQ.config.get();
+    const c = QBANK.config.get();
     const f = Api.fetchFn();
     if (!c || !f) return { ok:false, offline:true, data:null };
     try{
@@ -1103,7 +1198,7 @@ const Api = {
     },
     // دخول جوجل/آبل: توجيه كامل للصفحة — يصلح للويب والتطبيق معًا
     oauthUrl(provider){
-      const c = AMUSQ.config.get();
+      const c = QBANK.config.get();
       if (!c) return null;
       const back = (typeof location !== 'undefined') ? location.origin + location.pathname : '';
       return c.url + '/auth/v1/authorize?provider=' + provider + '&redirect_to=' + encodeURIComponent(back);
@@ -1155,7 +1250,7 @@ const Api = {
     },
     async deleteMe(){
       const r = await Api.rpc('delete_me');
-      if (r.ok) { Api.saveSession(null); AMUSQ.store.clearAll(); }
+      if (r.ok) { Api.saveSession(null); QBANK.store.clearAll(); }
       return r;
     }
   },
@@ -1173,7 +1268,7 @@ const Api = {
     return Api.rest('profiles?id=eq.' + u.id, { method:'PATCH', body: JSON.stringify(fields) });
   }
 };
-AMUSQ.api = Api;
+QBANK.api = Api;
 
 
 /* ===== 16-data.js ===== */
@@ -1183,10 +1278,52 @@ AMUSQ.api = Api;
   أو تصفح خاص متشدد) نسقط إلى ذاكرة مؤقتة فلا تنكسر المنصة — تعمل بلا حفظ فقط.
 */
 const Data = {
-  DB_NAME: 'amusq', DB_VER: 1,
+  DB_NAME: 'qbank', DB_VER: 1,
   _db: null,
   _mem: { questions: new Map(), meta: new Map() },
   hasIDB(){ return typeof indexedDB !== 'undefined'; },
+
+  OLD_DB: 'amusq',   // قاعدة الأسئلة قبل تغيير الهوية
+
+  /*
+    نقل أسئلة الطالب المحفوظة من قاعدة الهوية القديمة.
+
+    الأسئلة بيانات مشتقّة تُجلب من الخادم عند الحاجة، لكن وعد المنصة أنها
+    «تعمل بلا إنترنت بعد أول فتح». لو تركنا القديمة لوجد الطالب الذي يذاكر
+    في الطائرة مادته فارغة. فننسخها مرة واحدة ثم نحذف القديمة كي لا تشغل مساحة.
+  */
+  migrateDB(){
+    if (!Data.hasIDB()) return Promise.resolve(0);
+    return new Promise(resolve => {
+      let req;
+      try { req = indexedDB.open(Data.OLD_DB); } catch(e){ return resolve(0); }
+      req.onerror = () => resolve(0);
+      req.onupgradeneeded = () => {
+        // لم تكن موجودة أصلًا: نُجهض الإنشاء فلا نترك قاعدة فارغة خلفنا
+        try { req.transaction.abort(); } catch(e){}
+        resolve(0);
+      };
+      req.onsuccess = async () => {
+        const oldDb = req.result;
+        if (!oldDb.objectStoreNames.contains('questions')){ oldDb.close(); return resolve(0); }
+        const rows = await new Promise(r => {
+          try {
+            const g = oldDb.transaction('questions','readonly').objectStore('questions').getAll();
+            g.onsuccess = () => r(g.result || []); g.onerror = () => r([]);
+          } catch(e){ r([]); }
+        });
+        oldDb.close();
+        if (!rows.length){ try { indexedDB.deleteDatabase(Data.OLD_DB); } catch(e){} return resolve(0); }
+        const db = await Data.open();
+        if (!db) return resolve(0);
+        const tx = db.transaction('questions','readwrite');
+        const st = tx.objectStore('questions');
+        rows.forEach(q => { try { st.put(q); } catch(e){} });
+        tx.oncomplete = () => { try { indexedDB.deleteDatabase(Data.OLD_DB); } catch(e){} resolve(rows.length); };
+        tx.onerror = () => resolve(0);
+      };
+    });
+  },
 
   open(){
     if (!Data.hasIDB()) return Promise.resolve(null);
@@ -1267,11 +1404,11 @@ const Data = {
   },
 
   /* --- المحتوى المنشور: قائمة المواد خفيفة في localStorage، والأسئلة عند الطلب --- */
-  pack(){ return AMUSQ.store.get('pack', { subjects: [], settings: {} }); },
-  savePack(p){ AMUSQ.store.set('pack', p); },
+  pack(){ return QBANK.store.get('pack', { subjects: [], settings: {} }); },
+  savePack(p){ QBANK.store.set('pack', p); },
 
   async refreshPack(){
-    const r = await AMUSQ.api.rpc('content_pack');
+    const r = await QBANK.api.rpc('content_pack');
     if (r.ok && r.data && r.data.subjects) { Data.savePack(r.data); return { ok:true, data:r.data }; }
     return r;   // فشل أو بلا إنترنت: نبقى على النسخة المخزّنة — هذا جوهر العمل دون اتصال
   },
@@ -1282,7 +1419,7 @@ const Data = {
       const local = await Data.getQuestions(subjectId);
       if (local.length) return { ok:true, data:local, from:'device' };
     }
-    const r = await AMUSQ.api.rpc('subject_questions', { sid: subjectId });
+    const r = await QBANK.api.rpc('subject_questions', { sid: subjectId });
     if (r.ok && Array.isArray(r.data)) {
       await Data.putQuestions(subjectId, r.data);
       return { ok:true, data:r.data, from:'network' };
@@ -1290,7 +1427,7 @@ const Data = {
     return { ok:false, offline: r.offline, data: [] };
   }
 };
-AMUSQ.data = Data;
+QBANK.data = Data;
 
 
 /* ===== 18-progress.js ===== */
@@ -1306,8 +1443,8 @@ const Progress = {
   _pushFn: null,   // باب حقن للفحوص
 
   blank(){ return {}; },
-  all(){ return AMUSQ.store.get(Progress.KEY, Progress.blank()); },
-  save(p){ AMUSQ.store.set(Progress.KEY, p); Progress.schedulePush(); },
+  all(){ return QBANK.store.get(Progress.KEY, Progress.blank()); },
+  save(p){ QBANK.store.set(Progress.KEY, p); Progress.schedulePush(); },
 
   forSubject(sid){
     const p = Progress.all();
@@ -1366,21 +1503,21 @@ const Progress = {
   },
   async push(){
     if (Progress._pushFn) return Progress._pushFn(Progress.all());
-    if (!AMUSQ.api.user()) return { ok:false };   // زائر: يبقى تقدّمه في جهازه حتى يسجّل
-    return AMUSQ.api.rest('progress?on_conflict=user_id', {
+    if (!QBANK.api.user()) return { ok:false };   // زائر: يبقى تقدّمه في جهازه حتى يسجّل
+    return QBANK.api.rest('progress?on_conflict=user_id', {
       method:'POST',
-      headers: Object.assign(AMUSQ.api.headers(), { 'Prefer':'resolution=merge-duplicates' }),
-      body: JSON.stringify({ user_id: AMUSQ.api.user().id, data: Progress.all(), updated_at: new Date().toISOString() })
+      headers: Object.assign(QBANK.api.headers(), { 'Prefer':'resolution=merge-duplicates' }),
+      body: JSON.stringify({ user_id: QBANK.api.user().id, data: Progress.all(), updated_at: new Date().toISOString() })
     });
   },
   // عند أول دخول على جهاز: نجلب تقدّم الحساب وندمجه مع تقدّم الجهاز ثم ندفع الناتج
   async pull(){
-    const u = AMUSQ.api.user();
+    const u = QBANK.api.user();
     if (!u) return { ok:false };
-    const r = await AMUSQ.api.rest('progress?user_id=eq.' + u.id + '&select=data');
+    const r = await QBANK.api.rest('progress?user_id=eq.' + u.id + '&select=data');
     if (r.ok && r.data && r.data[0]) {
       const merged = Progress.merge(Progress.all(), r.data[0].data || {});
-      AMUSQ.store.set(Progress.KEY, merged);
+      QBANK.store.set(Progress.KEY, merged);
       await Progress.push();
       return { ok:true, merged:true };
     }
@@ -1388,7 +1525,7 @@ const Progress = {
     return r;
   }
 };
-AMUSQ.progress = Progress;
+QBANK.progress = Progress;
 
 
 /* ===== 20-gate.js ===== */
@@ -1400,13 +1537,13 @@ AMUSQ.progress = Progress;
 */
 const Gate = {
   KEY: 'entitlements',
-  list(){ return AMUSQ.store.get(Gate.KEY, []); },
-  save(rows){ AMUSQ.store.set(Gate.KEY, rows || []); },
+  list(){ return QBANK.store.get(Gate.KEY, []); },
+  save(rows){ QBANK.store.set(Gate.KEY, rows || []); },
 
   async refresh(){
-    const u = AMUSQ.api.user();
+    const u = QBANK.api.user();
     if (!u) return { ok:false };
-    const r = await AMUSQ.api.rest('entitlements?select=subject_id,kind,expires_at&expires_at=gt.' + new Date().toISOString());
+    const r = await QBANK.api.rest('entitlements?select=subject_id,kind,expires_at&expires_at=gt.' + new Date().toISOString());
     if (r.ok && Array.isArray(r.data)) { Gate.save(r.data); return { ok:true }; }
     return r;
   },
@@ -1415,28 +1552,69 @@ const Gate = {
   canAccess(sub, now){
     if (!sub) return false;
     if (sub.free) return true;
-    if (AMUSQ.store.get('is_admin_check', {}).ok) return true;
+    if (QBANK.store.get('is_admin_check', {}).ok) return true;
     const t = now || Date.now();
     return Gate.list().some(e =>
       new Date(e.expires_at).getTime() > t &&
       (e.kind === 'semester' || e.subject_id === sub.id));
   },
 
+  /*
+    رابط الإحالة: يصل في ?ref=  فنحفظه، لأن الطالب قد يسجّل دخوله أولًا
+    ويعود بعد جولة في المنصة — ولو ضاع المُحيل ضاعت مكافأة من أوصله.
+  */
+  REF_KEY: 'ref_by',
+  captureRef(query){
+    const ref = (query && query.ref) || '';
+    if (ref) QBANK.store.set(Gate.REF_KEY, ref);
+    return ref || QBANK.store.get(Gate.REF_KEY, '');
+  },
+  ref(){ return QBANK.store.get(Gate.REF_KEY, ''); },
+
+  // زر الشراء وحده — تُعيد استعماله بطاقة القفل وبطاقة انتهاء التجربة
+  buyButton(sub){
+    const isApp = !!(typeof window !== 'undefined' && window.QBANK_NATIVE_APP);
+    const price = sub.price ? ' — ' + sub.price + ' ريال' : '';
+    return isApp
+      ? el('button', { class:'btn btn--block', type:'button', 'data-buy': sub.id,
+          'data-ref': Gate.ref() || null, text:'اشترِ من داخل التطبيق' + price })
+      : el('a', { class:'btn btn--block', href:'https://www.alsoqoor.com', target:'_blank',
+          rel:'noopener noreferrer', 'data-ref': Gate.ref() || null,
+          text:'اشترِ من الموقع (مدى / Apple Pay)' + price });
+  },
+
   // بطاقة الشراء — تحترم قاعدة المتاجر: داخل التطبيق لا إحالة للموقع
   paywallCard(sub){
-    const isApp = !!(typeof window !== 'undefined' && window.AMUSQ_NATIVE_APP);
     return el('div', { class:'card', style:'text-align:center' }, [
       el('span', { class:'empty__ico', 'aria-hidden':'true', text:'🔒' }),
       el('p', { class:'empty__title', text:'«' + sub.name + '» مادة مدفوعة' }),
       el('p', { class:'empty__text', text:'اشترِ المادة وحدها أو حزمة الفصل كاملة — صالحة حتى نهاية الفصل، بلا اشتراك شهري.' }),
-      isApp
-        ? el('button', { class:'btn btn--block', type:'button', 'data-buy': sub.id, text:'اشترِ من داخل التطبيق' })
-        : el('a', { class:'btn btn--block', href:'https://www.alsoqoor.com', target:'_blank', rel:'noopener noreferrer', text:'اشترِ من الموقع (مدى / Apple Pay)' }),
+      Gate.buyButton(sub),
       el('p', { class:'field__hint', text:'لديك حساب اشترى من قبل؟ سجّل دخولك وسيُفتح المحتوى تلقائيًا.' })
     ]);
+  },
+
+  /*
+    القرار المعتمد يأتي من القاعدة (subject_access)، وهذه نسخة محلية للعرض الفوري
+    قبل وصول الرد — كي لا تومض الشاشة. لا تُمنح بها صلاحية: القاعدة ترفض من لا حق له
+    حتى لو كذبت هذه الدالة، والفحوص تثبت ذلك.
+  */
+  localGuess(sub, now){
+    if (!sub) return { allowed:false, reason:'missing' };
+    if (sub.free) return { allowed:true, reason:'free' };
+    if (QBANK.store.get('is_admin_check', {}).ok) return { allowed:true, reason:'admin' };
+    const u = QBANK.api.user();
+    if (!u) return { allowed:false, reason:'anon' };
+    const t = now || Date.now();
+    if (Gate.list().some(e => new Date(e.expires_at).getTime() > t &&
+        (e.kind === 'semester' || e.subject_id === sub.id)))
+      return { allowed:true, reason:'entitled' };
+    // مادته هو؟ ربما بقيت تجربة — والقاعدة وحدها تعرف كم بقي منها
+    if (sub.created_by && sub.created_by === u.id) return { allowed:true, reason:'trial', pending:true };
+    return { allowed:false, reason:'paywall' };
   }
 };
-AMUSQ.gate = Gate;
+QBANK.gate = Gate;
 
 
 /* ===== 20-router.js ===== */
@@ -1494,7 +1672,7 @@ const Router = {
     const view = r.def && typeof r.def.view === 'function' ? r.def.view(r) : null;
     if (view) main.appendChild(view);
 
-    document.title = (r.def && r.def.title ? r.def.title + ' · ' : '') + 'AMUSQ';
+    document.title = (r.def && r.def.title ? r.def.title + ' · ' : '') + 'مراجعة';
     Router.paintNav(r.path);
     // نُعيد التركيز إلى المحتوى كي يعرف قارئ الشاشة أن الصفحة تبدّلت
     if (Router.booted) { try { main.focus(); } catch(e){} }
@@ -1519,7 +1697,7 @@ const Router = {
     Router.render(location.hash || '#/');
   }
 };
-AMUSQ.router = Router;
+QBANK.router = Router;
 
 
 /* ===== 24-exam.js ===== */
@@ -1631,7 +1809,7 @@ const Exam = {
     };
   }
 };
-AMUSQ.exam = Exam;
+QBANK.exam = Exam;
 
 
 /* ===== 30-views.js ===== */
@@ -1678,13 +1856,13 @@ function daysLeft(dateStr, now){
   const d = new Date(dateStr).getTime() - (now || Date.now());
   return Math.ceil(d / 86400000);
 }
-function mySubjects(){ return AMUSQ.store.get('my_subjects', []); }
+function mySubjects(){ return QBANK.store.get('my_subjects', []); }
 
 function subjectCard(sub){
   const mine = mySubjects().indexOf(sub.id) !== -1;
   const left = daysLeft(sub.exam_date);
   const past = left !== null && left < 0;
-  const pct = AMUSQ.progress.pctDone(sub.id, sub.q_count);
+  const pct = QBANK.progress.pctDone(sub.id, sub.q_count);
   const color = subjectColor(sub.color);
 
   const card = el('article', { class:'card subj' + (past ? ' is-past' : ''), tabindex:'0', role:'link',
@@ -1705,8 +1883,8 @@ function subjectCard(sub){
       el('div', { style:'width:' + pct + '%;background:' + color })
     ])
   ]);
-  card.addEventListener('click', () => AMUSQ.router.go('#/subject/' + sub.id));
-  card.addEventListener('keydown', e => { if (e.key === 'Enter') AMUSQ.router.go('#/subject/' + sub.id); });
+  card.addEventListener('click', () => QBANK.router.go('#/subject/' + sub.id));
+  card.addEventListener('keydown', e => { if (e.key === 'Enter') QBANK.router.go('#/subject/' + sub.id); });
   return card;
 }
 
@@ -1715,9 +1893,9 @@ const ViewHome = {
   view(){
     // الزائر يرى صفحة تعريفية تشرح وتُقنع؛ والطالب المسجَّل يرى مواده فورًا.
     // السبب: لكلٍّ حاجة مختلفة — إقناع أولًا، ومذاكرة سريعة ثانيًا.
-    if (!AMUSQ.api.user()) return AMUSQ.views.landingView();
+    if (!QBANK.api.user()) return QBANK.views.landingView();
 
-    const pack = AMUSQ.data.pack();
+    const pack = QBANK.data.pack();
     const subjects = (pack.subjects || []).slice();
     const body = [];
 
@@ -1726,7 +1904,7 @@ const ViewHome = {
 
     if (!subjects.length) {
       body.push(empty('▤', 'لا مواد بعد',
-        AMUSQ.config.ready()
+        QBANK.config.ready()
           ? 'لم تُنشر مواد حتى الآن — عد قريبًا، أو تأكد من الاتصال لمزامنة الجديد.'
           : 'المنصة تبدأ فارغة عن قصد. يضيف المشرف المواد من لوحة التحكم وستظهر هنا فور نشرها.',
         el('div', { class:'row', style:'justify-content:center;margin-top:16px' }, [
@@ -1759,11 +1937,11 @@ const ViewHome = {
         add.addEventListener('click', e => {
           e.stopPropagation();
           const list = mySubjects();
-          if (list.indexOf(su.id) === -1) { list.push(su.id); AMUSQ.store.set('my_subjects', list); }
-          AMUSQ.api.rest('enrollments', { method:'POST', body: JSON.stringify({
-            user_id: (AMUSQ.api.user() || {}).id, subject_id: su.id }) });
-          AMUSQ.toast('أُضيفت «' + su.name + '» إلى موادك');
-          AMUSQ.router.render('#/');
+          if (list.indexOf(su.id) === -1) { list.push(su.id); QBANK.store.set('my_subjects', list); }
+          QBANK.api.rest('enrollments', { method:'POST', body: JSON.stringify({
+            user_id: (QBANK.api.user() || {}).id, subject_id: su.id }) });
+          QBANK.toast('أُضيفت «' + su.name + '» إلى موادك');
+          QBANK.router.render('#/');
         });
         c.appendChild(el('div', { class:'row', style:'margin-top:8px' }, [add]));
         return c;
@@ -1784,11 +1962,11 @@ function loginCard(opts){
   async function send(){
     const val = (email.value || '').trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val)) { msg.textContent = 'اكتب بريدًا صحيحًا أولًا.'; email.focus(); return; }
-    if (!AMUSQ.config.ready()) { msg.textContent = 'المنصة غير موصولة بالخادم بعد — يضبطها المشرف من الإعدادات.'; return; }
+    if (!QBANK.config.ready()) { msg.textContent = 'المنصة غير موصولة بالخادم بعد — يضبطها المشرف من الإعدادات.'; return; }
     btn.setAttribute('aria-disabled','true'); btn.textContent = 'جارٍ الإرسال…';
-    const r = await AMUSQ.api.auth.magic(val);
+    const r = await QBANK.api.auth.magic(val);
     btn.removeAttribute('aria-disabled'); btn.textContent = 'أرسل رابط الدخول';
-    if (r.ok) { msg.textContent = 'تم! افتح بريدك واضغط رابط الدخول.'; AMUSQ.toast('أُرسل رابط الدخول'); }
+    if (r.ok) { msg.textContent = 'تم! افتح بريدك واضغط رابط الدخول.'; QBANK.toast('أُرسل رابط الدخول'); }
     else if (r.offline) msg.textContent = 'لا اتصال بالإنترنت — الدخول يحتاج اتصالًا مرة واحدة فقط.';
     else msg.textContent = 'تعذّر الإرسال. تحقق من البريد وحاول ثانية.';
   }
@@ -1797,8 +1975,8 @@ function loginCard(opts){
 
   const gBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب جوجل' });
   const aBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب آبل' });
-  gBtn.addEventListener('click', () => { const u = AMUSQ.api.auth.oauthUrl('google'); if (u) location.href = u; else AMUSQ.toast('المنصة غير موصولة بالخادم بعد'); });
-  aBtn.addEventListener('click', () => { const u = AMUSQ.api.auth.oauthUrl('apple');  if (u) location.href = u; else AMUSQ.toast('المنصة غير موصولة بالخادم بعد'); });
+  gBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('google'); if (u) location.href = u; else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
+  aBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('apple');  if (u) location.href = u; else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
 
   return el('div', { class:'card stack' }, [
     el('label', { class:'field', style:'margin:0' }, [
@@ -1815,7 +1993,7 @@ function loginCard(opts){
 const ViewLogin = {
   title:'دخول الطالب',
   view(){
-    if (AMUSQ.api.user()) { return page('حسابي', null, [ AMUSQ.views.accountBody() ]); }
+    if (QBANK.api.user()) { return page('حسابي', null, [ QBANK.views.accountBody() ]); }
     return page('دخول الطالب', 'سجّل ليُحفظ تقدّمك في حسابك ويتزامن بين أجهزتك.', [
       loginCard({ emailId:'loginEmail', label:'البريد الإلكتروني' }),
       el('div', { class:'card' }, [
@@ -1846,8 +2024,8 @@ const ViewSettings = {
       el('button', { class:'btn btn--soft btn--sm', type:'button', id:'setThemeBtn', text:'تبديل' })
     ]);
     themeRow.querySelector('#setThemeBtn').addEventListener('click', () => {
-      const mode = AMUSQ.theme.toggle();
-      AMUSQ.toast(mode === 'dark' ? 'الوضع الليلي مُفعَّل' : 'الوضع الفاتح مُفعَّل');
+      const mode = QBANK.theme.toggle();
+      QBANK.toast(mode === 'dark' ? 'الوضع الليلي مُفعَّل' : 'الوضع الفاتح مُفعَّل');
     });
 
     const resetRow = el('div', { class:'row' }, [
@@ -1856,16 +2034,16 @@ const ViewSettings = {
       el('button', { class:'btn btn--ghost btn--sm', type:'button', id:'resetBtn', text:'تصفير' })
     ]);
     resetRow.querySelector('#resetBtn').addEventListener('click', () => {
-      AMUSQ.store.clearAll();
-      AMUSQ.theme.apply('auto');
-      AMUSQ.toast('حُذفت بيانات هذا الجهاز');
+      QBANK.store.clearAll();
+      QBANK.theme.apply('auto');
+      QBANK.toast('حُذفت بيانات هذا الجهاز');
     });
 
     return page('الإعدادات', 'تخصّ هذا الجهاز، ولا تُغيّر حسابك.', [
       el('div', { class:'card stack' }, [ themeRow, el('hr', { class:'divider' }), resetRow ]),
       el('div', { class:'card' }, [
         el('h2', { text:'عن المنصة' }),
-        el('p', { class:'page__sub', text:'AMUSQ — منصة مراجعة تفاعلية لطلاب التخصصات الصحية. الإصدار ' + AMUSQ.version + ' · المرحلة ' + AMUSQ.stage })
+        el('p', { class:'page__sub', text:'QBANK — منصة مراجعة تفاعلية لطلاب التخصصات الصحية. الإصدار ' + QBANK.version + ' · المرحلة ' + QBANK.stage })
       ])
     ]);
   }
@@ -1884,7 +2062,7 @@ const ViewNotFound = {
   }
 };
 
-AMUSQ.views = { ViewHome, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects };
+QBANK.views = { ViewHome, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects };
 
 
 /* ===== 31-account.js ===== */
@@ -1895,9 +2073,9 @@ AMUSQ.views = { ViewHome, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound,
 const AVATARS = ['🧑‍⚕️','👩‍⚕️','🩺','🚑','💉','🧠','🫀','🦴','🔬','📚'];
 
 function accountBody(){
-  const u = AMUSQ.api.user();
+  const u = QBANK.api.user();
   if (!u) return el('div');
-  const prof = AMUSQ.store.get('profile', { name:'', avatar: AVATARS[0] });
+  const prof = QBANK.store.get('profile', { name:'', avatar: AVATARS[0] });
 
   const nameInput = el('input', { class:'input', id:'accName', value: prof.name || '', placeholder:'اسمك الظاهر في المنصة' });
   const avatarRow = el('div', { class:'row', role:'radiogroup', 'aria-label':'الصورة الرمزية' },
@@ -1918,16 +2096,16 @@ function accountBody(){
   saveBtn.addEventListener('click', async () => {
     const picked = avatarRow.querySelector('[aria-checked="true"] .iconbtn__ico');
     const data = { name: nameInput.value.trim(), avatar: picked ? picked.textContent : AVATARS[0] };
-    AMUSQ.store.set('profile', data);
-    const r = await AMUSQ.api.saveProfile(data);
-    AMUSQ.toast(r.ok ? 'حُفظ ملفك' : 'حُفظ في جهازك، وسيتزامن عند الاتصال');
+    QBANK.store.set('profile', data);
+    const r = await QBANK.api.saveProfile(data);
+    QBANK.toast(r.ok ? 'حُفظ ملفك' : 'حُفظ في جهازك، وسيتزامن عند الاتصال');
   });
 
   // تقدّمي في كل مادة — من الحزمة المحلية، فيعمل بلا إنترنت
-  const pack = AMUSQ.data.pack();
+  const pack = QBANK.data.pack();
   const progList = el('div', { class:'stack' },
     (pack.subjects || []).map(s => {
-      const pct = AMUSQ.progress.pctDone(s.id, s.q_count);
+      const pct = QBANK.progress.pctDone(s.id, s.q_count);
       return el('div', { class:'row' }, [
         el('span', { text: (s.icon || '▤') + ' ' + s.name }),
         el('span', { class:'spacer' }),
@@ -1938,15 +2116,15 @@ function accountBody(){
 
   const syncBtn = el('button', { class:'btn btn--soft btn--block', type:'button', text:'زامن الآن' });
   syncBtn.addEventListener('click', async () => {
-    const r = await AMUSQ.progress.pull();
-    AMUSQ.toast(r.ok ? 'تمت المزامنة والدمج' : 'تعذّرت المزامنة — لا اتصال');
+    const r = await QBANK.progress.pull();
+    QBANK.toast(r.ok ? 'تمت المزامنة والدمج' : 'تعذّرت المزامنة — لا اتصال');
   });
 
   const outBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'تسجيل الخروج' });
   outBtn.addEventListener('click', async () => {
-    await AMUSQ.api.auth.signOut();
-    AMUSQ.toast('خرجت من حسابك — تقدّمك باقٍ في جهازك');
-    AMUSQ.router.go('#/');
+    await QBANK.api.auth.signOut();
+    QBANK.toast('خرجت من حسابك — تقدّمك باقٍ في جهازك');
+    QBANK.router.go('#/');
   });
 
   // الحذف النهائي: تأكيد بكتابة كلمة صريحة — خطوة لا تُتراجَع
@@ -1954,10 +2132,10 @@ function accountBody(){
     style:'color:var(--bad);border-color:var(--bad)', text:'احذف حسابي نهائيًا' });
   delBtn.addEventListener('click', async () => {
     const word = (typeof prompt === 'function') ? prompt('سيُحذف حسابك وكل بياناتك نهائيًا ولا رجوع. اكتب «حذف» للتأكيد:') : null;
-    if (word !== 'حذف') { AMUSQ.toast('أُلغي الحذف'); return; }
-    const r = await AMUSQ.api.auth.deleteMe();
-    if (r.ok) { await AMUSQ.data.clearAll(); AMUSQ.toast('حُذف حسابك وكل بياناته'); AMUSQ.router.go('#/'); }
-    else AMUSQ.toast('تعذّر الحذف — تحقق من الاتصال');
+    if (word !== 'حذف') { QBANK.toast('أُلغي الحذف'); return; }
+    const r = await QBANK.api.auth.deleteMe();
+    if (r.ok) { await QBANK.data.clearAll(); QBANK.toast('حُذف حسابك وكل بياناته'); QBANK.router.go('#/'); }
+    else QBANK.toast('تعذّر الحذف — تحقق من الاتصال');
   });
 
   return el('div', { class:'stack' }, [
@@ -1979,14 +2157,16 @@ function accountBody(){
 const ViewAccount = {
   title:'حسابي',
   view(){
-    if (!AMUSQ.api.user()) return AMUSQ.views.ViewLogin.view();
-    return AMUSQ.views.page('حسابي', null, [ accountBody() ]);
+    if (!QBANK.api.user()) return QBANK.views.ViewLogin.view();
+    // المحفظة تُبنى في 47-wallet.js — تُلحق هنا حين تكون محمّلة
+    const wallet = (QBANK.wallet && QBANK.wallet.body) ? QBANK.wallet.body() : null;
+    return QBANK.views.page('حسابي', null, [ accountBody(), wallet ]);
   }
 };
 
-AMUSQ.views.accountBody = accountBody;
-AMUSQ.views.ViewAccount = ViewAccount;
-AMUSQ.views.AVATARS = AVATARS;
+QBANK.views.accountBody = accountBody;
+QBANK.views.ViewAccount = ViewAccount;
+QBANK.views.AVATARS = AVATARS;
 
 
 /* ===== 32-board.js ===== */
@@ -1998,16 +2178,16 @@ const ViewBoard = {
   title:'المتصدرون',
   view(){
     const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
-    AMUSQ.api.rpc('board', { lim: 10 }).then(r => {
+    QBANK.api.rpc('board', { lim: 10 }).then(r => {
       if (!body.isConnected) return;
       body.innerHTML = '';
-      if (!r.ok) { body.appendChild(AMUSQ.views.empty('🏆', 'تعذّر الجلب', r.offline ? 'المتصدرون يحتاجون اتصالًا.' : 'حاول لاحقًا.')); return; }
-      if (r.data && r.data.disabled) { body.appendChild(AMUSQ.views.empty('🏆', 'اللوحة موقوفة', 'أوقفها المشرف مؤقتًا.')); return; }
+      if (!r.ok) { body.appendChild(QBANK.views.empty('🏆', 'تعذّر الجلب', r.offline ? 'المتصدرون يحتاجون اتصالًا.' : 'حاول لاحقًا.')); return; }
+      if (r.data && r.data.disabled) { body.appendChild(QBANK.views.empty('🏆', 'اللوحة موقوفة', 'أوقفها المشرف مؤقتًا.')); return; }
       const rows = (r.data && r.data.rows) || [];
       body.appendChild(el('p', { class:'row' }, [
         el('span', { class:'badge badge--ok num', text:'● متواجد الآن: ' + ((r.data && r.data.online) || 0) })
       ]));
-      if (!rows.length) { body.appendChild(AMUSQ.views.empty('🏆', 'لا نتائج بعد', 'أول اختبار تجريبي يفتح اللوحة.')); return; }
+      if (!rows.length) { body.appendChild(QBANK.views.empty('🏆', 'لا نتائج بعد', 'أول اختبار تجريبي يفتح اللوحة.')); return; }
       body.appendChild(el('div', { class:'card stack' }, rows.map((row, i) => el('div', { class:'row' }, [
         el('span', { class:'badge num', text:'#' + (i + 1) }),
         el('span', { text: (row.avatar || '👤') + ' ' + row.name }),
@@ -2016,10 +2196,10 @@ const ViewBoard = {
         el('span', { class:'badge num', text: row.attempts + ' اختبار' })
       ]))));
     });
-    return AMUSQ.views.page('المتصدرون', 'أفضل النتائج — بأسماء العرض فقط.', [body]);
+    return QBANK.views.page('المتصدرون', 'أفضل النتائج — بأسماء العرض فقط.', [body]);
   }
 };
-AMUSQ.views.ViewBoard = ViewBoard;
+QBANK.views.ViewBoard = ViewBoard;
 
 
 /* ===== 33-admin.js ===== */
@@ -2031,24 +2211,24 @@ AMUSQ.views.ViewBoard = ViewBoard;
 const Admin = {
   /* هل الجلسة الحالية لمشرف؟ نسأل قاعدة البيانات مرة ونخزّن الجواب للجلسة */
   async check(){
-    if (!AMUSQ.api.user()) return false;
-    const cached = AMUSQ.store.get('is_admin_check', null);
-    if (cached && cached.uid === AMUSQ.api.user().id) return cached.ok;
-    const r = await AMUSQ.api.myProfile();
+    if (!QBANK.api.user()) return false;
+    const cached = QBANK.store.get('is_admin_check', null);
+    if (cached && cached.uid === QBANK.api.user().id) return cached.ok;
+    const r = await QBANK.api.myProfile();
     const ok = !!(r.ok && r.data && r.data.is_admin);
-    AMUSQ.store.set('is_admin_check', { uid: AMUSQ.api.user().id, ok });
+    QBANK.store.set('is_admin_check', { uid: QBANK.api.user().id, ok });
     return ok;
   },
 
   /* رابط دوال الخادم: على Vercel هو نفس الأصل، ومن file:// يضبطه المشرف مرة واحدة */
   apiBase(){
-    const c = AMUSQ.store.get('api_base', '');
+    const c = QBANK.store.get('api_base', '');
     if (c) return c.replace(/\/+$/,'');
     return (typeof location !== 'undefined' && location.protocol.indexOf('http') === 0) ? '' : null;
   },
   async server(path, body){
     const base = Admin.apiBase();
-    const f = AMUSQ.api.fetchFn();
+    const f = QBANK.api.fetchFn();
     if (base === null || !f) return { ok:false, offline:true };
     try{
       const res = await f(base + path, {
@@ -2068,7 +2248,9 @@ const Admin = {
     return out;
   },
   newWizard(){
-    return { step:1, filename:'', raw:[], enriched:[], draftId:null, done:0, total:0, error:'' };
+    // strict افتراضًا: قاعدة القداسة هي الأصل، والتحسين اختيار صريح من الرافع
+    return { step:1, filename:'', subjectName:'', slug:'', mode:'strict',
+             raw:[], enriched:[], draftId:null, done:0, total:0, error:'' };
   },
   // تقدير التكلفة قبل التشغيل: عدد الأسئلة والدفعات — يقرّر المشرف على بيّنة
   estimate(w){
@@ -2076,9 +2258,12 @@ const Admin = {
   },
 
   async wizardIngest(w, filename, base64){
-    const r = await Admin.server('/api/ingest', { filename, content_base64: base64 });
+    const r = await Admin.server('/api/ingest', { filename, content_base64: base64,
+      subject_name: w.subjectName || '', sanctity_mode: w.mode || 'strict' });
     if (!r.ok) { w.error = (r.data && r.data.error) || 'تعذّر الاتصال بالخادم'; return w; }
     w.filename = filename; w.raw = r.data.questions; w.total = r.data.total;
+    w.subjectName = w.subjectName || r.data.subject_name || '';
+    w.slug = r.data.slug || '';
     w.step = 2; w.error = '';
     return w;
   },
@@ -2089,7 +2274,7 @@ const Admin = {
     for (let i = 0; i < batches.length; i++) {
       // لا إعادة معالجة لما اكتمل — الاستئناف يبدأ من حيث توقّف
       if (w.done >= (i + 1) * Admin.BATCH) continue;
-      const r = await Admin.server('/api/ai', { questions: batches[i] });
+      const r = await Admin.server('/api/ai', { questions: batches[i], sanctity_mode: w.mode || 'strict' });
       if (!r.ok) { w.error = (r.data && r.data.error) || 'انقطعت الدفعة ' + (i + 1); return w; }
       w.enriched = w.enriched.concat(r.data.questions);
       w.done = Math.min(w.enriched.length, w.total);
@@ -2102,19 +2287,19 @@ const Admin = {
 
   async saveDraft(w){
     const body = {
-      name: w.filename.replace(/\.[^.]+$/, ''),
+      name: w.subjectName || w.filename.replace(/\.[^.]+$/, ''),
       source_name: w.filename,
       status: w.done >= w.total ? 'reviewing' : 'processing',
       payload: w.enriched, total: w.total, done: w.done,
       updated_at: new Date().toISOString()
     };
     if (w.draftId) {
-      return AMUSQ.api.rest('drafts?id=eq.' + w.draftId, { method:'PATCH', body: JSON.stringify(body) });
+      return QBANK.api.rest('drafts?id=eq.' + w.draftId, { method:'PATCH', body: JSON.stringify(body) });
     }
-    body.created_by = (AMUSQ.api.user() || {}).id;
-    const r = await AMUSQ.api.rest('drafts?select=id', {
+    body.created_by = (QBANK.api.user() || {}).id;
+    const r = await QBANK.api.rest('drafts?select=id', {
       method:'POST',
-      headers: Object.assign(AMUSQ.api.headers(), { 'Prefer':'return=representation' }),
+      headers: Object.assign(QBANK.api.headers(), { 'Prefer':'return=representation' }),
       body: JSON.stringify(body)
     });
     if (r.ok && r.data && r.data[0]) w.draftId = r.data[0].id;
@@ -2123,7 +2308,23 @@ const Admin = {
 
   // الاعتماد: نداء واحد ذرّي في قاعدة البيانات — إما كل شيء أو لا شيء
   approve(w, publish){
-    return AMUSQ.api.rpc('approve_draft', { draft_id: w.draftId, publish });
+    return QBANK.api.rpc('approve_draft', { draft_id: w.draftId, publish });
+  },
+
+  /*
+    بعد الاعتماد نختم المادة بهوية رافعها: من رفعها، وبأي نمط، وبأي مسار.
+    نداء منفصل عن approve_draft عمدًا كي لا نغيّر توقيع دالة معتمدة تعمل،
+    وفشله لا يُبطل مادة أُنشئت — يبقى المشرف قادرًا على ضبط الباقي بيده.
+  */
+  async stamp(subjectId, w){
+    if (!subjectId) return { ok:false };
+    const u = QBANK.api.user() || {};
+    return QBANK.api.rest('subjects?id=eq.' + subjectId, { method:'PATCH', body: JSON.stringify({
+      created_by: u.id || null,
+      sanctity_mode: w.mode === 'enhanced' ? 'enhanced' : 'strict',
+      slug: w.slug || null,
+      status: 'published'
+    }) });
   },
 
   // كشف المكرر بتشابه نصي بسيط: نفس الأحرف الدنيا بعد إزالة الفراغات — يوسم لا يحذف
@@ -2148,12 +2349,12 @@ function adminStat(label, value){
 
 function adminStudentsTab(box){
   box.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
-  Promise.all([ AMUSQ.api.rpc('admin_stats'), AMUSQ.api.rpc('admin_students', { page:0, page_size:50, search:'' }) ])
+  Promise.all([ QBANK.api.rpc('admin_stats'), QBANK.api.rpc('admin_students', { page:0, page_size:50, search:'' }) ])
     .then(([st, rows]) => {
       if (!box.isConnected) return;   // غادر المشرف الشاشة قبل وصول الرد
       box.innerHTML = '';
       if (!st.ok || (st.data && st.data.error)) {
-        box.appendChild(AMUSQ.views.empty('⚠', 'تعذّر الجلب', st.offline ? 'لا اتصال بالإنترنت.' : 'تأكد أن حسابك مشرف وأن قاعدة البيانات مجهزة.'));
+        box.appendChild(QBANK.views.empty('⚠', 'تعذّر الجلب', st.offline ? 'لا اتصال بالإنترنت.' : 'تأكد أن حسابك مشرف وأن قاعدة البيانات مجهزة.'));
         return;
       }
       const s = st.data;
@@ -2162,7 +2363,7 @@ function adminStudentsTab(box){
         adminStat('اختبارًا', s.attempts), adminStat('متوسط النتائج ٪', s.avg_pct)
       ]));
       const list = (rows.ok && rows.data && rows.data.rows) || [];
-      if (!list.length) { box.appendChild(AMUSQ.views.empty('👥', 'لا طلاب بعد', 'سيظهر الطلاب هنا فور تسجيلهم.')); return; }
+      if (!list.length) { box.appendChild(QBANK.views.empty('👥', 'لا طلاب بعد', 'سيظهر الطلاب هنا فور تسجيلهم.')); return; }
       const tbl = el('div', { class:'card stack' }, list.map(r => {
         const row = el('button', { class:'row rowbtn', type:'button' }, [
           el('span', { text: (r.avatar || '👤') + ' ' + (r.name || 'بلا اسم') }),
@@ -2171,7 +2372,7 @@ function adminStudentsTab(box){
           el('span', { class:'badge badge--ok num', text: 'أفضل ' + Math.round(r.best) + '٪' })
         ]);
         row.addEventListener('click', async () => {
-          const at = await AMUSQ.api.rpc('admin_attempts', { uid: r.id });
+          const at = await QBANK.api.rpc('admin_attempts', { uid: r.id });
           const items = (at.ok && Array.isArray(at.data)) ? at.data : [];
           const det = el('div', { class:'card stack' },
             items.length ? items.map(a => el('div', { class:'row' }, [
@@ -2190,16 +2391,16 @@ function adminStudentsTab(box){
 
 function adminContentTab(box){
   const upBtn = el('button', { class:'btn btn--block', type:'button', text:'⇪ ارفع ملف أسئلة جديدًا' });
-  upBtn.addEventListener('click', () => AMUSQ.router.go('#/admin/upload'));
+  upBtn.addEventListener('click', () => QBANK.router.go('#/admin/upload'));
   box.appendChild(upBtn);
   const listBox = el('div', { class:'stack', style:'margin-top:16px' });
   box.appendChild(listBox);
   listBox.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
 
   Promise.all([
-    AMUSQ.api.rest('subjects?select=id,name,color,icon,q_count,published,free,ord,exam_date&order=ord'),
+    QBANK.api.rest('subjects?select=id,name,color,icon,q_count,published,free,ord,exam_date&order=ord'),
     // قوائم المسوّدات بلا payload — الحمولة كبيرة ولا تلزم القائمة
-    AMUSQ.api.rest('drafts?select=id,name,status,total,done,updated_at&order=updated_at.desc')
+    QBANK.api.rest('drafts?select=id,name,status,total,done,updated_at&order=updated_at.desc')
   ]).then(([subs, drs]) => {
     if (!listBox.isConnected) return;
     listBox.innerHTML = '';
@@ -2222,31 +2423,31 @@ function adminContentTab(box){
 
     listBox.appendChild(el('h2', { text:'المواد' }));
     if (!subjects.length) {
-      listBox.appendChild(AMUSQ.views.empty('▤', 'لا مواد بعد', 'ارفع أول ملف أسئلة وسيظهر هنا بعد الاعتماد.'));
+      listBox.appendChild(QBANK.views.empty('▤', 'لا مواد بعد', 'ارفع أول ملف أسئلة وسيظهر هنا بعد الاعتماد.'));
       return;
     }
     subjects.forEach(sub => {
       const pubBtn = el('button', { class:'btn btn--sm ' + (sub.published ? 'btn--soft' : ''), type:'button',
         text: sub.published ? 'أخفِ' : 'انشر' });
       pubBtn.addEventListener('click', async () => {
-        const r = await AMUSQ.api.rest('subjects?id=eq.' + sub.id,
+        const r = await QBANK.api.rest('subjects?id=eq.' + sub.id,
           { method:'PATCH', body: JSON.stringify({ published: !sub.published }) });
-        AMUSQ.toast(r.ok ? 'تم' : 'تعذّر التعديل');
-        if (r.ok) AMUSQ.router.render('#/admin/content');
+        QBANK.toast(r.ok ? 'تم' : 'تعذّر التعديل');
+        if (r.ok) QBANK.router.render('#/admin/content');
       });
       const dateIn = el('input', { class:'input input--sm', type:'date',
         value: sub.exam_date ? String(sub.exam_date).slice(0,10) : '', 'aria-label':'موعد اختبار ' + sub.name });
       dateIn.addEventListener('change', async () => {
-        await AMUSQ.api.rest('subjects?id=eq.' + sub.id,
+        await QBANK.api.rest('subjects?id=eq.' + sub.id,
           { method:'PATCH', body: JSON.stringify({ exam_date: dateIn.value || null }) });
-        AMUSQ.toast('حُفظ الموعد');
+        QBANK.toast('حُفظ الموعد');
       });
       const freeBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button',
         text: sub.free ? '★ مجانية' : 'اجعلها مجانية' });
       freeBtn.addEventListener('click', async () => {
-        await AMUSQ.api.rest('subjects?id=eq.' + sub.id,
+        await QBANK.api.rest('subjects?id=eq.' + sub.id,
           { method:'PATCH', body: JSON.stringify({ free: !sub.free }) });
-        AMUSQ.router.render('#/admin/content');
+        QBANK.router.render('#/admin/content');
       });
       listBox.appendChild(el('div', { class:'card stack' }, [
         el('div', { class:'row' }, [
@@ -2264,15 +2465,15 @@ function adminContentTab(box){
 
 function adminSettingsTab(box){
   // إعداد الربط: يعمل حتى قبل الدخول — هو أول ما يفعله المشرف عند التركيب
-  const c = AMUSQ.config.get() || {};
+  const c = QBANK.config.get() || {};
   const urlIn = el('input', { class:'input', dir:'ltr', id:'cfgUrl', value: c.url || '', placeholder:'https://xxxx.supabase.co' });
   const keyIn = el('input', { class:'input', dir:'ltr', id:'cfgKey', value: c.anonKey || '', placeholder:'anon key' });
-  const apiIn = el('input', { class:'input', dir:'ltr', id:'cfgApi', value: AMUSQ.store.get('api_base',''), placeholder:'https://amusq.vercel.app (اتركه فارغًا على نفس الموقع)' });
+  const apiIn = el('input', { class:'input', dir:'ltr', id:'cfgApi', value: QBANK.store.get('api_base',''), placeholder:'https://qbank.vercel.app (اتركه فارغًا على نفس الموقع)' });
   const saveCfg = el('button', { class:'btn btn--block', type:'button', text:'احفظ الربط' });
   saveCfg.addEventListener('click', () => {
-    const r = AMUSQ.config.set(urlIn.value.trim(), keyIn.value.trim());
-    AMUSQ.store.set('api_base', apiIn.value.trim());
-    AMUSQ.toast(r.ok ? 'حُفظ الربط — المنصة موصولة' : r.err);
+    const r = QBANK.config.set(urlIn.value.trim(), keyIn.value.trim());
+    QBANK.store.set('api_base', apiIn.value.trim());
+    QBANK.toast(r.ok ? 'حُفظ الربط — المنصة موصولة' : r.err);
   });
   box.appendChild(el('div', { class:'card stack' }, [
     el('h2', { text:'ربط الخادم' }),
@@ -2286,7 +2487,7 @@ function adminSettingsTab(box){
   const setBox = el('div', { class:'card stack' }, [ el('h2', { text:'إعدادات المنصة' }),
     el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
   box.appendChild(setBox);
-  AMUSQ.api.rest('settings?id=eq.1').then(r => {
+  QBANK.api.rest('settings?id=eq.1').then(r => {
     if (!setBox.isConnected) return;
     const s = (r.ok && r.data && r.data[0]) || null;
     setBox.innerHTML = '';
@@ -2303,10 +2504,10 @@ function adminSettingsTab(box){
     });
     const save = el('button', { class:'btn btn--block', type:'button', text:'احفظ الإعدادات' });
     save.addEventListener('click', async () => {
-      const rr = await AMUSQ.api.rest('settings?id=eq.1', { method:'PATCH', body: JSON.stringify({
+      const rr = await QBANK.api.rest('settings?id=eq.1', { method:'PATCH', body: JSON.stringify({
         welcome_text: welcome.value, board_enabled: boardOn, device_limit: parseInt(limitIn.value || '3', 10)
       }) });
-      AMUSQ.toast(rr.ok ? 'حُفظت الإعدادات' : 'تعذّر الحفظ');
+      QBANK.toast(rr.ok ? 'حُفظت الإعدادات' : 'تعذّر الحفظ');
     });
     setBox.appendChild(el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'نص الترحيب' }), welcome ]));
     setBox.appendChild(boardBtn);
@@ -2325,9 +2526,9 @@ const ADMIN_TABS = [
 const AdminView = {
   title:'لوحة التحكم',
   view(route){
-    const u = AMUSQ.api.user();
+    const u = QBANK.api.user();
     // بلا جلسة: نعرض دخول المشرف — إلا الإعدادات فهي تعمل محليًا لضبط الربط الأول
-    if (!u && route.rest[0] !== 'settings') return AMUSQ.views.ViewAdminLogin.view();
+    if (!u && route.rest[0] !== 'settings') return QBANK.views.ViewAdminLogin.view();
 
     const active = ADMIN_TABS.some(t => t.id === route.rest[0]) ? route.rest[0] : ADMIN_TABS[0].id;
     const tabs = el('div', { class:'tabs', role:'tablist' },
@@ -2336,25 +2537,25 @@ const AdminView = {
         'aria-selected': t.id === active ? 'true' : 'false', text: t.label })));
     tabs.addEventListener('click', e => {
       const b = e.target.closest('[data-tab]');
-      if (b) AMUSQ.router.go('#/admin/' + b.getAttribute('data-tab'));
+      if (b) QBANK.router.go('#/admin/' + b.getAttribute('data-tab'));
     });
     const body = el('div', { class:'stack', id:'adminBody' });
     ADMIN_TABS.filter(t => t.id === active)[0].fill(body);
-    return AMUSQ.views.page('لوحة التحكم', 'كل ما يظهر للطالب يمرّ من هنا أولًا.', [tabs, body]);
+    return QBANK.views.page('لوحة التحكم', 'كل ما يظهر للطالب يمرّ من هنا أولًا.', [tabs, body]);
   }
 };
 
-Object.assign(Admin, AMUSQ.admin || {});   // نحفظ ما ألحقته الملفات اللاحقة (charts وغيرها)
-AMUSQ.admin = Admin;
-AMUSQ.views.ADMIN_TABS = ADMIN_TABS;
-AMUSQ.views.ViewAdmin = AdminView;
+Object.assign(Admin, QBANK.admin || {});   // نحفظ ما ألحقته الملفات اللاحقة (charts وغيرها)
+QBANK.admin = Admin;
+QBANK.views.ADMIN_TABS = ADMIN_TABS;
+QBANK.views.ViewAdmin = AdminView;
 
 
 /* ===== 34-upload.js ===== */
 /*
   معالج رفع الأسئلة — أربع خطوات ظاهرة للمشرف:
   ١ اقرأ الملف · ٢ افهمه بالذكاء · ٣ راجِع · ٤ انشر.
-  المنطق في AMUSQ.admin (قابل للفحص)؛ هنا الواجهة فقط.
+  المنطق في QBANK.admin (قابل للفحص)؛ هنا الواجهة فقط.
 */
 let wizard = null;   // حالة المعالج تعيش بين إعادة الرسم داخل الجلسة
 
@@ -2368,8 +2569,44 @@ function stepsBar(current){
     ])));
 }
 
+/* اسم المادة ونمط المعالجة — يُختاران قبل الرفع لأنهما يغيّران البرومبت نفسه */
+function subjectMeta(){
+  const nameIn = el('input', { class:'input', id:'subjName', value: wizard.subjectName || '',
+    placeholder:'مثال: فيزيولوجيا الجهاز التنفسي' });
+  nameIn.addEventListener('input', () => { wizard.subjectName = nameIn.value; });
+
+  const modes = [
+    { id:'strict',   t:'التزم بالنص الحرفي',
+      d:'لا يُغيَّر حرف من السؤال ولا من الخيارات. الذكاء يضيف الشرح والترجمة وبطاقة الحفظ فقط. هذا الوضع الافتراضي.' },
+    { id:'enhanced', t:'حسّن الصياغة بالذكاء',
+      d:'يصحَّح الإملاء وتُوضَّح الصياغة دون تغيير المعنى ولا الإجابة. النص الأصلي يبقى محفوظًا ويمكن عرضه دائمًا.' }
+  ];
+  const wrap = el('div', { class:'stack', role:'radiogroup', 'aria-label':'نمط المعالجة' },
+    modes.map(m => {
+      const b = el('button', { class:'card modecard', type:'button', role:'radio', 'data-mode':m.id,
+        'aria-checked': (wizard.mode || 'strict') === m.id ? 'true' : 'false' }, [
+        el('span', { class:'modecard__t', text:m.t }),
+        el('span', { class:'modecard__d', text:m.d })
+      ]);
+      b.addEventListener('click', () => {
+        wizard.mode = m.id;
+        wrap.querySelectorAll('[data-mode]').forEach(x =>
+          x.setAttribute('aria-checked', x.getAttribute('data-mode') === m.id ? 'true' : 'false'));
+      });
+      return b;
+    }));
+
+  return el('div', { class:'card stack' }, [
+    el('label', { class:'field', style:'margin:0' }, [
+      el('span', { class:'field__label', text:'اسم المادة' }), nameIn ]),
+    el('span', { class:'field__label', text:'كيف نعالج أسئلتك؟' }),
+    wrap
+  ]);
+}
+
 /* الخطوة ١: سحب وإفلات أو اختيار ملف */
 function stepRead(box, rerender){
+  box.appendChild(subjectMeta());
   const drop = el('div', { class:'drop', tabindex:'0', role:'button', 'aria-label':'اختر ملف أسئلة' }, [
     el('span', { class:'empty__ico', 'aria-hidden':'true', text:'⇪' }),
     el('p', { class:'empty__title', text:'أسقط ملف الأسئلة هنا أو اضغط للاختيار' }),
@@ -2386,7 +2623,7 @@ function stepRead(box, rerender){
       rd.onload = () => resolve(String(rd.result).split(',')[1] || '');
       rd.readAsDataURL(file);
     });
-    wizard = await AMUSQ.admin.wizardIngest(wizard, file.name, b64);
+    wizard = await QBANK.admin.wizardIngest(wizard, file.name, b64);
     if (wizard.error) { msg.textContent = '⚠ ' + wizard.error; return; }
     rerender();
   }
@@ -2402,7 +2639,7 @@ function stepRead(box, rerender){
 
 /* الخطوة ٢: التقدير ثم التشغيل بدفعات مع شريط «٨٠ من ٣٠٠» */
 function stepEnrich(box, rerender){
-  const est = AMUSQ.admin.estimate(wizard);
+  const est = QBANK.admin.estimate(wizard);
   const bar = el('div', { class:'meter', role:'progressbar', 'aria-valuemin':'0',
     'aria-valuemax': String(wizard.total), 'aria-valuenow': String(wizard.done) }, [
     el('div', { class:'meter__fill', style:'width:' + (wizard.total ? wizard.done / wizard.total * 100 : 0) + '%' })
@@ -2414,7 +2651,7 @@ function stepEnrich(box, rerender){
 
   go.addEventListener('click', async () => {
     go.setAttribute('aria-disabled','true'); go.textContent = 'جارٍ المعالجة…';
-    wizard = await AMUSQ.admin.wizardEnrich(wizard, (done, total) => {
+    wizard = await QBANK.admin.wizardEnrich(wizard, (done, total) => {
       label.textContent = done + ' من ' + total;
       bar.setAttribute('aria-valuenow', String(done));
       bar.firstChild.style.width = (done / total * 100) + '%';
@@ -2436,7 +2673,7 @@ function stepEnrich(box, rerender){
 
 /* الخطوة ٣: المراجعة — بطاقة لكل سؤال، تغيير الإجابة بضغطة، وسوم حمراء للمستنتَج */
 function stepReview(box, rerender){
-  const dups = AMUSQ.admin.findDuplicates(wizard.enriched);
+  const dups = QBANK.admin.findDuplicates(wizard.enriched);
   const dupSet = new Set(dups.map(d => d.index));
   if (dups.length) box.appendChild(el('p', { class:'row' }, [
     el('span', { class:'badge badge--warn num', text: 'تنبيه: ' + dups.length + ' سؤالًا مكررًا — موسوم لا محذوف' })
@@ -2471,7 +2708,7 @@ function stepReview(box, rerender){
   });
 
   const next = el('button', { class:'btn btn--block', type:'button', text:'راجعتُ الكل — تابع للنشر' });
-  next.addEventListener('click', async () => { wizard.step = 4; await AMUSQ.admin.saveDraft(wizard); rerender(); });
+  next.addEventListener('click', async () => { wizard.step = 4; await QBANK.admin.saveDraft(wizard); rerender(); });
   box.appendChild(next);
 }
 
@@ -2482,9 +2719,21 @@ function stepPublish(box){
   const hide = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'احفظ مخفية' });
   const msg = el('p', { class:'field__hint', role:'status' });
   async function fire(publish){
-    const r = await AMUSQ.admin.approve(wizard, publish);
-    if (r.ok) { AMUSQ.toast(publish ? 'نُشرت المادة للطلاب' : 'حُفظت مخفية'); wizard = null; AMUSQ.router.go('#/admin/content'); }
-    else msg.textContent = '⚠ ' + ((r.data && r.data.message) || 'تعذّر الاعتماد — لم يتغير شيء في قاعدة البيانات.');
+    const r = await QBANK.admin.approve(wizard, publish);
+    if (!r.ok)
+      return void (msg.textContent = '⚠ ' + ((r.data && r.data.message) || 'تعذّر الاعتماد — لم يتغير شيء في قاعدة البيانات.'));
+    // approve_draft تُرجع معرّف المادة — نختمها بهوية رافعها ونمطه ومساره
+    const newId = (typeof r.data === 'string') ? r.data : (r.data && r.data.id) || null;
+    const w = wizard;
+    await QBANK.admin.stamp(newId, w);
+    QBANK.toast(publish ? 'نُشرت المادة' : 'حُفظت مخفية');
+    if (publish && newId && w.slug){
+      // رابط المشاركة يظهر فورًا: هذه هي اللحظة التي يشارك فيها الطالب مادته
+      wizard = null;
+      return void showShare(box, w.slug, w.subjectName);
+    }
+    wizard = null;
+    QBANK.router.go(QBANK.store.get('is_admin_check', {}).ok ? '#/admin/content' : '#/account');
   }
   pub.addEventListener('click', () => fire(true));
   hide.addEventListener('click', () => fire(false));
@@ -2497,29 +2746,44 @@ function stepPublish(box){
   ]));
 }
 
+/* شاشة ما بعد النشر: الرابط وزر النسخ — لا يُترك الطالب يبحث عن مادته */
+function showShare(box, slug, name){
+  const u = QBANK.api.user() || {};
+  box.innerHTML = '';
+  box.appendChild(el('div', { class:'card stack', style:'text-align:center' }, [
+    el('span', { class:'empty__ico', 'aria-hidden':'true', text:'✓' }),
+    el('p', { class:'empty__title', text:'نُشرت «' + (name || 'مادتك') + '»' }),
+    el('p', { class:'empty__text', text:'شاركها مع زملائك — كل شراء عبر رابطك يضيف كوينز لرصيدك.' }),
+    QBANK.share.copyRow(QBANK.share.shareUrl(slug, u.id)),
+    el('a', { class:'btn btn--block', href:'#s/' + slug, text:'افتح صفحة المادة' }),
+    el('a', { class:'btn btn--ghost btn--block', href:'#/account', text:'محفظتي' })
+  ]));
+}
+
 const ViewUpload = {
   title:'رفع الأسئلة',
   view(route){
-    if (!AMUSQ.api.user()) return AMUSQ.views.ViewAdminLogin.view();
-    if (!wizard) wizard = AMUSQ.admin.newWizard();
+    // الرفع مفتوح لكل مسجَّل لا للمشرف وحده — هذه هي ميزة مواد الطلاب
+    if (!QBANK.api.user()) return QBANK.views.ViewLogin.view();
+    if (!wizard) wizard = QBANK.admin.newWizard();
     // استئناف مسوّدة من القائمة: نجلبها بحمولتها ونقفز للخطوة الصحيحة
     if (route.query.draft && wizard.draftId !== route.query.draft) {
-      wizard = AMUSQ.admin.newWizard();
+      wizard = QBANK.admin.newWizard();
       wizard.draftId = route.query.draft;
-      AMUSQ.api.rest('drafts?id=eq.' + route.query.draft + '&select=*').then(r => {
+      QBANK.api.rest('drafts?id=eq.' + route.query.draft + '&select=*').then(r => {
         if (r.ok && r.data && r.data[0]) {
           const d = r.data[0];
           wizard.filename = d.source_name; wizard.enriched = d.payload || [];
           wizard.total = d.total; wizard.done = d.done;
           wizard.step = d.done >= d.total ? 3 : 2;
-          AMUSQ.router.render(location.hash);
+          QBANK.router.render(location.hash);
         }
       });
     }
     const body = el('div', { class:'stack' });
-    const rerender = () => AMUSQ.router.render(location.hash);
+    const rerender = () => QBANK.router.render(location.hash);
     [null, stepRead, stepEnrich, stepReview, stepPublish][wizard.step](body, rerender);
-    return AMUSQ.views.page('رفع الأسئلة', 'من ملف الدكتور إلى مادة يذاكرها الطلاب — بأربع خطوات.', [
+    return QBANK.views.page('رفع الأسئلة', 'من ملفك إلى مادة يذاكرها زملاؤك — بأربع خطوات.', [
       stepsBar(wizard.step), body
     ]);
   },
@@ -2527,7 +2791,7 @@ const ViewUpload = {
   _get(){ return wizard; },
   _set(w){ wizard = w; }
 };
-AMUSQ.views.ViewUpload = ViewUpload;
+QBANK.views.ViewUpload = ViewUpload;
 
 
 /* ===== 35-subject.js ===== */
@@ -2545,7 +2809,7 @@ const SUBJ_TABS = [
 const BANK_PAGE = 50;   // دفعة العرض — التمرير يطلب المزيد بدل رسم ٥٠٠ عنصر دفعة واحدة
 
 function findSubject(sid){
-  return (AMUSQ.data.pack().subjects || []).filter(s => s.id === sid)[0] || null;
+  return (QBANK.data.pack().subjects || []).filter(s => s.id === sid)[0] || null;
 }
 
 /* شريط سؤال واحد في البنك (وضع القائمة) */
@@ -2557,8 +2821,8 @@ function bankRow(sub, q, prog){
       style: starred ? 'color:var(--star)' : '' })
   ]);
   starBtn.addEventListener('click', () => {
-    AMUSQ.progress.toggleStar(sub.id, q.id);
-    AMUSQ.router.render(location.hash);
+    QBANK.progress.toggleStar(sub.id, q.id);
+    QBANK.router.render(location.hash);
   });
 
   const opts = el('div', { class:'stack q__opts', hidden:true },
@@ -2580,7 +2844,7 @@ function bankRow(sub, q, prog){
     const open = opts.hidden;
     opts.hidden = !open;
     head.setAttribute('aria-expanded', String(open));
-    if (open) AMUSQ.progress.markSeen(sub.id, q.id);   // فتح السؤال = رُوجع
+    if (open) QBANK.progress.markSeen(sub.id, q.id);   // فتح السؤال = رُوجع
   });
 
   return el('article', { class:'q', 'data-qid': q.id }, [
@@ -2606,7 +2870,7 @@ function flipCard(sub, q){
   ]);
   const flip = () => {
     card.classList.toggle('is-flipped');
-    AMUSQ.progress.markSeen(sub.id, q.id);
+    QBANK.progress.markSeen(sub.id, q.id);
   };
   card.addEventListener('click', flip);
   card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
@@ -2615,8 +2879,8 @@ function flipCard(sub, q){
 
 /* تبويب البنك: بحث + فلاتر + وضعان + أقسام مطوية بالمحاور */
 function bankTab(sub, questions){
-  const state = AMUSQ.store.get('bank_ui', { filter:'all', mode:'list' });
-  const prog = AMUSQ.progress.forSubject(sub.id);
+  const state = QBANK.store.get('bank_ui', { filter:'all', mode:'list' });
+  const prog = QBANK.progress.forSubject(sub.id);
   const box = el('div', { class:'stack' });
 
   const search = el('input', { class:'input', type:'search', id:'bankSearch',
@@ -2630,8 +2894,8 @@ function bankTab(sub, questions){
       const b = el('button', { class:'btn btn--sm ' + (state.filter === id ? 'btn--soft' : 'btn--ghost'),
         type:'button', 'aria-pressed': String(state.filter === id), text: label });
       b.addEventListener('click', () => {
-        state.filter = id; AMUSQ.store.set('bank_ui', state);
-        AMUSQ.router.render(location.hash);
+        state.filter = id; QBANK.store.set('bank_ui', state);
+        QBANK.router.render(location.hash);
       });
       return b;
     }));
@@ -2640,8 +2904,8 @@ function bankTab(sub, questions){
     text: state.mode === 'list' ? 'وضع البطاقات ▦' : 'وضع القائمة ☰' });
   modeBtn.addEventListener('click', () => {
     state.mode = state.mode === 'list' ? 'cards' : 'list';
-    AMUSQ.store.set('bank_ui', state);
-    AMUSQ.router.render(location.hash);
+    QBANK.store.set('bank_ui', state);
+    QBANK.router.render(location.hash);
   });
   filters.appendChild(el('span', { class:'spacer' }));
   filters.appendChild(modeBtn);
@@ -2663,7 +2927,7 @@ function bankTab(sub, questions){
     listBox.innerHTML = '';
     const filtered = applyFilters();
     if (!filtered.length) {
-      listBox.appendChild(AMUSQ.views.empty('؟', 'لا نتائج', 'جرّب فلترًا آخر أو كلمة بحث أقصر.'));
+      listBox.appendChild(QBANK.views.empty('؟', 'لا نتائج', 'جرّب فلترًا آخر أو كلمة بحث أقصر.'));
       return;
     }
     // أقسام حسب المحاور — مطوية افتراضيًا مع عدد أسئلة كل قسم
@@ -2717,7 +2981,7 @@ function explainTab(sub, questions){
 /* تبويب طريقة الحفظ: البطاقة الذهنية لكل سؤال */
 function memoTab(sub, questions){
   const withMemo = questions.filter(q => q.mnemonic && (q.mnemonic.cue || q.mnemonic.key));
-  if (!withMemo.length) return AMUSQ.views.empty('🧠', 'لا بطاقات حفظ بعد', 'تُبنى بطاقات الحفظ مع معالجة الذكاء وتظهر هنا.');
+  if (!withMemo.length) return QBANK.views.empty('🧠', 'لا بطاقات حفظ بعد', 'تُبنى بطاقات الحفظ مع معالجة الذكاء وتظهر هنا.');
   return el('div', { class:'stack' }, withMemo.map(q => {
     const m = q.mnemonic;
     return el('div', { class:'card stack' }, [
@@ -2736,13 +3000,13 @@ function memoTab(sub, questions){
 
 /* تبويب النظرة العامة */
 function overviewTab(sub, questions){
-  const prog = AMUSQ.progress.forSubject(sub.id);
-  const pct = AMUSQ.progress.pctDone(sub.id, questions.length);
+  const prog = QBANK.progress.forSubject(sub.id);
+  const pct = QBANK.progress.pctDone(sub.id, questions.length);
   return el('div', { class:'stack' }, [
     sub.descr ? el('div', { class:'card' }, [ el('p', { style:'margin:0', text: sub.descr }) ]) : null,
     el('div', { class:'card stack' }, [
       el('h2', { text:'تقدّمك' }),
-      el('div', { class:'subj__meter' }, [ el('div', { style:'width:' + pct + '%;background:' + AMUSQ.views.subjectColor(sub.color) }) ]),
+      el('div', { class:'subj__meter' }, [ el('div', { style:'width:' + pct + '%;background:' + QBANK.views.subjectColor(sub.color) }) ]),
       el('div', { class:'row' }, [
         el('span', { class:'badge num', text:'راجعت ' + Object.keys(prog.seen).length + ' من ' + questions.length }),
         el('span', { class:'badge badge--bad num', text:'أخطاء ' + Object.keys(prog.wrong).length }),
@@ -2762,13 +3026,19 @@ const ViewSubject = {
   view(route){
     const sid = route.rest[0];
     const sub = findSubject(sid);
-    if (!sub) return AMUSQ.views.page('المادة', null, [
-      AMUSQ.views.empty('؟', 'المادة غير موجودة', 'ربما أُخفيت أو تغيّر رابطها.',
+    if (!sub) return QBANK.views.page('المادة', null, [
+      QBANK.views.empty('؟', 'المادة غير موجودة', 'ربما أُخفيت أو تغيّر رابطها.',
         el('a', { class:'btn', href:'#/', text:'الرئيسية' })) ]);
 
-    // بوابة المحتوى: مادة غير مملوكة تعرض بطاقة الشراء لا المحتوى
-    if (!AMUSQ.gate.canAccess(sub)) {
-      return AMUSQ.views.page(sub.name, null, [ AMUSQ.gate.paywallCard(sub) ]);
+    QBANK.gate.captureRef(route.query);          // ?ref= يُحفظ قبل أي شيء آخر
+    QBANK.trial.stop();                          // مغادرة مادة توقف عدّادها
+
+    // بوابة المحتوى: مادة غير مملوكة تعرض بطاقة الشراء لا المحتوى.
+    // نعرض بالتخمين المحلي فورًا (لا وميض)، ثم نصحّح بقرار القاعدة حين يصل.
+    const guess = QBANK.gate.localGuess(sub);
+    if (!guess.allowed) {
+      const box = el('div', {}, [ QBANK.gate.paywallCard(sub) ]);
+      return QBANK.views.page(sub.name, null, [box]);
     }
 
     const active = SUBJ_TABS.some(t => t.id === route.rest[1]) ? route.rest[1] : 'overview';
@@ -2777,17 +3047,36 @@ const ViewSubject = {
         'aria-selected': String(t.id === active), text: t.label })));
     tabs.addEventListener('click', e => {
       const b = e.target.closest('[data-tab]');
-      if (b) AMUSQ.router.go('#/subject/' + sid + '/' + b.getAttribute('data-tab'));
+      if (b) QBANK.router.go('#/subject/' + sid + '/' + b.getAttribute('data-tab'));
     });
 
     const body = el('div', { class:'stack', id:'subjBody' },
       [ el('p', { class:'page__sub', text:'جارٍ تجهيز الأسئلة…' }) ]);
 
-    AMUSQ.data.subjectQuestions(sid).then(r => {
+    // شريط التجربة يُعلَّق فوق التبويبات متى قالت القاعدة إن الوصول بالتجربة
+    const trialSlot = el('div', {});
+    QBANK.trial.access(sid).then(a => {
+      if (!trialSlot.isConnected || !a) return;   // null = تعذّر السؤال، لا رفض
+      if (a.reason === 'trial'){
+        trialSlot.appendChild(QBANK.trial.start(sid, Number(a.seconds_left), () => {
+          QBANK.router.render(location.hash);    // انتهت: نعيد الرسم فتظهر شاشة الشراء
+        }));
+      } else if (!a.allowed){
+        // القاعدة رفضت رغم تخميننا — قرارها هو النافذ
+        const p = trialSlot.closest('#main') || trialSlot.parentNode;
+        if (p){
+          p.innerHTML = '';
+          p.appendChild(a.reason === 'trial_expired'
+            ? QBANK.trial.expiredCard(sub) : QBANK.gate.paywallCard(sub));
+        }
+      }
+    });
+
+    QBANK.data.subjectQuestions(sid).then(r => {
       if (!body.isConnected) return;
       body.innerHTML = '';
       if (!r.ok && !r.data.length) {
-        body.appendChild(AMUSQ.views.empty('⇣', 'الأسئلة لم تُنزَّل بعد',
+        body.appendChild(QBANK.views.empty('⇣', 'الأسئلة لم تُنزَّل بعد',
           'افتح المادة مرة واحدة بإنترنت لتُخزَّن أسئلتها في جهازك، ثم تعمل بلا اتصال.'));
         return;
       }
@@ -2798,16 +3087,17 @@ const ViewSubject = {
 
     const examBtn = el('a', { class:'btn', href:'#/exam/' + sid, text:'▶ اختبار تجريبي' });
     const printBtn = el('button', { class:'btn btn--ghost', type:'button', text:'🖨 طباعة / PDF' });
-    printBtn.addEventListener('click', () => AMUSQ.views.openPrintDialog(sub));
+    printBtn.addEventListener('click', () => QBANK.views.openPrintDialog(sub));
 
-    return AMUSQ.views.page(sub.name, (sub.q_count || 0) + ' سؤالًا · المذاكرة تعمل بلا إنترنت بعد أول فتح.', [
+    return QBANK.views.page(sub.name, (sub.q_count || 0) + ' سؤالًا · المذاكرة تعمل بلا إنترنت بعد أول فتح.', [
+      trialSlot,
       el('div', { class:'row' }, [examBtn, printBtn]),
       tabs, body
     ]);
   }
 };
-AMUSQ.views.ViewSubject = ViewSubject;
-AMUSQ.views.bankTab = bankTab;
+QBANK.views.ViewSubject = ViewSubject;
+QBANK.views.bankTab = bankTab;
 
 
 /* ===== 36-examview.js ===== */
@@ -2818,7 +3108,7 @@ AMUSQ.views.bankTab = bankTab;
 let examState = null;   // {exam, sub, timerId, secondsLeft}
 
 function examSetup(sub, questions){
-  const prog = AMUSQ.progress.forSubject(sub.id);
+  const prog = QBANK.progress.forSubject(sub.id);
   const topics = Array.from(new Set(questions.map(q => q.topic || 'عام')));
 
   const scopeSel = el('select', { class:'input', id:'exScope', 'aria-label':'نطاق الاختبار' }, [
@@ -2850,8 +3140,8 @@ function examSetup(sub, questions){
       timerMin: parseInt(timerSel.value, 10),
       wrongMap: prog.wrong
     };
-    const exam = AMUSQ.exam.create(questions, opts);
-    if (!exam.items.length) { AMUSQ.toast('لا أسئلة في هذا النطاق'); return; }
+    const exam = QBANK.exam.create(questions, opts);
+    if (!exam.items.length) { QBANK.toast('لا أسئلة في هذا النطاق'); return; }
     examState = { exam, sub, secondsLeft: opts.timerMin * 60, timerId: null };
     if (opts.timerMin) {
       examState.timerId = setInterval(() => {
@@ -2864,7 +3154,7 @@ function examSetup(sub, questions){
         if (examState.secondsLeft <= 0) finishExam();   // انتهى الوقت: تسليم تلقائي
       }, 1000);
     }
-    AMUSQ.router.render(location.hash);
+    QBANK.router.render(location.hash);
   });
 
   return el('div', { class:'card stack' }, [
@@ -2881,18 +3171,18 @@ function finishExam(){
   const st = examState;
   if (!st || st.exam.finished) return;
   if (st.timerId) clearInterval(st.timerId);
-  st.result = AMUSQ.exam.finish(st.exam);
+  st.result = QBANK.exam.finish(st.exam);
   // تسجيل المحاولة: محليًا فورًا، وللحساب في الخلفية
-  AMUSQ.progress.recordExam(st.sub.id, st.result.pct);
-  st.result.wrongIds.forEach(qid => AMUSQ.progress.markWrong(st.sub.id, qid));
+  QBANK.progress.recordExam(st.sub.id, st.result.pct);
+  st.result.wrongIds.forEach(qid => QBANK.progress.markWrong(st.sub.id, qid));
   st.exam.items.forEach((it, i) => {
-    if (st.exam.answers[i] && st.exam.answers[i].correct) AMUSQ.progress.clearWrong(st.sub.id, it.id);
+    if (st.exam.answers[i] && st.exam.answers[i].correct) QBANK.progress.clearWrong(st.sub.id, it.id);
   });
-  if (AMUSQ.api.user()) AMUSQ.api.rest('attempts', { method:'POST', body: JSON.stringify({
-    user_id: AMUSQ.api.user().id, subject_id: st.sub.id, scope:'all', topic:'',
+  if (QBANK.api.user()) QBANK.api.rest('attempts', { method:'POST', body: JSON.stringify({
+    user_id: QBANK.api.user().id, subject_id: st.sub.id, scope:'all', topic:'',
     correct: st.result.correct, total: st.result.total, pct: st.result.pct,
     duration_s: st.result.duration_s }) });
-  AMUSQ.router.render(location.hash);
+  QBANK.router.render(location.hash);
 }
 
 function examRunner(){
@@ -2913,8 +3203,8 @@ function examRunner(){
       el('span', { class:'ltr', text: opt })
     ]);
     b.addEventListener('click', () => {
-      AMUSQ.exam.answer(exam, oi);
-      AMUSQ.router.render(location.hash);
+      QBANK.exam.answer(exam, oi);
+      QBANK.router.render(location.hash);
     });
     return b;
   }));
@@ -2934,8 +3224,8 @@ function examRunner(){
           text:'أنهِ الاختبار (' + answeredCount + '/' + exam.items.length + ')' })
   ]);
   nav.addEventListener('click', e => {
-    if (e.target.id === 'exPrev') { AMUSQ.exam.prev(exam); AMUSQ.router.render(location.hash); }
-    if (e.target.id === 'exNext') { AMUSQ.exam.next(exam); AMUSQ.router.render(location.hash); }
+    if (e.target.id === 'exPrev') { QBANK.exam.prev(exam); QBANK.router.render(location.hash); }
+    if (e.target.id === 'exNext') { QBANK.exam.next(exam); QBANK.router.render(location.hash); }
     if (e.target.id === 'exFinish') finishExam();
   });
 
@@ -2963,12 +3253,12 @@ function examResult(){
   const retryWrong = el('button', { class:'btn btn--soft btn--block', type:'button',
     text:'أعد اختبار الأخطاء فقط (' + r.wrongIds.length + ')' , disabled: r.wrongIds.length ? null : true });
   retryWrong.addEventListener('click', async () => {
-    const qs = (await AMUSQ.data.subjectQuestions(st.sub.id)).data;
+    const qs = (await QBANK.data.subjectQuestions(st.sub.id)).data;
     const wrongSet = {};
     r.wrongIds.forEach(id => wrongSet[id] = 1);
-    const exam = AMUSQ.exam.create(qs, { scope:'wrong', wrongMap: wrongSet, mode: st.exam.mode });
+    const exam = QBANK.exam.create(qs, { scope:'wrong', wrongMap: wrongSet, mode: st.exam.mode });
     examState = { exam, sub: st.sub, secondsLeft: 0, timerId: null };
-    AMUSQ.router.render(location.hash);
+    QBANK.router.render(location.hash);
   });
 
   const review = el('details', { class:'fold' }, [
@@ -3005,34 +3295,34 @@ const ViewExam = {
   title:'اختبار تجريبي',
   view(route){
     const sid = route.rest[0];
-    const sub = (AMUSQ.data.pack().subjects || []).filter(s => s.id === sid)[0];
-    if (!sub) return AMUSQ.views.page('اختبار', null, [
-      AMUSQ.views.empty('؟', 'المادة غير موجودة', '', el('a', { class:'btn', href:'#/', text:'الرئيسية' })) ]);
+    const sub = (QBANK.data.pack().subjects || []).filter(s => s.id === sid)[0];
+    if (!sub) return QBANK.views.page('اختبار', null, [
+      QBANK.views.empty('؟', 'المادة غير موجودة', '', el('a', { class:'btn', href:'#/', text:'الرئيسية' })) ]);
 
-    if (!AMUSQ.gate.canAccess(sub)) {
-      return AMUSQ.views.page(sub.name, null, [ AMUSQ.gate.paywallCard(sub) ]);
+    if (!QBANK.gate.localGuess(sub).allowed) {
+      return QBANK.views.page(sub.name, null, [ QBANK.gate.paywallCard(sub) ]);
     }
 
     // مادة مثبّتة — لا خطوة اختيار مادة
     if (examState && examState.sub.id === sid) {
-      if (examState.exam.finished) return AMUSQ.views.page('نتيجتك — ' + sub.name, null, [examResult()]);
-      return AMUSQ.views.page('اختبار — ' + sub.name, null, [examRunner()]);
+      if (examState.exam.finished) return QBANK.views.page('نتيجتك — ' + sub.name, null, [examResult()]);
+      return QBANK.views.page('اختبار — ' + sub.name, null, [examRunner()]);
     }
     const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ التجهيز…' }) ]);
-    AMUSQ.data.subjectQuestions(sid).then(r => {
+    QBANK.data.subjectQuestions(sid).then(r => {
       if (!body.isConnected) return;
       body.innerHTML = '';
-      if (!r.data.length) { body.appendChild(AMUSQ.views.empty('⇣', 'لا أسئلة متاحة', 'افتح المادة أولًا بإنترنت.')); return; }
+      if (!r.data.length) { body.appendChild(QBANK.views.empty('⇣', 'لا أسئلة متاحة', 'افتح المادة أولًا بإنترنت.')); return; }
       body.appendChild(examSetup(sub, r.data));
     });
-    return AMUSQ.views.page('اختبار — ' + sub.name, 'خلط عادل، وأولوية لأخطائك السابقة.', [body]);
+    return QBANK.views.page('اختبار — ' + sub.name, 'خلط عادل، وأولوية لأخطائك السابقة.', [body]);
   },
   _reset(){ if (examState && examState.timerId) clearInterval(examState.timerId); examState = null; },
   _state(){ return examState; },
   _set(s){ examState = s; },
   _finish: finishExam
 };
-AMUSQ.views.ViewExam = ViewExam;
+QBANK.views.ViewExam = ViewExam;
 
 
 /* ===== 37-print.js ===== */
@@ -3044,7 +3334,7 @@ AMUSQ.views.ViewExam = ViewExam;
 function buildPrintDoc(sub, questions, opts){
   const root = el('div', { class:'print-root' + (opts.economic ? ' print--eco' : ''), dir:'rtl' });
   root.appendChild(el('header', { class:'print-head', style: opts.economic ? '' :
-    'border-color:' + AMUSQ.views.subjectColor(sub.color) }, [
+    'border-color:' + QBANK.views.subjectColor(sub.color) }, [
     el('h1', { text: sub.name }),
     el('p', { text: { bank:'بنك الأسئلة', explain:'الشرح', memo:'بطاقات الحفظ', overview:'نظرة عامة' }[opts.what] })
   ]));
@@ -3052,7 +3342,7 @@ function buildPrintDoc(sub, questions, opts){
   let qs = questions;
   if (opts.range === 'important') qs = qs.filter(q => q.important);
   if (opts.range === 'starred') {
-    const star = AMUSQ.progress.forSubject(sub.id).star;
+    const star = QBANK.progress.forSubject(sub.id).star;
     qs = qs.filter(q => star[q.id]);
   }
 
@@ -3124,7 +3414,7 @@ function openPrintDialog(sub){
   ]);
   cancel.addEventListener('click', () => dialog.remove());
   go.addEventListener('click', async () => {
-    const r = await AMUSQ.data.subjectQuestions(sub.id);
+    const r = await QBANK.data.subjectQuestions(sub.id);
     const doc = buildPrintDoc(sub, r.data, {
       what: what.value, range: range.value,
       answers: ans.input.checked, expl: expl.input.checked,
@@ -3139,8 +3429,8 @@ function openPrintDialog(sub){
   document.body.appendChild(dialog);
 }
 
-AMUSQ.views.openPrintDialog = openPrintDialog;
-AMUSQ.views.buildPrintDoc = buildPrintDoc;
+QBANK.views.openPrintDialog = openPrintDialog;
+QBANK.views.buildPrintDoc = buildPrintDoc;
 
 
 /* ===== 38-landing.js ===== */
@@ -3153,37 +3443,61 @@ AMUSQ.views.buildPrintDoc = buildPrintDoc;
   خط تخطيط القلب: دورة PQRST كاملة تتكرر عبر عرض الشاشة.
   نبنيه برمجيًا لا كصورة، فيبقى الملف واحدًا ويتلوّن بمتغيّرات التصميم.
 */
-function ecgPath(cycles, w, baseline){
-  const parts = [];
-  for (let i = 0; i < cycles; i++) {
-    const x = i * w;
-    parts.push(
-      (i === 0 ? 'M' : 'L') + x + ',' + baseline,                 // خط القاعدة
-      'L' + (x + 14) + ',' + baseline,
-      'Q' + (x + 20) + ',' + (baseline - 9) + ' ' + (x + 26) + ',' + baseline,  // موجة P
-      'L' + (x + 32) + ',' + baseline,
-      'L' + (x + 36) + ',' + (baseline + 6),                      // Q
-      'L' + (x + 41) + ',' + (baseline - 30),                     // R — الذروة
-      'L' + (x + 46) + ',' + (baseline + 14),                     // S
-      'L' + (x + 51) + ',' + baseline,
-      'L' + (x + 60) + ',' + baseline,
-      'Q' + (x + 70) + ',' + (baseline - 13) + ' ' + (x + 80) + ',' + baseline, // موجة T
-      'L' + (x + w) + ',' + baseline
-    );
-  }
-  return parts.join(' ');
-}
+/*
+  رفّ الكتب — التوقيع البصري للمنصة.
 
-function lpEcg(){
-  const W = 100, CYCLES = 4, BASE = 40;
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('class', 'lp-ecg');
-  svg.setAttribute('viewBox', '0 0 ' + (W * CYCLES) + ' 80');
-  svg.setAttribute('preserveAspectRatio', 'none');
-  svg.setAttribute('aria-hidden', 'true');
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', ecgPath(CYCLES, W, BASE));
-  svg.appendChild(path);
+  كان هنا خط تخطيط قلب حين كانت الهوية طبية. صار رفًّا لأن الاسم صار «بنك
+  الأسئلة»: كل كعب كتاب مادة، وعرضه يتناسب مع عدد أسئلتها فعلًا. الصورة
+  تقول ما تقوله الأرقام: كلما كبرت المكتبة طال الرفّ.
+*/
+function shelfSvg(subjects){
+  const NS = 'http://www.w3.org/2000/svg';
+  const W = 640, H = 116, FLOOR = 96;
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'lp-shelf');
+  svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', 'رفّ فيه ' + (subjects.length || 6) + ' مادة');
+
+  // بلا مواد بعد: رفّ نموذجي كي لا يبدو الموقع فارغًا لأول زائر
+  const books = (subjects.length ? subjects : [1,2,3,4,5,6].map(i => ({ q_count: 30 + i * 12 })))
+    .slice(0, 9);
+  const maxQ = Math.max(1, ...books.map(b => Number(b.q_count) || 1));
+
+  let x = 12;
+  books.forEach((b, i) => {
+    const q = Number(b.q_count) || 1;
+    const bw = 26 + Math.round(q / maxQ * 34);          // السُّمك من عدد الأسئلة
+    const bh = 46 + ((i * 7) % 22);                     // تفاوت الطول: رفّ لا مسطرة
+    const col = 'var(--subject-' + ((i % 6) + 1) + ')';
+    const g = document.createElementNS(NS, 'g');
+
+    const r = document.createElementNS(NS, 'rect');
+    r.setAttribute('x', x); r.setAttribute('y', FLOOR - bh);
+    r.setAttribute('width', bw); r.setAttribute('height', bh);
+    r.setAttribute('rx', 3); r.setAttribute('fill', col);
+    r.setAttribute('class', 'lp-shelf__book');
+    r.style.setProperty('--d', (i * 90) + 'ms');        // تتابع الظهور
+    g.appendChild(r);
+
+    // شريطان مذهّبان على الكعب — تفصيلة الكتاب المجلَّد
+    [10, 18].forEach(off => {
+      const ln = document.createElementNS(NS, 'rect');
+      ln.setAttribute('x', x + 5); ln.setAttribute('y', FLOOR - bh + off);
+      ln.setAttribute('width', Math.max(4, bw - 10)); ln.setAttribute('height', 2);
+      ln.setAttribute('fill', 'var(--gold)'); ln.setAttribute('opacity', '.65');
+      g.appendChild(ln);
+    });
+    svg.appendChild(g);
+    x += bw + 5;
+  });
+
+  // لوح الرفّ
+  const shelf = document.createElementNS(NS, 'rect');
+  shelf.setAttribute('x', 0); shelf.setAttribute('y', FLOOR);
+  shelf.setAttribute('width', Math.max(x + 8, 220)); shelf.setAttribute('height', 5);
+  shelf.setAttribute('rx', 2.5); shelf.setAttribute('class', 'lp-shelf__plank');
+  svg.appendChild(shelf);
   return svg;
 }
 
@@ -3206,8 +3520,8 @@ function lpSection(kicker, title, sub, body){
 
 /* بطاقة مادة في العرض التعريفي — تدعو للتسجيل لا للفتح المباشر */
 function lpSubjectCard(sub){
-  const color = AMUSQ.views.subjectColor(sub.color);
-  const left = AMUSQ.views.daysLeft(sub.exam_date);
+  const color = QBANK.views.subjectColor(sub.color);
+  const left = QBANK.views.daysLeft(sub.exam_date);
   return el('article', { class:'lp-card' }, [
     el('span', { class:'lp-card__top', style:'background:' + color, 'aria-hidden':'true' }),
     el('span', { class:'lp-card__ico', 'aria-hidden':'true', text: sub.icon || '▤' }),
@@ -3240,7 +3554,7 @@ function lpStep(n, title, desc){
 }
 
 function landingView(){
-  const pack = AMUSQ.data.pack();
+  const pack = QBANK.data.pack();
   const subjects = (pack.subjects || []).slice().sort((a,b) => (a.ord||0) - (b.ord||0));
   const totalQ = subjects.reduce((s, x) => s + (x.q_count || 0), 0);
   const freeCount = subjects.filter(s => s.free).length;
@@ -3253,21 +3567,21 @@ function landingView(){
   root.appendChild(el('header', { class:'lp-hero' }, [
     el('span', { class:'lp-hero__badge' }, [
       el('span', { class:'dot', 'aria-hidden':'true' }),
-      'منصة مراجعة لطلاب التخصصات الصحية'
+      'بنك أسئلة لطلاب التخصصات الصحية'
     ]),
     el('h1', { class:'lp-hero__title' }, [
-      'ذاكر أذكى، ',
-      el('em', { text:'لا أطول' })
+      'كل أسئلة موادك ',
+      el('em', { text:'في مكان واحد' })
     ]),
     el('p', { class:'lp-hero__sub', text:
       (pack.settings && pack.settings.welcome_text) ||
       'بنك أسئلة منقّح من ملفات دكاترتك حرفًا بحرف، مع شرح لكل إجابة، وبطاقات حفظ ذكية، واختبارات تجريبية تحاكي الامتحان الحقيقي — وتعمل بلا إنترنت.' }),
     el('div', { class:'lp-cta' }, [goSignup, goSubjects]),
-    lpEcg()
+    shelfSvg(subjects)
   ]));
 
   /* ١-ب · عدّاد الامتحانات القادمة — أنفع ما يراه الطالب فورًا */
-  const exams = AMUSQ.views.lpParts.lpExams(subjects);
+  const exams = QBANK.views.lpParts.lpExams(subjects);
   if (exams) root.appendChild(exams);
 
   /* ٢ · الأرقام — حقيقية من المحتوى المنشور لا مبالغات */
@@ -3280,18 +3594,18 @@ function landingView(){
 
   /* ٢-ب · جرّب سؤالًا الآن — الإقناع بالتجربة لا بالكلام */
   root.appendChild(lpSection('جرّبها الآن', 'أجب عن سؤال واحد',
-    'هكذا يبدو كل سؤال في AMUSQ: النص كما ورد، وشرح يوضّح لماذا الإجابة صحيحة ولماذا غيرها خاطئ.',
-    [AMUSQ.views.lpParts.lpTryQuestion()]));
+    'هكذا يبدو كل سؤال في «مراجعة»: النص كما ورد، وشرح يوضّح لماذا الإجابة صحيحة ولماذا غيرها خاطئ.',
+    [QBANK.views.lpParts.lpTryQuestion()]));
 
   /* ٢-ج · بطاقة حفظ حيّة */
   root.appendChild(lpSection('طريقة الحفظ', 'بطاقة لكل سؤال',
     'الكلمة الدالة في السؤال ← الكلمة المفتاحية في الإجابة، ورابط ذهني يثبّتها. اقلب البطاقة لترى.',
-    [AMUSQ.views.lpParts.lpMemoCard()]));
+    [QBANK.views.lpParts.lpMemoCard()]));
 
   /* ٣ · المواد */
   const subjectsBody = subjects.length
     ? [el('div', { class:'lp-grid lp-grid--3' }, subjects.map(lpSubjectCard))]
-    : [AMUSQ.views.empty('▤', 'المواد في الطريق',
+    : [QBANK.views.empty('▤', 'المواد في الطريق',
         'نعمل على تجهيز أول المواد. سجّل بريدك الآن ونخبرك فور نشر أول مادة.')];
   const secSubjects = lpSection('المواد', 'ماذا ستراجع؟',
     'كل مادة بنك أسئلة كامل: نص السؤال كما ورد من الدكتور، وشرح يوضّح لماذا الإجابة صحيحة ولماذا غيرها خاطئ.',
@@ -3300,7 +3614,7 @@ function landingView(){
   root.appendChild(secSubjects);
 
   /* ٤ · المزايا */
-  root.appendChild(lpSection('لماذا AMUSQ؟', 'أدوات مراجعة لا مجرد ملفات',
+  root.appendChild(lpSection('لماذا مراجعة؟', 'أدوات مراجعة لا مجرد ملفات',
     'كل ميزة هنا وُلدت من حاجة حقيقية في ليالي الامتحانات.', [
     el('div', { class:'lp-grid lp-grid--3' }, [
       lpFeature('📄', 'نص السؤال كما هو',
@@ -3332,7 +3646,7 @@ function landingView(){
   /* ٥-ب · نصائح مراجعة — قيمة يأخذها الزائر حتى لو لم يسجّل */
   root.appendChild(lpSection('كيف تذاكر بذكاء', 'أربع قواعد تختصر عليك ساعات',
     'مبنية على ما تقوله أبحاث التعلّم عن الاسترجاع النشط والمراجعة الموزّعة.', [
-    el('div', { class:'lp-grid' }, AMUSQ.views.lpParts.LP_TIPS.map(t =>
+    el('div', { class:'lp-grid' }, QBANK.views.lpParts.LP_TIPS.map(t =>
       el('div', { class:'lp-tip' }, [
         el('span', { class:'lp-tip__i', 'aria-hidden':'true', text: t[0] }),
         el('div', {}, [
@@ -3382,7 +3696,7 @@ function landingView(){
 
   /* ٦-ب · الأسئلة الشائعة — تُزيل التردد قبل التسجيل */
   root.appendChild(lpSection('أسئلة شائعة', 'ما يسأل عنه الطلاب عادة', null, [
-    el('div', { class:'lp-faq' }, AMUSQ.views.lpParts.LP_FAQ.map(f =>
+    el('div', { class:'lp-faq' }, QBANK.views.lpParts.LP_FAQ.map(f =>
       el('details', {}, [
         el('summary', { text: f[0] }),
         el('p', { text: f[1] })
@@ -3393,14 +3707,14 @@ function landingView(){
   /* ٧ · الدعوة الأخيرة */
   root.appendChild(el('section', { class:'lp-final' }, [
     el('h2', { text:'امتحانك القادم أقرب مما تظن' }),
-    el('p', { text:'ابدأ بالمادة المجانية اليوم، وقرّر بعدها إن كانت AMUSQ تستحق.' }),
+    el('p', { text:'ابدأ بالمادة المجانية اليوم، وقرّر بعدها إن كانت تستحق.' }),
     el('a', { class:'btn btn--lg', href:'#/login', text:'أنشئ حسابك مجانًا' })
   ]));
 
   return root;
 }
 
-AMUSQ.views.landingView = landingView;
+QBANK.views.landingView = landingView;
 
 
 /* ===== 39-landing-parts.js ===== */
@@ -3526,11 +3840,11 @@ function lpMemoCard(){
 /* ===== ٤ · نصائح مراجعة مبنية على أدلة ===== */
 const LP_TIPS = [
   ['🔁', 'الاسترجاع النشط لا القراءة',
-   'أن تسأل نفسك وتحاول التذكر أقوى أثرًا من إعادة قراءة الملف مرات. لهذا بنك AMUSQ يبدأ بالسؤال لا بالجواب.'],
+   'أن تسأل نفسك وتحاول التذكر أقوى أثرًا من إعادة قراءة الملف مرات. لهذا «مراجعة» تبدأ بالسؤال لا بالجواب.'],
   ['📆', 'وزّع المراجعة على أيام',
    'ساعة يوميًا لخمسة أيام تثبّت أكثر من خمس ساعات في ليلة. العدّاد التنازلي هنا يساعدك على التوزيع.'],
   ['🎯', 'طارد أخطاءك',
-   'السؤال الذي أخطأت فيه هو أنفع سؤال لك. AMUSQ يقدّمه في الاختبار القادم ويتيح إعادة الأخطاء وحدها.'],
+   'السؤال الذي أخطأت فيه هو أنفع سؤال لك. «مراجعة» تقدّمه في الاختبار القادم ويتيح إعادة الأخطاء وحدها.'],
   ['✂️', 'تعلّم شطب المشتتات',
    'نصف الدرجة تأتي من استبعاد الخاطئ لا من معرفة الصحيح. كل بطاقة حفظ تشرح كيف تشطب المشتت في الورقة.']
 ];
@@ -3551,7 +3865,7 @@ const LP_FAQ = [
    'نعم، بزر واحد من صفحة حسابي — يُحذف الحساب وكل بياناته نهائيًا في الحال.']
 ];
 
-AMUSQ.views.lpParts = { lpExams, lpTryQuestion, lpMemoCard, LP_TIPS, LP_FAQ, LP_DEMO };
+QBANK.views.lpParts = { lpExams, lpTryQuestion, lpMemoCard, LP_TIPS, LP_FAQ, LP_DEMO };
 
 
 /* ===== 40-app.js ===== */
@@ -3571,16 +3885,16 @@ function buildTabbar(){
   if (!bar) return;
   bar.innerHTML = '';
   NAV.forEach(item => {
-    bar.appendChild(AMUSQ.dom.el('a', { class:'tabbar__item', href:item.path, 'data-nav':item.path }, [
-      AMUSQ.dom.el('span', { class:'tabbar__ico', 'aria-hidden':'true', text:item.ico }),
-      AMUSQ.dom.el('span', { class:'tabbar__lbl', text:item.label })
+    bar.appendChild(QBANK.dom.el('a', { class:'tabbar__item', href:item.path, 'data-nav':item.path }, [
+      QBANK.dom.el('span', { class:'tabbar__ico', 'aria-hidden':'true', text:item.ico }),
+      QBANK.dom.el('span', { class:'tabbar__lbl', text:item.label })
     ]));
   });
 }
 
 function registerRoutes(){
-  const V = AMUSQ.views;
-  AMUSQ.router
+  const V = QBANK.views;
+  QBANK.router
     .add('#/',            V.ViewHome)
     .add('#/login',       V.ViewLogin)
     .add('#/admin',       V.ViewAdmin)
@@ -3589,38 +3903,41 @@ function registerRoutes(){
     .add('#/account',     V.ViewAccount)
     .add('#/admin/upload', V.ViewUpload)
     .add('#/admin/subject', V.ViewAdminSubject)
+    .add('#/s',            V.ViewShare)      // رابط المشاركة: يقبل #s/slug و #/s/slug معًا
     .add('#/subject',      V.ViewSubject)
     .add('#/exam',         V.ViewExam)
     .add('#/board',        V.ViewBoard);
-  AMUSQ.router.notFound = V.ViewNotFound;
+  QBANK.router.notFound = V.ViewNotFound;
 }
 
 function boot(){
-  if (AMUSQ.ready) return;   // الإقلاع مرة واحدة مهما تكرّر نداؤه
-  AMUSQ.theme.init();
+  if (QBANK.ready) return;   // الإقلاع مرة واحدة مهما تكرّر نداؤه
+  QBANK.store.migrate();     // ننقل تخزين الهوية القديمة قبل أن يقرأه أحد
+  QBANK.data.migrateDB();    // وأسئلة وضع عدم الاتصال — بلا انتظار، فهي ليست شرطًا للإقلاع
+  QBANK.theme.init();
 
   // رموز الدخول تعود من Supabase في هاش الصفحة — نلتقطها قبل أن يفسّرها الموجّه كمسار
-  if (AMUSQ.api.auth.captureFromHash(location.hash)) {
+  if (QBANK.api.auth.captureFromHash(location.hash)) {
     try { history.replaceState(null, '', location.pathname + location.search + '#/'); }
     catch(e) { location.hash = '#/'; }
-    AMUSQ.toast('تم تسجيل الدخول');
+    QBANK.toast('تم تسجيل الدخول');
   }
 
   buildTabbar();
   registerRoutes();
-  AMUSQ.router.init();
+  QBANK.router.init();
   registerSW();
-  AMUSQ.ready = true;
+  QBANK.ready = true;
 
   // أعمال الخلفية: لا تُعطّل الرسم الأول ولا تكسر العمل بلا إنترنت
-  if (AMUSQ.api.user()) {
-    AMUSQ.progress.pull();                       // دمج تقدّم الحساب مع الجهاز — بلا حذف
-    AMUSQ.gate.refresh();                        // الاستحقاقات: ما اشتراه الطالب
-    AMUSQ.api.rpc('heartbeat', { device_label: navigator.userAgent.slice(0, 60) });
+  if (QBANK.api.user()) {
+    QBANK.progress.pull();                       // دمج تقدّم الحساب مع الجهاز — بلا حذف
+    QBANK.gate.refresh();                        // الاستحقاقات: ما اشتراه الطالب
+    QBANK.api.rpc('heartbeat', { device_label: navigator.userAgent.slice(0, 60) });
   }
-  if (AMUSQ.config.ready()) {
-    AMUSQ.data.refreshPack().then(r => {         // تحديث قائمة المواد إن توفّر اتصال
-      if (r.ok && AMUSQ.router.current && AMUSQ.router.current.path === '#/') AMUSQ.router.render('#/');
+  if (QBANK.config.ready()) {
+    QBANK.data.refreshPack().then(r => {         // تحديث قائمة المواد إن توفّر اتصال
+      if (r.ok && QBANK.router.current && QBANK.router.current.path === '#/') QBANK.router.render('#/');
     });
   }
 }
@@ -3633,10 +3950,10 @@ function registerSW(){
   return true;
 }
 
-AMUSQ.registerSW = registerSW;
-AMUSQ.nav = NAV;
-AMUSQ.boot = boot;
-window.AMUSQ = AMUSQ;
+QBANK.registerSW = registerSW;
+QBANK.nav = NAV;
+QBANK.boot = boot;
+window.QBANK = QBANK;
 
 // jsdom في الفحوص يُحمّل الصفحة كاملة قبل تنفيذ السكربت، لذا نتحقق من الحالتين
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
@@ -3738,8 +4055,8 @@ function ago(iso){
   return Math.floor(s / 86400) + ' يوم';
 }
 
-AMUSQ.admin = AMUSQ.admin || {};
-AMUSQ.admin.charts = { chartActivity, chartBuckets, kpi, ago, svgEl };
+QBANK.admin = QBANK.admin || {};
+QBANK.admin.charts = { chartActivity, chartBuckets, kpi, ago, svgEl };
 
 
 /* ===== 42-admin-dash.js ===== */
@@ -3754,7 +4071,7 @@ function dashSkeleton(){
 }
 
 function dashKpis(k){
-  const C = AMUSQ.admin.charts;
+  const C = QBANK.admin.charts;
   return el('div', { class:'ad-kpis' }, [
     C.kpi(k.students, 'طالبًا', k.active_7d + ' نشط هذا الأسبوع'),
     C.kpi(k.online, 'متصل الآن', 'آخر ٤ ساعات', k.online > 0 ? 'live' : null),
@@ -3778,7 +4095,7 @@ function dashPanel(title, sub, body, extraClass){
 }
 
 function dashSubjects(subjects){
-  if (!subjects.length) return AMUSQ.views.empty('▤', 'لا مواد بعد', 'ارفع أول ملف أسئلة.');
+  if (!subjects.length) return QBANK.views.empty('▤', 'لا مواد بعد', 'ارفع أول ملف أسئلة.');
   // الترتيب حسب المحاولات: المادة التي يدرسها الطلاب فعلًا تستحق الصدارة
   const rows = subjects.slice().sort((a, b) => Number(b.attempts) - Number(a.attempts));
   return el('div', { class:'ad-table' }, rows.map(s => {
@@ -3793,14 +4110,14 @@ function dashSubjects(subjects){
         text: Math.round(s.avg_pct) + '٪' }),
       s.published ? el('span', { class:'badge badge--ok', text:'منشورة' }) : el('span', { class:'badge', text:'مخفية' })
     ]);
-    row.addEventListener('click', () => AMUSQ.router.go('#/admin/subject/' + s.id));
+    row.addEventListener('click', () => QBANK.router.go('#/admin/subject/' + s.id));
     return row;
   }));
 }
 
 function dashRecent(recent){
-  if (!recent.length) return AMUSQ.views.empty('◷', 'لا نشاط بعد', 'سيظهر هنا كل اختبار فور انتهائه.');
-  const C = AMUSQ.admin.charts;
+  if (!recent.length) return QBANK.views.empty('◷', 'لا نشاط بعد', 'سيظهر هنا كل اختبار فور انتهائه.');
+  const C = QBANK.admin.charts;
   return el('div', { class:'ad-feed' }, recent.map(a => el('div', { class:'ad-feed__i' }, [
     el('span', { class:'ad-feed__av', text: a.avatar || '👤' }),
     el('span', { class:'ad-feed__x' }, [
@@ -3813,14 +4130,14 @@ function dashRecent(recent){
 }
 
 function adminDashTab(box){
-  const C = AMUSQ.admin.charts;
-  let days = AMUSQ.store.get('ad_days', 14);
+  const C = QBANK.admin.charts;
+  let days = QBANK.store.get('ad_days', 14);
 
   const rangeBar = el('div', { class:'ad-bar' },
     [7, 14, 30].map(d => {
       const b = el('button', { class:'btn btn--sm ' + (d === days ? '' : 'btn--ghost'), type:'button',
         text: d + ' يومًا' });
-      b.addEventListener('click', () => { AMUSQ.store.set('ad_days', d); days = d; load(); });
+      b.addEventListener('click', () => { QBANK.store.set('ad_days', d); days = d; load(); });
       return b;
     }));
   const wrap = el('div', {});
@@ -3834,11 +4151,11 @@ function adminDashTab(box){
     });
     wrap.innerHTML = '';
     wrap.appendChild(dashSkeleton());
-    AMUSQ.api.rpc('admin_dashboard', { days }).then(r => {
+    QBANK.api.rpc('admin_dashboard', { days }).then(r => {
       if (!wrap.isConnected) return;     // غادر المشرف قبل وصول الرد
       wrap.innerHTML = '';
       if (!r.ok || !r.data || r.data.error) {
-        wrap.appendChild(AMUSQ.views.empty('⚠', 'تعذّر الجلب',
+        wrap.appendChild(QBANK.views.empty('⚠', 'تعذّر الجلب',
           r.offline ? 'لا اتصال بالإنترنت.'
                     : 'تأكد أن حسابك مشرف وأن ملف ADMIN-DASHBOARD.sql مُشغَّل على قاعدة البيانات.'));
         return;
@@ -3861,8 +4178,8 @@ function adminDashTab(box){
   load();
 }
 
-AMUSQ.admin.dashTab = adminDashTab;
-AMUSQ.views.ADMIN_TABS.unshift({ id:'dash', label:'اللوحة', fill: adminDashTab });
+QBANK.admin.dashTab = adminDashTab;
+QBANK.views.ADMIN_TABS.unshift({ id:'dash', label:'اللوحة', fill: adminDashTab });
 
 
 /* ===== 43-admin-subject.js ===== */
@@ -3879,13 +4196,13 @@ const SUBJ_ICONS  = ['▤','☤','✚','♥','◈','⚕','☣','◐','⌁','⚗'
 
 const SubjEditor = {
   patchSubject(id, body){
-    return AMUSQ.api.rest('subjects?id=eq.' + id, { method:'PATCH', body: JSON.stringify(body) });
+    return QBANK.api.rest('subjects?id=eq.' + id, { method:'PATCH', body: JSON.stringify(body) });
   },
   patchQuestion(id, body){
-    return AMUSQ.api.rest('questions?id=eq.' + id, { method:'PATCH', body: JSON.stringify(body) });
+    return QBANK.api.rest('questions?id=eq.' + id, { method:'PATCH', body: JSON.stringify(body) });
   },
   delQuestion(id){
-    return AMUSQ.api.rest('questions?id=eq.' + id, { method:'DELETE' });
+    return QBANK.api.rest('questions?id=eq.' + id, { method:'DELETE' });
   },
   /* تصفية محلية: البحث في مادة واحدة لا يستحق ذهابًا إلى الخادم مع كل حرف */
   filter(list, q, topic, only){
@@ -3942,7 +4259,7 @@ function subjIdentity(sub, refresh){
       name: nameIn.value.trim() || sub.name, descr: descrIn.value, color, icon,
       ord: parseInt(ordIn.value || '0', 10), exam_date: dateIn.value || null
     });
-    AMUSQ.toast(r.ok ? 'حُفظت هوية المادة' : 'تعذّر الحفظ');
+    QBANK.toast(r.ok ? 'حُفظت هوية المادة' : 'تعذّر الحفظ');
     if (r.ok && refresh) refresh();
   });
 
@@ -3950,7 +4267,7 @@ function subjIdentity(sub, refresh){
     text: sub.published ? 'منشورة — أخفِها' : 'مخفية — انشرها' });
   pub.addEventListener('click', async () => {
     const r = await SubjEditor.patchSubject(sub.id, { published: !sub.published });
-    AMUSQ.toast(r.ok ? (sub.published ? 'أُخفيت المادة' : 'نُشرت المادة') : 'تعذّر التعديل');
+    QBANK.toast(r.ok ? (sub.published ? 'أُخفيت المادة' : 'نُشرت المادة') : 'تعذّر التعديل');
     if (r.ok && refresh) refresh();
   });
   const free = el('button', { class:'btn btn--sm btn--ghost', type:'button',
@@ -3994,7 +4311,7 @@ function subjTopics(sub, questions, refresh){
       up.addEventListener('click', () => { if (i > 0){ topics.splice(i-1, 0, topics.splice(i,1)[0]); draw(); } });
       const del = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'✕', 'aria-label':'احذف ' + t });
       del.addEventListener('click', () => {
-        if (counts[t]) return AMUSQ.toast('لا يُحذف محور عليه ' + counts[t] + ' سؤالًا — انقلها أولًا');
+        if (counts[t]) return QBANK.toast('لا يُحذف محور عليه ' + counts[t] + ' سؤالًا — انقلها أولًا');
         topics.splice(i, 1); draw();
       });
       list.appendChild(el('div', { class:'row' }, [
@@ -4011,13 +4328,13 @@ function subjTopics(sub, questions, refresh){
   add.addEventListener('click', () => {
     const v = addIn.value.trim();
     if (!v) return;
-    if (topics.indexOf(v) !== -1) return AMUSQ.toast('المحور موجود');
+    if (topics.indexOf(v) !== -1) return QBANK.toast('المحور موجود');
     topics.push(v); addIn.value = ''; draw();
   });
   const save = el('button', { class:'btn', type:'button', text:'احفظ المحاور' });
   save.addEventListener('click', async () => {
     const r = await SubjEditor.patchSubject(sub.id, { topics });
-    AMUSQ.toast(r.ok ? 'حُفظت المحاور' : 'تعذّر الحفظ');
+    QBANK.toast(r.ok ? 'حُفظت المحاور' : 'تعذّر الحفظ');
     if (r.ok && refresh) refresh();
   });
 
@@ -4046,7 +4363,7 @@ function qCard(q, sub, refresh){
     text: q.important ? '★ مهم' : '☆ علّمه مهمًا', 'aria-pressed': q.important ? 'true' : 'false' });
   star.addEventListener('click', async () => {
     const r = await SubjEditor.patchQuestion(q.id, { important: !q.important });
-    if (!r.ok) return AMUSQ.toast('تعذّر التعديل');
+    if (!r.ok) return QBANK.toast('تعذّر التعديل');
     q.important = !q.important;
     star.textContent = q.important ? '★ مهم' : '☆ علّمه مهمًا';
     star.setAttribute('aria-pressed', q.important ? 'true' : 'false');
@@ -4066,11 +4383,11 @@ function qCard(q, sub, refresh){
     b.addEventListener('click', async () => {
       if (i === q.answer) return;
       const r = await SubjEditor.patchQuestion(q.id, { answer: i, derived: false });
-      if (!r.ok) return AMUSQ.toast('تعذّر تصحيح الإجابة');
+      if (!r.ok) return QBANK.toast('تعذّر تصحيح الإجابة');
       q.answer = i; q.derived = false;
       opts.querySelectorAll('.ad-q__opt').forEach((x, xi) =>
         x.className = 'ad-q__opt' + (xi === i ? ' is-a' : ''));
-      AMUSQ.toast('صُحّحت الإجابة');
+      QBANK.toast('صُحّحت الإجابة');
     });
     opts.appendChild(b);
   });
@@ -4104,7 +4421,7 @@ function qCard(q, sub, refresh){
         mnemonic: { cue: cue.value, key: key.value, link: link.value, strike: m.strike || '' },
         ord: parseInt(ordQ.value || String(q.ord), 10)
       });
-      AMUSQ.toast(r.ok ? 'حُفظ السؤال' : 'تعذّر الحفظ');
+      QBANK.toast(r.ok ? 'حُفظ السؤال' : 'تعذّر الحفظ');
       if (r.ok && refresh) refresh();
     });
 
@@ -4114,7 +4431,7 @@ function qCard(q, sub, refresh){
     del.addEventListener('click', async () => {
       if (!armed){ armed = true; del.textContent = 'اضغط ثانيةً للحذف نهائيًا'; del.className = 'btn btn--sm btn--danger'; return; }
       const r = await SubjEditor.delQuestion(q.id);
-      AMUSQ.toast(r.ok ? 'حُذف السؤال' : 'تعذّر الحذف');
+      QBANK.toast(r.ok ? 'حُذف السؤال' : 'تعذّر الحذف');
       if (r.ok){ if (refresh) refresh(); else box.remove(); }
     });
 
@@ -4161,7 +4478,7 @@ function subjQuestions(sub, questions, refresh){
       more.addEventListener('click', () => { shown += 40; draw(); });
       list.appendChild(more);
     }
-    if (!res.length) list.appendChild(AMUSQ.views.empty('⌕', 'لا نتائج', 'جرّب كلمة أخرى أو أزل التصفية.'));
+    if (!res.length) list.appendChild(QBANK.views.empty('⌕', 'لا نتائج', 'جرّب كلمة أخرى أو أزل التصفية.'));
   }
   [search, topicSel, onlySel].forEach(x =>
     x.addEventListener('input', () => { shown = 40; draw(); }));
@@ -4182,21 +4499,21 @@ function subjQuestions(sub, questions, refresh){
 const AdminSubjectView = {
   title:'محرر المادة',
   view(route){
-    if (!AMUSQ.api.user()) return AMUSQ.views.ViewAdminLogin.view();
+    if (!QBANK.api.user()) return QBANK.views.ViewAdminLogin.view();
     const id = route.rest[0];
-    if (!id) return AMUSQ.views.ViewNotFound.view();
+    if (!id) return QBANK.views.ViewNotFound.view();
 
     const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
     function load(){
       Promise.all([
-        AMUSQ.api.rest('subjects?id=eq.' + id + '&select=*'),
-        AMUSQ.api.rest('questions?subject_id=eq.' + id + '&select=*&order=ord')
+        QBANK.api.rest('subjects?id=eq.' + id + '&select=*'),
+        QBANK.api.rest('questions?subject_id=eq.' + id + '&select=*&order=ord')
       ]).then(([sr, qr]) => {
         if (!body.isConnected) return;
         const sub = (sr.ok && sr.data && sr.data[0]) || null;
         body.innerHTML = '';
         if (!sub){
-          body.appendChild(AMUSQ.views.empty('⚠', 'لم نجد المادة', 'ربما حُذفت، أو حسابك ليس مشرفًا.'));
+          body.appendChild(QBANK.views.empty('⚠', 'لم نجد المادة', 'ربما حُذفت، أو حسابك ليس مشرفًا.'));
           return;
         }
         const questions = (qr.ok && Array.isArray(qr.data)) ? qr.data : [];
@@ -4208,12 +4525,12 @@ const AdminSubjectView = {
     load();
 
     const back = el('a', { class:'btn btn--sm btn--ghost', href:'#/admin/content', text:'→ كل المواد' });
-    return AMUSQ.views.page('محرر المادة', 'الهوية والمحاور والأسئلة في مكان واحد.', [back, body]);
+    return QBANK.views.page('محرر المادة', 'الهوية والمحاور والأسئلة في مكان واحد.', [back, body]);
   }
 };
 
-AMUSQ.admin.subject = SubjEditor;
-AMUSQ.views.ViewAdminSubject = AdminSubjectView;
+QBANK.admin.subject = SubjEditor;
+QBANK.views.ViewAdminSubject = AdminSubjectView;
 
 
 /* ===== 44-admin-settings.js ===== */
@@ -4315,8 +4632,8 @@ function setGroup(g, row, refresh){
   save.addEventListener('click', async () => {
     const d = SET.diff(row, draft);
     if (!Object.keys(d).length) return;
-    const r = await AMUSQ.api.rest('settings?id=eq.1', { method:'PATCH', body: JSON.stringify(d) });
-    AMUSQ.toast(r.ok ? 'حُفظت ' + g.title : 'تعذّر الحفظ');
+    const r = await QBANK.api.rest('settings?id=eq.1', { method:'PATCH', body: JSON.stringify(d) });
+    QBANK.toast(r.ok ? 'حُفظت ' + g.title : 'تعذّر الحفظ');
     if (r.ok && refresh) refresh();
   });
 
@@ -4332,16 +4649,16 @@ function setGroup(g, row, refresh){
 
 /* ===== الربط: يعمل قبل الدخول لأنه أول ما يُضبط عند التركيب ===== */
 function setConnection(){
-  const c = AMUSQ.config.get() || {};
+  const c = QBANK.config.get() || {};
   const urlIn = el('input', { class:'input', dir:'ltr', id:'cfgUrl', value: c.url || '', placeholder:'https://xxxx.supabase.co' });
   const keyIn = el('input', { class:'input', dir:'ltr', id:'cfgKey', value: c.anonKey || '', placeholder:'anon key' });
-  const apiIn = el('input', { class:'input', dir:'ltr', id:'cfgApi', value: AMUSQ.store.get('api_base',''),
+  const apiIn = el('input', { class:'input', dir:'ltr', id:'cfgApi', value: QBANK.store.get('api_base',''),
     placeholder:'اتركه فارغًا على نفس الموقع' });
   const save = el('button', { class:'btn', type:'button', text:'احفظ الربط' });
   save.addEventListener('click', () => {
-    const r = AMUSQ.config.set(urlIn.value.trim(), keyIn.value.trim());
-    AMUSQ.store.set('api_base', apiIn.value.trim());
-    AMUSQ.toast(r.ok ? 'حُفظ الربط — المنصة موصولة' : r.err);
+    const r = QBANK.config.set(urlIn.value.trim(), keyIn.value.trim());
+    QBANK.store.set('api_base', apiIn.value.trim());
+    QBANK.toast(r.ok ? 'حُفظ الربط — المنصة موصولة' : r.err);
   });
   return el('section', { class:'ad-panel' }, [
     el('div', { class:'ad-panel__h' }, [ el('h2', { class:'ad-panel__t', text:'ربط الخادم' }) ]),
@@ -4362,7 +4679,7 @@ function setHealth(){
     el('div', { class:'ad-panel__h' }, [ el('h2', { class:'ad-panel__t', text:'صحة المحتوى' }) ]),
     el('p', { class:'page__sub', text:'جارٍ الفحص…' })
   ]);
-  AMUSQ.api.rpc('admin_health').then(r => {
+  QBANK.api.rpc('admin_health').then(r => {
     if (!box.isConnected) return;
     box.innerHTML = '';
     box.appendChild(el('div', { class:'ad-panel__h' }, [ el('h2', { class:'ad-panel__t', text:'صحة المحتوى' }) ]));
@@ -4399,22 +4716,22 @@ function setData(){
   const btn = el('button', { class:'btn', type:'button', text:'صدّر نسخة كاملة (JSON)' });
   btn.addEventListener('click', async () => {
     btn.disabled = true; btn.textContent = 'جارٍ التصدير…';
-    const r = await AMUSQ.api.rpc('admin_export');
+    const r = await QBANK.api.rpc('admin_export');
     btn.disabled = false; btn.textContent = 'صدّر نسخة كاملة (JSON)';
-    if (!r.ok || !r.data || r.data.error) return AMUSQ.toast('تعذّر التصدير');
+    if (!r.ok || !r.data || r.data.error) return QBANK.toast('تعذّر التصدير');
     const blob = new Blob([JSON.stringify(r.data, null, 2)], { type:'application/json' });
     const a = el('a', { href: URL.createObjectURL(blob),
-      download: 'amusq-backup-' + new Date().toISOString().slice(0,10) + '.json' });
+      download: 'qbank-backup-' + new Date().toISOString().slice(0,10) + '.json' });
     document.body.appendChild(a); a.click(); a.remove();
-    AMUSQ.toast('نُزّلت النسخة');
+    QBANK.toast('نُزّلت النسخة');
   });
 
   const clearLocal = el('button', { class:'btn btn--ghost', type:'button', text:'امسح ذاكرة هذا الجهاز' });
   let armed = false;
   clearLocal.addEventListener('click', () => {
     if (!armed){ armed = true; clearLocal.textContent = 'اضغط ثانيةً — يُمسح التقدّم المحلي'; clearLocal.className = 'btn btn--danger'; return; }
-    AMUSQ.store.clearAll();
-    AMUSQ.toast('مُسحت الذاكرة المحلية — أعد التحميل');
+    QBANK.store.clearAll();
+    QBANK.toast('مُسحت الذاكرة المحلية — أعد التحميل');
   });
 
   return el('section', { class:'ad-panel ad-danger' }, [
@@ -4432,12 +4749,12 @@ function adminSettingsTabFull(box){
   box.appendChild(rest);
 
   function load(){
-    AMUSQ.api.rest('settings?id=eq.1&select=*').then(r => {
+    QBANK.api.rest('settings?id=eq.1&select=*').then(r => {
       if (!rest.isConnected) return;
       rest.innerHTML = '';
       const row = (r.ok && r.data && r.data[0]) || null;
       if (!row){
-        rest.appendChild(AMUSQ.views.empty('⚙', 'الإعدادات غير متاحة',
+        rest.appendChild(QBANK.views.empty('⚙', 'الإعدادات غير متاحة',
           'تُجلب بعد ربط الخادم والدخول كمشرف وتشغيل ملفات SQL.'));
         return;
       }
@@ -4449,9 +4766,360 @@ function adminSettingsTabFull(box){
   load();
 }
 
-AMUSQ.admin.settings = SET;
+QBANK.admin.settings = SET;
 // نستبدل تبويب الإعدادات القديم بالكامل — أُبقي المختصر في 33 كي يبقى ذاك الملف مستقلًا
-AMUSQ.views.ADMIN_TABS.forEach(t => { if (t.id === 'settings') t.fill = adminSettingsTabFull; });
+QBANK.views.ADMIN_TABS.forEach(t => { if (t.id === 'settings') t.fill = adminSettingsTabFull; });
+
+
+/* ===== 45-trial.js ===== */
+/*
+  تجربة العشر دقائق — مكافأة من يرفع مادته، لا عيّنة مجانية للجميع.
+
+  الوقت يُحسب في الخادم لا هنا: المتصفح يرسل نبضة كل ٣٠ ثانية والقاعدة تجمعها
+  وتقصّها عند السقف. لو أغلق الطالب الصفحة أو عبث بالساعة أو فتح خمس ألسنة،
+  فالمجموع في القاعدة هو الحكم. العدّاد المعروض تقدير محلي للطمأنة فقط.
+*/
+const Trial = {
+  CAP: 600,          // عشر دقائق — نفس الرقم في qbank.trial_cap()
+  BEAT_MS: 30000,    // نبضة كل ٣٠ ثانية: تكفي لدقة نصف دقيقة بلا إغراق الشبكة
+  state: null,       // { sid, left, cap, timer, tick, onExpire }
+
+  fmt(sec){
+    const s = Math.max(0, Math.round(sec));
+    const m = Math.floor(s / 60);
+    return m + ':' + String(s % 60).padStart(2, '0');
+  },
+
+  /*
+    سؤال القاعدة: هل يُسمح؟ ولماذا؟
+    نُرجع null عند تعذّر الوصول للخادم — لا «ممنوع». انقطاع الشبكة ليس دليل
+    عدم أحقية، ولو أغلقنا المادة عند كل تعثّر لحُرم طالب دفع ثمنها من مذاكرته
+    في الطائرة. القاعدة تحرس القراءة الفعلية للأسئلة على كل حال.
+  */
+  async access(sid){
+    const r = await QBANK.api.rpc('subject_access', { sid });
+    if (r && r.ok && r.data && !r.data.error) return r.data;
+    return null;
+  },
+
+  stop(){
+    if (!Trial.state) return;
+    clearInterval(Trial.state.timer);
+    clearInterval(Trial.state.tick);
+    Trial.state = null;
+  },
+
+  /* يبدأ العدّ ويُرجع الشريط الجاهز للإلحاق */
+  start(sid, secondsLeft, onExpire){
+    Trial.stop();
+    const bar = el('div', { class:'trialbar', role:'status', 'aria-live':'polite' });
+    const label = el('span', { class:'trialbar__t' });
+    const meter = el('span', { class:'trialbar__m' }, [ el('span', { class:'trialbar__f' }) ]);
+    const buy = el('button', { class:'btn btn--sm', type:'button', text:'اشترِ الآن' });
+    buy.addEventListener('click', () => { if (onExpire) onExpire('buy'); });
+    bar.appendChild(el('span', { class:'trialbar__ico', 'aria-hidden':'true', text:'◷' }));
+    bar.appendChild(label); bar.appendChild(meter); bar.appendChild(buy);
+
+    const st = { sid, left: secondsLeft, cap: Trial.CAP, onExpire, bar };
+    Trial.state = st;
+
+    function paint(){
+      const pct = Math.max(0, Math.min(100, st.left / st.cap * 100));
+      label.textContent = 'تجربتك: ' + Trial.fmt(st.left) + ' متبقية';
+      meter.firstChild.style.width = pct.toFixed(1) + '%';
+      // آخر دقيقتين بلون التحذير — الطالب يستحق إنذارًا قبل القفل لا مفاجأة
+      bar.className = 'trialbar' + (st.left <= 120 ? ' is-low' : '');
+    }
+    paint();
+
+    // عدّاد العرض كل ثانية — تقدير محلي، والحقيقة تأتي مع كل نبضة
+    st.tick = setInterval(() => {
+      if (!bar.isConnected) return Trial.stop();
+      st.left = Math.max(0, st.left - 1);
+      paint();
+      if (st.left <= 0){ Trial.stop(); if (onExpire) onExpire('expired'); }
+    }, 1000);
+
+    st.timer = setInterval(async () => {
+      if (!bar.isConnected) return Trial.stop();
+      const r = await QBANK.api.rpc('rpc_record_trial_heartbeat',
+        { subject_id: sid, interval_seconds: Trial.BEAT_MS / 1000 });
+      if (!r.ok || !r.data || r.data.error) return;      // انقطاع مؤقت: العدّاد المحلي يكمل
+      const d = r.data;
+      if (d.eligible === false){ Trial.stop(); if (onExpire) onExpire('ineligible'); return; }
+      st.left = Number(d.seconds_left);                  // الخادم هو الحكم — نصحّح المحلي منه
+      paint();
+      if (d.expired){ Trial.stop(); if (onExpire) onExpire('expired'); }
+    }, Trial.BEAT_MS);
+
+    return bar;
+  },
+
+  /* شاشة انتهاء التجربة — تفتح الشراء لا تتركه في فراغ */
+  expiredCard(sub){
+    return el('div', { class:'card', style:'text-align:center' }, [
+      el('span', { class:'empty__ico', 'aria-hidden':'true', text:'◷' }),
+      el('p', { class:'empty__title', text:'انتهت تجربتك المجانية' }),
+      el('p', { class:'empty__text',
+        text:'استفدت من عشر دقائق كاملة في «' + sub.name + '». افتحها الآن حتى نهاية الفصل.' }),
+      QBANK.gate.buyButton(sub)
+    ]);
+  }
+};
+QBANK.trial = Trial;
+
+
+/* ===== 46-share.js ===== */
+/*
+  رابط المشاركة القصير: #s/slug?ref=USER_ID
+
+  الموجّه يجرّد «#» و«/» الأولى معًا، فمسار واحد مسجَّل باسم '#/s' يلتقط
+  الصيغتين: #s/slug و #/s/slug — ويبقى الرابط قصيرًا كما يُشارَك في الواتساب.
+
+  هذه الشاشة تعريفية لا محتوى فيها: من وصل عبر رابط زميله يرى ما في المادة
+  وسعرها وزر الشراء، ولا يُحتسب له رصيد تجربة.
+*/
+function shareUrl(slug, userId){
+  const base = (typeof location !== 'undefined' && location.protocol.indexOf('http') === 0)
+    ? location.origin + location.pathname : 'https://amsuq.alsoqoor.com/';
+  return base + '#s/' + slug + (userId ? '?ref=' + userId : '');
+}
+
+function copyRow(url){
+  const inp = el('input', { class:'input', dir:'ltr', readonly:'', value:url, 'aria-label':'رابط المادة' });
+  const btn = el('button', { class:'btn btn--sm', type:'button', text:'انسخ الرابط' });
+  btn.addEventListener('click', () => {
+    inp.select();
+    // clipboard API قد يُمنع على file:// أو بلا https — execCommand احتياطًا لا مكتبة
+    const done = (navigator.clipboard && navigator.clipboard.writeText)
+      ? (navigator.clipboard.writeText(url), true)
+      : (function(){ try { return document.execCommand('copy'); } catch(e){ return false; } })();
+    QBANK.toast(done ? 'نُسخ الرابط' : 'انسخه يدويًا من الحقل');
+  });
+  return el('div', { class:'sharebox' }, [ inp, btn ]);
+}
+
+const ViewShare = {
+  title:'مادة مشتركة',
+  view(route){
+    const slug = route.rest[0];
+    QBANK.gate.captureRef(route.query);       // نحفظ المُحيل فورًا قبل أي تنقّل
+    if (!slug) return QBANK.views.ViewNotFound.view();
+
+    const box = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ فتح المادة…' }) ]);
+    QBANK.api.rest('subjects?slug=eq.' + encodeURIComponent(slug) +
+      '&select=id,name,descr,icon,color,q_count,price,free,published,status,created_by').then(r => {
+      if (!box.isConnected) return;
+      box.innerHTML = '';
+      const sub = (r.ok && r.data && r.data[0]) || null;
+      if (!sub || sub.status !== 'published'){
+        box.appendChild(QBANK.views.empty('؟', 'المادة غير متاحة',
+          'ربما أوقفها المشرف أو تغيّر رابطها.', el('a', { class:'btn', href:'#/', text:'الرئيسية' })));
+        return;
+      }
+      const u = QBANK.api.user();
+      const mine = u && sub.created_by === u.id;
+
+      box.appendChild(el('div', { class:'card', style:'text-align:center' }, [
+        el('span', { class:'empty__ico', 'aria-hidden':'true', text: sub.icon || '▤' }),
+        el('p', { class:'empty__title', text: sub.name }),
+        sub.descr ? el('p', { class:'empty__text', text: sub.descr }) : null,
+        el('div', { class:'row', style:'justify-content:center' }, [
+          el('span', { class:'badge num', text: (sub.q_count || 0) + ' سؤالًا' }),
+          sub.price ? el('span', { class:'badge badge--ok num', text: sub.price + ' ريال' }) : null
+        ])
+      ]));
+
+      if (mine){
+        box.appendChild(el('div', { class:'card stack' }, [
+          el('h2', { text:'هذه مادتك' }),
+          el('p', { class:'field__hint', text:'شاركها مع زملائك — كل عملية شراء عبر رابطك تضيف كوينز لرصيدك.' }),
+          copyRow(shareUrl(slug, u.id)),
+          el('a', { class:'btn btn--block', href:'#/subject/' + sub.id, text:'افتح المادة' })
+        ]));
+      } else if (!u){
+        box.appendChild(el('div', { class:'card stack' }, [
+          el('p', { class:'field__hint', text:'سجّل دخولك أولًا لتشتري المادة وتفتحها على كل أجهزتك.' }),
+          el('a', { class:'btn btn--block', href:'#/login', text:'سجّل الدخول' })
+        ]));
+      } else {
+        // الزميل لا تجربة له — إلى الشراء مباشرة، وهذا مقصود لا سهو
+        box.appendChild(QBANK.gate.paywallCard(sub));
+      }
+    });
+
+    return QBANK.views.page('مادة مشتركة', 'وصلك هذا الرابط من زميل.', [box]);
+  }
+};
+
+QBANK.share = { shareUrl, copyRow };
+QBANK.views.ViewShare = ViewShare;
+
+
+/* ===== 47-wallet.js ===== */
+/*
+  محفظة الكوينز — ما ربحه الطالب من رفع مادته ومشاركتها.
+  نداء واحد (my_wallet) يجلب الرصيد والمبيعات والمواد والسجل: شاشة الحساب
+  تُفتح كثيرًا، وأربعة نداءات لها ثمن على شبكة الجوال.
+*/
+function walletSubjectRow(s){
+  const u = QBANK.api.user() || {};
+  const link = s.slug ? QBANK.share.shareUrl(s.slug, u.id) : '';
+  const head = el('div', { class:'row' }, [
+    el('span', { class:'ad-row__t', text: s.name }),
+    el('span', { class:'badge num', text: (s.q_count || 0) + ' سؤالًا' }),
+    s.price ? el('span', { class:'badge num', text: s.price + ' ريال' })
+            : el('span', { class:'badge badge--warn', text:'بانتظار التسعير' }),
+    el('span', { class:'badge num ' + (s.sales > 0 ? 'badge--ok' : ''), text: s.sales + ' عملية بيع' }),
+    s.status !== 'published' ? el('span', { class:'badge badge--bad', text:'موقوفة' }) : null
+  ]);
+  return el('div', { class:'card stack' }, [ head, link ? QBANK.share.copyRow(link) : null ]);
+}
+
+function walletBody(){
+  const box = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ جلب المحفظة…' }) ]);
+  QBANK.api.rpc('my_wallet').then(r => {
+    if (!box.isConnected) return;
+    box.innerHTML = '';
+    if (!r.ok || !r.data || r.data.error){
+      box.appendChild(el('p', { class:'field__hint', text:'المحفظة تظهر بعد الاتصال بالخادم.' }));
+      return;
+    }
+    const w = r.data;
+    box.appendChild(el('div', { class:'wallet' }, [
+      el('span', {}, [ el('span', { class:'wallet__n', text: String(w.balance) }),
+                       el('span', { class:'wallet__l', text:'كوين' }) ]),
+      el('span', {}, [ el('span', { class:'wallet__n', text: String(w.sales) }),
+                       el('span', { class:'wallet__l', text:'عملية بيع' }) ]),
+      el('span', {}, [ el('span', { class:'wallet__n', text: String((w.subjects || []).length) }),
+                       el('span', { class:'wallet__l', text:'مادة رفعتها' }) ])
+    ]));
+
+    const subs = w.subjects || [];
+    if (!subs.length){
+      box.appendChild(QBANK.views.empty('⇪', 'لم ترفع مادة بعد',
+        'ارفع بنك أسئلتك، وجرّبه عشر دقائق مجانًا، وشاركه مع زملائك.',
+        el('a', { class:'btn', href:'#/admin/upload', text:'ارفع مادتك الأولى' })));
+    } else {
+      box.appendChild(el('h2', { text:'موادي' }));
+      subs.forEach(s => box.appendChild(walletSubjectRow(s)));
+      box.appendChild(el('a', { class:'btn btn--soft btn--block', href:'#/admin/upload', text:'⇪ ارفع مادة أخرى' }));
+    }
+
+    const led = w.ledger || [];
+    if (led.length){
+      box.appendChild(el('h2', { text:'سجل الكوينز' }));
+      box.appendChild(el('div', { class:'card stack' }, led.map(t => el('div', { class:'row' }, [
+        el('span', { class:'badge num ' + (t.amount > 0 ? 'badge--ok' : 'badge--bad'),
+          text: (t.amount > 0 ? '+' : '') + t.amount }),
+        el('span', { text: t.reason || '—' }),
+        el('span', { class:'spacer' }),
+        el('span', { class:'ad-feed__t', text: QBANK.admin.charts.ago(t.created_at) })
+      ]))));
+    }
+  });
+  return box;
+}
+
+QBANK.wallet = { body: walletBody, subjectRow: walletSubjectRow };
+
+
+/* ===== 48-admin-ugc.js ===== */
+/*
+  تبويب «مواد الطلاب» — الرقابة والتسعير.
+  المشرف لا يحرّر محتوى الطالب من هنا (لذلك محرر المادة)؛ ما يفعله هو
+  تحديد السعر، والإيقاف عند المخالفة، ورؤية ما بيع وكم كوينز مُنح.
+*/
+function ugcRow(u, refresh){
+  const priceIn = el('input', { class:'input input--sm', type:'number', min:'0', max:'5000',
+    value: String(u.price || 0), 'aria-label':'سعر ' + u.name, style:'max-width:110px' });
+  const savePrice = el('button', { class:'btn btn--sm', type:'button', text:'احفظ السعر' });
+  savePrice.addEventListener('click', async () => {
+    const v = Math.min(5000, Math.max(0, parseInt(priceIn.value || '0', 10) || 0));
+    priceIn.value = String(v);
+    const r = await QBANK.api.rest('subjects?id=eq.' + u.id,
+      { method:'PATCH', body: JSON.stringify({ price: v }) });
+    QBANK.toast(r.ok ? 'حُفظ السعر' : 'تعذّر الحفظ');
+  });
+
+  const on = u.status === 'published';
+  const susp = el('button', { class:'btn btn--sm ' + (on ? 'btn--ghost' : ''), type:'button',
+    text: on ? 'أوقف المادة' : 'أعِد تفعيلها' });
+  susp.addEventListener('click', async () => {
+    const r = await QBANK.api.rest('subjects?id=eq.' + u.id,
+      { method:'PATCH', body: JSON.stringify({ status: on ? 'suspended' : 'published' }) });
+    QBANK.toast(r.ok ? (on ? 'أُوقفت المادة' : 'أُعيد تفعيلها') : 'تعذّر التعديل');
+    if (r.ok && refresh) refresh();
+  });
+
+  // الحذف بتأكيدين — يمحو المادة وأسئلتها بالتتابع (on delete cascade)
+  const del = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'احذف' });
+  let armed = false;
+  del.addEventListener('click', async () => {
+    if (!armed){ armed = true; del.textContent = 'اضغط ثانيةً — حذف نهائي'; del.className = 'btn btn--sm btn--danger'; return; }
+    const r = await QBANK.api.rest('subjects?id=eq.' + u.id, { method:'DELETE' });
+    QBANK.toast(r.ok ? 'حُذفت المادة' : 'تعذّر الحذف');
+    if (r.ok && refresh) refresh();
+  });
+
+  return el('div', { class:'card stack' }, [
+    el('div', { class:'row' }, [
+      el('span', { class:'ad-row__main' }, [
+        el('span', { class:'ad-row__t', text: u.name }),
+        el('span', { class:'ad-row__s', text:'رفعها ' + u.creator_name + ' · ' + (u.q_count || 0) + ' سؤالًا' })
+      ]),
+      el('span', { class:'modetag modetag--' + (u.sanctity_mode || 'strict'),
+        text: u.sanctity_mode === 'enhanced' ? 'صياغة محسَّنة' : 'نص حرفي' }),
+      on ? el('span', { class:'badge badge--ok', text:'فعّالة' })
+         : el('span', { class:'badge badge--bad', text:'موقوفة' })
+    ]),
+    el('div', { class:'row' }, [
+      el('span', { class:'badge num', text: u.sales + ' بيعة' }),
+      el('span', { class:'badge num', text: u.coins + ' كوين' }),
+      el('span', { class:'badge num', text: u.attempts + ' اختبار' }),
+      u.slug ? el('a', { class:'badge', href:'#s/' + u.slug, text:'الرابط' }) : null
+    ]),
+    el('div', { class:'ad-bar', style:'margin:0' }, [
+      priceIn, savePrice,
+      el('a', { class:'btn btn--sm btn--soft', href:'#/admin/subject/' + u.id, text:'حرّر' }),
+      el('span', { class:'spacer' }), susp, del
+    ])
+  ]);
+}
+
+function adminUgcTab(box){
+  box.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
+  function load(){
+    QBANK.api.rpc('admin_ugc').then(r => {
+      if (!box.isConnected) return;
+      box.innerHTML = '';
+      if (!r.ok || !r.data || r.data.error){
+        box.appendChild(QBANK.views.empty('⚠', 'تعذّر الجلب',
+          'تأكد أن حسابك مشرف وأن ملف UGC-COINS.sql مُشغَّل على القاعدة.'));
+        return;
+      }
+      const rows = Array.isArray(r.data) ? r.data : [];
+      if (!rows.length){
+        box.appendChild(QBANK.views.empty('⇪', 'لا مواد من الطلاب بعد',
+          'حين يرفع طالب بنك أسئلته سيظهر هنا لتسعّره أو توقفه.'));
+        return;
+      }
+      const unpriced = rows.filter(x => !x.price).length;
+      box.appendChild(el('div', { class:'ad-kpis' }, [
+        QBANK.admin.charts.kpi(rows.length, 'مادة من الطلاب', ''),
+        QBANK.admin.charts.kpi(rows.reduce((n, x) => n + Number(x.sales), 0), 'عملية بيع', ''),
+        QBANK.admin.charts.kpi(rows.reduce((n, x) => n + Number(x.coins), 0), 'كوين مُنحت', ''),
+        QBANK.admin.charts.kpi(unpriced, 'بلا سعر', unpriced ? 'تحتاج تسعيرًا' : 'الكل مسعَّر',
+          unpriced ? 'warn' : null)
+      ]));
+      rows.forEach(u => box.appendChild(ugcRow(u, load)));
+    });
+  }
+  load();
+}
+
+QBANK.admin.ugcTab = adminUgcTab;
+QBANK.views.ADMIN_TABS.splice(2, 0, { id:'ugc', label:'مواد الطلاب', fill: adminUgcTab });
 
 })();
 
