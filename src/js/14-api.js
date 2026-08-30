@@ -9,17 +9,17 @@ const Api = {
 
   fetchFn(){ return Api._fetch || (typeof fetch !== 'undefined' ? fetch.bind(window) : null); },
 
-  session(){ return AMUSQ.store.get(Api.SESSION_KEY, null); },
+  session(){ return QBANK.store.get(Api.SESSION_KEY, null); },
   saveSession(s){
-    if (!s) return AMUSQ.store.remove(Api.SESSION_KEY);
+    if (!s) return QBANK.store.remove(Api.SESSION_KEY);
     // نحفظ وقت الانتهاء المطلق كي نعرف متى نجدّد دون الرجوع للخادم
     s.expires_abs = Date.now() + (s.expires_in ? s.expires_in * 1000 : 3600 * 1000);
-    AMUSQ.store.set(Api.SESSION_KEY, s);
+    QBANK.store.set(Api.SESSION_KEY, s);
   },
   user(){ const s = Api.session(); return s && s.user ? s.user : null; },
 
   headers(){
-    const c = AMUSQ.config.get() || {};
+    const c = QBANK.config.get() || {};
     const s = Api.session();
     return {
       'apikey': c.anonKey || '',
@@ -29,7 +29,7 @@ const Api = {
   },
 
   async raw(path, opts){
-    const c = AMUSQ.config.get();
+    const c = QBANK.config.get();
     const f = Api.fetchFn();
     if (!c || !f) return { ok:false, offline:true, data:null };
     try{
@@ -73,7 +73,7 @@ const Api = {
     },
     // دخول جوجل/آبل: توجيه كامل للصفحة — يصلح للويب والتطبيق معًا
     oauthUrl(provider){
-      const c = AMUSQ.config.get();
+      const c = QBANK.config.get();
       if (!c) return null;
       const back = (typeof location !== 'undefined') ? location.origin + location.pathname : '';
       return c.url + '/auth/v1/authorize?provider=' + provider + '&redirect_to=' + encodeURIComponent(back);
@@ -125,7 +125,7 @@ const Api = {
     },
     async deleteMe(){
       const r = await Api.rpc('delete_me');
-      if (r.ok) { Api.saveSession(null); AMUSQ.store.clearAll(); }
+      if (r.ok) { Api.saveSession(null); QBANK.store.clearAll(); }
       return r;
     }
   },
@@ -143,4 +143,4 @@ const Api = {
     return Api.rest('profiles?id=eq.' + u.id, { method:'PATCH', body: JSON.stringify(fields) });
   }
 };
-AMUSQ.api = Api;
+QBANK.api = Api;

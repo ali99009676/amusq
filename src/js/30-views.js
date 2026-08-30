@@ -41,13 +41,13 @@ function daysLeft(dateStr, now){
   const d = new Date(dateStr).getTime() - (now || Date.now());
   return Math.ceil(d / 86400000);
 }
-function mySubjects(){ return AMUSQ.store.get('my_subjects', []); }
+function mySubjects(){ return QBANK.store.get('my_subjects', []); }
 
 function subjectCard(sub){
   const mine = mySubjects().indexOf(sub.id) !== -1;
   const left = daysLeft(sub.exam_date);
   const past = left !== null && left < 0;
-  const pct = AMUSQ.progress.pctDone(sub.id, sub.q_count);
+  const pct = QBANK.progress.pctDone(sub.id, sub.q_count);
   const color = subjectColor(sub.color);
 
   const card = el('article', { class:'card subj' + (past ? ' is-past' : ''), tabindex:'0', role:'link',
@@ -68,8 +68,8 @@ function subjectCard(sub){
       el('div', { style:'width:' + pct + '%;background:' + color })
     ])
   ]);
-  card.addEventListener('click', () => AMUSQ.router.go('#/subject/' + sub.id));
-  card.addEventListener('keydown', e => { if (e.key === 'Enter') AMUSQ.router.go('#/subject/' + sub.id); });
+  card.addEventListener('click', () => QBANK.router.go('#/subject/' + sub.id));
+  card.addEventListener('keydown', e => { if (e.key === 'Enter') QBANK.router.go('#/subject/' + sub.id); });
   return card;
 }
 
@@ -78,9 +78,9 @@ const ViewHome = {
   view(){
     // الزائر يرى صفحة تعريفية تشرح وتُقنع؛ والطالب المسجَّل يرى مواده فورًا.
     // السبب: لكلٍّ حاجة مختلفة — إقناع أولًا، ومذاكرة سريعة ثانيًا.
-    if (!AMUSQ.api.user()) return AMUSQ.views.landingView();
+    if (!QBANK.api.user()) return QBANK.views.landingView();
 
-    const pack = AMUSQ.data.pack();
+    const pack = QBANK.data.pack();
     const subjects = (pack.subjects || []).slice();
     const body = [];
 
@@ -89,7 +89,7 @@ const ViewHome = {
 
     if (!subjects.length) {
       body.push(empty('▤', 'لا مواد بعد',
-        AMUSQ.config.ready()
+        QBANK.config.ready()
           ? 'لم تُنشر مواد حتى الآن — عد قريبًا، أو تأكد من الاتصال لمزامنة الجديد.'
           : 'المنصة تبدأ فارغة عن قصد. يضيف المشرف المواد من لوحة التحكم وستظهر هنا فور نشرها.',
         el('div', { class:'row', style:'justify-content:center;margin-top:16px' }, [
@@ -122,11 +122,11 @@ const ViewHome = {
         add.addEventListener('click', e => {
           e.stopPropagation();
           const list = mySubjects();
-          if (list.indexOf(su.id) === -1) { list.push(su.id); AMUSQ.store.set('my_subjects', list); }
-          AMUSQ.api.rest('enrollments', { method:'POST', body: JSON.stringify({
-            user_id: (AMUSQ.api.user() || {}).id, subject_id: su.id }) });
-          AMUSQ.toast('أُضيفت «' + su.name + '» إلى موادك');
-          AMUSQ.router.render('#/');
+          if (list.indexOf(su.id) === -1) { list.push(su.id); QBANK.store.set('my_subjects', list); }
+          QBANK.api.rest('enrollments', { method:'POST', body: JSON.stringify({
+            user_id: (QBANK.api.user() || {}).id, subject_id: su.id }) });
+          QBANK.toast('أُضيفت «' + su.name + '» إلى موادك');
+          QBANK.router.render('#/');
         });
         c.appendChild(el('div', { class:'row', style:'margin-top:8px' }, [add]));
         return c;
@@ -147,11 +147,11 @@ function loginCard(opts){
   async function send(){
     const val = (email.value || '').trim();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val)) { msg.textContent = 'اكتب بريدًا صحيحًا أولًا.'; email.focus(); return; }
-    if (!AMUSQ.config.ready()) { msg.textContent = 'المنصة غير موصولة بالخادم بعد — يضبطها المشرف من الإعدادات.'; return; }
+    if (!QBANK.config.ready()) { msg.textContent = 'المنصة غير موصولة بالخادم بعد — يضبطها المشرف من الإعدادات.'; return; }
     btn.setAttribute('aria-disabled','true'); btn.textContent = 'جارٍ الإرسال…';
-    const r = await AMUSQ.api.auth.magic(val);
+    const r = await QBANK.api.auth.magic(val);
     btn.removeAttribute('aria-disabled'); btn.textContent = 'أرسل رابط الدخول';
-    if (r.ok) { msg.textContent = 'تم! افتح بريدك واضغط رابط الدخول.'; AMUSQ.toast('أُرسل رابط الدخول'); }
+    if (r.ok) { msg.textContent = 'تم! افتح بريدك واضغط رابط الدخول.'; QBANK.toast('أُرسل رابط الدخول'); }
     else if (r.offline) msg.textContent = 'لا اتصال بالإنترنت — الدخول يحتاج اتصالًا مرة واحدة فقط.';
     else msg.textContent = 'تعذّر الإرسال. تحقق من البريد وحاول ثانية.';
   }
@@ -160,8 +160,8 @@ function loginCard(opts){
 
   const gBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب جوجل' });
   const aBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب آبل' });
-  gBtn.addEventListener('click', () => { const u = AMUSQ.api.auth.oauthUrl('google'); if (u) location.href = u; else AMUSQ.toast('المنصة غير موصولة بالخادم بعد'); });
-  aBtn.addEventListener('click', () => { const u = AMUSQ.api.auth.oauthUrl('apple');  if (u) location.href = u; else AMUSQ.toast('المنصة غير موصولة بالخادم بعد'); });
+  gBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('google'); if (u) location.href = u; else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
+  aBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('apple');  if (u) location.href = u; else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
 
   return el('div', { class:'card stack' }, [
     el('label', { class:'field', style:'margin:0' }, [
@@ -178,7 +178,7 @@ function loginCard(opts){
 const ViewLogin = {
   title:'دخول الطالب',
   view(){
-    if (AMUSQ.api.user()) { return page('حسابي', null, [ AMUSQ.views.accountBody() ]); }
+    if (QBANK.api.user()) { return page('حسابي', null, [ QBANK.views.accountBody() ]); }
     return page('دخول الطالب', 'سجّل ليُحفظ تقدّمك في حسابك ويتزامن بين أجهزتك.', [
       loginCard({ emailId:'loginEmail', label:'البريد الإلكتروني' }),
       el('div', { class:'card' }, [
@@ -209,8 +209,8 @@ const ViewSettings = {
       el('button', { class:'btn btn--soft btn--sm', type:'button', id:'setThemeBtn', text:'تبديل' })
     ]);
     themeRow.querySelector('#setThemeBtn').addEventListener('click', () => {
-      const mode = AMUSQ.theme.toggle();
-      AMUSQ.toast(mode === 'dark' ? 'الوضع الليلي مُفعَّل' : 'الوضع الفاتح مُفعَّل');
+      const mode = QBANK.theme.toggle();
+      QBANK.toast(mode === 'dark' ? 'الوضع الليلي مُفعَّل' : 'الوضع الفاتح مُفعَّل');
     });
 
     const resetRow = el('div', { class:'row' }, [
@@ -219,16 +219,16 @@ const ViewSettings = {
       el('button', { class:'btn btn--ghost btn--sm', type:'button', id:'resetBtn', text:'تصفير' })
     ]);
     resetRow.querySelector('#resetBtn').addEventListener('click', () => {
-      AMUSQ.store.clearAll();
-      AMUSQ.theme.apply('auto');
-      AMUSQ.toast('حُذفت بيانات هذا الجهاز');
+      QBANK.store.clearAll();
+      QBANK.theme.apply('auto');
+      QBANK.toast('حُذفت بيانات هذا الجهاز');
     });
 
     return page('الإعدادات', 'تخصّ هذا الجهاز، ولا تُغيّر حسابك.', [
       el('div', { class:'card stack' }, [ themeRow, el('hr', { class:'divider' }), resetRow ]),
       el('div', { class:'card' }, [
         el('h2', { text:'عن المنصة' }),
-        el('p', { class:'page__sub', text:'AMUSQ — منصة مراجعة تفاعلية لطلاب التخصصات الصحية. الإصدار ' + AMUSQ.version + ' · المرحلة ' + AMUSQ.stage })
+        el('p', { class:'page__sub', text:'QBANK — منصة مراجعة تفاعلية لطلاب التخصصات الصحية. الإصدار ' + QBANK.version + ' · المرحلة ' + QBANK.stage })
       ])
     ]);
   }
@@ -247,4 +247,4 @@ const ViewNotFound = {
   }
 };
 
-AMUSQ.views = { ViewHome, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects };
+QBANK.views = { ViewHome, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects };

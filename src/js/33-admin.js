@@ -6,24 +6,24 @@
 const Admin = {
   /* هل الجلسة الحالية لمشرف؟ نسأل قاعدة البيانات مرة ونخزّن الجواب للجلسة */
   async check(){
-    if (!AMUSQ.api.user()) return false;
-    const cached = AMUSQ.store.get('is_admin_check', null);
-    if (cached && cached.uid === AMUSQ.api.user().id) return cached.ok;
-    const r = await AMUSQ.api.myProfile();
+    if (!QBANK.api.user()) return false;
+    const cached = QBANK.store.get('is_admin_check', null);
+    if (cached && cached.uid === QBANK.api.user().id) return cached.ok;
+    const r = await QBANK.api.myProfile();
     const ok = !!(r.ok && r.data && r.data.is_admin);
-    AMUSQ.store.set('is_admin_check', { uid: AMUSQ.api.user().id, ok });
+    QBANK.store.set('is_admin_check', { uid: QBANK.api.user().id, ok });
     return ok;
   },
 
   /* رابط دوال الخادم: على Vercel هو نفس الأصل، ومن file:// يضبطه المشرف مرة واحدة */
   apiBase(){
-    const c = AMUSQ.store.get('api_base', '');
+    const c = QBANK.store.get('api_base', '');
     if (c) return c.replace(/\/+$/,'');
     return (typeof location !== 'undefined' && location.protocol.indexOf('http') === 0) ? '' : null;
   },
   async server(path, body){
     const base = Admin.apiBase();
-    const f = AMUSQ.api.fetchFn();
+    const f = QBANK.api.fetchFn();
     if (base === null || !f) return { ok:false, offline:true };
     try{
       const res = await f(base + path, {
@@ -43,7 +43,9 @@ const Admin = {
     return out;
   },
   newWizard(){
-    return { step:1, filename:'', raw:[], enriched:[], draftId:null, done:0, total:0, error:'' };
+    // strict افتراضًا: قاعدة القداسة هي الأصل، والتحسين اختيار صريح من الرافع
+    return { step:1, filename:'', subjectName:'', slug:'', mode:'strict',
+             raw:[], enriched:[], draftId:null, done:0, total:0, error:'' };
   },
   // تقدير التكلفة قبل التشغيل: عدد الأسئلة والدفعات — يقرّر المشرف على بيّنة
   estimate(w){
@@ -51,9 +53,12 @@ const Admin = {
   },
 
   async wizardIngest(w, filename, base64){
-    const r = await Admin.server('/api/ingest', { filename, content_base64: base64 });
+    const r = await Admin.server('/api/ingest', { filename, content_base64: base64,
+      subject_name: w.subjectName || '', sanctity_mode: w.mode || 'strict' });
     if (!r.ok) { w.error = (r.data && r.data.error) || 'تعذّر الاتصال بالخادم'; return w; }
     w.filename = filename; w.raw = r.data.questions; w.total = r.data.total;
+    w.subjectName = w.subjectName || r.data.subject_name || '';
+    w.slug = r.data.slug || '';
     w.step = 2; w.error = '';
     return w;
   },
@@ -64,7 +69,7 @@ const Admin = {
     for (let i = 0; i < batches.length; i++) {
       // لا إعادة معالجة لما اكتمل — الاستئناف يبدأ من حيث توقّف
       if (w.done >= (i + 1) * Admin.BATCH) continue;
-      const r = await Admin.server('/api/ai', { questions: batches[i] });
+      const r = await Admin.server('/api/ai', { questions: batches[i], sanctity_mode: w.mode || 'strict' });
       if (!r.ok) { w.error = (r.data && r.data.error) || 'انقطعت الدفعة ' + (i + 1); return w; }
       w.enriched = w.enriched.concat(r.data.questions);
       w.done = Math.min(w.enriched.length, w.total);
@@ -77,19 +82,19 @@ const Admin = {
 
   async saveDraft(w){
     const body = {
-      name: w.filename.replace(/\.[^.]+$/, ''),
+      name: w.subjectName || w.filename.replace(/\.[^.]+$/, ''),
       source_name: w.filename,
       status: w.done >= w.total ? 'reviewing' : 'processing',
       payload: w.enriched, total: w.total, done: w.done,
       updated_at: new Date().toISOString()
     };
     if (w.draftId) {
-      return AMUSQ.api.rest('drafts?id=eq.' + w.draftId, { method:'PATCH', body: JSON.stringify(body) });
+      return QBANK.api.rest('drafts?id=eq.' + w.draftId, { method:'PATCH', body: JSON.stringify(body) });
     }
-    body.created_by = (AMUSQ.api.user() || {}).id;
-    const r = await AMUSQ.api.rest('drafts?select=id', {
+    body.created_by = (QBANK.api.user() || {}).id;
+    const r = await QBANK.api.rest('drafts?select=id', {
       method:'POST',
-      headers: Object.assign(AMUSQ.api.headers(), { 'Prefer':'return=representation' }),
+      headers: Object.assign(QBANK.api.headers(), { 'Prefer':'return=representation' }),
       body: JSON.stringify(body)
     });
     if (r.ok && r.data && r.data[0]) w.draftId = r.data[0].id;
@@ -98,7 +103,23 @@ const Admin = {
 
   // الاعتماد: نداء واحد ذرّي في قاعدة البيانات — إما كل شيء أو لا شيء
   approve(w, publish){
-    return AMUSQ.api.rpc('approve_draft', { draft_id: w.draftId, publish });
+    return QBANK.api.rpc('approve_draft', { draft_id: w.draftId, publish });
+  },
+
+  /*
+    بعد الاعتماد نختم المادة بهوية رافعها: من رفعها، وبأي نمط، وبأي مسار.
+    نداء منفصل عن approve_draft عمدًا كي لا نغيّر توقيع دالة معتمدة تعمل،
+    وفشله لا يُبطل مادة أُنشئت — يبقى المشرف قادرًا على ضبط الباقي بيده.
+  */
+  async stamp(subjectId, w){
+    if (!subjectId) return { ok:false };
+    const u = QBANK.api.user() || {};
+    return QBANK.api.rest('subjects?id=eq.' + subjectId, { method:'PATCH', body: JSON.stringify({
+      created_by: u.id || null,
+      sanctity_mode: w.mode === 'enhanced' ? 'enhanced' : 'strict',
+      slug: w.slug || null,
+      status: 'published'
+    }) });
   },
 
   // كشف المكرر بتشابه نصي بسيط: نفس الأحرف الدنيا بعد إزالة الفراغات — يوسم لا يحذف
@@ -123,12 +144,12 @@ function adminStat(label, value){
 
 function adminStudentsTab(box){
   box.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
-  Promise.all([ AMUSQ.api.rpc('admin_stats'), AMUSQ.api.rpc('admin_students', { page:0, page_size:50, search:'' }) ])
+  Promise.all([ QBANK.api.rpc('admin_stats'), QBANK.api.rpc('admin_students', { page:0, page_size:50, search:'' }) ])
     .then(([st, rows]) => {
       if (!box.isConnected) return;   // غادر المشرف الشاشة قبل وصول الرد
       box.innerHTML = '';
       if (!st.ok || (st.data && st.data.error)) {
-        box.appendChild(AMUSQ.views.empty('⚠', 'تعذّر الجلب', st.offline ? 'لا اتصال بالإنترنت.' : 'تأكد أن حسابك مشرف وأن قاعدة البيانات مجهزة.'));
+        box.appendChild(QBANK.views.empty('⚠', 'تعذّر الجلب', st.offline ? 'لا اتصال بالإنترنت.' : 'تأكد أن حسابك مشرف وأن قاعدة البيانات مجهزة.'));
         return;
       }
       const s = st.data;
@@ -137,7 +158,7 @@ function adminStudentsTab(box){
         adminStat('اختبارًا', s.attempts), adminStat('متوسط النتائج ٪', s.avg_pct)
       ]));
       const list = (rows.ok && rows.data && rows.data.rows) || [];
-      if (!list.length) { box.appendChild(AMUSQ.views.empty('👥', 'لا طلاب بعد', 'سيظهر الطلاب هنا فور تسجيلهم.')); return; }
+      if (!list.length) { box.appendChild(QBANK.views.empty('👥', 'لا طلاب بعد', 'سيظهر الطلاب هنا فور تسجيلهم.')); return; }
       const tbl = el('div', { class:'card stack' }, list.map(r => {
         const row = el('button', { class:'row rowbtn', type:'button' }, [
           el('span', { text: (r.avatar || '👤') + ' ' + (r.name || 'بلا اسم') }),
@@ -146,7 +167,7 @@ function adminStudentsTab(box){
           el('span', { class:'badge badge--ok num', text: 'أفضل ' + Math.round(r.best) + '٪' })
         ]);
         row.addEventListener('click', async () => {
-          const at = await AMUSQ.api.rpc('admin_attempts', { uid: r.id });
+          const at = await QBANK.api.rpc('admin_attempts', { uid: r.id });
           const items = (at.ok && Array.isArray(at.data)) ? at.data : [];
           const det = el('div', { class:'card stack' },
             items.length ? items.map(a => el('div', { class:'row' }, [
@@ -165,16 +186,16 @@ function adminStudentsTab(box){
 
 function adminContentTab(box){
   const upBtn = el('button', { class:'btn btn--block', type:'button', text:'⇪ ارفع ملف أسئلة جديدًا' });
-  upBtn.addEventListener('click', () => AMUSQ.router.go('#/admin/upload'));
+  upBtn.addEventListener('click', () => QBANK.router.go('#/admin/upload'));
   box.appendChild(upBtn);
   const listBox = el('div', { class:'stack', style:'margin-top:16px' });
   box.appendChild(listBox);
   listBox.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
 
   Promise.all([
-    AMUSQ.api.rest('subjects?select=id,name,color,icon,q_count,published,free,ord,exam_date&order=ord'),
+    QBANK.api.rest('subjects?select=id,name,color,icon,q_count,published,free,ord,exam_date&order=ord'),
     // قوائم المسوّدات بلا payload — الحمولة كبيرة ولا تلزم القائمة
-    AMUSQ.api.rest('drafts?select=id,name,status,total,done,updated_at&order=updated_at.desc')
+    QBANK.api.rest('drafts?select=id,name,status,total,done,updated_at&order=updated_at.desc')
   ]).then(([subs, drs]) => {
     if (!listBox.isConnected) return;
     listBox.innerHTML = '';
@@ -197,31 +218,31 @@ function adminContentTab(box){
 
     listBox.appendChild(el('h2', { text:'المواد' }));
     if (!subjects.length) {
-      listBox.appendChild(AMUSQ.views.empty('▤', 'لا مواد بعد', 'ارفع أول ملف أسئلة وسيظهر هنا بعد الاعتماد.'));
+      listBox.appendChild(QBANK.views.empty('▤', 'لا مواد بعد', 'ارفع أول ملف أسئلة وسيظهر هنا بعد الاعتماد.'));
       return;
     }
     subjects.forEach(sub => {
       const pubBtn = el('button', { class:'btn btn--sm ' + (sub.published ? 'btn--soft' : ''), type:'button',
         text: sub.published ? 'أخفِ' : 'انشر' });
       pubBtn.addEventListener('click', async () => {
-        const r = await AMUSQ.api.rest('subjects?id=eq.' + sub.id,
+        const r = await QBANK.api.rest('subjects?id=eq.' + sub.id,
           { method:'PATCH', body: JSON.stringify({ published: !sub.published }) });
-        AMUSQ.toast(r.ok ? 'تم' : 'تعذّر التعديل');
-        if (r.ok) AMUSQ.router.render('#/admin/content');
+        QBANK.toast(r.ok ? 'تم' : 'تعذّر التعديل');
+        if (r.ok) QBANK.router.render('#/admin/content');
       });
       const dateIn = el('input', { class:'input input--sm', type:'date',
         value: sub.exam_date ? String(sub.exam_date).slice(0,10) : '', 'aria-label':'موعد اختبار ' + sub.name });
       dateIn.addEventListener('change', async () => {
-        await AMUSQ.api.rest('subjects?id=eq.' + sub.id,
+        await QBANK.api.rest('subjects?id=eq.' + sub.id,
           { method:'PATCH', body: JSON.stringify({ exam_date: dateIn.value || null }) });
-        AMUSQ.toast('حُفظ الموعد');
+        QBANK.toast('حُفظ الموعد');
       });
       const freeBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button',
         text: sub.free ? '★ مجانية' : 'اجعلها مجانية' });
       freeBtn.addEventListener('click', async () => {
-        await AMUSQ.api.rest('subjects?id=eq.' + sub.id,
+        await QBANK.api.rest('subjects?id=eq.' + sub.id,
           { method:'PATCH', body: JSON.stringify({ free: !sub.free }) });
-        AMUSQ.router.render('#/admin/content');
+        QBANK.router.render('#/admin/content');
       });
       listBox.appendChild(el('div', { class:'card stack' }, [
         el('div', { class:'row' }, [
@@ -239,15 +260,15 @@ function adminContentTab(box){
 
 function adminSettingsTab(box){
   // إعداد الربط: يعمل حتى قبل الدخول — هو أول ما يفعله المشرف عند التركيب
-  const c = AMUSQ.config.get() || {};
+  const c = QBANK.config.get() || {};
   const urlIn = el('input', { class:'input', dir:'ltr', id:'cfgUrl', value: c.url || '', placeholder:'https://xxxx.supabase.co' });
   const keyIn = el('input', { class:'input', dir:'ltr', id:'cfgKey', value: c.anonKey || '', placeholder:'anon key' });
-  const apiIn = el('input', { class:'input', dir:'ltr', id:'cfgApi', value: AMUSQ.store.get('api_base',''), placeholder:'https://amusq.vercel.app (اتركه فارغًا على نفس الموقع)' });
+  const apiIn = el('input', { class:'input', dir:'ltr', id:'cfgApi', value: QBANK.store.get('api_base',''), placeholder:'https://qbank.vercel.app (اتركه فارغًا على نفس الموقع)' });
   const saveCfg = el('button', { class:'btn btn--block', type:'button', text:'احفظ الربط' });
   saveCfg.addEventListener('click', () => {
-    const r = AMUSQ.config.set(urlIn.value.trim(), keyIn.value.trim());
-    AMUSQ.store.set('api_base', apiIn.value.trim());
-    AMUSQ.toast(r.ok ? 'حُفظ الربط — المنصة موصولة' : r.err);
+    const r = QBANK.config.set(urlIn.value.trim(), keyIn.value.trim());
+    QBANK.store.set('api_base', apiIn.value.trim());
+    QBANK.toast(r.ok ? 'حُفظ الربط — المنصة موصولة' : r.err);
   });
   box.appendChild(el('div', { class:'card stack' }, [
     el('h2', { text:'ربط الخادم' }),
@@ -261,7 +282,7 @@ function adminSettingsTab(box){
   const setBox = el('div', { class:'card stack' }, [ el('h2', { text:'إعدادات المنصة' }),
     el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
   box.appendChild(setBox);
-  AMUSQ.api.rest('settings?id=eq.1').then(r => {
+  QBANK.api.rest('settings?id=eq.1').then(r => {
     if (!setBox.isConnected) return;
     const s = (r.ok && r.data && r.data[0]) || null;
     setBox.innerHTML = '';
@@ -278,10 +299,10 @@ function adminSettingsTab(box){
     });
     const save = el('button', { class:'btn btn--block', type:'button', text:'احفظ الإعدادات' });
     save.addEventListener('click', async () => {
-      const rr = await AMUSQ.api.rest('settings?id=eq.1', { method:'PATCH', body: JSON.stringify({
+      const rr = await QBANK.api.rest('settings?id=eq.1', { method:'PATCH', body: JSON.stringify({
         welcome_text: welcome.value, board_enabled: boardOn, device_limit: parseInt(limitIn.value || '3', 10)
       }) });
-      AMUSQ.toast(rr.ok ? 'حُفظت الإعدادات' : 'تعذّر الحفظ');
+      QBANK.toast(rr.ok ? 'حُفظت الإعدادات' : 'تعذّر الحفظ');
     });
     setBox.appendChild(el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'نص الترحيب' }), welcome ]));
     setBox.appendChild(boardBtn);
@@ -300,9 +321,9 @@ const ADMIN_TABS = [
 const AdminView = {
   title:'لوحة التحكم',
   view(route){
-    const u = AMUSQ.api.user();
+    const u = QBANK.api.user();
     // بلا جلسة: نعرض دخول المشرف — إلا الإعدادات فهي تعمل محليًا لضبط الربط الأول
-    if (!u && route.rest[0] !== 'settings') return AMUSQ.views.ViewAdminLogin.view();
+    if (!u && route.rest[0] !== 'settings') return QBANK.views.ViewAdminLogin.view();
 
     const active = ADMIN_TABS.some(t => t.id === route.rest[0]) ? route.rest[0] : ADMIN_TABS[0].id;
     const tabs = el('div', { class:'tabs', role:'tablist' },
@@ -311,15 +332,15 @@ const AdminView = {
         'aria-selected': t.id === active ? 'true' : 'false', text: t.label })));
     tabs.addEventListener('click', e => {
       const b = e.target.closest('[data-tab]');
-      if (b) AMUSQ.router.go('#/admin/' + b.getAttribute('data-tab'));
+      if (b) QBANK.router.go('#/admin/' + b.getAttribute('data-tab'));
     });
     const body = el('div', { class:'stack', id:'adminBody' });
     ADMIN_TABS.filter(t => t.id === active)[0].fill(body);
-    return AMUSQ.views.page('لوحة التحكم', 'كل ما يظهر للطالب يمرّ من هنا أولًا.', [tabs, body]);
+    return QBANK.views.page('لوحة التحكم', 'كل ما يظهر للطالب يمرّ من هنا أولًا.', [tabs, body]);
   }
 };
 
-Object.assign(Admin, AMUSQ.admin || {});   // نحفظ ما ألحقته الملفات اللاحقة (charts وغيرها)
-AMUSQ.admin = Admin;
-AMUSQ.views.ADMIN_TABS = ADMIN_TABS;
-AMUSQ.views.ViewAdmin = AdminView;
+Object.assign(Admin, QBANK.admin || {});   // نحفظ ما ألحقته الملفات اللاحقة (charts وغيرها)
+QBANK.admin = Admin;
+QBANK.views.ADMIN_TABS = ADMIN_TABS;
+QBANK.views.ViewAdmin = AdminView;

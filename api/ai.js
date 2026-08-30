@@ -7,9 +7,12 @@
 */
 const { enforce, verbatimOk } = require('./_lib/sanctity.js');
 
-const SYS = [
-  'أنت مساعد محتوى طبي تعليمي لمنصة مراجعة لطلاب التخصصات الصحية.',
-  'القاعدة المقدسة: لا تعدل نص السؤال ولا الخيارات إطلاقا - ستتجاهل المنظومة أي تعديل منك عليها.',
+/*
+  برومبتان لا واحد. السبب أن البرومبت الصارم يقول للنموذج «لا تلمس النص»،
+  فلو استعملناه في النمط المحسَّن لن يحسّن شيئًا. ولو استعملنا المتساهل في
+  الصارم لأتعبنا الطبقة الثانية بردود ترفضها كلها.
+*/
+const SYS_COMMON = [
   'لكل سؤال أعد JSON فقط بالحقول:',
   'answer_index (رقم يبدأ من 0 للاجابة الصحيحة من المراجع القياسية)،',
   'expl_ar (شرح عربي: لماذا الاجابة صحيحة ولماذا غيرها خاطئ)، expl_en (الشرح بالانجليزية)،',
@@ -19,7 +22,23 @@ const SYS = [
   'أعد مصفوفة JSON واحدة بترتيب الاسئلة نفسه، بلا أي نص خارجها.'
 ].join('\n');
 
-async function callClaude(batch){
+const SYS_STRICT = [
+  'أنت مساعد محتوى طبي تعليمي لمنصة مراجعة لطلاب التخصصات الصحية.',
+  'القاعدة المقدسة: لا تعدل نص السؤال ولا الخيارات إطلاقا - ستتجاهل المنظومة أي تعديل منك عليها.',
+  SYS_COMMON
+].join('\n');
+
+const SYS_ENHANCED = [
+  'أنت مساعد محتوى طبي تعليمي لمنصة مراجعة لطلاب التخصصات الصحية.',
+  'صاحب البنك طالب رفع ملفه ليراجع منه، وطلب تحسين الصياغة.',
+  'أضف حقل q_enhanced: نفس السؤال بصياغة أوضح - صحح الاملاء والترقيم واكمل المختصرات الغامضة.',
+  'ممنوع تغيير معنى السؤال او صعوبته او الاجابة الصحيحة. لو كان النص واضحا اصلا فأعده كما هو.',
+  'وأضف options_enhanced: نفس الخيارات بنفس العدد وبنفس الترتيب تماما بعد تنظيف الاملاء فقط.',
+  'اعادة ترتيب الخيارات ممنوعة منعا باتا - موضع الاجابة رقم، واي ترتيب جديد يجعله يشير لخيار خاطئ.',
+  SYS_COMMON
+].join('\n');
+
+async function callClaude(batch, mode){
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error('ANTHROPIC_API_KEY غير مضبوط في متغيرات البيئة');
   const model = process.env.AI_MODEL || 'claude-sonnet-4-5';
@@ -38,7 +57,7 @@ async function callClaude(batch){
     },
     body: JSON.stringify({
       model, max_tokens: 8192,
-      system: SYS,
+      system: mode === 'enhanced' ? SYS_ENHANCED : SYS_STRICT,
       messages: [{ role:'user', content: user }]
     })
   });
@@ -53,24 +72,28 @@ async function callClaude(batch){
 module.exports = async function handler(req, res){
   if (req.method !== 'POST') return res.status(405).json({ error:'POST فقط' });
   try{
-    const { questions } = req.body || {};
+    const { questions, sanctity_mode } = req.body || {};
     if (!Array.isArray(questions) || !questions.length)
       return res.status(400).json({ error:'أرسل مصفوفة questions' });
     if (questions.length > 25)
       return res.status(400).json({ error:'حد الدفعة ٢٥ سؤالًا — قسّم الملف دفعات' });
+    // أي قيمة غير معروفة تسقط إلى strict: الافتراض الآمن هو عدم المساس بالنص
+    const mode = sanctity_mode === 'enhanced' ? 'enhanced' : 'strict';
 
-    const aiOut = await callClaude(questions);
+    const aiOut = await callClaude(questions, mode);
 
-    // الطبقة الثانية من قاعدة القداسة: النص الأصلي يفوز مهما كتب النموذج
+    // الطبقة الثانية من قاعدة القداسة: الأصل يُحفظ دائمًا، ويفوز على النموذج في strict
     const enforced = questions.map((orig, i) => {
-      const item = enforce(orig, aiOut[i] || {});
+      const item = enforce(orig, aiOut[i] || {}, mode);
       if (!verbatimOk(orig, item))
         throw new Error('فشل فحص المطابقة الحرفية للسؤال ' + (i + 1) + ' — أُوقفت الدفعة');
       return item;
     });
-    return res.status(200).json({ ok:true, questions: enforced });
+    return res.status(200).json({ ok:true, sanctity_mode: mode, questions: enforced });
   } catch(e){
     return res.status(500).json({ error: e.message });
   }
 };
 module.exports.callClaude = callClaude;
+module.exports.SYS_STRICT = SYS_STRICT;
+module.exports.SYS_ENHANCED = SYS_ENHANCED;

@@ -5,6 +5,8 @@
   بمفتاح الخدمة (يتجاوز RLS) ثم يكتب صف entitlements بنفسه.
   القنوات: بوابة سعودية للموقع (مدى/Apple Pay)، ومشتريات آبل وجوجل داخل التطبيق لاحقًا.
 */
+const { rpc } = require('./_lib/supa.js');
+
 async function grant(userId, subjectId, kind, source, expiresAt){
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_KEY;   // مفتاح الخدمة — خادم فقط
@@ -40,7 +42,7 @@ const verifiers = {
 module.exports = async function handler(req, res){
   if (req.method !== 'POST') return res.status(405).json({ error:'POST فقط' });
   try{
-    const { source, user_id, subject_id, kind, payload } = req.body || {};
+    const { source, user_id, subject_id, kind, payload, ref } = req.body || {};
     if (!verifiers[source]) return res.status(400).json({ error:'مصدر غير معروف' });
     if (!user_id || !kind) return res.status(400).json({ error:'بيانات ناقصة' });
 
@@ -49,7 +51,20 @@ module.exports = async function handler(req, res){
     // الصلاحية: نهاية الفصل الدراسي الحالي (تقريب: ٥ أشهر) — لا اشتراك شهري
     const expires = new Date(Date.now() + 150 * 86400000).toISOString();
     await grant(user_id, subject_id || null, kind, source, expires);
-    return res.status(200).json({ ok:true, expires_at: expires });
+
+    /*
+      مكافأة المنشئ — بعد تأكيد الدفعة لا قبلها، وبمفتاح الخدمة لأنها تكتب
+      في رصيد شخص آخر. القاعدة تتحقق أن رابط الإحالة يخصّ منشئ المادة فعلًا،
+      فرابط مزوّر لا يحوّل المكافأة لغريب. وفشلها لا يُبطل شراءً تم.
+    */
+    let coins = null;
+    if (subject_id){
+      try{
+        coins = await rpc('award_referral_coins',
+          { sid: subject_id, buyer: user_id, ref: ref || null });
+      } catch(e){ coins = { ok:false, reason:'award_failed', detail:e.message }; }
+    }
+    return res.status(200).json({ ok:true, expires_at: expires, coins });
   } catch(e){
     return res.status(402).json({ error: e.message });
   }

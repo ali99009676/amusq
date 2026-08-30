@@ -10,8 +10,8 @@ const Progress = {
   _pushFn: null,   // باب حقن للفحوص
 
   blank(){ return {}; },
-  all(){ return AMUSQ.store.get(Progress.KEY, Progress.blank()); },
-  save(p){ AMUSQ.store.set(Progress.KEY, p); Progress.schedulePush(); },
+  all(){ return QBANK.store.get(Progress.KEY, Progress.blank()); },
+  save(p){ QBANK.store.set(Progress.KEY, p); Progress.schedulePush(); },
 
   forSubject(sid){
     const p = Progress.all();
@@ -70,21 +70,21 @@ const Progress = {
   },
   async push(){
     if (Progress._pushFn) return Progress._pushFn(Progress.all());
-    if (!AMUSQ.api.user()) return { ok:false };   // زائر: يبقى تقدّمه في جهازه حتى يسجّل
-    return AMUSQ.api.rest('progress?on_conflict=user_id', {
+    if (!QBANK.api.user()) return { ok:false };   // زائر: يبقى تقدّمه في جهازه حتى يسجّل
+    return QBANK.api.rest('progress?on_conflict=user_id', {
       method:'POST',
-      headers: Object.assign(AMUSQ.api.headers(), { 'Prefer':'resolution=merge-duplicates' }),
-      body: JSON.stringify({ user_id: AMUSQ.api.user().id, data: Progress.all(), updated_at: new Date().toISOString() })
+      headers: Object.assign(QBANK.api.headers(), { 'Prefer':'resolution=merge-duplicates' }),
+      body: JSON.stringify({ user_id: QBANK.api.user().id, data: Progress.all(), updated_at: new Date().toISOString() })
     });
   },
   // عند أول دخول على جهاز: نجلب تقدّم الحساب وندمجه مع تقدّم الجهاز ثم ندفع الناتج
   async pull(){
-    const u = AMUSQ.api.user();
+    const u = QBANK.api.user();
     if (!u) return { ok:false };
-    const r = await AMUSQ.api.rest('progress?user_id=eq.' + u.id + '&select=data');
+    const r = await QBANK.api.rest('progress?user_id=eq.' + u.id + '&select=data');
     if (r.ok && r.data && r.data[0]) {
       const merged = Progress.merge(Progress.all(), r.data[0].data || {});
-      AMUSQ.store.set(Progress.KEY, merged);
+      QBANK.store.set(Progress.KEY, merged);
       await Progress.push();
       return { ok:true, merged:true };
     }
@@ -92,4 +92,4 @@ const Progress = {
     return r;
   }
 };
-AMUSQ.progress = Progress;
+QBANK.progress = Progress;

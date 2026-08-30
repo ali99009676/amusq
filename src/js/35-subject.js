@@ -12,7 +12,7 @@ const SUBJ_TABS = [
 const BANK_PAGE = 50;   // دفعة العرض — التمرير يطلب المزيد بدل رسم ٥٠٠ عنصر دفعة واحدة
 
 function findSubject(sid){
-  return (AMUSQ.data.pack().subjects || []).filter(s => s.id === sid)[0] || null;
+  return (QBANK.data.pack().subjects || []).filter(s => s.id === sid)[0] || null;
 }
 
 /* شريط سؤال واحد في البنك (وضع القائمة) */
@@ -24,8 +24,8 @@ function bankRow(sub, q, prog){
       style: starred ? 'color:var(--star)' : '' })
   ]);
   starBtn.addEventListener('click', () => {
-    AMUSQ.progress.toggleStar(sub.id, q.id);
-    AMUSQ.router.render(location.hash);
+    QBANK.progress.toggleStar(sub.id, q.id);
+    QBANK.router.render(location.hash);
   });
 
   const opts = el('div', { class:'stack q__opts', hidden:true },
@@ -47,7 +47,7 @@ function bankRow(sub, q, prog){
     const open = opts.hidden;
     opts.hidden = !open;
     head.setAttribute('aria-expanded', String(open));
-    if (open) AMUSQ.progress.markSeen(sub.id, q.id);   // فتح السؤال = رُوجع
+    if (open) QBANK.progress.markSeen(sub.id, q.id);   // فتح السؤال = رُوجع
   });
 
   return el('article', { class:'q', 'data-qid': q.id }, [
@@ -73,7 +73,7 @@ function flipCard(sub, q){
   ]);
   const flip = () => {
     card.classList.toggle('is-flipped');
-    AMUSQ.progress.markSeen(sub.id, q.id);
+    QBANK.progress.markSeen(sub.id, q.id);
   };
   card.addEventListener('click', flip);
   card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(); } });
@@ -82,8 +82,8 @@ function flipCard(sub, q){
 
 /* تبويب البنك: بحث + فلاتر + وضعان + أقسام مطوية بالمحاور */
 function bankTab(sub, questions){
-  const state = AMUSQ.store.get('bank_ui', { filter:'all', mode:'list' });
-  const prog = AMUSQ.progress.forSubject(sub.id);
+  const state = QBANK.store.get('bank_ui', { filter:'all', mode:'list' });
+  const prog = QBANK.progress.forSubject(sub.id);
   const box = el('div', { class:'stack' });
 
   const search = el('input', { class:'input', type:'search', id:'bankSearch',
@@ -97,8 +97,8 @@ function bankTab(sub, questions){
       const b = el('button', { class:'btn btn--sm ' + (state.filter === id ? 'btn--soft' : 'btn--ghost'),
         type:'button', 'aria-pressed': String(state.filter === id), text: label });
       b.addEventListener('click', () => {
-        state.filter = id; AMUSQ.store.set('bank_ui', state);
-        AMUSQ.router.render(location.hash);
+        state.filter = id; QBANK.store.set('bank_ui', state);
+        QBANK.router.render(location.hash);
       });
       return b;
     }));
@@ -107,8 +107,8 @@ function bankTab(sub, questions){
     text: state.mode === 'list' ? 'وضع البطاقات ▦' : 'وضع القائمة ☰' });
   modeBtn.addEventListener('click', () => {
     state.mode = state.mode === 'list' ? 'cards' : 'list';
-    AMUSQ.store.set('bank_ui', state);
-    AMUSQ.router.render(location.hash);
+    QBANK.store.set('bank_ui', state);
+    QBANK.router.render(location.hash);
   });
   filters.appendChild(el('span', { class:'spacer' }));
   filters.appendChild(modeBtn);
@@ -130,7 +130,7 @@ function bankTab(sub, questions){
     listBox.innerHTML = '';
     const filtered = applyFilters();
     if (!filtered.length) {
-      listBox.appendChild(AMUSQ.views.empty('؟', 'لا نتائج', 'جرّب فلترًا آخر أو كلمة بحث أقصر.'));
+      listBox.appendChild(QBANK.views.empty('؟', 'لا نتائج', 'جرّب فلترًا آخر أو كلمة بحث أقصر.'));
       return;
     }
     // أقسام حسب المحاور — مطوية افتراضيًا مع عدد أسئلة كل قسم
@@ -184,7 +184,7 @@ function explainTab(sub, questions){
 /* تبويب طريقة الحفظ: البطاقة الذهنية لكل سؤال */
 function memoTab(sub, questions){
   const withMemo = questions.filter(q => q.mnemonic && (q.mnemonic.cue || q.mnemonic.key));
-  if (!withMemo.length) return AMUSQ.views.empty('🧠', 'لا بطاقات حفظ بعد', 'تُبنى بطاقات الحفظ مع معالجة الذكاء وتظهر هنا.');
+  if (!withMemo.length) return QBANK.views.empty('🧠', 'لا بطاقات حفظ بعد', 'تُبنى بطاقات الحفظ مع معالجة الذكاء وتظهر هنا.');
   return el('div', { class:'stack' }, withMemo.map(q => {
     const m = q.mnemonic;
     return el('div', { class:'card stack' }, [
@@ -203,13 +203,13 @@ function memoTab(sub, questions){
 
 /* تبويب النظرة العامة */
 function overviewTab(sub, questions){
-  const prog = AMUSQ.progress.forSubject(sub.id);
-  const pct = AMUSQ.progress.pctDone(sub.id, questions.length);
+  const prog = QBANK.progress.forSubject(sub.id);
+  const pct = QBANK.progress.pctDone(sub.id, questions.length);
   return el('div', { class:'stack' }, [
     sub.descr ? el('div', { class:'card' }, [ el('p', { style:'margin:0', text: sub.descr }) ]) : null,
     el('div', { class:'card stack' }, [
       el('h2', { text:'تقدّمك' }),
-      el('div', { class:'subj__meter' }, [ el('div', { style:'width:' + pct + '%;background:' + AMUSQ.views.subjectColor(sub.color) }) ]),
+      el('div', { class:'subj__meter' }, [ el('div', { style:'width:' + pct + '%;background:' + QBANK.views.subjectColor(sub.color) }) ]),
       el('div', { class:'row' }, [
         el('span', { class:'badge num', text:'راجعت ' + Object.keys(prog.seen).length + ' من ' + questions.length }),
         el('span', { class:'badge badge--bad num', text:'أخطاء ' + Object.keys(prog.wrong).length }),
@@ -229,13 +229,19 @@ const ViewSubject = {
   view(route){
     const sid = route.rest[0];
     const sub = findSubject(sid);
-    if (!sub) return AMUSQ.views.page('المادة', null, [
-      AMUSQ.views.empty('؟', 'المادة غير موجودة', 'ربما أُخفيت أو تغيّر رابطها.',
+    if (!sub) return QBANK.views.page('المادة', null, [
+      QBANK.views.empty('؟', 'المادة غير موجودة', 'ربما أُخفيت أو تغيّر رابطها.',
         el('a', { class:'btn', href:'#/', text:'الرئيسية' })) ]);
 
-    // بوابة المحتوى: مادة غير مملوكة تعرض بطاقة الشراء لا المحتوى
-    if (!AMUSQ.gate.canAccess(sub)) {
-      return AMUSQ.views.page(sub.name, null, [ AMUSQ.gate.paywallCard(sub) ]);
+    QBANK.gate.captureRef(route.query);          // ?ref= يُحفظ قبل أي شيء آخر
+    QBANK.trial.stop();                          // مغادرة مادة توقف عدّادها
+
+    // بوابة المحتوى: مادة غير مملوكة تعرض بطاقة الشراء لا المحتوى.
+    // نعرض بالتخمين المحلي فورًا (لا وميض)، ثم نصحّح بقرار القاعدة حين يصل.
+    const guess = QBANK.gate.localGuess(sub);
+    if (!guess.allowed) {
+      const box = el('div', {}, [ QBANK.gate.paywallCard(sub) ]);
+      return QBANK.views.page(sub.name, null, [box]);
     }
 
     const active = SUBJ_TABS.some(t => t.id === route.rest[1]) ? route.rest[1] : 'overview';
@@ -244,17 +250,36 @@ const ViewSubject = {
         'aria-selected': String(t.id === active), text: t.label })));
     tabs.addEventListener('click', e => {
       const b = e.target.closest('[data-tab]');
-      if (b) AMUSQ.router.go('#/subject/' + sid + '/' + b.getAttribute('data-tab'));
+      if (b) QBANK.router.go('#/subject/' + sid + '/' + b.getAttribute('data-tab'));
     });
 
     const body = el('div', { class:'stack', id:'subjBody' },
       [ el('p', { class:'page__sub', text:'جارٍ تجهيز الأسئلة…' }) ]);
 
-    AMUSQ.data.subjectQuestions(sid).then(r => {
+    // شريط التجربة يُعلَّق فوق التبويبات متى قالت القاعدة إن الوصول بالتجربة
+    const trialSlot = el('div', {});
+    QBANK.trial.access(sid).then(a => {
+      if (!trialSlot.isConnected || !a) return;   // null = تعذّر السؤال، لا رفض
+      if (a.reason === 'trial'){
+        trialSlot.appendChild(QBANK.trial.start(sid, Number(a.seconds_left), () => {
+          QBANK.router.render(location.hash);    // انتهت: نعيد الرسم فتظهر شاشة الشراء
+        }));
+      } else if (!a.allowed){
+        // القاعدة رفضت رغم تخميننا — قرارها هو النافذ
+        const p = trialSlot.closest('#main') || trialSlot.parentNode;
+        if (p){
+          p.innerHTML = '';
+          p.appendChild(a.reason === 'trial_expired'
+            ? QBANK.trial.expiredCard(sub) : QBANK.gate.paywallCard(sub));
+        }
+      }
+    });
+
+    QBANK.data.subjectQuestions(sid).then(r => {
       if (!body.isConnected) return;
       body.innerHTML = '';
       if (!r.ok && !r.data.length) {
-        body.appendChild(AMUSQ.views.empty('⇣', 'الأسئلة لم تُنزَّل بعد',
+        body.appendChild(QBANK.views.empty('⇣', 'الأسئلة لم تُنزَّل بعد',
           'افتح المادة مرة واحدة بإنترنت لتُخزَّن أسئلتها في جهازك، ثم تعمل بلا اتصال.'));
         return;
       }
@@ -265,13 +290,14 @@ const ViewSubject = {
 
     const examBtn = el('a', { class:'btn', href:'#/exam/' + sid, text:'▶ اختبار تجريبي' });
     const printBtn = el('button', { class:'btn btn--ghost', type:'button', text:'🖨 طباعة / PDF' });
-    printBtn.addEventListener('click', () => AMUSQ.views.openPrintDialog(sub));
+    printBtn.addEventListener('click', () => QBANK.views.openPrintDialog(sub));
 
-    return AMUSQ.views.page(sub.name, (sub.q_count || 0) + ' سؤالًا · المذاكرة تعمل بلا إنترنت بعد أول فتح.', [
+    return QBANK.views.page(sub.name, (sub.q_count || 0) + ' سؤالًا · المذاكرة تعمل بلا إنترنت بعد أول فتح.', [
+      trialSlot,
       el('div', { class:'row' }, [examBtn, printBtn]),
       tabs, body
     ]);
   }
 };
-AMUSQ.views.ViewSubject = ViewSubject;
-AMUSQ.views.bankTab = bankTab;
+QBANK.views.ViewSubject = ViewSubject;
+QBANK.views.bankTab = bankTab;

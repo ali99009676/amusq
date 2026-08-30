@@ -9,7 +9,7 @@ function dashSkeleton(){
 }
 
 function dashKpis(k){
-  const C = AMUSQ.admin.charts;
+  const C = QBANK.admin.charts;
   return el('div', { class:'ad-kpis' }, [
     C.kpi(k.students, 'طالبًا', k.active_7d + ' نشط هذا الأسبوع'),
     C.kpi(k.online, 'متصل الآن', 'آخر ٤ ساعات', k.online > 0 ? 'live' : null),
@@ -33,7 +33,7 @@ function dashPanel(title, sub, body, extraClass){
 }
 
 function dashSubjects(subjects){
-  if (!subjects.length) return AMUSQ.views.empty('▤', 'لا مواد بعد', 'ارفع أول ملف أسئلة.');
+  if (!subjects.length) return QBANK.views.empty('▤', 'لا مواد بعد', 'ارفع أول ملف أسئلة.');
   // الترتيب حسب المحاولات: المادة التي يدرسها الطلاب فعلًا تستحق الصدارة
   const rows = subjects.slice().sort((a, b) => Number(b.attempts) - Number(a.attempts));
   return el('div', { class:'ad-table' }, rows.map(s => {
@@ -48,14 +48,14 @@ function dashSubjects(subjects){
         text: Math.round(s.avg_pct) + '٪' }),
       s.published ? el('span', { class:'badge badge--ok', text:'منشورة' }) : el('span', { class:'badge', text:'مخفية' })
     ]);
-    row.addEventListener('click', () => AMUSQ.router.go('#/admin/subject/' + s.id));
+    row.addEventListener('click', () => QBANK.router.go('#/admin/subject/' + s.id));
     return row;
   }));
 }
 
 function dashRecent(recent){
-  if (!recent.length) return AMUSQ.views.empty('◷', 'لا نشاط بعد', 'سيظهر هنا كل اختبار فور انتهائه.');
-  const C = AMUSQ.admin.charts;
+  if (!recent.length) return QBANK.views.empty('◷', 'لا نشاط بعد', 'سيظهر هنا كل اختبار فور انتهائه.');
+  const C = QBANK.admin.charts;
   return el('div', { class:'ad-feed' }, recent.map(a => el('div', { class:'ad-feed__i' }, [
     el('span', { class:'ad-feed__av', text: a.avatar || '👤' }),
     el('span', { class:'ad-feed__x' }, [
@@ -68,14 +68,14 @@ function dashRecent(recent){
 }
 
 function adminDashTab(box){
-  const C = AMUSQ.admin.charts;
-  let days = AMUSQ.store.get('ad_days', 14);
+  const C = QBANK.admin.charts;
+  let days = QBANK.store.get('ad_days', 14);
 
   const rangeBar = el('div', { class:'ad-bar' },
     [7, 14, 30].map(d => {
       const b = el('button', { class:'btn btn--sm ' + (d === days ? '' : 'btn--ghost'), type:'button',
         text: d + ' يومًا' });
-      b.addEventListener('click', () => { AMUSQ.store.set('ad_days', d); days = d; load(); });
+      b.addEventListener('click', () => { QBANK.store.set('ad_days', d); days = d; load(); });
       return b;
     }));
   const wrap = el('div', {});
@@ -89,11 +89,11 @@ function adminDashTab(box){
     });
     wrap.innerHTML = '';
     wrap.appendChild(dashSkeleton());
-    AMUSQ.api.rpc('admin_dashboard', { days }).then(r => {
+    QBANK.api.rpc('admin_dashboard', { days }).then(r => {
       if (!wrap.isConnected) return;     // غادر المشرف قبل وصول الرد
       wrap.innerHTML = '';
       if (!r.ok || !r.data || r.data.error) {
-        wrap.appendChild(AMUSQ.views.empty('⚠', 'تعذّر الجلب',
+        wrap.appendChild(QBANK.views.empty('⚠', 'تعذّر الجلب',
           r.offline ? 'لا اتصال بالإنترنت.'
                     : 'تأكد أن حسابك مشرف وأن ملف ADMIN-DASHBOARD.sql مُشغَّل على قاعدة البيانات.'));
         return;
@@ -116,5 +116,5 @@ function adminDashTab(box){
   load();
 }
 
-AMUSQ.admin.dashTab = adminDashTab;
-AMUSQ.views.ADMIN_TABS.unshift({ id:'dash', label:'اللوحة', fill: adminDashTab });
+QBANK.admin.dashTab = adminDashTab;
+QBANK.views.ADMIN_TABS.unshift({ id:'dash', label:'اللوحة', fill: adminDashTab });

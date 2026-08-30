@@ -5,9 +5,9 @@
 const AVATARS = ['🧑‍⚕️','👩‍⚕️','🩺','🚑','💉','🧠','🫀','🦴','🔬','📚'];
 
 function accountBody(){
-  const u = AMUSQ.api.user();
+  const u = QBANK.api.user();
   if (!u) return el('div');
-  const prof = AMUSQ.store.get('profile', { name:'', avatar: AVATARS[0] });
+  const prof = QBANK.store.get('profile', { name:'', avatar: AVATARS[0] });
 
   const nameInput = el('input', { class:'input', id:'accName', value: prof.name || '', placeholder:'اسمك الظاهر في المنصة' });
   const avatarRow = el('div', { class:'row', role:'radiogroup', 'aria-label':'الصورة الرمزية' },
@@ -28,16 +28,16 @@ function accountBody(){
   saveBtn.addEventListener('click', async () => {
     const picked = avatarRow.querySelector('[aria-checked="true"] .iconbtn__ico');
     const data = { name: nameInput.value.trim(), avatar: picked ? picked.textContent : AVATARS[0] };
-    AMUSQ.store.set('profile', data);
-    const r = await AMUSQ.api.saveProfile(data);
-    AMUSQ.toast(r.ok ? 'حُفظ ملفك' : 'حُفظ في جهازك، وسيتزامن عند الاتصال');
+    QBANK.store.set('profile', data);
+    const r = await QBANK.api.saveProfile(data);
+    QBANK.toast(r.ok ? 'حُفظ ملفك' : 'حُفظ في جهازك، وسيتزامن عند الاتصال');
   });
 
   // تقدّمي في كل مادة — من الحزمة المحلية، فيعمل بلا إنترنت
-  const pack = AMUSQ.data.pack();
+  const pack = QBANK.data.pack();
   const progList = el('div', { class:'stack' },
     (pack.subjects || []).map(s => {
-      const pct = AMUSQ.progress.pctDone(s.id, s.q_count);
+      const pct = QBANK.progress.pctDone(s.id, s.q_count);
       return el('div', { class:'row' }, [
         el('span', { text: (s.icon || '▤') + ' ' + s.name }),
         el('span', { class:'spacer' }),
@@ -48,15 +48,15 @@ function accountBody(){
 
   const syncBtn = el('button', { class:'btn btn--soft btn--block', type:'button', text:'زامن الآن' });
   syncBtn.addEventListener('click', async () => {
-    const r = await AMUSQ.progress.pull();
-    AMUSQ.toast(r.ok ? 'تمت المزامنة والدمج' : 'تعذّرت المزامنة — لا اتصال');
+    const r = await QBANK.progress.pull();
+    QBANK.toast(r.ok ? 'تمت المزامنة والدمج' : 'تعذّرت المزامنة — لا اتصال');
   });
 
   const outBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'تسجيل الخروج' });
   outBtn.addEventListener('click', async () => {
-    await AMUSQ.api.auth.signOut();
-    AMUSQ.toast('خرجت من حسابك — تقدّمك باقٍ في جهازك');
-    AMUSQ.router.go('#/');
+    await QBANK.api.auth.signOut();
+    QBANK.toast('خرجت من حسابك — تقدّمك باقٍ في جهازك');
+    QBANK.router.go('#/');
   });
 
   // الحذف النهائي: تأكيد بكتابة كلمة صريحة — خطوة لا تُتراجَع
@@ -64,10 +64,10 @@ function accountBody(){
     style:'color:var(--bad);border-color:var(--bad)', text:'احذف حسابي نهائيًا' });
   delBtn.addEventListener('click', async () => {
     const word = (typeof prompt === 'function') ? prompt('سيُحذف حسابك وكل بياناتك نهائيًا ولا رجوع. اكتب «حذف» للتأكيد:') : null;
-    if (word !== 'حذف') { AMUSQ.toast('أُلغي الحذف'); return; }
-    const r = await AMUSQ.api.auth.deleteMe();
-    if (r.ok) { await AMUSQ.data.clearAll(); AMUSQ.toast('حُذف حسابك وكل بياناته'); AMUSQ.router.go('#/'); }
-    else AMUSQ.toast('تعذّر الحذف — تحقق من الاتصال');
+    if (word !== 'حذف') { QBANK.toast('أُلغي الحذف'); return; }
+    const r = await QBANK.api.auth.deleteMe();
+    if (r.ok) { await QBANK.data.clearAll(); QBANK.toast('حُذف حسابك وكل بياناته'); QBANK.router.go('#/'); }
+    else QBANK.toast('تعذّر الحذف — تحقق من الاتصال');
   });
 
   return el('div', { class:'stack' }, [
@@ -89,11 +89,13 @@ function accountBody(){
 const ViewAccount = {
   title:'حسابي',
   view(){
-    if (!AMUSQ.api.user()) return AMUSQ.views.ViewLogin.view();
-    return AMUSQ.views.page('حسابي', null, [ accountBody() ]);
+    if (!QBANK.api.user()) return QBANK.views.ViewLogin.view();
+    // المحفظة تُبنى في 47-wallet.js — تُلحق هنا حين تكون محمّلة
+    const wallet = (QBANK.wallet && QBANK.wallet.body) ? QBANK.wallet.body() : null;
+    return QBANK.views.page('حسابي', null, [ accountBody(), wallet ]);
   }
 };
 
-AMUSQ.views.accountBody = accountBody;
-AMUSQ.views.ViewAccount = ViewAccount;
-AMUSQ.views.AVATARS = AVATARS;
+QBANK.views.accountBody = accountBody;
+QBANK.views.ViewAccount = ViewAccount;
+QBANK.views.AVATARS = AVATARS;

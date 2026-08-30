@@ -1,48 +1,58 @@
 /*
   مصدر واحد للمظهر. أي لون أو مسافة في المشروع يأتي من هنا حصرًا.
-  الهوية مأخوذة من عالم طب الطوارئ: أخضر المراقبة الحيوية، كهرماني الفرز، وورق عيادي بارد.
+
+  هوية «مراجعة — بنك الأسئلة»: ورق ومكتبة.
+  عنّابي دافئ لون الجلد على كعب الكتاب، ورملي ذهبي لون الحرف المذهّب عليه،
+  وخلفية ورقية لا بيضاء ميتة. المرجع هنا ليس شاشة بل كتاب يُفتح على المكتب.
 */
 :root{
   /* ثلاثة أدوار للخط — لا خط خارجي البتة (شرط العمل بلا إنترنت):
-     العناوين كوفي هندسي مميّز · النص خط أنعم للقراءة الطويلة · الأرقام أحادي المسافة كشاشة المراقبة */
+     العناوين خط عربي عريض له وقار الغلاف · النص أنعم للقراءة الطويلة ·
+     الأرقام أحادي المسافة كي تصطفّ في الجداول ولا ترقص عند تغيّرها */
   --font-display: "Noto Kufi Arabic", "Tajawal", "Cairo", "Segoe UI", system-ui, sans-serif;
   --font: "Dubai", "Segoe UI", "Noto Sans Arabic", Tahoma, system-ui, -apple-system, sans-serif;
   --font-num: "Cascadia Mono", "Consolas", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* الورق العيادي: أبرد من الأبيض الميت وأدفأ من الرمادي */
-  --bg:        #f5f8fa;
-  --bg-soft:   #eaf0f4;
-  --surface:   #ffffff;
-  --surface-2: #f4f8fa;
-  --line:      #dde6ec;
-  --line-soft: #eaf1f5;
+  /* الورق: دافئ لا أبيض. العين تقرأ عليه ساعات بلا إجهاد الأبيض الصريح */
+  --bg:        #fbf7f0;
+  --bg-soft:   #f3ece0;
+  --surface:   #fffdf9;
+  --surface-2: #f8f2e8;
+  --line:      #e6dcc9;
+  --line-soft: #f0e8da;
 
-  --text:      #0f1a20;
-  --text-2:    #4a5a64;
-  --text-3:    #7d8f9a;
+  /* الحبر: بنّي مسودّ لا أسود صريح — كحبر على ورق لا بكسل على زجاج */
+  --text:      #241a15;
+  --text-2:    #5c4a3e;
+  --text-3:    #8b7565;
 
-  /* أخضر المراقبة الحيوية — كان لون «الإجابة الصحيحة» فصار لون الهوية */
-  --brand:      #12805c;
-  --brand-2:    #17a074;
-  --brand-soft: #e2f4ed;
-  --on-brand:   #ffffff;
+  /* العنّابي: لون جلد الكعب. هوية المنصة وزرّها الأساسي */
+  --brand:      #8c2f39;
+  --brand-2:    #a8434d;
+  --brand-soft: #f7e8e6;
+  --on-brand:   #fffdf9;
 
-  /* حالات — تُستعمل دائمًا مع أيقونة لا باللون وحده */
-  --ok:      #12805c; --ok-soft:   #e2f4ed;
-  --warn:    #b45309; --warn-soft: #fdf0dc;   /* كهرماني الفرز */
-  --bad:     #be3428; --bad-soft:  #fceceb;
-  --star:    #c98a06;
+  /* الرملي الذهبي: الحرف المذهّب — للتمييز والنجوم لا للأزرار الأساسية */
+  --gold:      #c9a227;
+  --gold-soft: #fbf1d6;
+
+  /* حالات — تُستعمل دائمًا مع أيقونة لا باللون وحده.
+     الأخضر هنا غامق زيتوني كي لا يصرخ وسط الورق الدافئ */
+  --ok:      #4a7c46; --ok-soft:   #eaf2e6;
+  --warn:    #b06d1e; --warn-soft: #fdf0dc;
+  --bad:     #a3312a; --bad-soft:  #fbeae8;
+  --star:    #c9a227;
 
   /* سلّم مسافات أوسع نفَسًا */
   --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
   --s5: 22px; --s6: 30px; --s7: 44px; --s8: 68px;
 
-  /* حواف أنعم وظلال متعددة الطبقات — الجمال في الطبقات لا في القتامة */
+  /* حواف أنعم وظلال دافئة — الظل هنا بنّي لا رمادي، وإلا بدا الورق متسخًا */
   --r1: 10px; --r2: 14px; --r3: 20px; --r4: 28px; --r-pill: 999px;
-  --sh1: 0 1px 2px rgba(15,26,32,.04), 0 2px 6px rgba(15,26,32,.05);
-  --sh2: 0 2px 4px rgba(15,26,32,.04), 0 8px 20px rgba(15,26,32,.07);
-  --sh3: 0 4px 8px rgba(15,26,32,.05), 0 20px 48px rgba(15,26,32,.12);
-  --ring: 0 0 0 3px rgba(18,128,92,.22);
+  --sh1: 0 1px 2px rgba(60,40,25,.05), 0 2px 6px rgba(60,40,25,.06);
+  --sh2: 0 2px 4px rgba(60,40,25,.05), 0 8px 20px rgba(60,40,25,.09);
+  --sh3: 0 4px 8px rgba(60,40,25,.06), 0 20px 48px rgba(60,40,25,.14);
+  --ring: 0 0 0 3px rgba(140,47,57,.24);
 
   --wrap: 1040px;
   --topbar-h: 60px;
@@ -53,39 +63,43 @@
   --t-slow: 420ms;
   --ease: cubic-bezier(.22,.61,.36,1);
 
-  /* ألوان المواد — مشتقة من نفس العائلة العيادية لا ألوان عشوائية */
-  --subject-1: #12805c; --subject-2: #0f6f8c; --subject-3: #b45309;
-  --subject-4: #6d3fa0; --subject-5: #be3428; --subject-6: #1d5fa8;
+  /* ألوان المواد — كعوب كتب على رفّ: كلها مكتومة من عائلة واحدة،
+     فلا تتنافر مادتان جنبًا إلى جنب كما تتنافر ألوان منتقاة عشوائيًا */
+  --subject-1: #8c2f39; --subject-2: #7a5c1f; --subject-3: #3f5f4a;
+  --subject-4: #5a4a7a; --subject-5: #a15a2b; --subject-6: #2f5a6b;
 }
 
-/* الوضع الليلي: شاشة مراقبة في غرفة مظلمة */
+/* الوضع الليلي: مكتبة على ضوء مصباح — بنّي محروق لا أزرق بارد */
 :root[data-theme="dark"]{
-  --bg:        #0b1116;
-  --bg-soft:   #101a21;
-  --surface:   #14202a;
-  --surface-2: #1a2833;
-  --line:      #23343f;
-  --line-soft: #1d2b35;
+  --bg:        #16110e;
+  --bg-soft:   #1e1815;
+  --surface:   #221b17;
+  --surface-2: #2b221d;
+  --line:      #3a2e27;
+  --line-soft: #2f2621;
 
-  --text:      #e8f1f5;
-  --text-2:    #9fb3bd;
-  --text-3:    #6f8794;
+  --text:      #f2e9dd;
+  --text-2:    #c0ac9a;
+  --text-3:    #93806f;
 
-  --brand:      #2fbf90;
-  --brand-2:    #4ad4a8;
-  --brand-soft: #10322a;
-  --on-brand:   #06120e;
+  --brand:      #d97a83;
+  --brand-2:    #e8949c;
+  --brand-soft: #35211f;
+  --on-brand:   #1a0f10;
 
-  --ok:      #2fbf90; --ok-soft:   #10322a;
-  --warn:    #e0a53a; --warn-soft: #33260f;
-  --bad:     #f2776b; --bad-soft:  #35191a;
-  --star:    #f0bd4e;
+  --gold:      #e0bd52;
+  --gold-soft: #332a12;
 
-  --sh1: 0 1px 2px rgba(0,0,0,.5);
-  --sh2: 0 6px 20px rgba(0,0,0,.5);
-  --sh3: 0 22px 54px rgba(0,0,0,.62);
-  --ring: 0 0 0 3px rgba(47,191,144,.3);
+  --ok:      #7fb06f; --ok-soft:   #1d2a17;
+  --warn:    #dda049; --warn-soft: #33260f;
+  --bad:     #e8756c; --bad-soft:  #351a18;
+  --star:    #e0bd52;
 
-  --subject-1: #2fbf90; --subject-2: #48b4d4; --subject-3: #e0a53a;
-  --subject-4: #a887e0; --subject-5: #f2776b; --subject-6: #6aa8f0;
+  --sh1: 0 1px 2px rgba(0,0,0,.55);
+  --sh2: 0 6px 20px rgba(0,0,0,.55);
+  --sh3: 0 22px 54px rgba(0,0,0,.66);
+  --ring: 0 0 0 3px rgba(217,122,131,.32);
+
+  --subject-1: #d97a83; --subject-2: #d4b45e; --subject-3: #7fb08e;
+  --subject-4: #a898d8; --subject-5: #e0a06a; --subject-6: #6fa8bd;
 }

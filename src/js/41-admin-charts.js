@@ -92,5 +92,5 @@ function ago(iso){
   return Math.floor(s / 86400) + ' يوم';
 }
 
-AMUSQ.admin = AMUSQ.admin || {};
-AMUSQ.admin.charts = { chartActivity, chartBuckets, kpi, ago, svgEl };
+QBANK.admin = QBANK.admin || {};
+QBANK.admin.charts = { chartActivity, chartBuckets, kpi, ago, svgEl };

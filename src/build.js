@@ -38,7 +38,7 @@ function build() {
   const cfgPath = path.join(ROOT, 'config.json');
   if (fs.existsSync(cfgPath)) {
     const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8'));
-    cfgSnippet = 'window.AMUSQ_INJECTED_CONFIG = ' + JSON.stringify({ url: cfg.url, anonKey: cfg.anonKey }) + ';\n';
+    cfgSnippet = 'window.QBANK_INJECTED_CONFIG = ' + JSON.stringify({ url: cfg.url, anonKey: cfg.anonKey }) + ';\n';
     console.log('✓ حُقن إعداد الربط من config.json');
   }
 

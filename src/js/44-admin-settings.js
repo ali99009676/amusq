@@ -96,8 +96,8 @@ function setGroup(g, row, refresh){
   save.addEventListener('click', async () => {
     const d = SET.diff(row, draft);
     if (!Object.keys(d).length) return;
-    const r = await AMUSQ.api.rest('settings?id=eq.1', { method:'PATCH', body: JSON.stringify(d) });
-    AMUSQ.toast(r.ok ? 'حُفظت ' + g.title : 'تعذّر الحفظ');
+    const r = await QBANK.api.rest('settings?id=eq.1', { method:'PATCH', body: JSON.stringify(d) });
+    QBANK.toast(r.ok ? 'حُفظت ' + g.title : 'تعذّر الحفظ');
     if (r.ok && refresh) refresh();
   });
 
@@ -113,16 +113,16 @@ function setGroup(g, row, refresh){
 
 /* ===== الربط: يعمل قبل الدخول لأنه أول ما يُضبط عند التركيب ===== */
 function setConnection(){
-  const c = AMUSQ.config.get() || {};
+  const c = QBANK.config.get() || {};
   const urlIn = el('input', { class:'input', dir:'ltr', id:'cfgUrl', value: c.url || '', placeholder:'https://xxxx.supabase.co' });
   const keyIn = el('input', { class:'input', dir:'ltr', id:'cfgKey', value: c.anonKey || '', placeholder:'anon key' });
-  const apiIn = el('input', { class:'input', dir:'ltr', id:'cfgApi', value: AMUSQ.store.get('api_base',''),
+  const apiIn = el('input', { class:'input', dir:'ltr', id:'cfgApi', value: QBANK.store.get('api_base',''),
     placeholder:'اتركه فارغًا على نفس الموقع' });
   const save = el('button', { class:'btn', type:'button', text:'احفظ الربط' });
   save.addEventListener('click', () => {
-    const r = AMUSQ.config.set(urlIn.value.trim(), keyIn.value.trim());
-    AMUSQ.store.set('api_base', apiIn.value.trim());
-    AMUSQ.toast(r.ok ? 'حُفظ الربط — المنصة موصولة' : r.err);
+    const r = QBANK.config.set(urlIn.value.trim(), keyIn.value.trim());
+    QBANK.store.set('api_base', apiIn.value.trim());
+    QBANK.toast(r.ok ? 'حُفظ الربط — المنصة موصولة' : r.err);
   });
   return el('section', { class:'ad-panel' }, [
     el('div', { class:'ad-panel__h' }, [ el('h2', { class:'ad-panel__t', text:'ربط الخادم' }) ]),
@@ -143,7 +143,7 @@ function setHealth(){
     el('div', { class:'ad-panel__h' }, [ el('h2', { class:'ad-panel__t', text:'صحة المحتوى' }) ]),
     el('p', { class:'page__sub', text:'جارٍ الفحص…' })
   ]);
-  AMUSQ.api.rpc('admin_health').then(r => {
+  QBANK.api.rpc('admin_health').then(r => {
     if (!box.isConnected) return;
     box.innerHTML = '';
     box.appendChild(el('div', { class:'ad-panel__h' }, [ el('h2', { class:'ad-panel__t', text:'صحة المحتوى' }) ]));
@@ -180,22 +180,22 @@ function setData(){
   const btn = el('button', { class:'btn', type:'button', text:'صدّر نسخة كاملة (JSON)' });
   btn.addEventListener('click', async () => {
     btn.disabled = true; btn.textContent = 'جارٍ التصدير…';
-    const r = await AMUSQ.api.rpc('admin_export');
+    const r = await QBANK.api.rpc('admin_export');
     btn.disabled = false; btn.textContent = 'صدّر نسخة كاملة (JSON)';
-    if (!r.ok || !r.data || r.data.error) return AMUSQ.toast('تعذّر التصدير');
+    if (!r.ok || !r.data || r.data.error) return QBANK.toast('تعذّر التصدير');
     const blob = new Blob([JSON.stringify(r.data, null, 2)], { type:'application/json' });
     const a = el('a', { href: URL.createObjectURL(blob),
-      download: 'amusq-backup-' + new Date().toISOString().slice(0,10) + '.json' });
+      download: 'qbank-backup-' + new Date().toISOString().slice(0,10) + '.json' });
     document.body.appendChild(a); a.click(); a.remove();
-    AMUSQ.toast('نُزّلت النسخة');
+    QBANK.toast('نُزّلت النسخة');
   });
 
   const clearLocal = el('button', { class:'btn btn--ghost', type:'button', text:'امسح ذاكرة هذا الجهاز' });
   let armed = false;
   clearLocal.addEventListener('click', () => {
     if (!armed){ armed = true; clearLocal.textContent = 'اضغط ثانيةً — يُمسح التقدّم المحلي'; clearLocal.className = 'btn btn--danger'; return; }
-    AMUSQ.store.clearAll();
-    AMUSQ.toast('مُسحت الذاكرة المحلية — أعد التحميل');
+    QBANK.store.clearAll();
+    QBANK.toast('مُسحت الذاكرة المحلية — أعد التحميل');
   });
 
   return el('section', { class:'ad-panel ad-danger' }, [
@@ -213,12 +213,12 @@ function adminSettingsTabFull(box){
   box.appendChild(rest);
 
   function load(){
-    AMUSQ.api.rest('settings?id=eq.1&select=*').then(r => {
+    QBANK.api.rest('settings?id=eq.1&select=*').then(r => {
       if (!rest.isConnected) return;
       rest.innerHTML = '';
       const row = (r.ok && r.data && r.data[0]) || null;
       if (!row){
-        rest.appendChild(AMUSQ.views.empty('⚙', 'الإعدادات غير متاحة',
+        rest.appendChild(QBANK.views.empty('⚙', 'الإعدادات غير متاحة',
           'تُجلب بعد ربط الخادم والدخول كمشرف وتشغيل ملفات SQL.'));
         return;
       }
@@ -230,6 +230,6 @@ function adminSettingsTabFull(box){
   load();
 }
 
-AMUSQ.admin.settings = SET;
+QBANK.admin.settings = SET;
 // نستبدل تبويب الإعدادات القديم بالكامل — أُبقي المختصر في 33 كي يبقى ذاك الملف مستقلًا
-AMUSQ.views.ADMIN_TABS.forEach(t => { if (t.id === 'settings') t.fill = adminSettingsTabFull; });
+QBANK.views.ADMIN_TABS.forEach(t => { if (t.id === 'settings') t.fill = adminSettingsTabFull; });

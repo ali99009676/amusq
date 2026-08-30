@@ -14,16 +14,16 @@ function buildTabbar(){
   if (!bar) return;
   bar.innerHTML = '';
   NAV.forEach(item => {
-    bar.appendChild(AMUSQ.dom.el('a', { class:'tabbar__item', href:item.path, 'data-nav':item.path }, [
-      AMUSQ.dom.el('span', { class:'tabbar__ico', 'aria-hidden':'true', text:item.ico }),
-      AMUSQ.dom.el('span', { class:'tabbar__lbl', text:item.label })
+    bar.appendChild(QBANK.dom.el('a', { class:'tabbar__item', href:item.path, 'data-nav':item.path }, [
+      QBANK.dom.el('span', { class:'tabbar__ico', 'aria-hidden':'true', text:item.ico }),
+      QBANK.dom.el('span', { class:'tabbar__lbl', text:item.label })
     ]));
   });
 }
 
 function registerRoutes(){
-  const V = AMUSQ.views;
-  AMUSQ.router
+  const V = QBANK.views;
+  QBANK.router
     .add('#/',            V.ViewHome)
     .add('#/login',       V.ViewLogin)
     .add('#/admin',       V.ViewAdmin)
@@ -32,38 +32,41 @@ function registerRoutes(){
     .add('#/account',     V.ViewAccount)
     .add('#/admin/upload', V.ViewUpload)
     .add('#/admin/subject', V.ViewAdminSubject)
+    .add('#/s',            V.ViewShare)      // رابط المشاركة: يقبل #s/slug و #/s/slug معًا
     .add('#/subject',      V.ViewSubject)
     .add('#/exam',         V.ViewExam)
     .add('#/board',        V.ViewBoard);
-  AMUSQ.router.notFound = V.ViewNotFound;
+  QBANK.router.notFound = V.ViewNotFound;
 }
 
 function boot(){
-  if (AMUSQ.ready) return;   // الإقلاع مرة واحدة مهما تكرّر نداؤه
-  AMUSQ.theme.init();
+  if (QBANK.ready) return;   // الإقلاع مرة واحدة مهما تكرّر نداؤه
+  QBANK.store.migrate();     // ننقل تخزين الهوية القديمة قبل أن يقرأه أحد
+  QBANK.data.migrateDB();    // وأسئلة وضع عدم الاتصال — بلا انتظار، فهي ليست شرطًا للإقلاع
+  QBANK.theme.init();
 
   // رموز الدخول تعود من Supabase في هاش الصفحة — نلتقطها قبل أن يفسّرها الموجّه كمسار
-  if (AMUSQ.api.auth.captureFromHash(location.hash)) {
+  if (QBANK.api.auth.captureFromHash(location.hash)) {
     try { history.replaceState(null, '', location.pathname + location.search + '#/'); }
     catch(e) { location.hash = '#/'; }
-    AMUSQ.toast('تم تسجيل الدخول');
+    QBANK.toast('تم تسجيل الدخول');
   }
 
   buildTabbar();
   registerRoutes();
-  AMUSQ.router.init();
+  QBANK.router.init();
   registerSW();
-  AMUSQ.ready = true;
+  QBANK.ready = true;
 
   // أعمال الخلفية: لا تُعطّل الرسم الأول ولا تكسر العمل بلا إنترنت
-  if (AMUSQ.api.user()) {
-    AMUSQ.progress.pull();                       // دمج تقدّم الحساب مع الجهاز — بلا حذف
-    AMUSQ.gate.refresh();                        // الاستحقاقات: ما اشتراه الطالب
-    AMUSQ.api.rpc('heartbeat', { device_label: navigator.userAgent.slice(0, 60) });
+  if (QBANK.api.user()) {
+    QBANK.progress.pull();                       // دمج تقدّم الحساب مع الجهاز — بلا حذف
+    QBANK.gate.refresh();                        // الاستحقاقات: ما اشتراه الطالب
+    QBANK.api.rpc('heartbeat', { device_label: navigator.userAgent.slice(0, 60) });
   }
-  if (AMUSQ.config.ready()) {
-    AMUSQ.data.refreshPack().then(r => {         // تحديث قائمة المواد إن توفّر اتصال
-      if (r.ok && AMUSQ.router.current && AMUSQ.router.current.path === '#/') AMUSQ.router.render('#/');
+  if (QBANK.config.ready()) {
+    QBANK.data.refreshPack().then(r => {         // تحديث قائمة المواد إن توفّر اتصال
+      if (r.ok && QBANK.router.current && QBANK.router.current.path === '#/') QBANK.router.render('#/');
     });
   }
 }
@@ -76,10 +79,10 @@ function registerSW(){
   return true;
 }
 
-AMUSQ.registerSW = registerSW;
-AMUSQ.nav = NAV;
-AMUSQ.boot = boot;
-window.AMUSQ = AMUSQ;
+QBANK.registerSW = registerSW;
+QBANK.nav = NAV;
+QBANK.boot = boot;
+window.QBANK = QBANK;
 
 // jsdom في الفحوص يُحمّل الصفحة كاملة قبل تنفيذ السكربت، لذا نتحقق من الحالتين
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

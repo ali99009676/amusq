@@ -1,14 +1,14 @@
 <!doctype html>
-<!-- ملف AMUSQ المبني — لا تحرّره يدويًا. مصدره في src/ ويُدمج بـ node src/build.js -->
+<!-- ملف «مراجعة — بنك الأسئلة» المبني — لا تحرّره يدويًا. مصدره في src/ ويُدمج بـ node src/build.js -->
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="description" content="AMUSQ — منصة مراجعة تفاعلية لطلاب التخصصات الصحية">
-<meta name="theme-color" content="#3b5bdb">
+<meta name="description" content="مراجعة — بنك الأسئلة · منصة مراجعة تفاعلية لطلاب التخصصات الصحية">
+<meta name="theme-color" content="#8c2f39">
 <link rel="manifest" href="manifest.webmanifest">
-<title>AMUSQ · منصة المراجعة</title>
+<title>مراجعة · بنك الأسئلة</title>
 <style>
 /*__STYLES__*/
 </style>
@@ -19,9 +19,21 @@
 
 <header class="topbar" id="topbar">
   <div class="wrap topbar__in">
-    <a class="brand" href="#/" aria-label="AMUSQ الرئيسية">
-      <span class="brand__mark" aria-hidden="true">A</span>
-      <span class="brand__text">AMUSQ</span>
+    <a class="brand" href="#/" aria-label="مراجعة — الرئيسية">
+      <span class="brand__mark" aria-hidden="true">
+        <!-- كتاب مفتوح: صفحتان وكعب بينهما — العلامة نفسها في الأيقونة والترويسة -->
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" aria-hidden="true">
+          <path d="M12 6.2C10.3 5 8.2 4.5 5.5 4.5c-.8 0-1.5.1-2 .2v13c.5-.1 1.2-.2 2-.2 2.7 0 4.8.5 6.5 1.7"
+                stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 6.2C13.7 5 15.8 4.5 18.5 4.5c.8 0 1.5.1 2 .2v13c-.5-.1-1.2-.2-2-.2-2.7 0-4.8.5-6.5 1.7"
+                stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 6.2v13" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </span>
+      <span class="brand__text">
+        <span class="brand__name">مراجعة</span>
+        <span class="brand__sub">بنك الأسئلة</span>
+      </span>
     </a>
     <div class="topbar__actions">
       <button class="iconbtn" id="themeBtn" type="button" aria-label="تبديل الوضع الليلي" title="الوضع الليلي">

@@ -1,7 +1,7 @@
 'use strict';
 /*
   الفحوص الآلية — شرط تسليم لا تحسين اختياري.
-  لا تُسلَّم ميزة في AMUSQ بلا فحوصها، والفحوص تعمل على الملف المبني نفسه
+  لا تُسلَّم ميزة في QBANK بلا فحوصها، والفحوص تعمل على الملف المبني نفسه
   (index.html) لا على المصادر، لأن ما يصل الطالب هو الملف المبني.
 */
 const fs = require('fs');
@@ -35,7 +35,7 @@ const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 function makeDom(hash){
   const dom = new JSDOM(html, {
     runScripts: 'dangerously',
-    url: 'https://amusq.local/' + (hash || ''),
+    url: 'https://qbank.local/' + (hash || ''),
     pretendToBeVisual: true
   });
   // jsdom يُطلق DOMContentLoaded لاحقًا وبشكل غير متزامن، والفحوص متزامنة،
@@ -51,7 +51,7 @@ function makeDom(hash){
 // فلا يبقى حدث معلّق يعيد الرسم فوق شاشة لاحقة
 async function nav(W, hash){
   W.location.hash = hash;
-  await until(W, () => W.AMUSQ.router.current && W.AMUSQ.router.current.raw === hash.split('?')[0]);
+  await until(W, () => W.QBANK.router.current && W.QBANK.router.current.raw === hash.split('?')[0]);
 }
 
 // انتظار شرط بدل مهلة ثابتة — الفحص لا يعتمد على سرعة الجهاز
@@ -136,8 +136,8 @@ describe('٤ · نظام التصميم بمتغيرات CSS');
 describe('٥ · الموجّه والتنقّل');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ;
-  ok(!!A, 'مساحة الاسم AMUSQ متاحة');
+  const W = d.window, A = W.QBANK;
+  ok(!!A, 'مساحة الاسم QBANK متاحة');
   eq(A.ready, true, 'التطبيق أقلع');
   eq(A.stage, 0, 'المرحلة الحالية ٠');
 
@@ -165,9 +165,9 @@ describe('٥ · الموجّه والتنقّل');
 describe('٦ · الشاشات الفارغة تُرسم');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ, doc = W.document;
+  const W = d.window, A = W.QBANK, doc = W.document;
   const screens = [
-    ['#/',            'ذاكر أذكى، لا أطول'],   // زائر: صفحة الهبوط التعريفية
+    ['#/',            'كل أسئلة موادك في مكان واحد'],   // زائر: صفحة الهبوط التعريفية
     ['#/login',       'دخول الطالب'],
     ['#/admin/login', 'دخول المشرف'],
     ['#/admin',       'دخول المشرف'],   // بلا جلسة: اللوحة لا تُفتح — تعرض الدخول
@@ -189,7 +189,7 @@ describe('٦ · الشاشات الفارغة تُرسم');
   eq(doc.querySelector('[data-tab="dash"]').getAttribute('aria-selected'), 'true', 'تبويب اللوحة هو الافتراضي');
   A.router.render('#/admin/content');
   eq(doc.querySelector('[data-tab="content"]').getAttribute('aria-selected'), 'true', 'تبويب المحتوى يُفعَّل من المسار');
-  eq(doc.querySelectorAll('.tabs__btn').length, 4, 'أربعة تبويبات في اللوحة');
+  eq(doc.querySelectorAll('.tabs__btn').length, 5, 'خمسة تبويبات في اللوحة');
   A.api.saveSession(null);   // نعيد حالة الزائر لبقية فحوص هذا القسم
 
   // المنصة تبدأ فارغة: لا مادة ولا سؤال داخل الكود
@@ -204,7 +204,7 @@ describe('٦ · الشاشات الفارغة تُرسم');
 describe('٧ · الوضع الليلي');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ, root = W.document.documentElement;
+  const W = d.window, A = W.QBANK, root = W.document.documentElement;
   eq(root.getAttribute('data-theme'), 'light', 'الوضع الفاتح هو الافتراضي');
   eq(A.theme.toggle(), 'dark', 'التبديل يُفعّل الليلي');
   eq(root.getAttribute('data-theme'), 'dark', 'السمة تُكتب على عنصر الجذر');
@@ -220,16 +220,16 @@ describe('٧ · الوضع الليلي');
 describe('٨ · التخزين المحلي');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ;
+  const W = d.window, A = W.QBANK;
   eq(A.store.get('لا_يوجد', 'افتراضي'), 'افتراضي', 'القيمة الافتراضية ترجع عند غياب المفتاح');
   A.store.set('t', { a:1, ب:'نص' });
   eq(A.store.get('t').ب, 'نص', 'القيم العربية تُحفظ وتُقرأ سليمة');
-  ok(W.localStorage.getItem('amusq:t') !== null, 'المفاتيح تحمل بادئة amusq:');
+  ok(W.localStorage.getItem('qbank:t') !== null, 'المفاتيح تحمل بادئة qbank:');
   W.localStorage.setItem('غريب', '1');
   A.store.clearAll();
   eq(A.store.get('t', null), null, 'التصفير يمسح مفاتيح المنصة');
   eq(W.localStorage.getItem('غريب'), '1', 'التصفير لا يمسّ مفاتيح تطبيقات أخرى');
-  W.localStorage.setItem('amusq:bad', '{ليس JSON');
+  W.localStorage.setItem('qbank:bad', '{ليس JSON');
   eq(A.store.get('bad', 'سليم'), 'سليم', 'قيمة تالفة لا تُسقط التطبيق');
   W.close();
 }
@@ -255,7 +255,7 @@ describe('٩ · إمكانية الوصول والجوال');
 describe('١٠ · سلامة النصوص');
 {
   const d = makeDom('#/');
-  const A = d.window.AMUSQ;
+  const A = d.window.QBANK;
   eq(A.dom.esc('<img onerror=x>'), '&lt;img onerror=x&gt;', 'الوسوم تُهرَّب');
   eq(A.dom.esc('a & b'), 'a &amp; b', 'الرمز & يُهرَّب');
   eq(A.dom.esc(null), '', 'القيمة الفارغة تُهرَّب إلى نص فارغ');
@@ -271,9 +271,9 @@ describe('١٠ · سلامة النصوص');
 describe('١١ · الإعداد وطبقة Supabase');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ;
+  const W = d.window, A = W.QBANK;
   // هذا القسم يفحص مسار «الإعداد اليدوي» — نعطّل الإعداد المحقون وقت البناء مؤقتًا
-  delete W.AMUSQ_INJECTED_CONFIG;
+  delete W.QBANK_INJECTED_CONFIG;
   eq(A.config.ready(), false, 'بلا إعداد يدوي: المنصة تعرف أنها غير موصولة');
   eq(A.config.set('http://x.co','k').ok, false, 'رابط بلا https يُرفض');
   eq(A.config.set('https://x.supabase.co','قصير').ok, false, 'مفتاح قصير يُرفض');
@@ -314,7 +314,7 @@ describe('١١ · الإعداد وطبقة Supabase');
 describe('١٢ · الجلسة: التقاط، فكّ، تجديد');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ;
+  const W = d.window, A = W.QBANK;
   // JWT وهمي حمولته {sub:"uid-1", email:"a@b.c"}
   const payload = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'uid-1', email:'a@b.c' }))));
   const jwt = 'h.' + payload + '.s';
@@ -342,7 +342,7 @@ describe('١٢ · الجلسة: التقاط، فكّ، تجديد');
 describe('١٣ · دمج التقدّم — لا يخسر أحد تقدّمه أبدًا');
 {
   const d = makeDom('#/');
-  const P = d.window.AMUSQ.progress;
+  const P = d.window.QBANK.progress;
   const local  = { s1:{ seen:{a:1,b:1}, wrong:{a:2},      star:{b:1}, exams:3, best:80 } };
   const remote = { s1:{ seen:{b:1,c:1}, wrong:{a:1,c:4},  star:{c:1}, exams:2, best:95 },
                    s2:{ seen:{x:1},     wrong:{},          star:{},    exams:1, best:60 } };
@@ -372,7 +372,7 @@ describe('١٣ · دمج التقدّم — لا يخسر أحد تقدّمه أ
 describe('١٤ · المزامنة بتأخير ٢٫٥ ثانية');
 {
   const d = makeDom('#/');
-  const P = d.window.AMUSQ.progress;
+  const P = d.window.QBANK.progress;
   eq(P.PUSH_DELAY, 2500, 'التأخير ٢٫٥ ثانية كما في المواصفات');
   let pushes = 0;
   P._pushFn = () => { pushes++; };
@@ -386,7 +386,7 @@ describe('١٤ · المزامنة بتأخير ٢٫٥ ثانية');
 describe('١٥ · مخزن المحتوى المحلي');
 {
   const d = makeDom('#/');
-  const W = d.window, DT = W.AMUSQ.data;
+  const W = d.window, DT = W.QBANK.data;
   eq(DT.hasIDB(), false, 'jsdom بلا IndexedDB — يسقط للذاكرة بلا انهيار');
   W.__t = (async () => {
     await DT.putQuestions('sub1', [ { id:'q2', subject_id:'sub1', ord:2, q:'B?' },
@@ -417,7 +417,7 @@ describe('١٥ · مخزن المحتوى المحلي');
 describe('١٦ · شاشات الدخول والحساب');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ, doc = W.document;
+  const W = d.window, A = W.QBANK, doc = W.document;
   A.router.render('#/login');
   ok(!!doc.getElementById('loginEmail'), 'حقل البريد في شاشة الدخول');
   const btns = Array.prototype.map.call(doc.querySelectorAll('#main button'), b => b.textContent);
@@ -452,9 +452,9 @@ describe('١٧ · ملفات قاعدة البيانات');
   const sql = ['schema.sql','policies.sql','functions.sql']
     .map(f => fs.readFileSync(path.join(ROOT, 'db', f), 'utf8')).join('\n');
   ['profiles','subjects','questions','drafts','enrollments','progress','attempts','devices','entitlements']
-    .forEach(t => has(sql, 'amusq.' + t, 'جدول ' + t + ' معرّف في مخطط amusq'));
+    .forEach(t => has(sql, 'qbank.' + t, 'جدول ' + t + ' معرّف في مخطط qbank'));
   ['is_admin','content_pack','subject_questions','approve_draft','admin_students','admin_attempts','admin_stats','board','delete_me','heartbeat','can_access']
-    .forEach(f => has(sql, 'function amusq.' + f, 'دالة ' + f + ' معرّفة في مخطط amusq'));
+    .forEach(f => has(sql, 'function qbank.' + f, 'دالة ' + f + ' معرّفة في مخطط qbank'));
   eq((sql.match(/enable row level security/g) || []).length, 10, 'RLS مفعّلة على كل الجداول العشرة');
   has(sql, 'security definer', 'دوال المشرف بـ security definer');
   has(sql, "interval '4 hours'", 'عدّاد المتواجدين بنافذة ٤ ساعات');
@@ -570,7 +570,7 @@ describe('٢٠ · استخراج DOCX و TXT');
 describe('٢١ · منطق اللوحة: الدفعات، التقدير، المكرر، الاستئناف');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ, Ad = A.admin;
+  const W = d.window, A = W.QBANK, Ad = A.admin;
   eq(Ad.BATCH, 25, 'حد الدفعة ٢٥ سؤالًا');
   eq(Ad.chunk([1,2,3,4,5], 2).length, 3, 'التقسيم لدفعات صحيح');
   eq(Ad.chunk([], 2).length, 0, 'مصفوفة فارغة: صفر دفعات');
@@ -630,7 +630,7 @@ describe('٢١ · منطق اللوحة: الدفعات، التقدير، ال�
 describe('٢٢ · شاشات اللوحة والمعالج');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ, doc = W.document;
+  const W = d.window, A = W.QBANK, doc = W.document;
   const payload = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'ad1', email:'a@a' }))));
   A.api.auth.captureFromHash('#access_token=h.' + payload + '.s&refresh_token=r&expires_in=9999');
 
@@ -696,7 +696,7 @@ describe('٢٣ · أمان دوال الخادم');
 describe('٢٤ · محرك الاختبار — خلط عادل وتتبع رقمي');
 {
   const d = makeDom('#/');
-  const E = d.window.AMUSQ.exam;
+  const E = d.window.QBANK.exam;
 
   // مولد حتمي: نفس البذرة = نفس النتيجة — الفحص قابل للتكرار
   function seeded(seed){ let x = seed; return () => { x = (x * 9301 + 49297) % 233280; return x / 233280; }; }
@@ -763,21 +763,21 @@ describe('٢٤ · محرك الاختبار — خلط عادل وتتبع رق�
 describe('٢٥ · الرئيسية والبطاقات');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ, doc = W.document;
+  const W = d.window, A = W.QBANK, doc = W.document;
   const future = new Date(W.Date.now() + 5 * 86400000).toISOString();
   const past = new Date(W.Date.now() - 3 * 86400000).toISOString();
   A.data.savePack({ subjects: [
     { id:'s1', name:'الإسعافات', color:'subject-1', icon:'🚑', q_count:50, exam_date:future, ord:0, free:false },
     { id:'s2', name:'التشريح',   color:'subject-2', icon:'🦴', q_count:30, exam_date:past,   ord:1, free:true },
     { id:'s3', name:'الأدوية',   color:'bad"inject', icon:'💊', q_count:20, ord:2, free:false }
-  ], settings:{ welcome_text:'أهلًا بك في AMUSQ' } });
+  ], settings:{ welcome_text:'أهلًا بك في QBANK' } });
   A.store.set('my_subjects', ['s1','s2']);
   // بطاقات المواد للطالب المسجَّل — الزائر يرى صفحة الهبوط بدلها
   const pl25 = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'stu-1', email:'s@t.sa' }))));
   A.api.auth.captureFromHash('#access_token=h.' + pl25 + '.s&refresh_token=r&expires_in=9999');
   A.router.render('#/');
   const t = doc.getElementById('main').textContent;
-  has(t, 'أهلًا بك في AMUSQ', 'نص الترحيب من الإعدادات يظهر');
+  has(t, 'أهلًا بك في QBANK', 'نص الترحيب من الإعدادات يظهر');
   has(t, 'موادي', 'قسم موادي أولًا');
   has(t, 'مواد أخرى متاحة', 'قسم المواد الأخرى مع زر الإضافة');
   has(t, 'الاختبار بعد 5 يوم', 'العد التنازلي لموعد الاختبار');
@@ -798,7 +798,7 @@ describe('٢٥ · الرئيسية والبطاقات');
 describe('٢٦ · صفحة المادة: التبويبات والبنك');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ, doc = W.document;
+  const W = d.window, A = W.QBANK, doc = W.document;
   A.data.savePack({ subjects:[{ id:'s1', name:'الإسعافات', color:'subject-1', icon:'🚑', free:true,
     q_count:120, topics:['BLS','ALS'], descr:'مادة الإسعافات الأولية' }], settings:{} });
   // ١٢٠ سؤالًا في الذاكرة — فوق دفعة العرض (٥٠) لفحص «عرض المزيد»
@@ -858,7 +858,7 @@ describe('٢٦ · صفحة المادة: التبويبات والبنك');
 describe('٢٧ · واجهة الاختبار: إعداد ← أسئلة ← نتيجة');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ, doc = W.document;
+  const W = d.window, A = W.QBANK, doc = W.document;
   A.data.savePack({ subjects:[{ id:'s1', name:'مادة', color:'subject-1', q_count:6, free:true }], settings:{} });
   const qs = new Array(6).fill(0).map((_, i) => ({
     id:'q' + i, subject_id:'s1', ord:i, q:'Q' + i + '?', options:['a','b','c','d'], answer:0,
@@ -917,7 +917,7 @@ describe('٢٧ · واجهة الاختبار: إعداد ← أسئلة ← ن�
 describe('٢٨ · الطباعة — تنسيق مستقل عن الشاشة');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ;
+  const W = d.window, A = W.QBANK;
   const sub = { id:'s1', name:'الإسعافات', color:'subject-1', descr:'وصف', topics:['أ'] };
   const qs = [
     { id:'q1', q:'First?', options:['a','b'], answer:1, expl_ar:'شرح ١', translation:'ترجمة ١', important:true, mnemonic:{} },
@@ -946,7 +946,7 @@ describe('٢٨ · الطباعة — تنسيق مستقل عن الشاشة');
 describe('٢٩ · بوابة المحتوى: المجاني مفتوح والمدفوع خلف الشراء');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ, G = A.gate, doc = W.document;
+  const W = d.window, A = W.QBANK, G = A.gate, doc = W.document;
   const freeSub = { id:'f1', name:'المجانية', free:true };
   const paidSub = { id:'p1', name:'المدفوعة', free:false };
 
@@ -1012,7 +1012,7 @@ describe('٣١ · تجهيز PWA — دون كسر فتح الملف المبا�
   has(sw, 'caches.match', 'الكاش يجيب عند انقطاع الشبكة');
 
   const d = makeDom('#/');
-  eq(d.window.AMUSQ.registerSW(), false, 'لا تسجيل لعامل الخدمة خارج https — فتح الملف يبقى سليمًا');
+  eq(d.window.QBANK.registerSW(), false, 'لا تسجيل لعامل الخدمة خارج https — فتح الملف يبقى سليمًا');
   d.window.close();
   has(html, 'rel="manifest"', 'المانيفست مربوط في الصفحة');
   ok(!/<link[^>]+rel=["']?manifest[^>]+https?:/.test(html), 'رابط المانيفست نسبي لا خارجي');
@@ -1028,7 +1028,7 @@ describe('٣٢ · معايير القبول النهائية');
 
   // كل شاشة رئيسية ترسم على جذر نظيف
   const d = makeDom('#/');
-  const A = d.window.AMUSQ;
+  const A = d.window.QBANK;
   ['#/','#/login','#/admin/login','#/settings','#/board','#/account'].forEach(h => {
     A.router.render(h);
     ok(d.window.document.querySelectorAll('#main h1').length === 1, 'شاشة ' + h + ' ترسم بعنوان واحد');
@@ -1050,7 +1050,7 @@ describe('٣٢ · معايير القبول النهائية');
 describe('٣٣ · صفحة الهبوط للزائر');
 {
   const d = makeDom('#/');
-  const W = d.window, A = W.AMUSQ, doc = W.document;
+  const W = d.window, A = W.QBANK, doc = W.document;
   A.data.savePack({ subjects:[
     { id:'s1', name:'الإسعافات الأولية', color:'subject-1', icon:'🚑', q_count:120, free:true,
       descr:'مبادئ الإنعاش', topics:['BLS','ALS'], ord:0 },
@@ -1061,7 +1061,7 @@ describe('٣٣ · صفحة الهبوط للزائر');
   A.router.render('#/');
   const t = doc.getElementById('main').textContent;
 
-  has(t, 'ذاكر أذكى', 'العنوان الرئيسي يظهر للزائر');
+  has(t, 'كل أسئلة موادك', 'العنوان الرئيسي يظهر للزائر');
   has(t, 'طلاب التخصصات الصحية', 'الجمهور المستهدف معلن');
   ok(doc.querySelectorAll('.lp-stat').length === 4, 'شريط الأرقام بأربع خانات');
   has(t, '200', 'إجمالي الأسئلة محسوب من المواد المنشورة فعلًا');
@@ -1107,7 +1107,7 @@ describe('٣٣ · صفحة الهبوط للزائر');
   A.router.render('#/');
   const t2 = doc.getElementById('main').textContent;
   eq(doc.querySelector('#main h1').textContent, 'موادي', 'المسجَّل يرى مواده مباشرة لا الصفحة التعريفية');
-  no(t2, 'ذاكر أذكى', 'الهبوط لا يظهر للمسجَّل');
+  no(t2, 'كل أسئلة موادك', 'الهبوط لا يظهر للمسجَّل');
   ok(!!doc.querySelector('.subj'), 'بطاقات المواد التفاعلية للمسجَّل');
   W.close();
 }
@@ -1135,12 +1135,12 @@ describe('٣٥ · لوحة المشرف');
      'ملف اللوحة بلا لون صريح — كله من متغيّرات التصميم');
 
   const sql = fs.readFileSync(path.join(ROOT,'db','ADMIN-DASHBOARD.sql'), 'utf8');
-  has(sql, 'amusq.is_admin()', 'دالة اللوحة تتحقق من الصلاحية في الخادم لا في المتصفح');
+  has(sql, 'qbank.is_admin()', 'دالة اللوحة تتحقق من الصلاحية في الخادم لا في المتصفح');
   has(sql, 'security definer', 'الدالة security definer كي تقرأ فوق RLS بعد التحقق');
-  has(sql, 'search_path = amusq', 'مسار البحث مثبّت — لا اختطاف عبر جدول وهمي');
+  has(sql, 'search_path = qbank', 'مسار البحث مثبّت — لا اختطاف عبر جدول وهمي');
   ok(sql.indexOf('create schema') === -1, 'الدالة لا تمسّ مخططًا آخر');
 
-  const dom = makeDom(), W = dom.window, doc = W.document, A = W.AMUSQ;
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'adm', email:'a@a.a' }))));
   A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
@@ -1197,7 +1197,7 @@ describe('٣٥ · لوحة المشرف');
 /* ============ ٣٦ · محرر المادة والأسئلة ============ */
 describe('٣٦ · محرر المادة');
 {
-  const dom = makeDom(), W = dom.window, doc = W.document, A = W.AMUSQ;
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'adm', email:'a@a.a' }))));
   A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
@@ -1297,10 +1297,10 @@ describe('٣٧ · الإعدادات');
   has(sql, 'add column if not exists', 'التوسعة آمنة التكرار — لا تُسقط عمودًا ولا قيمة');
   ok(sql.indexOf('drop column') === -1 && sql.indexOf('drop table') === -1, 'التوسعة لا تحذف شيئًا');
   has(sql, 'settings_sane', 'قيد يحرس المدى في القاعدة لا في الواجهة وحدها');
-  has(sql, 'amusq.is_admin()', 'التصدير والفحص محروسان بالصلاحية');
+  has(sql, 'qbank.is_admin()', 'التصدير والفحص محروسان بالصلاحية');
   has(sql, 'security definer', 'دوال الإعدادات security definer');
 
-  const S = makeDom().window.AMUSQ.admin.settings;
+  const S = makeDom().window.QBANK.admin.settings;
   // القصّ: القاعدة ترفض الخارج، والواجهة تمنع الرحلة أصلًا
   eq(S.clamp('250', 0, 100), 100, 'الرقم فوق المدى يُقصّ إلى سقفه');
   eq(S.clamp('-9', 1, 200), 1, 'الرقم تحت المدى يُقصّ إلى قاعه');
@@ -1311,11 +1311,11 @@ describe('٣٧ · الإعدادات');
   eq(JSON.stringify(S.diff({ a:1, b:'x' }, { a:2, b:'x' })), '{"a":2}', 'الحقل المتغيّر وحده يُرسل');
   eq(JSON.stringify(S.diff({ a:true }, { a:false })), '{"a":false}', 'المفتاح المطفأ يُرسل لا يُحذف');
 
-  const dom = makeDom(), W = dom.window, doc = W.document, A = W.AMUSQ;
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'adm', email:'a@a.a' }))));
   A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
-  const ROW = { id:1, platform_name:'AMUSQ', tagline:'', welcome_text:'أهلًا', support_email:'', whatsapp:'',
+  const ROW = { id:1, platform_name:'QBANK', tagline:'', welcome_text:'أهلًا', support_email:'', whatsapp:'',
     exam_count:25, exam_minutes:30, pass_mark:60, shuffle_q:true, shuffle_opts:true, instant_feedback:true,
     signup_open:true, board_enabled:true, device_limit:3, trial_days:0, maintenance:false, maint_msg:'صيانة' };
   const sent = [];
@@ -1378,6 +1378,525 @@ describe('٣٧ · الإعدادات');
     has(main.textContent, 'صدّر نسخة كاملة', 'التصدير متاح للمشرف');
     W.close();
   })());
+}
+
+/* ============ ٣٨ · نمطا القداسة: strict و enhanced ============ */
+describe('٣٨ · نمطا المعالجة');
+{
+  const { enforce, verbatimOk, slugify, acceptable } = require('../api/_lib/sanctity.js');
+  const ai = require('../api/ai.js');
+  const ORIG = { q:'Which antidote is used for paracetmol overdose?', has_options:true,
+    options:['N-acetylcysteine','Naloxone','Atropine','Flumazenil'], answer:0 };
+
+  // strict: مهما كتب النموذج، الأصل يفوز — الطبقة الثانية
+  const st = enforce(ORIG, { q_enhanced:'REWRITTEN', options_enhanced:['a','b','c','d'], topic:'سموم' }, 'strict');
+  eq(st.q, ORIG.q, 'strict: نص السؤال لم يتغيّر رغم محاولة النموذج');
+  eq(st.options.join('|'), ORIG.options.join('|'), 'strict: الخيارات لم تتغيّر');
+  eq(st.sanctity_mode, 'strict', 'strict: النمط مسجَّل مع السؤال');
+  ok(verbatimOk(ORIG, st), 'strict: فحص المطابقة الحرفية يمرّ');
+
+  // النمط غير المعروف يسقط إلى strict — الافتراض الآمن
+  const unknown = enforce(ORIG, { q_enhanced:'REWRITTEN' }, 'حسّن-لي-كل-شيء');
+  eq(unknown.q, ORIG.q, 'نمط مجهول يسقط إلى strict لا إلى التحسين');
+
+  // enhanced: التحسين مقبول، والأصل محفوظ
+  const better = 'Which antidote is used for paracetamol overdose?';
+  const en = enforce(ORIG, { q_enhanced: better, topic:'سموم' }, 'enhanced');
+  eq(en.q, better, 'enhanced: الصياغة المحسَّنة هي المعروضة');
+  eq(en.q_original, ORIG.q, 'enhanced: النص الأصلي محفوظ ولم يُمحَ');
+  eq(en.sanctity_mode, 'enhanced', 'enhanced: النمط مسجَّل');
+  ok(verbatimOk(ORIG, en), 'enhanced: الفحص يمرّ لأن الأصل باقٍ');
+
+  // الأصل محفوظ في النمطين — هذا ما يبقي الفحص النصّي ذا معنى
+  eq(st.q_original, ORIG.q, 'strict يحفظ الأصل أيضًا');
+  eq(st.options_original.join('|'), ORIG.options.join('|'), 'الخيارات الأصلية محفوظة');
+
+  // enhanced لا يعني السماح بأي شيء
+  eq(enforce(ORIG, { q_enhanced:'؟' }, 'enhanced').q, ORIG.q, 'enhanced يرفض نصًا مبتورًا');
+  eq(enforce(ORIG, { q_enhanced:'x'.repeat(5000) }, 'enhanced').q, ORIG.q, 'enhanced يرفض نصًا منتفخًا');
+  eq(enforce(ORIG, { q_enhanced: 42 }, 'enhanced').q, ORIG.q, 'enhanced يرفض ما ليس نصًا');
+  ok(!acceptable('abcdefghij', ''), 'المعقولية ترفض الفارغ');
+
+  // ★ الأخطر: إعادة ترتيب الخيارات تجعل موضع الإجابة يشير لخيار خاطئ
+  const shuffled = enforce(ORIG, { options_enhanced:['Naloxone','N-acetylcysteine','Atropine','Flumazenil'] }, 'enhanced');
+  eq(shuffled.options[shuffled.answer], 'N-acetylcysteine', 'enhanced: الإجابة تبقى صحيحة مهما فعل النموذج بالترتيب');
+  const fewer = enforce(ORIG, { options_enhanced:['a','b'] }, 'enhanced');
+  eq(fewer.options.length, 4, 'enhanced يرفض تغيير عدد الخيارات — موضع الإجابة رقم');
+
+  // وفقدان الأصل يُكشف مهما كان النمط
+  ok(!verbatimOk(ORIG, Object.assign({}, en, { q_original:'ضاع الأصل' })), 'ضياع الأصل يُرصد في enhanced');
+  ok(!verbatimOk(ORIG, Object.assign({}, st, { q:'عبث' })), 'تغيّر المعروض يُرصد في strict');
+
+  // البرومبتان مختلفان فعلًا — وإلا لما حسّن النموذج شيئًا
+  ok(ai.SYS_STRICT.indexOf('لا تعدل نص السؤال') !== -1, 'برومبت strict يمنع التعديل صراحة');
+  ok(ai.SYS_ENHANCED.indexOf('q_enhanced') !== -1, 'برومبت enhanced يطلب حقل التحسين');
+  ok(ai.SYS_ENHANCED.indexOf('اعادة ترتيب الخيارات ممنوعة') !== -1, 'برومبت enhanced يمنع إعادة الترتيب');
+  ok(ai.SYS_STRICT !== ai.SYS_ENHANCED, 'البرومبتان ليسا نسخة واحدة');
+
+  // المسار: آمن في الرابط وفريد
+  ok(/^[a-z0-9ء-ي-]+$/.test(slugify('Emergency Care! 2026','abc123')), 'المسار بلا رموز تكسر الرابط');
+  ok(slugify('فيزيولوجيا','x1').indexOf('فيزيولوجيا') === 0, 'المسار العربي يبقى مقروءًا');
+  ok(slugify('نفس الاسم') !== slugify('نفس الاسم'), 'اسمان متطابقان يعطيان مسارين مختلفين');
+  eq(slugify('   ', 'zz9999'), 'subject-zz9999', 'الاسم الفارغ لا يعطي مسارًا فارغًا');
+}
+
+/* ============ ٣٩ · عدّاد التجربة والقفل ============ */
+describe('٣٩ · تجربة العشر دقائق');
+{
+  const sqlU = fs.readFileSync(path.join(ROOT,'db','UGC-COINS.sql'), 'utf8');
+  has(sqlU, 'select 600', 'سقف التجربة ٦٠٠ ثانية معرَّف في القاعدة');
+  has(sqlU, 'least(greatest(coalesce(interval_seconds, 30), 0), 60)', 'النبضة تُقصّ في الخادم — لا حقن أرقام');
+  has(sqlU, 'creator is null or creator <> uid', 'التجربة للمنشئ وحده — الشرط في القاعدة');
+  has(sqlU, 'security definer', 'دوال التجربة والكوينز security definer');
+  has(sqlU, 'coins_once_uidx', 'فهرس فريد يمنع تكرار مكافأة نفس المشتري');
+  has(sqlU, 'ref <> creator', 'رابط إحالة مزوّر مرفوض في القاعدة');
+  ok(sqlU.indexOf('drop table') === -1 && sqlU.indexOf('drop column') === -1, 'الملف لا يحذف جدولًا ولا عمودًا');
+
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const T = A.trial;
+  eq(T.CAP, 600, 'سقف الواجهة يطابق سقف القاعدة');
+  const REAL_BEAT_CHECK = T.BEAT_MS;
+  eq(T.fmt(600), '10:00', 'التنسيق: ٦٠٠ث = 10:00');
+  eq(T.fmt(65), '1:05', 'التنسيق يُصفّر الثواني الآحادية');
+  eq(T.fmt(-5), '0:00', 'الوقت السالب يُعرض صفرًا لا بإشارة');
+
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'creator-1', email:'c@c.c' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  // نُحاكي القاعدة: كل نبضة تستهلك ٣٠ ثانية من ٦٠٠
+  let used = 540;   // بقيت دقيقة — نصل للقفل بسرعة
+  const beats = [];
+  A.api.rpc = (name, args) => {
+    if (name === 'rpc_record_trial_heartbeat'){
+      beats.push(args);
+      // نُحاكي الخادم بالإيقاع الحقيقي (٣٠ث لكل نبضة)، وإن سرّعنا المؤقّت في الفحص
+      used = Math.min(600, used + 30);
+      return Promise.resolve({ ok:true, data:{ eligible:true, seconds_used:used,
+        seconds_left: 600 - used, cap:600, expired: used >= 600 } });
+    }
+    return Promise.resolve({ ok:false, data:null });
+  };
+
+  let fired = '';
+  // نُسرّع النبضة في الفحص وحده: المنطق واحد، وانتظار عشر دقائق حقيقية ليس فحصًا
+  T.BEAT_MS = 40;
+  const bar = T.start('s1', 60, reason => { fired = reason; });
+  doc.body.appendChild(bar);
+  has(bar.textContent, '1:00', 'الشريط يعرض الوقت المتبقي');
+  ok(bar.className.indexOf('is-low') !== -1, 'أقل من دقيقتين ⇦ لون تحذير');
+  ok(parseFloat(bar.querySelector('.trialbar__f').style.width) === 10, 'المؤشر يعكس النسبة المتبقية');
+  eq(bar.getAttribute('aria-live'), 'polite', 'قارئ الشاشة يسمع تغيّر الوقت');
+  eq(REAL_BEAT_CHECK, 30000, 'النبضة كل ٣٠ ثانية كما هو مطلوب');
+
+  pending.push((async () => {
+    await until(W, () => fired === 'expired', 8000);
+    eq(fired, 'expired', 'العدّاد يقفل المادة عند بلوغ العشر دقائق');
+    eq(used, 600, 'الاستهلاك بلغ السقف بالضبط ولم يتجاوزه');
+    eq(T.state, null, 'العدّاد يتوقف بعد القفل — لا نبض بلا فائدة');
+    eq(beats[0].subject_id, 's1', 'النبضة تحمل معرّف المادة');
+    ok(beats[0].interval_seconds === T.BEAT_MS / 1000, 'قيمة النبضة المُبلَّغة تطابق إيقاع المؤقّت');
+    const after = beats.length;
+    await new Promise(r => W.setTimeout(r, 200));
+    eq(beats.length, after, 'ولا نبضة واحدة بعد القفل');
+
+    // الزميل: القاعدة تقول eligible=false ⇦ لا تجربة
+    let out = '';
+    A.api.rpc = () => Promise.resolve({ ok:true, data:{ eligible:false, seconds_used:0, seconds_left:0, cap:600 } });
+    const b2 = T.start('s2', 600, r => { out = r; });
+    doc.body.appendChild(b2);
+    await until(W, () => out === 'ineligible', 8000);
+    eq(out, 'ineligible', 'من ليست مادته يُوقف عدّاده فورًا');
+    T.stop();
+
+    // الانتهاء المحلي أيضًا: لو انقطع الخادم فالعدّاد يقفل عند بلوغ الصفر
+    let local = '';
+    A.api.rpc = () => Promise.resolve({ ok:false, data:null });
+    const b3 = T.start('s3', 1, r => { local = r; });
+    doc.body.appendChild(b3);
+    await until(W, () => local === 'expired', 5000);
+    eq(local, 'expired', 'العدّاد يقفل محليًا أيضًا ولو صمت الخادم');
+
+    T.stop();
+    T.BEAT_MS = REAL_BEAT_CHECK;   // نُعيد القيمة الحقيقية
+    W.close();
+  })());
+}
+
+/* ============ ٤٠ · الزميل يشتري ولا يُجرّب ============ */
+describe('٤٠ · الزميل والرابط والكوينز');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const G = A.gate;
+
+  // رابط الإحالة يُحفظ ليصمد عبر التنقّل والتسجيل
+  eq(G.captureRef({ ref:'creator-9' }), 'creator-9', 'رابط الإحالة يُلتقط من ?ref=');
+  eq(G.ref(), 'creator-9', 'ويُحفظ فيبقى بعد التنقّل والتسجيل');
+  eq(G.captureRef({}), 'creator-9', 'زيارة بلا ref لا تمسح مُحيلًا محفوظًا');
+
+  const SUB = { id:'s9', name:'فيزيولوجيا', slug:'physio-x1', price:49, free:false,
+                created_by:'creator-9', q_count:40, published:true, status:'published' };
+  // زائر بلا جلسة
+  A.api.saveSession(null);
+  eq(G.localGuess(SUB).reason, 'anon', 'الزائر يُوجَّه للدخول');
+
+  // المنشئ نفسه ⇦ تجربة
+  const mk = id => W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:id, email:'x@x.x' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + mk('creator-9') + '.s&refresh_token=r&expires_in=9999');
+  eq(G.localGuess(SUB).reason, 'trial', 'المنشئ يدخل بالتجربة');
+
+  // الزميل ⇦ شراء مباشر بلا تجربة (جوهر الطلب)
+  A.api.auth.captureFromHash('#access_token=h.' + mk('mate-7') + '.s&refresh_token=r&expires_in=9999');
+  const mate = G.localGuess(SUB);
+  eq(mate.allowed, false, 'الزميل لا يدخل المحتوى');
+  eq(mate.reason, 'paywall', 'الزميل يذهب للشراء لا للتجربة');
+
+  // ومن اشترى يدخل
+  G.save([{ subject_id:'s9', kind:'subject', expires_at:new Date(Date.now()+9e8).toISOString() }]);
+  eq(G.localGuess(SUB).reason, 'entitled', 'من اشترى يدخل باستحقاقه');
+  G.save([]);
+
+  // زر الشراء يحمل السعر والمُحيل
+  const btn = G.buyButton(SUB);
+  has(btn.textContent, '49 ريال', 'زر الشراء يعرض السعر');
+  eq(btn.getAttribute('data-ref'), 'creator-9', 'زر الشراء يحمل المُحيل كي تصله كوينزه');
+
+  // رابط المشاركة بالشكل المطلوب تمامًا
+  const url = A.share.shareUrl('physio-x1', 'creator-9');
+  has(url, '#s/physio-x1?ref=creator-9', 'الرابط بالشكل ‎#s/slug?ref=USER_ID');
+  eq(A.share.shareUrl('physio-x1', ''), url.split('?')[0], 'بلا مُحيل: رابط نظيف');
+
+  // الموجّه يقبل الصيغتين — الرابط القصير هو ما يُشارَك فعلًا
+  eq(A.router.parse('#s/physio-x1?ref=u1').path, '#/s', 'الموجّه يلتقط ‎#s/slug');
+  eq(A.router.parse('#s/physio-x1?ref=u1').rest[0], 'physio-x1', 'المسار يصل للشاشة');
+  eq(A.router.parse('#s/physio-x1?ref=u1').query.ref, 'u1', 'المُحيل يُفكّ من الرابط');
+  eq(A.router.parse('#/s/physio-x1').rest[0], 'physio-x1', 'والصيغة الطويلة تعمل أيضًا');
+
+  // شاشة الرابط: الزميل يرى الشراء لا المحتوى
+  A.api.rest = p2 => p2.indexOf('subjects?slug=eq.physio-x1') === 0
+    ? Promise.resolve({ ok:true, data:[SUB] }) : Promise.resolve({ ok:true, data:[] });
+  pending.push((async () => {
+    await nav(W, '#s/physio-x1?ref=creator-9');
+    await until(W, () => doc.getElementById('main').textContent.indexOf('فيزيولوجيا') !== -1);
+    const t = doc.getElementById('main').textContent;
+    has(t, 'مادة مدفوعة', 'الزميل يرى بطاقة الشراء');
+    has(t, '40 سؤالًا', 'وصفحة تعريفية بما في المادة');
+    no(t, 'تجربتك', 'ولا يُعرض عليه عدّاد تجربة إطلاقًا');
+    ok(!doc.querySelector('.trialbar'), 'لا شريط تجربة للزميل');
+
+    // المنشئ على نفس الرابط يرى أداة المشاركة
+    A.api.auth.captureFromHash('#access_token=h.' + mk('creator-9') + '.s&refresh_token=r&expires_in=9999');
+    A.router.render('#s/physio-x1');
+    await until(W, () => doc.getElementById('main').textContent.indexOf('هذه مادتك') !== -1);
+    has(doc.getElementById('main').textContent, 'كوينز', 'المنشئ يُذكَّر بمكافأة المشاركة');
+    ok(!!doc.querySelector('.sharebox input'), 'حقل الرابط جاهز للنسخ');
+    ok(doc.querySelector('.sharebox input').value.indexOf('#s/physio-x1?ref=creator-9') !== -1,
+       'الرابط المعروض يحمل معرّف المنشئ');
+    W.close();
+  })());
+}
+
+/* ============ ٤١ · رفع الطالب ومحفظته ============ */
+describe('٤١ · رفع الطالب والمحفظة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const mk = id => W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:id, email:'s@s.s' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + mk('stud-1') + '.s&refresh_token=r&expires_in=9999');
+
+  eq(A.admin.newWizard().mode, 'strict', 'النمط الافتراضي strict — القداسة هي الأصل');
+
+  pending.push((async () => {
+    A.views.ViewUpload._reset();
+    await nav(W, '#/admin/upload');
+    const main = doc.getElementById('main');
+    // طالب عادي (ليس مشرفًا) يصل لشاشة الرفع — هذه هي الميزة
+    has(main.textContent, 'أسقط ملف الأسئلة', 'الرفع مفتوح لكل مسجَّل لا للمشرف وحده');
+    has(main.textContent, 'اسم المادة', 'يختار اسم مادته');
+    eq(doc.querySelectorAll('[data-mode]').length, 2, 'نمطان معروضان للاختيار');
+    eq(doc.querySelector('[data-mode="strict"]').getAttribute('aria-checked'), 'true', 'strict محدَّد ابتداءً');
+    has(main.textContent, 'لا يُغيَّر حرف', 'شرح strict صريح للطالب');
+    has(main.textContent, 'النص الأصلي يبقى محفوظًا', 'وشرح enhanced يطمئنه أن الأصل باقٍ');
+
+    doc.querySelector('[data-mode="enhanced"]').dispatchEvent(new W.Event('click', { bubbles:true }));
+    eq(A.views.ViewUpload._get().mode, 'enhanced', 'اختيار النمط يُسجَّل في المعالج');
+    eq(doc.querySelector('[data-mode="strict"]').getAttribute('aria-checked'), 'false', 'الاختيار متبادل لا متراكم');
+
+    // المحفظة
+    A.api.rpc = name => name === 'my_wallet' ? Promise.resolve({ ok:true, data:{
+      balance:150, sales:3, earned:150,
+      subjects:[{ id:'a', name:'فيزيولوجيا', slug:'physio-x1', status:'published', price:49, q_count:40, sales:3 },
+                { id:'b', name:'تشريح', slug:'anat-y2', status:'suspended', price:0, q_count:20, sales:0 }],
+      ledger:[{ amount:50, reason:'بيع مادة عبر رابطك', created_at:new Date(Date.now()-3600000).toISOString() }]
+    } }) : Promise.resolve({ ok:false });
+
+    await nav(W, '#/account');
+    await until(W, () => doc.querySelector('.wallet'));
+    const t = doc.getElementById('main').textContent;
+    has(t, '150', 'الرصيد معروض');
+    has(t, 'بانتظار التسعير', 'المادة بلا سعر تُنبَّه لا تُترك صامتة');
+    has(t, 'موقوفة', 'المادة الموقوفة موسومة للطالب');
+    has(t, 'بيع مادة عبر رابطك', 'سجل الكوينز يشرح مصدر كل حركة');
+    eq(doc.querySelectorAll('.sharebox').length, 2, 'رابط نسخ لكل مادة رفعها');
+    W.close();
+  })());
+}
+
+/* ============ ٤٢ · تبويب مواد الطلاب عند المشرف ============ */
+describe('٤٢ · إدارة مواد الطلاب');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'adm', email:'a@a.a' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  const sent = [];
+  A.api.rest = (p2, opt) => { if (opt) sent.push({ path:p2, method:opt.method, body: JSON.parse(opt.body||'{}') });
+    return Promise.resolve({ ok:true, data:[] }); };
+  A.api.rpc = name => name === 'admin_ugc' ? Promise.resolve({ ok:true, data:[
+    { id:'u1', name:'فيزيولوجيا', slug:'physio-x1', status:'published', price:0, published:true,
+      q_count:40, sanctity_mode:'enhanced', creator_name:'سعد', sales:3, coins:150, attempts:12,
+      created_at:new Date().toISOString(), created_by:'stud-1' },
+    { id:'u2', name:'تشريح', slug:'anat-y2', status:'suspended', price:35, published:true,
+      q_count:20, sanctity_mode:'strict', creator_name:'ريم', sales:0, coins:0, attempts:0,
+      created_at:new Date().toISOString(), created_by:'stud-2' }
+  ] }) : Promise.resolve({ ok:false });
+
+  pending.push((async () => {
+    await nav(W, '#/admin/ugc');
+    await until(W, () => doc.querySelector('.modetag'));
+    const main = doc.getElementById('main');
+    has(main.textContent, 'رفعها سعد', 'اسم رافع المادة ظاهر للمشرف');
+    has(main.textContent, 'صياغة محسَّنة', 'نمط المعالجة موسوم — يعرف المشرف ما مُسّ');
+    has(main.textContent, 'نص حرفي', 'والنمط الصارم موسوم أيضًا');
+    has(main.textContent, '150 كوين', 'مجموع الكوينز الممنوحة لكل مادة');
+    has(main.textContent, '3 بيعة', 'عدد مرات الشراء');
+    has(main.textContent, 'بلا سعر', 'المشرف يُنبَّه لما لم يُسعَّر بعد');
+
+    // التسعير
+    const price = doc.querySelector('input[type="number"]');
+    price.value = '9999';
+    Array.prototype.filter.call(doc.querySelectorAll('button'), b => b.textContent === 'احفظ السعر')[0]
+      .dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => sent.some(x => x.method === 'PATCH' && 'price' in x.body));
+    eq(sent.filter(x => 'price' in x.body)[0].body.price, 5000, 'سعر ٩٩٩٩ يُقصّ إلى السقف قبل الإرسال');
+
+    // الإيقاف
+    Array.prototype.filter.call(doc.querySelectorAll('button'), b => b.textContent === 'أوقف المادة')[0]
+      .dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => sent.some(x => x.body && x.body.status === 'suspended'));
+    ok(sent.some(x => x.body.status === 'suspended'), 'الإيقاف يرسل status=suspended');
+    ok(!!Array.prototype.filter.call(doc.querySelectorAll('button'), b => b.textContent === 'أعِد تفعيلها')[0],
+       'الموقوفة يمكن إعادة تفعيلها');
+
+    // الحذف بتأكيدين
+    const del = Array.prototype.filter.call(doc.querySelectorAll('button'), b => b.textContent === 'احذف')[0];
+    del.dispatchEvent(new W.Event('click', { bubbles:true }));
+    ok(sent.every(x => x.method !== 'DELETE'), 'الضغطة الأولى لا تحذف مادة طالب');
+    del.dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => sent.some(x => x.method === 'DELETE'));
+    ok(sent.some(x => x.method === 'DELETE'), 'الضغطة الثانية تحذف');
+    W.close();
+  })());
+}
+
+/* ============ ٤٣ · منح الكوينز يتم في الخادم لا في المتصفح ============ */
+describe('٤٣ · أمان الكوينز');
+{
+  // القاعدة الحاسمة: لا يمنح المتصفح كوينز لنفسه — الدالة لـ service_role وحده
+  const sqlU = fs.readFileSync(path.join(ROOT,'db','UGC-COINS.sql'), 'utf8');
+  has(sqlU, 'grant execute on function qbank.award_referral_coins(uuid, uuid, uuid) to service_role',
+      'منح الكوينز محصور في مفتاح الخدمة — لا ينادى من المتصفح');
+  has(sqlU, 'revoke all on function qbank.award_referral_coins(uuid, uuid, uuid) from public',
+      'وصلاحية العموم منزوعة صراحة');
+  has(sqlU, 'buyer = creator', 'شراء المنشئ لمادته لا يمنحه كوينز');
+  has(sqlU, 'coins_balance >= 0', 'الرصيد لا يصير سالبًا');
+
+  // ولا مفتاح خدمة في الملف المبني
+  no(html, 'SUPABASE_SERVICE_KEY', 'لا اسم لمفتاح الخدمة في ملف المتصفح');
+  no(html, 'award_referral_coins', 'المتصفح لا يعرف دالة منح الكوينز أصلًا');
+
+  const verify = fs.readFileSync(path.join(ROOT,'api','verify.js'), 'utf8');
+  ok(verify.indexOf('award_referral_coins') > verify.indexOf('await verifiers[source]'),
+     'الكوينز تُمنح بعد تأكيد الدفعة لا قبلها');
+  has(verify, 'coins = { ok:false', 'فشل المكافأة لا يُبطل شراءً تمّ');
+
+  const supa = fs.readFileSync(path.join(ROOT,'api','_lib','supa.js'), 'utf8');
+  has(supa, '/auth/v1/user', 'هوية الرمز تُسأل من Supabase لا تُفكّ محليًا');
+  const trial = fs.readFileSync(path.join(ROOT,'api','trial.js'), 'utf8');
+  has(trial, ', token)', 'مسار التجربة يمرّر رمز الطالب لا مفتاح الخدمة');
+  no(trial, 'SERVICE', 'ولا يلمس مفتاح الخدمة إطلاقًا');
+}
+
+/* ============ ٤٤ · الهوية الجديدة: مراجعة — بنك الأسئلة ============ */
+describe('٤٤ · الهوية والاسم');
+{
+  // لا بقايا للاسم القديم في أي شيء يراه الطالب
+  no(html, 'AMUSQ', 'لا أثر للاسم القديم في الملف المبني');
+  // الاسم القديم يبقى في موضعين فقط: ثابتَي الهجرة اللذين ينقلان بيانات الطالب.
+  // نفحص العدد لا الغياب — فلو تسرّب اسم قديم ثالث إلى الواجهة كشفه هذا الفحص.
+  eq((html.match(/amusq/g) || []).length, 2, 'الاسم القديم في ثابتَي الهجرة فقط لا في أي نص');
+  has(html, "OLD_NS: 'amusq:'", 'بادئة التخزين القديمة معروفة كي تُنقل');
+  has(html, "OLD_DB: 'amusq'", 'وقاعدة الأسئلة القديمة كذلك');
+
+  has(html, 'مراجعة', 'الاسم الجديد في الملف المبني');
+  has(html, 'بنك الأسئلة', 'والوصف تحته');
+
+  const dom = makeDom(), W = dom.window, doc = W.document;
+  const brand = doc.querySelector('.brand');
+  ok(!!brand, 'العلامة في الترويسة');
+  eq(doc.querySelector('.brand__name').textContent, 'مراجعة', 'الاسم هو «مراجعة»');
+  eq(doc.querySelector('.brand__sub').textContent, 'بنك الأسئلة', 'والوصف «بنك الأسئلة» تحته');
+  has(brand.getAttribute('aria-label'), 'مراجعة', 'قارئ الشاشة يسمع الاسم لا حرفًا مفردًا');
+  ok(!!doc.querySelector('.brand__mark svg'), 'العلامة كتاب مفتوح مرسوم لا حرف لاتيني');
+  eq(doc.title.indexOf('مراجعة') !== -1, true, 'عنوان التبويب بالاسم الجديد');
+  eq(doc.querySelector('meta[name="theme-color"]').getAttribute('content'), '#8c2f39',
+     'لون الترويسة عنّابي — يطابق الهوية في شريط المتصفح');
+
+  // التذييل الثابت — قاعدة مشروع لا تتغيّر مع الهوية
+  has(doc.querySelector('.footer').textContent, 'علي الصقور', 'التذييل باقٍ كما هو');
+  has(doc.querySelector('.footer a').getAttribute('href'), 'wa.me/966580805553', 'ورابط الواتساب باقٍ');
+
+  // الموجّه يضع الاسم الجديد في العنوان
+  W.QBANK.router.render('#/login');
+  has(doc.title, 'مراجعة', 'الاسم يلحق كل عنوان صفحة');
+  W.close();
+}
+
+/* ============ ٤٥ · نظام الألوان الجديد ============ */
+describe('٤٥ · ألوان الورق والمكتبة');
+{
+  const css = html.split('<style>')[1].split('</style>')[0];
+  const tokens = fs.readFileSync(path.join(__dirname,'css','00-tokens.css'), 'utf8');
+
+  has(tokens, '--brand:      #8c2f39', 'العنّابي هو لون الهوية');
+  has(tokens, '--gold:      #c9a227', 'والرملي الذهبي للتمييز');
+  has(tokens, '--bg:        #fbf7f0', 'وخلفية ورقية دافئة لا بيضاء');
+  no(tokens, '#12805c', 'لا أثر للأخضر الطبي القديم');
+  no(tokens, '#3b5bdb', 'ولا للأزرق الأقدم');
+
+  // نصّ داكن على ورق فاتح: الحبر بنّي مسودّ لا أسود صريح
+  has(tokens, '--text:      #241a15', 'الحبر بنّي مسودّ — أرحم للعين على الورق');
+
+  // الوضع الليلي موجود ومقلوب فعلًا لا منسوخ
+  const dark = tokens.slice(tokens.indexOf('[data-theme="dark"]'));
+  has(dark, '--bg:        #16110e', 'الوضع الليلي بنّي محروق لا أزرق بارد');
+  has(dark, '--brand:      #d97a83', 'والعنّابي يفتحّ في الليل كي يبقى مقروءًا');
+  ok(dark.indexOf('--gold:') !== -1, 'والذهبي معرّف في الليل أيضًا');
+
+  // ست ألوان مواد في الوضعين
+  for (let i = 1; i <= 6; i++){
+    ok(tokens.indexOf('--subject-' + i + ':') !== -1, 'لون المادة ' + i + ' معرّف');
+  }
+  eq((tokens.match(/--subject-1:/g) || []).length, 2, 'ألوان المواد معرّفة في الوضعين معًا');
+
+  // القاعدة الثابتة: لا لون صريح خارج ملف المتغيّرات
+  ['30-components.css','40-screens.css','50-landing.css','60-admin.css'].forEach(f => {
+    const t = fs.readFileSync(path.join(__dirname,'css',f), 'utf8');
+    ok(!/#[0-9a-fA-F]{3,6}\b/.test(t), f + ' بلا لون صريح — كله من المتغيّرات');
+  });
+
+  // الرفّ حلّ محلّ خط تخطيط القلب
+  has(css, '.lp-shelf', 'رفّ الكتب معرّف');
+  no(css, '.lp-ecg', 'وخط تخطيط القلب أُزيل بالكامل');
+  has(css, 'prefers-reduced-motion', 'حركة الرفّ تحترم تقليل الحركة');
+}
+
+/* ============ ٤٦ · رفّ الكتب يقرأ الأرقام الحقيقية ============ */
+describe('٤٦ · رفّ الهبوط');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  A.api.saveSession(null);
+  // مادتان: واحدة ضخمة وأخرى صغيرة — يجب أن يختلف سُمك كعبيهما
+  A.data.savePack({ subjects:[
+    { id:'a', name:'مادة كبيرة', q_count:300, color:'subject-1', icon:'▤', topics:[] },
+    { id:'b', name:'مادة صغيرة', q_count:20,  color:'subject-2', icon:'▤', topics:[] }
+  ], settings:{} });
+  A.router.render('#/');
+
+  const shelf = doc.querySelector('.lp-shelf');
+  ok(!!shelf, 'الرفّ مرسوم على صفحة الهبوط');
+  const books = shelf.querySelectorAll('.lp-shelf__book');
+  eq(books.length, 2, 'كعب لكل مادة');
+  const wide = parseFloat(books[0].getAttribute('width'));
+  const thin = parseFloat(books[1].getAttribute('width'));
+  ok(wide > thin, 'سُمك الكعب يتناسب مع عدد الأسئلة — الصورة تقول ما تقوله الأرقام');
+  has(shelf.getAttribute('aria-label'), '2', 'قارئ الشاشة يسمع عدد المواد');
+  ok(!!shelf.querySelector('.lp-shelf__plank'), 'لوح الرفّ مرسوم');
+
+  // منصة فارغة: رفّ نموذجي لا فراغ محرج
+  A.data.savePack({ subjects:[], settings:{} });
+  A.router.render('#/');
+  ok(doc.querySelectorAll('.lp-shelf__book').length > 0, 'بلا مواد بعد: رفّ نموذجي لا صفحة عارية');
+  W.close();
+}
+
+/* ============ ٤٧ · الهجرة لا تُفقد طالبًا تقدّمه ============ */
+describe('٤٧ · هجرة بيانات الطالب');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const LS = W.localStorage;
+
+  // نُحاكي جهاز طالب فتح المنصة بالهوية القديمة: تقدّم ونجوم وإعدادات
+  LS.clear();
+  LS.setItem('amusq:progress', JSON.stringify({ 'sub-1':{ seen:['q1','q2'], star:{ q3:true } } }));
+  LS.setItem('amusq:theme', '"dark"');
+  LS.setItem('amusq:entitlements', JSON.stringify([{ subject_id:'s1', kind:'subject', expires_at:'2027-01-01' }]));
+  eq(A.store.get('progress', null), null, 'قبل الهجرة: البادئة الجديدة لا ترى شيئًا');
+
+  const moved = A.store.migrate();
+  eq(moved, 3, 'الهجرة نقلت المفاتيح الثلاثة');
+  const prog = A.store.get('progress', null);
+  ok(!!prog && prog['sub-1'].seen.length === 2, 'تقدّم الطالب وصل سليمًا');
+  eq(prog['sub-1'].star.q3, true, 'ونجومه معه');
+  eq(A.store.get('theme', null), 'dark', 'واختياره للوضع الليلي');
+  eq(A.store.get('entitlements', []).length, 1, 'ومشترياته المحفوظة محليًا');
+  eq(LS.getItem('amusq:progress'), null, 'والقديم مُسح فلا يبقى نسختان');
+
+  // لا تطمس قيمة جديدة بقديمة
+  LS.setItem('amusq:theme', '"light"');
+  A.store.set('theme', 'dark');
+  A.store.migrate();
+  eq(A.store.get('theme', null), 'dark', 'قيمة جديدة كتبها المستخدم لا تُطمس بقديمة');
+  eq(LS.getItem('amusq:theme'), null, 'والقديمة تُنظَّف على كل حال');
+
+  // جهاز نظيف: الهجرة لا تفعل شيئًا ولا تنهار
+  LS.clear();
+  eq(A.store.migrate(), 0, 'جهاز بلا بيانات قديمة: لا شيء يُنقل');
+
+  // وتُنادى فعلًا عند الإقلاع — وإلا فالكود موجود بلا أثر
+  const boot = fs.readFileSync(path.join(__dirname,'js','40-app.js'), 'utf8');
+  has(boot, 'QBANK.store.migrate()', 'الهجرة تُنادى عند الإقلاع');
+  ok(boot.indexOf('QBANK.store.migrate()') < boot.indexOf('QBANK.theme.init()'),
+     'وقبل قراءة الإعدادات — وإلا قرأ التطبيق فراغًا ثم وصلت البيانات');
+  has(boot, 'QBANK.data.migrateDB()', 'وأسئلة وضع عدم الاتصال تُهاجَر أيضًا');
+
+  const data = fs.readFileSync(path.join(__dirname,'js','16-data.js'), 'utf8');
+  has(data, "OLD_DB: 'amusq'", 'قاعدة الأسئلة القديمة معروفة بالاسم');
+  has(data, 'deleteDatabase', 'وتُحذف بعد النقل فلا تشغل مساحة الطالب');
+  W.close();
+}
+
+/* ============ ٤٨ · هجرة مخطط قاعدة البيانات ============ */
+describe('٤٨ · ملف هجرة المخطط');
+{
+  const mig = fs.readFileSync(path.join(ROOT,'db','MIGRATE-TO-QBANK.sql'), 'utf8');
+  has(mig, 'alter schema amusq rename to qbank', 'إعادة تسمية لا نسخ — البيانات لا تتحرّك');
+  ok(mig.indexOf('drop table') === -1, 'لا حذف جدول في ملف الهجرة');
+  ok(mig.indexOf('drop schema') === -1, 'ولا حذف مخطط');
+  ok(mig.indexOf('truncate') === -1, 'ولا تفريغ جدول');
+  has(mig, "where schema_name = 'amusq'", 'إعادة التسمية مشروطة — آمنة التكرار');
+  has(mig, 'Exposed schemas', 'الملف يذكّر بخطوة Data API التي بدونها لا يعمل الموقع');
+  has(mig, 'if not exists', 'إعادة بناء الجداول لا تمسّ موجودًا');
+
+  // كل ملفات القاعدة انتقلت للاسم الجديد
+  ['schema.sql','policies.sql','functions.sql','UGC-COINS.sql','ADMIN-DASHBOARD.sql','SETTINGS-UPGRADE.sql']
+    .forEach(f => {
+      const t = fs.readFileSync(path.join(ROOT,'db',f), 'utf8');
+      ok(t.indexOf('amusq.') === -1, f + ' بلا أثر للمخطط القديم');
+      ok(t.indexOf('qbank') !== -1, f + ' يستعمل المخطط الجديد');
+    });
+
+  // والخادم أيضًا
+  const supa = fs.readFileSync(path.join(ROOT,'api','_lib','supa.js'), 'utf8');
+  has(supa, "'Accept-Profile':'qbank'", 'الخادم يطلب المخطط الجديد');
+  no(supa, 'amusq', 'ولا أثر للقديم فيه');
 }
 
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */

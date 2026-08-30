@@ -6,20 +6,26 @@
 */
 const { extract } = require('./_lib/extract.js');
 const { parse } = require('./_lib/parser.js');
+const { slugify } = require('./_lib/sanctity.js');
 
 module.exports = async function handler(req, res){
   if (req.method !== 'POST') return res.status(405).json({ error:'POST فقط' });
   try{
-    const { filename, content_base64 } = req.body || {};
+    const { filename, content_base64, subject_name, sanctity_mode } = req.body || {};
     if (!filename || !content_base64) return res.status(400).json({ error:'أرسل filename و content_base64' });
     const buf = Buffer.from(content_base64, 'base64');
     if (buf.length > 15 * 1024 * 1024) return res.status(413).json({ error:'الملف أكبر من ١٥ ميغابايت' });
 
     const text = await extract(filename, buf);
     const questions = parse(text);
+    // اسم المادة من الطالب إن أعطاه، وإلا من اسم الملف بلا امتداده
+    const name = String(subject_name || '').trim() || filename.replace(/\.[^.]+$/, '');
     return res.status(200).json({
       ok: true,
       filename,
+      subject_name: name,
+      slug: slugify(name),
+      sanctity_mode: sanctity_mode === 'enhanced' ? 'enhanced' : 'strict',
       total: questions.length,
       with_options: questions.filter(q => q.has_options).length,
       with_answers: questions.filter(q => q.answer !== null && q.answer !== undefined || q.answer_text).length,

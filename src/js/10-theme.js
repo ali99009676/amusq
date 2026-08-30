@@ -18,8 +18,8 @@ const Theme = {
     try{ return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); }
     catch(e){ return false; }
   },
-  current(){ return AMUSQ.store.get(Theme.KEY, 'auto'); },
-  set(mode){ AMUSQ.store.set(Theme.KEY, mode); return Theme.apply(mode); },
+  current(){ return QBANK.store.get(Theme.KEY, 'auto'); },
+  set(mode){ QBANK.store.set(Theme.KEY, mode); return Theme.apply(mode); },
   toggle(){
     const now = document.documentElement.getAttribute('data-theme') === 'dark';
     return Theme.set(now ? 'light' : 'dark');
@@ -30,4 +30,4 @@ const Theme = {
     if (btn) btn.addEventListener('click', () => Theme.toggle());
   }
 };
-AMUSQ.theme = Theme;
+QBANK.theme = Theme;

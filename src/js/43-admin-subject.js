@@ -11,13 +11,13 @@ const SUBJ_ICONS  = ['▤','☤','✚','♥','◈','⚕','☣','◐','⌁','⚗'
 
 const SubjEditor = {
   patchSubject(id, body){
-    return AMUSQ.api.rest('subjects?id=eq.' + id, { method:'PATCH', body: JSON.stringify(body) });
+    return QBANK.api.rest('subjects?id=eq.' + id, { method:'PATCH', body: JSON.stringify(body) });
   },
   patchQuestion(id, body){
-    return AMUSQ.api.rest('questions?id=eq.' + id, { method:'PATCH', body: JSON.stringify(body) });
+    return QBANK.api.rest('questions?id=eq.' + id, { method:'PATCH', body: JSON.stringify(body) });
   },
   delQuestion(id){
-    return AMUSQ.api.rest('questions?id=eq.' + id, { method:'DELETE' });
+    return QBANK.api.rest('questions?id=eq.' + id, { method:'DELETE' });
   },
   /* تصفية محلية: البحث في مادة واحدة لا يستحق ذهابًا إلى الخادم مع كل حرف */
   filter(list, q, topic, only){
@@ -74,7 +74,7 @@ function subjIdentity(sub, refresh){
       name: nameIn.value.trim() || sub.name, descr: descrIn.value, color, icon,
       ord: parseInt(ordIn.value || '0', 10), exam_date: dateIn.value || null
     });
-    AMUSQ.toast(r.ok ? 'حُفظت هوية المادة' : 'تعذّر الحفظ');
+    QBANK.toast(r.ok ? 'حُفظت هوية المادة' : 'تعذّر الحفظ');
     if (r.ok && refresh) refresh();
   });
 
@@ -82,7 +82,7 @@ function subjIdentity(sub, refresh){
     text: sub.published ? 'منشورة — أخفِها' : 'مخفية — انشرها' });
   pub.addEventListener('click', async () => {
     const r = await SubjEditor.patchSubject(sub.id, { published: !sub.published });
-    AMUSQ.toast(r.ok ? (sub.published ? 'أُخفيت المادة' : 'نُشرت المادة') : 'تعذّر التعديل');
+    QBANK.toast(r.ok ? (sub.published ? 'أُخفيت المادة' : 'نُشرت المادة') : 'تعذّر التعديل');
     if (r.ok && refresh) refresh();
   });
   const free = el('button', { class:'btn btn--sm btn--ghost', type:'button',
@@ -126,7 +126,7 @@ function subjTopics(sub, questions, refresh){
       up.addEventListener('click', () => { if (i > 0){ topics.splice(i-1, 0, topics.splice(i,1)[0]); draw(); } });
       const del = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'✕', 'aria-label':'احذف ' + t });
       del.addEventListener('click', () => {
-        if (counts[t]) return AMUSQ.toast('لا يُحذف محور عليه ' + counts[t] + ' سؤالًا — انقلها أولًا');
+        if (counts[t]) return QBANK.toast('لا يُحذف محور عليه ' + counts[t] + ' سؤالًا — انقلها أولًا');
         topics.splice(i, 1); draw();
       });
       list.appendChild(el('div', { class:'row' }, [
@@ -143,13 +143,13 @@ function subjTopics(sub, questions, refresh){
   add.addEventListener('click', () => {
     const v = addIn.value.trim();
     if (!v) return;
-    if (topics.indexOf(v) !== -1) return AMUSQ.toast('المحور موجود');
+    if (topics.indexOf(v) !== -1) return QBANK.toast('المحور موجود');
     topics.push(v); addIn.value = ''; draw();
   });
   const save = el('button', { class:'btn', type:'button', text:'احفظ المحاور' });
   save.addEventListener('click', async () => {
     const r = await SubjEditor.patchSubject(sub.id, { topics });
-    AMUSQ.toast(r.ok ? 'حُفظت المحاور' : 'تعذّر الحفظ');
+    QBANK.toast(r.ok ? 'حُفظت المحاور' : 'تعذّر الحفظ');
     if (r.ok && refresh) refresh();
   });
 
@@ -178,7 +178,7 @@ function qCard(q, sub, refresh){
     text: q.important ? '★ مهم' : '☆ علّمه مهمًا', 'aria-pressed': q.important ? 'true' : 'false' });
   star.addEventListener('click', async () => {
     const r = await SubjEditor.patchQuestion(q.id, { important: !q.important });
-    if (!r.ok) return AMUSQ.toast('تعذّر التعديل');
+    if (!r.ok) return QBANK.toast('تعذّر التعديل');
     q.important = !q.important;
     star.textContent = q.important ? '★ مهم' : '☆ علّمه مهمًا';
     star.setAttribute('aria-pressed', q.important ? 'true' : 'false');
@@ -198,11 +198,11 @@ function qCard(q, sub, refresh){
     b.addEventListener('click', async () => {
       if (i === q.answer) return;
       const r = await SubjEditor.patchQuestion(q.id, { answer: i, derived: false });
-      if (!r.ok) return AMUSQ.toast('تعذّر تصحيح الإجابة');
+      if (!r.ok) return QBANK.toast('تعذّر تصحيح الإجابة');
       q.answer = i; q.derived = false;
       opts.querySelectorAll('.ad-q__opt').forEach((x, xi) =>
         x.className = 'ad-q__opt' + (xi === i ? ' is-a' : ''));
-      AMUSQ.toast('صُحّحت الإجابة');
+      QBANK.toast('صُحّحت الإجابة');
     });
     opts.appendChild(b);
   });
@@ -236,7 +236,7 @@ function qCard(q, sub, refresh){
         mnemonic: { cue: cue.value, key: key.value, link: link.value, strike: m.strike || '' },
         ord: parseInt(ordQ.value || String(q.ord), 10)
       });
-      AMUSQ.toast(r.ok ? 'حُفظ السؤال' : 'تعذّر الحفظ');
+      QBANK.toast(r.ok ? 'حُفظ السؤال' : 'تعذّر الحفظ');
       if (r.ok && refresh) refresh();
     });
 
@@ -246,7 +246,7 @@ function qCard(q, sub, refresh){
     del.addEventListener('click', async () => {
       if (!armed){ armed = true; del.textContent = 'اضغط ثانيةً للحذف نهائيًا'; del.className = 'btn btn--sm btn--danger'; return; }
       const r = await SubjEditor.delQuestion(q.id);
-      AMUSQ.toast(r.ok ? 'حُذف السؤال' : 'تعذّر الحذف');
+      QBANK.toast(r.ok ? 'حُذف السؤال' : 'تعذّر الحذف');
       if (r.ok){ if (refresh) refresh(); else box.remove(); }
     });
 
@@ -293,7 +293,7 @@ function subjQuestions(sub, questions, refresh){
       more.addEventListener('click', () => { shown += 40; draw(); });
       list.appendChild(more);
     }
-    if (!res.length) list.appendChild(AMUSQ.views.empty('⌕', 'لا نتائج', 'جرّب كلمة أخرى أو أزل التصفية.'));
+    if (!res.length) list.appendChild(QBANK.views.empty('⌕', 'لا نتائج', 'جرّب كلمة أخرى أو أزل التصفية.'));
   }
   [search, topicSel, onlySel].forEach(x =>
     x.addEventListener('input', () => { shown = 40; draw(); }));
@@ -314,21 +314,21 @@ function subjQuestions(sub, questions, refresh){
 const AdminSubjectView = {
   title:'محرر المادة',
   view(route){
-    if (!AMUSQ.api.user()) return AMUSQ.views.ViewAdminLogin.view();
+    if (!QBANK.api.user()) return QBANK.views.ViewAdminLogin.view();
     const id = route.rest[0];
-    if (!id) return AMUSQ.views.ViewNotFound.view();
+    if (!id) return QBANK.views.ViewNotFound.view();
 
     const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
     function load(){
       Promise.all([
-        AMUSQ.api.rest('subjects?id=eq.' + id + '&select=*'),
-        AMUSQ.api.rest('questions?subject_id=eq.' + id + '&select=*&order=ord')
+        QBANK.api.rest('subjects?id=eq.' + id + '&select=*'),
+        QBANK.api.rest('questions?subject_id=eq.' + id + '&select=*&order=ord')
       ]).then(([sr, qr]) => {
         if (!body.isConnected) return;
         const sub = (sr.ok && sr.data && sr.data[0]) || null;
         body.innerHTML = '';
         if (!sub){
-          body.appendChild(AMUSQ.views.empty('⚠', 'لم نجد المادة', 'ربما حُذفت، أو حسابك ليس مشرفًا.'));
+          body.appendChild(QBANK.views.empty('⚠', 'لم نجد المادة', 'ربما حُذفت، أو حسابك ليس مشرفًا.'));
           return;
         }
         const questions = (qr.ok && Array.isArray(qr.data)) ? qr.data : [];
@@ -340,9 +340,9 @@ const AdminSubjectView = {
     load();
 
     const back = el('a', { class:'btn btn--sm btn--ghost', href:'#/admin/content', text:'→ كل المواد' });
-    return AMUSQ.views.page('محرر المادة', 'الهوية والمحاور والأسئلة في مكان واحد.', [back, body]);
+    return QBANK.views.page('محرر المادة', 'الهوية والمحاور والأسئلة في مكان واحد.', [back, body]);
   }
 };
 
-AMUSQ.admin.subject = SubjEditor;
-AMUSQ.views.ViewAdminSubject = AdminSubjectView;
+QBANK.admin.subject = SubjEditor;
+QBANK.views.ViewAdminSubject = AdminSubjectView;

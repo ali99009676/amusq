@@ -106,4 +106,4 @@ const Exam = {
     };
   }
 };
-AMUSQ.exam = Exam;
+QBANK.exam = Exam;

@@ -6,7 +6,7 @@
 function buildPrintDoc(sub, questions, opts){
   const root = el('div', { class:'print-root' + (opts.economic ? ' print--eco' : ''), dir:'rtl' });
   root.appendChild(el('header', { class:'print-head', style: opts.economic ? '' :
-    'border-color:' + AMUSQ.views.subjectColor(sub.color) }, [
+    'border-color:' + QBANK.views.subjectColor(sub.color) }, [
     el('h1', { text: sub.name }),
     el('p', { text: { bank:'بنك الأسئلة', explain:'الشرح', memo:'بطاقات الحفظ', overview:'نظرة عامة' }[opts.what] })
   ]));
@@ -14,7 +14,7 @@ function buildPrintDoc(sub, questions, opts){
   let qs = questions;
   if (opts.range === 'important') qs = qs.filter(q => q.important);
   if (opts.range === 'starred') {
-    const star = AMUSQ.progress.forSubject(sub.id).star;
+    const star = QBANK.progress.forSubject(sub.id).star;
     qs = qs.filter(q => star[q.id]);
   }
 
@@ -86,7 +86,7 @@ function openPrintDialog(sub){
   ]);
   cancel.addEventListener('click', () => dialog.remove());
   go.addEventListener('click', async () => {
-    const r = await AMUSQ.data.subjectQuestions(sub.id);
+    const r = await QBANK.data.subjectQuestions(sub.id);
     const doc = buildPrintDoc(sub, r.data, {
       what: what.value, range: range.value,
       answers: ans.input.checked, expl: expl.input.checked,
@@ -101,5 +101,5 @@ function openPrintDialog(sub){
   document.body.appendChild(dialog);
 }
 
-AMUSQ.views.openPrintDialog = openPrintDialog;
-AMUSQ.views.buildPrintDoc = buildPrintDoc;
+QBANK.views.openPrintDialog = openPrintDialog;
+QBANK.views.buildPrintDoc = buildPrintDoc;

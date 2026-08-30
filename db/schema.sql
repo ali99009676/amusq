@@ -1,20 +1,20 @@
--- AMUSQ · مخطط قاعدة البيانات — يُنفَّذ في Supabase SQL Editor بالترتيب: schema.sql ثم policies.sql ثم functions.sql
+-- بنك الأسئلة · مخطط قاعدة البيانات — يُنفَّذ في Supabase SQL Editor بالترتيب: schema.sql ثم policies.sql ثم functions.sql
 -- كل جدول هنا يقابله RLS في policies.sql — لا جدول بلا صلاحيات.
 
 create extension if not exists pgcrypto;
 
--- AMUSQ يعيش في مخطط مستقل عن public:
+-- بنك الأسئلة يعيش في مخطط مستقل عن public:
 -- المشروع مشترك مع نظام آخر أوقف كشف public عبر REST عمدًا،
--- فنكشف مخطط amusq وحده ولا نغيّر وضع أحد.
-create schema if not exists amusq;
-grant usage on schema amusq to anon, authenticated, service_role;
-alter default privileges in schema amusq grant all on tables to anon, authenticated, service_role;
-alter default privileges in schema amusq grant all on functions to anon, authenticated, service_role;
-alter default privileges in schema amusq grant all on sequences to anon, authenticated, service_role;
+-- فنكشف مخطط qbank وحده ولا نغيّر وضع أحد.
+create schema if not exists qbank;
+grant usage on schema qbank to anon, authenticated, service_role;
+alter default privileges in schema qbank grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema qbank grant all on functions to anon, authenticated, service_role;
+alter default privileges in schema qbank grant all on sequences to anon, authenticated, service_role;
 
 
 -- الملف الشخصي: صف واحد لكل مستخدم، يُنشأ تلقائيًا عند التسجيل (trigger أدناه)
-create table if not exists amusq.profiles (
+create table if not exists qbank.profiles (
   id         uuid primary key references auth.users(id) on delete cascade,
   name       text not null default '',
   avatar     text not null default '',          -- معرّف صورة رمزية من مجموعة المنصة، لا رابط خارجي
@@ -23,7 +23,7 @@ create table if not exists amusq.profiles (
 );
 
 -- المواد: المحتوى المنشور فقط يصل الطالب (تفرضه السياسات لا الواجهة)
-create table if not exists amusq.subjects (
+create table if not exists qbank.subjects (
   id         uuid primary key default gen_random_uuid(),
   name       text not null,
   color      text not null default 'subject-1', -- اسم متغيّر لون من نظام التصميم، لا hex حر
@@ -37,12 +37,12 @@ create table if not exists amusq.subjects (
   q_count    int not null default 0,            -- عدّاد منزوع التطبيع كي لا نعدّ الأسئلة مع كل جلب قائمة
   created_at timestamptz not null default now()
 );
-create index if not exists subjects_ord_idx on amusq.subjects (ord);
+create index if not exists subjects_ord_idx on qbank.subjects (ord);
 
 -- الأسئلة: النص المقدّس — يُخزَّن كما وصل من ملف الدكتور حرفًا بحرف
-create table if not exists amusq.questions (
+create table if not exists qbank.questions (
   id          uuid primary key default gen_random_uuid(),
-  subject_id  uuid not null references amusq.subjects(id) on delete cascade,
+  subject_id  uuid not null references qbank.subjects(id) on delete cascade,
   ord         int not null default 0,
   q           text not null,                    -- نص السؤال الأصلي — لا يُعدَّل أبدًا
   options     jsonb not null,                   -- ["نص الخيار كما وصل", ...]
@@ -58,11 +58,11 @@ create table if not exists amusq.questions (
   created_at  timestamptz not null default now()
 );
 -- الفهرسان المطلوبان في قواعد المشروع نصًا: subject_id و ord
-create index if not exists questions_subject_idx on amusq.questions (subject_id);
-create index if not exists questions_subject_ord_idx on amusq.questions (subject_id, ord);
+create index if not exists questions_subject_idx on qbank.questions (subject_id);
+create index if not exists questions_subject_ord_idx on qbank.questions (subject_id, ord);
 
 -- المسوّدات: ما يخرج من ملف مرفوع قبل الاعتماد — لا يراها إلا المشرف
-create table if not exists amusq.drafts (
+create table if not exists qbank.drafts (
   id           uuid primary key default gen_random_uuid(),
   name         text not null default '',
   status       text not null default 'processing', -- processing | reviewing | approved | hidden
@@ -75,25 +75,25 @@ create table if not exists amusq.drafts (
 );
 
 -- مواد الطالب المختارة
-create table if not exists amusq.enrollments (
+create table if not exists qbank.enrollments (
   user_id    uuid not null references auth.users(id) on delete cascade,
-  subject_id uuid not null references amusq.subjects(id) on delete cascade,
+  subject_id uuid not null references qbank.subjects(id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (user_id, subject_id)
 );
 
 -- التقدّم: صف واحد لكل طالب — JSONB واحد يكفي لأن القراءة دائمًا كاملة والدمج في العميل
-create table if not exists amusq.progress (
+create table if not exists qbank.progress (
   user_id    uuid primary key references auth.users(id) on delete cascade,
   data       jsonb not null default '{}',       -- {subjectId: {seen:{}, wrong:{}, star:{}, exams:n, best:n}}
   updated_at timestamptz not null default now()
 );
 
 -- المحاولات: صف لكل اختبار تجريبي — تُغذّي لوحة المشرف والمتصدرين
-create table if not exists amusq.attempts (
+create table if not exists qbank.attempts (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null references auth.users(id) on delete cascade,
-  subject_id uuid not null references amusq.subjects(id) on delete cascade,
+  subject_id uuid not null references qbank.subjects(id) on delete cascade,
   scope      text not null default 'all',       -- all | topic | important | wrong
   topic      text not null default '',
   correct    int not null default 0,
@@ -102,47 +102,47 @@ create table if not exists amusq.attempts (
   duration_s int not null default 0,
   created_at timestamptz not null default now()
 );
-create index if not exists attempts_user_idx on amusq.attempts (user_id, created_at desc);
-create index if not exists attempts_subject_idx on amusq.attempts (subject_id);
+create index if not exists attempts_user_idx on qbank.attempts (user_id, created_at desc);
+create index if not exists attempts_subject_idx on qbank.attempts (subject_id);
 
 -- الأجهزة: تمهيد لحدّ الأجهزة عند الاشتراك + عدّاد المتواجدين (نافذة ٤ ساعات على last_seen)
-create table if not exists amusq.devices (
+create table if not exists qbank.devices (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null references auth.users(id) on delete cascade,
   label      text not null default '',
   last_seen  timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
-create index if not exists devices_user_idx on amusq.devices (user_id);
-create index if not exists devices_seen_idx on amusq.devices (last_seen);
+create index if not exists devices_user_idx on qbank.devices (user_id);
+create index if not exists devices_seen_idx on qbank.devices (last_seen);
 
 -- الاستحقاقات (المرحلة ٥): مادة مفردة أو حزمة فصل تنتهي بنهاية الفصل — لا اشتراك شهري
-create table if not exists amusq.entitlements (
+create table if not exists qbank.entitlements (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid not null references auth.users(id) on delete cascade,
-  subject_id uuid references amusq.subjects(id) on delete cascade,  -- null = حزمة الفصل كاملة
+  subject_id uuid references qbank.subjects(id) on delete cascade,  -- null = حزمة الفصل كاملة
   kind       text not null default 'subject',   -- subject | semester
   source     text not null default 'web',       -- web | apple | google
   expires_at timestamptz not null,
   created_at timestamptz not null default now()
 );
-create index if not exists entitlements_user_idx on amusq.entitlements (user_id, expires_at);
+create index if not exists entitlements_user_idx on qbank.entitlements (user_id, expires_at);
 
 -- إعدادات المنصة: صف واحد يحرّره المشرف
-create table if not exists amusq.settings (
+create table if not exists qbank.settings (
   id            int primary key default 1 check (id = 1),
   welcome_text  text not null default '',
   board_enabled boolean not null default true,
   device_limit  int not null default 3
 );
-insert into amusq.settings (id) values (1) on conflict do nothing;
+insert into qbank.settings (id) values (1) on conflict do nothing;
 
 -- إنشاء الملف الشخصي تلقائيًا عند تسجيل مستخدم جديد
-create or replace function amusq.handle_new_user()
-returns trigger language plpgsql security definer set search_path = amusq, public as $$
+create or replace function qbank.handle_new_user()
+returns trigger language plpgsql security definer set search_path = qbank, public as $$
 begin
   -- بريد المشرف المالك يُرقّى تلقائيًا عند أول تسجيل — لا خطوة يدوية تُنسى
-  insert into amusq.profiles (id, name, is_admin)
+  insert into qbank.profiles (id, name, is_admin)
   values (new.id, coalesce(new.raw_user_meta_data->>'name',''),
           new.email = 'stop.shankl@gmail.com')
   on conflict (id) do nothing;
@@ -151,18 +151,18 @@ end $$;
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
-  for each row execute function amusq.handle_new_user();
+  for each row execute function qbank.handle_new_user();
 
 -- تحديث عدّاد الأسئلة تلقائيًا كي تبقى قائمة المواد خفيفة الجلب
-create or replace function amusq.sync_q_count()
-returns trigger language plpgsql security definer set search_path = amusq, public as $$
+create or replace function qbank.sync_q_count()
+returns trigger language plpgsql security definer set search_path = qbank, public as $$
 begin
-  update amusq.subjects s set q_count =
-    (select count(*) from amusq.questions q where q.subject_id = s.id)
+  update qbank.subjects s set q_count =
+    (select count(*) from qbank.questions q where q.subject_id = s.id)
   where s.id = coalesce(new.subject_id, old.subject_id);
   return null;
 end $$;
-drop trigger if exists questions_count_trg on amusq.questions;
+drop trigger if exists questions_count_trg on qbank.questions;
 create trigger questions_count_trg
-  after insert or delete on amusq.questions
-  for each row execute function amusq.sync_q_count();
+  after insert or delete on qbank.questions
+  for each row execute function qbank.sync_q_count();

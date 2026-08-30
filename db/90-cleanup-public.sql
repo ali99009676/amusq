@@ -1,4 +1,4 @@
--- تنظيف: إزالة كائنات AMUSQ التي أُنشئت سابقًا في public (كائناتنا حصرًا)
+-- تنظيف: إزالة كائنات بنك الأسئلة التي أُنشئت سابقًا في public (كائناتنا حصرًا)
 drop trigger if exists on_auth_user_created on auth.users;
 drop function if exists public.handle_new_user() cascade;
 drop function if exists public.sync_q_count() cascade;

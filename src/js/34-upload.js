@@ -1,7 +1,7 @@
 /*
   معالج رفع الأسئلة — أربع خطوات ظاهرة للمشرف:
   ١ اقرأ الملف · ٢ افهمه بالذكاء · ٣ راجِع · ٤ انشر.
-  المنطق في AMUSQ.admin (قابل للفحص)؛ هنا الواجهة فقط.
+  المنطق في QBANK.admin (قابل للفحص)؛ هنا الواجهة فقط.
 */
 let wizard = null;   // حالة المعالج تعيش بين إعادة الرسم داخل الجلسة
 
@@ -15,8 +15,44 @@ function stepsBar(current){
     ])));
 }
 
+/* اسم المادة ونمط المعالجة — يُختاران قبل الرفع لأنهما يغيّران البرومبت نفسه */
+function subjectMeta(){
+  const nameIn = el('input', { class:'input', id:'subjName', value: wizard.subjectName || '',
+    placeholder:'مثال: فيزيولوجيا الجهاز التنفسي' });
+  nameIn.addEventListener('input', () => { wizard.subjectName = nameIn.value; });
+
+  const modes = [
+    { id:'strict',   t:'التزم بالنص الحرفي',
+      d:'لا يُغيَّر حرف من السؤال ولا من الخيارات. الذكاء يضيف الشرح والترجمة وبطاقة الحفظ فقط. هذا الوضع الافتراضي.' },
+    { id:'enhanced', t:'حسّن الصياغة بالذكاء',
+      d:'يصحَّح الإملاء وتُوضَّح الصياغة دون تغيير المعنى ولا الإجابة. النص الأصلي يبقى محفوظًا ويمكن عرضه دائمًا.' }
+  ];
+  const wrap = el('div', { class:'stack', role:'radiogroup', 'aria-label':'نمط المعالجة' },
+    modes.map(m => {
+      const b = el('button', { class:'card modecard', type:'button', role:'radio', 'data-mode':m.id,
+        'aria-checked': (wizard.mode || 'strict') === m.id ? 'true' : 'false' }, [
+        el('span', { class:'modecard__t', text:m.t }),
+        el('span', { class:'modecard__d', text:m.d })
+      ]);
+      b.addEventListener('click', () => {
+        wizard.mode = m.id;
+        wrap.querySelectorAll('[data-mode]').forEach(x =>
+          x.setAttribute('aria-checked', x.getAttribute('data-mode') === m.id ? 'true' : 'false'));
+      });
+      return b;
+    }));
+
+  return el('div', { class:'card stack' }, [
+    el('label', { class:'field', style:'margin:0' }, [
+      el('span', { class:'field__label', text:'اسم المادة' }), nameIn ]),
+    el('span', { class:'field__label', text:'كيف نعالج أسئلتك؟' }),
+    wrap
+  ]);
+}
+
 /* الخطوة ١: سحب وإفلات أو اختيار ملف */
 function stepRead(box, rerender){
+  box.appendChild(subjectMeta());
   const drop = el('div', { class:'drop', tabindex:'0', role:'button', 'aria-label':'اختر ملف أسئلة' }, [
     el('span', { class:'empty__ico', 'aria-hidden':'true', text:'⇪' }),
     el('p', { class:'empty__title', text:'أسقط ملف الأسئلة هنا أو اضغط للاختيار' }),
@@ -33,7 +69,7 @@ function stepRead(box, rerender){
       rd.onload = () => resolve(String(rd.result).split(',')[1] || '');
       rd.readAsDataURL(file);
     });
-    wizard = await AMUSQ.admin.wizardIngest(wizard, file.name, b64);
+    wizard = await QBANK.admin.wizardIngest(wizard, file.name, b64);
     if (wizard.error) { msg.textContent = '⚠ ' + wizard.error; return; }
     rerender();
   }
@@ -49,7 +85,7 @@ function stepRead(box, rerender){
 
 /* الخطوة ٢: التقدير ثم التشغيل بدفعات مع شريط «٨٠ من ٣٠٠» */
 function stepEnrich(box, rerender){
-  const est = AMUSQ.admin.estimate(wizard);
+  const est = QBANK.admin.estimate(wizard);
   const bar = el('div', { class:'meter', role:'progressbar', 'aria-valuemin':'0',
     'aria-valuemax': String(wizard.total), 'aria-valuenow': String(wizard.done) }, [
     el('div', { class:'meter__fill', style:'width:' + (wizard.total ? wizard.done / wizard.total * 100 : 0) + '%' })
@@ -61,7 +97,7 @@ function stepEnrich(box, rerender){
 
   go.addEventListener('click', async () => {
     go.setAttribute('aria-disabled','true'); go.textContent = 'جارٍ المعالجة…';
-    wizard = await AMUSQ.admin.wizardEnrich(wizard, (done, total) => {
+    wizard = await QBANK.admin.wizardEnrich(wizard, (done, total) => {
       label.textContent = done + ' من ' + total;
       bar.setAttribute('aria-valuenow', String(done));
       bar.firstChild.style.width = (done / total * 100) + '%';
@@ -83,7 +119,7 @@ function stepEnrich(box, rerender){
 
 /* الخطوة ٣: المراجعة — بطاقة لكل سؤال، تغيير الإجابة بضغطة، وسوم حمراء للمستنتَج */
 function stepReview(box, rerender){
-  const dups = AMUSQ.admin.findDuplicates(wizard.enriched);
+  const dups = QBANK.admin.findDuplicates(wizard.enriched);
   const dupSet = new Set(dups.map(d => d.index));
   if (dups.length) box.appendChild(el('p', { class:'row' }, [
     el('span', { class:'badge badge--warn num', text: 'تنبيه: ' + dups.length + ' سؤالًا مكررًا — موسوم لا محذوف' })
@@ -118,7 +154,7 @@ function stepReview(box, rerender){
   });
 
   const next = el('button', { class:'btn btn--block', type:'button', text:'راجعتُ الكل — تابع للنشر' });
-  next.addEventListener('click', async () => { wizard.step = 4; await AMUSQ.admin.saveDraft(wizard); rerender(); });
+  next.addEventListener('click', async () => { wizard.step = 4; await QBANK.admin.saveDraft(wizard); rerender(); });
   box.appendChild(next);
 }
 
@@ -129,9 +165,21 @@ function stepPublish(box){
   const hide = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'احفظ مخفية' });
   const msg = el('p', { class:'field__hint', role:'status' });
   async function fire(publish){
-    const r = await AMUSQ.admin.approve(wizard, publish);
-    if (r.ok) { AMUSQ.toast(publish ? 'نُشرت المادة للطلاب' : 'حُفظت مخفية'); wizard = null; AMUSQ.router.go('#/admin/content'); }
-    else msg.textContent = '⚠ ' + ((r.data && r.data.message) || 'تعذّر الاعتماد — لم يتغير شيء في قاعدة البيانات.');
+    const r = await QBANK.admin.approve(wizard, publish);
+    if (!r.ok)
+      return void (msg.textContent = '⚠ ' + ((r.data && r.data.message) || 'تعذّر الاعتماد — لم يتغير شيء في قاعدة البيانات.'));
+    // approve_draft تُرجع معرّف المادة — نختمها بهوية رافعها ونمطه ومساره
+    const newId = (typeof r.data === 'string') ? r.data : (r.data && r.data.id) || null;
+    const w = wizard;
+    await QBANK.admin.stamp(newId, w);
+    QBANK.toast(publish ? 'نُشرت المادة' : 'حُفظت مخفية');
+    if (publish && newId && w.slug){
+      // رابط المشاركة يظهر فورًا: هذه هي اللحظة التي يشارك فيها الطالب مادته
+      wizard = null;
+      return void showShare(box, w.slug, w.subjectName);
+    }
+    wizard = null;
+    QBANK.router.go(QBANK.store.get('is_admin_check', {}).ok ? '#/admin/content' : '#/account');
   }
   pub.addEventListener('click', () => fire(true));
   hide.addEventListener('click', () => fire(false));
@@ -144,29 +192,44 @@ function stepPublish(box){
   ]));
 }
 
+/* شاشة ما بعد النشر: الرابط وزر النسخ — لا يُترك الطالب يبحث عن مادته */
+function showShare(box, slug, name){
+  const u = QBANK.api.user() || {};
+  box.innerHTML = '';
+  box.appendChild(el('div', { class:'card stack', style:'text-align:center' }, [
+    el('span', { class:'empty__ico', 'aria-hidden':'true', text:'✓' }),
+    el('p', { class:'empty__title', text:'نُشرت «' + (name || 'مادتك') + '»' }),
+    el('p', { class:'empty__text', text:'شاركها مع زملائك — كل شراء عبر رابطك يضيف كوينز لرصيدك.' }),
+    QBANK.share.copyRow(QBANK.share.shareUrl(slug, u.id)),
+    el('a', { class:'btn btn--block', href:'#s/' + slug, text:'افتح صفحة المادة' }),
+    el('a', { class:'btn btn--ghost btn--block', href:'#/account', text:'محفظتي' })
+  ]));
+}
+
 const ViewUpload = {
   title:'رفع الأسئلة',
   view(route){
-    if (!AMUSQ.api.user()) return AMUSQ.views.ViewAdminLogin.view();
-    if (!wizard) wizard = AMUSQ.admin.newWizard();
+    // الرفع مفتوح لكل مسجَّل لا للمشرف وحده — هذه هي ميزة مواد الطلاب
+    if (!QBANK.api.user()) return QBANK.views.ViewLogin.view();
+    if (!wizard) wizard = QBANK.admin.newWizard();
     // استئناف مسوّدة من القائمة: نجلبها بحمولتها ونقفز للخطوة الصحيحة
     if (route.query.draft && wizard.draftId !== route.query.draft) {
-      wizard = AMUSQ.admin.newWizard();
+      wizard = QBANK.admin.newWizard();
       wizard.draftId = route.query.draft;
-      AMUSQ.api.rest('drafts?id=eq.' + route.query.draft + '&select=*').then(r => {
+      QBANK.api.rest('drafts?id=eq.' + route.query.draft + '&select=*').then(r => {
         if (r.ok && r.data && r.data[0]) {
           const d = r.data[0];
           wizard.filename = d.source_name; wizard.enriched = d.payload || [];
           wizard.total = d.total; wizard.done = d.done;
           wizard.step = d.done >= d.total ? 3 : 2;
-          AMUSQ.router.render(location.hash);
+          QBANK.router.render(location.hash);
         }
       });
     }
     const body = el('div', { class:'stack' });
-    const rerender = () => AMUSQ.router.render(location.hash);
+    const rerender = () => QBANK.router.render(location.hash);
     [null, stepRead, stepEnrich, stepReview, stepPublish][wizard.step](body, rerender);
-    return AMUSQ.views.page('رفع الأسئلة', 'من ملف الدكتور إلى مادة يذاكرها الطلاب — بأربع خطوات.', [
+    return QBANK.views.page('رفع الأسئلة', 'من ملفك إلى مادة يذاكرها زملاؤك — بأربع خطوات.', [
       stepsBar(wizard.step), body
     ]);
   },
@@ -174,4 +237,4 @@ const ViewUpload = {
   _get(){ return wizard; },
   _set(w){ wizard = w; }
 };
-AMUSQ.views.ViewUpload = ViewUpload;
+QBANK.views.ViewUpload = ViewUpload;

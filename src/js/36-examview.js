@@ -5,7 +5,7 @@
 let examState = null;   // {exam, sub, timerId, secondsLeft}
 
 function examSetup(sub, questions){
-  const prog = AMUSQ.progress.forSubject(sub.id);
+  const prog = QBANK.progress.forSubject(sub.id);
   const topics = Array.from(new Set(questions.map(q => q.topic || 'عام')));
 
   const scopeSel = el('select', { class:'input', id:'exScope', 'aria-label':'نطاق الاختبار' }, [
@@ -37,8 +37,8 @@ function examSetup(sub, questions){
       timerMin: parseInt(timerSel.value, 10),
       wrongMap: prog.wrong
     };
-    const exam = AMUSQ.exam.create(questions, opts);
-    if (!exam.items.length) { AMUSQ.toast('لا أسئلة في هذا النطاق'); return; }
+    const exam = QBANK.exam.create(questions, opts);
+    if (!exam.items.length) { QBANK.toast('لا أسئلة في هذا النطاق'); return; }
     examState = { exam, sub, secondsLeft: opts.timerMin * 60, timerId: null };
     if (opts.timerMin) {
       examState.timerId = setInterval(() => {
@@ -51,7 +51,7 @@ function examSetup(sub, questions){
         if (examState.secondsLeft <= 0) finishExam();   // انتهى الوقت: تسليم تلقائي
       }, 1000);
     }
-    AMUSQ.router.render(location.hash);
+    QBANK.router.render(location.hash);
   });
 
   return el('div', { class:'card stack' }, [
@@ -68,18 +68,18 @@ function finishExam(){
   const st = examState;
   if (!st || st.exam.finished) return;
   if (st.timerId) clearInterval(st.timerId);
-  st.result = AMUSQ.exam.finish(st.exam);
+  st.result = QBANK.exam.finish(st.exam);
   // تسجيل المحاولة: محليًا فورًا، وللحساب في الخلفية
-  AMUSQ.progress.recordExam(st.sub.id, st.result.pct);
-  st.result.wrongIds.forEach(qid => AMUSQ.progress.markWrong(st.sub.id, qid));
+  QBANK.progress.recordExam(st.sub.id, st.result.pct);
+  st.result.wrongIds.forEach(qid => QBANK.progress.markWrong(st.sub.id, qid));
   st.exam.items.forEach((it, i) => {
-    if (st.exam.answers[i] && st.exam.answers[i].correct) AMUSQ.progress.clearWrong(st.sub.id, it.id);
+    if (st.exam.answers[i] && st.exam.answers[i].correct) QBANK.progress.clearWrong(st.sub.id, it.id);
   });
-  if (AMUSQ.api.user()) AMUSQ.api.rest('attempts', { method:'POST', body: JSON.stringify({
-    user_id: AMUSQ.api.user().id, subject_id: st.sub.id, scope:'all', topic:'',
+  if (QBANK.api.user()) QBANK.api.rest('attempts', { method:'POST', body: JSON.stringify({
+    user_id: QBANK.api.user().id, subject_id: st.sub.id, scope:'all', topic:'',
     correct: st.result.correct, total: st.result.total, pct: st.result.pct,
     duration_s: st.result.duration_s }) });
-  AMUSQ.router.render(location.hash);
+  QBANK.router.render(location.hash);
 }
 
 function examRunner(){
@@ -100,8 +100,8 @@ function examRunner(){
       el('span', { class:'ltr', text: opt })
     ]);
     b.addEventListener('click', () => {
-      AMUSQ.exam.answer(exam, oi);
-      AMUSQ.router.render(location.hash);
+      QBANK.exam.answer(exam, oi);
+      QBANK.router.render(location.hash);
     });
     return b;
   }));
@@ -121,8 +121,8 @@ function examRunner(){
           text:'أنهِ الاختبار (' + answeredCount + '/' + exam.items.length + ')' })
   ]);
   nav.addEventListener('click', e => {
-    if (e.target.id === 'exPrev') { AMUSQ.exam.prev(exam); AMUSQ.router.render(location.hash); }
-    if (e.target.id === 'exNext') { AMUSQ.exam.next(exam); AMUSQ.router.render(location.hash); }
+    if (e.target.id === 'exPrev') { QBANK.exam.prev(exam); QBANK.router.render(location.hash); }
+    if (e.target.id === 'exNext') { QBANK.exam.next(exam); QBANK.router.render(location.hash); }
     if (e.target.id === 'exFinish') finishExam();
   });
 
@@ -150,12 +150,12 @@ function examResult(){
   const retryWrong = el('button', { class:'btn btn--soft btn--block', type:'button',
     text:'أعد اختبار الأخطاء فقط (' + r.wrongIds.length + ')' , disabled: r.wrongIds.length ? null : true });
   retryWrong.addEventListener('click', async () => {
-    const qs = (await AMUSQ.data.subjectQuestions(st.sub.id)).data;
+    const qs = (await QBANK.data.subjectQuestions(st.sub.id)).data;
     const wrongSet = {};
     r.wrongIds.forEach(id => wrongSet[id] = 1);
-    const exam = AMUSQ.exam.create(qs, { scope:'wrong', wrongMap: wrongSet, mode: st.exam.mode });
+    const exam = QBANK.exam.create(qs, { scope:'wrong', wrongMap: wrongSet, mode: st.exam.mode });
     examState = { exam, sub: st.sub, secondsLeft: 0, timerId: null };
-    AMUSQ.router.render(location.hash);
+    QBANK.router.render(location.hash);
   });
 
   const review = el('details', { class:'fold' }, [
@@ -192,31 +192,31 @@ const ViewExam = {
   title:'اختبار تجريبي',
   view(route){
     const sid = route.rest[0];
-    const sub = (AMUSQ.data.pack().subjects || []).filter(s => s.id === sid)[0];
-    if (!sub) return AMUSQ.views.page('اختبار', null, [
-      AMUSQ.views.empty('؟', 'المادة غير موجودة', '', el('a', { class:'btn', href:'#/', text:'الرئيسية' })) ]);
+    const sub = (QBANK.data.pack().subjects || []).filter(s => s.id === sid)[0];
+    if (!sub) return QBANK.views.page('اختبار', null, [
+      QBANK.views.empty('؟', 'المادة غير موجودة', '', el('a', { class:'btn', href:'#/', text:'الرئيسية' })) ]);
 
-    if (!AMUSQ.gate.canAccess(sub)) {
-      return AMUSQ.views.page(sub.name, null, [ AMUSQ.gate.paywallCard(sub) ]);
+    if (!QBANK.gate.localGuess(sub).allowed) {
+      return QBANK.views.page(sub.name, null, [ QBANK.gate.paywallCard(sub) ]);
     }
 
     // مادة مثبّتة — لا خطوة اختيار مادة
     if (examState && examState.sub.id === sid) {
-      if (examState.exam.finished) return AMUSQ.views.page('نتيجتك — ' + sub.name, null, [examResult()]);
-      return AMUSQ.views.page('اختبار — ' + sub.name, null, [examRunner()]);
+      if (examState.exam.finished) return QBANK.views.page('نتيجتك — ' + sub.name, null, [examResult()]);
+      return QBANK.views.page('اختبار — ' + sub.name, null, [examRunner()]);
     }
     const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ التجهيز…' }) ]);
-    AMUSQ.data.subjectQuestions(sid).then(r => {
+    QBANK.data.subjectQuestions(sid).then(r => {
       if (!body.isConnected) return;
       body.innerHTML = '';
-      if (!r.data.length) { body.appendChild(AMUSQ.views.empty('⇣', 'لا أسئلة متاحة', 'افتح المادة أولًا بإنترنت.')); return; }
+      if (!r.data.length) { body.appendChild(QBANK.views.empty('⇣', 'لا أسئلة متاحة', 'افتح المادة أولًا بإنترنت.')); return; }
       body.appendChild(examSetup(sub, r.data));
     });
-    return AMUSQ.views.page('اختبار — ' + sub.name, 'خلط عادل، وأولوية لأخطائك السابقة.', [body]);
+    return QBANK.views.page('اختبار — ' + sub.name, 'خلط عادل، وأولوية لأخطائك السابقة.', [body]);
   },
   _reset(){ if (examState && examState.timerId) clearInterval(examState.timerId); examState = null; },
   _state(){ return examState; },
   _set(s){ examState = s; },
   _finish: finishExam
 };
-AMUSQ.views.ViewExam = ViewExam;
+QBANK.views.ViewExam = ViewExam;

@@ -1,14 +1,14 @@
 /*
   صفحة الهبوط التعريفية — أول ما يراه الزائر قبل التسجيل.
-  الهوية من AMSU: خط كوفي، ألوان هادئة، حواف ناعمة، ظلال خفيفة.
+  هوية «مراجعة — بنك الأسئلة»: ورق دافئ، عنّابي وذهبي، وحواف كتاب.
   البنية من مواقع الدورات العربية: بطل ← أرقام ← مواد ← مزايا ← خطوات ← أسعار ← دعوة.
 */
 
 .lp{ margin-inline:calc(var(--s4) * -1); }
 
-/* ===== البطل: شاشة مراقبة حيوية =====
-   التوقيع البصري للمنصة. مأخوذ من أداة يعرفها كل مسعف: الشاشة وخط التخطيط.
-   ليس زخرفة — الأرقام أرقام الطالب الحقيقية معروضة كعلامات حيوية. */
+/* ===== البطل: صفحة كتاب مفتوح =====
+   التوقيع البصري للمنصة. ليس زخرفة: عرض كل كعب كتاب في الرفّ
+   مشتقّ من عدد أسئلة مادته فعلًا، فالصورة تقول ما تقوله الأرقام. */
 .lp-hero{
   position:relative; overflow:hidden;
   padding:var(--s8) var(--s4) var(--s7);
@@ -17,15 +17,13 @@
     radial-gradient(900px 300px at 50% 0%, var(--brand-soft), transparent 68%),
     var(--bg);
 }
-/* شبكة ورق تخطيط القلب — باهتة جدًا، تُحسّ ولا تُرى */
+/* سطور دفتر — أفقية فقط لا شبكة، لأن الورق هنا للكتابة لا للرسم البياني */
 .lp-hero::before{
-  content:''; position:absolute; inset:0; pointer-events:none; opacity:.5;
-  background-image:
-    linear-gradient(to left, var(--line-soft) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--line-soft) 1px, transparent 1px);
-  background-size:26px 26px;
-  mask-image:radial-gradient(680px 300px at 50% 0%, black 20%, transparent 78%);
-  -webkit-mask-image:radial-gradient(680px 300px at 50% 0%, black 20%, transparent 78%);
+  content:''; position:absolute; inset:0; pointer-events:none; opacity:.55;
+  background-image:linear-gradient(to bottom, var(--line-soft) 1px, transparent 1px);
+  background-size:100% 30px;
+  mask-image:radial-gradient(680px 320px at 50% 0%, black 18%, transparent 76%);
+  -webkit-mask-image:radial-gradient(680px 320px at 50% 0%, black 18%, transparent 76%);
 }
 .lp-hero > *{ position:relative; }
 
@@ -36,13 +34,14 @@
   font-size:.8rem; font-weight:700; color:var(--brand);
   box-shadow:var(--sh1); margin-bottom:var(--s5);
 }
+/* النقطة الذهبية: ختم صغير على الغلاف — تتنفّس بهدوء لا تنبض كقلب */
 .lp-hero__badge .dot{
-  width:7px; height:7px; border-radius:50%; background:var(--brand);
-  animation:lp-beat 1.6s var(--ease) infinite;
+  width:7px; height:7px; border-radius:50%; background:var(--gold);
+  animation:lp-glow 3.2s var(--ease) infinite;
 }
-@keyframes lp-beat{
-  0%,100%{ transform:scale(1); opacity:1; }
-  45%{ transform:scale(1.5); opacity:.55; }
+@keyframes lp-glow{
+  0%,100%{ opacity:1; }
+  50%{ opacity:.45; }
 }
 
 .lp-hero__title{
@@ -56,17 +55,17 @@
   font-size:clamp(1rem, 2.4vw, 1.12rem); color:var(--text-2); line-height:1.95;
 }
 
-/* خط التخطيط: يُرسم مرة عند الفتح ثم يسكن */
-.lp-ecg{ width:100%; max-width:640px; margin:var(--s6) auto 0; display:block; height:76px; }
-.lp-ecg path{
-  fill:none; stroke:var(--brand); stroke-width:2.2;
-  stroke-linecap:round; stroke-linejoin:round;
-  stroke-dasharray:1400; stroke-dashoffset:1400;
-  animation:lp-draw 2.6s var(--ease) .25s forwards;
+/* الرفّ: الكتب تصعد واحدًا بعد آخر عند الفتح ثم تسكن */
+.lp-shelf{ width:100%; max-width:640px; margin:var(--s6) auto 0; display:block; height:116px; }
+.lp-shelf__plank{ fill:var(--text-3); opacity:.5; }
+.lp-shelf__book{ transform-origin:center bottom; }
+@media (prefers-reduced-motion: no-preference){
+  .lp-shelf__book{ animation:lp-rise .5s var(--ease) backwards; animation-delay:var(--d, 0ms); }
 }
-@keyframes lp-draw{ to{ stroke-dashoffset:0; } }
-@media (prefers-reduced-motion: reduce){
-  .lp-ecg path{ stroke-dashoffset:0; animation:none; }
+@keyframes lp-rise{
+  from{ transform:scaleY(.05); opacity:0; }
+  to{ transform:scaleY(1); opacity:1; }
+}
   .lp-hero__badge .dot{ animation:none; }
 }
 

@@ -104,3 +104,44 @@
 /* شريط أدوات */
 .ad-bar{ display:flex; gap:var(--s2); flex-wrap:wrap; align-items:center; margin-bottom:var(--s4); }
 .ad-bar .input{ width:auto; flex:1; min-width:180px; }
+
+/* ===== شريط التجربة ===== */
+.trialbar{
+  display:flex; align-items:center; gap:var(--s3);
+  padding:var(--s3) var(--s4); border-radius:var(--r2);
+  background:var(--brand-soft); border:1px solid var(--brand);
+  margin-bottom:var(--s4); flex-wrap:wrap;
+}
+.trialbar__ico{ font-size:1.1rem; color:var(--brand); }
+.trialbar__t{ font-weight:700; font-size:.9rem; color:var(--brand); font-family:var(--font-num); }
+.trialbar__m{ flex:1; min-width:90px; height:8px; border-radius:var(--r-pill); background:var(--surface); overflow:hidden; }
+.trialbar__f{ display:block; height:100%; background:var(--brand); border-radius:inherit; transition:width 1s linear; }
+.trialbar.is-low{ background:var(--bad-soft); border-color:var(--bad); }
+.trialbar.is-low .trialbar__t,
+.trialbar.is-low .trialbar__ico{ color:var(--bad); }
+.trialbar.is-low .trialbar__f{ background:var(--bad); }
+@media (prefers-reduced-motion: reduce){ .trialbar__f{ transition:none; } }
+
+/* ===== المحفظة ===== */
+.wallet{
+  display:grid; gap:var(--s3); grid-template-columns:repeat(3,1fr);
+  padding:var(--s4); border-radius:var(--r3);
+  background:var(--brand-soft); border:1px solid var(--brand); text-align:center;
+}
+.wallet__n{ display:block; font-family:var(--font-num); font-size:1.5rem; font-weight:700; color:var(--brand); }
+.wallet__l{ font-size:.74rem; color:var(--text-2); font-weight:700; }
+.sharebox{ display:flex; gap:var(--s2); align-items:center; flex-wrap:wrap; }
+.sharebox .input{ flex:1; min-width:180px; font-family:var(--font-num); font-size:.82rem; }
+
+/* وسم نمط المعالجة */
+.modetag{ font-size:.7rem; padding:2px 8px; border-radius:var(--r-pill); font-weight:700; }
+.modetag--strict{ background:var(--ok-soft); color:var(--ok); }
+.modetag--enhanced{ background:var(--warn-soft); color:var(--warn); }
+
+/* بطاقة اختيار نمط المعالجة */
+.modecard{ text-align:start; cursor:pointer; border:2px solid var(--line); display:block; width:100%; }
+.modecard[aria-checked="true"]{ border-color:var(--brand); background:var(--brand-soft); }
+.modecard__t{ display:block; font-weight:800; margin-bottom:var(--s1); }
+.modecard__t::before{ content:'○ '; color:var(--text-3); }
+.modecard[aria-checked="true"] .modecard__t::before{ content:'● '; color:var(--brand); }
+.modecard__d{ display:block; font-size:.82rem; color:var(--text-2); line-height:1.6; }

@@ -4,10 +4,52 @@
   أو تصفح خاص متشدد) نسقط إلى ذاكرة مؤقتة فلا تنكسر المنصة — تعمل بلا حفظ فقط.
 */
 const Data = {
-  DB_NAME: 'amusq', DB_VER: 1,
+  DB_NAME: 'qbank', DB_VER: 1,
   _db: null,
   _mem: { questions: new Map(), meta: new Map() },
   hasIDB(){ return typeof indexedDB !== 'undefined'; },
+
+  OLD_DB: 'amusq',   // قاعدة الأسئلة قبل تغيير الهوية
+
+  /*
+    نقل أسئلة الطالب المحفوظة من قاعدة الهوية القديمة.
+
+    الأسئلة بيانات مشتقّة تُجلب من الخادم عند الحاجة، لكن وعد المنصة أنها
+    «تعمل بلا إنترنت بعد أول فتح». لو تركنا القديمة لوجد الطالب الذي يذاكر
+    في الطائرة مادته فارغة. فننسخها مرة واحدة ثم نحذف القديمة كي لا تشغل مساحة.
+  */
+  migrateDB(){
+    if (!Data.hasIDB()) return Promise.resolve(0);
+    return new Promise(resolve => {
+      let req;
+      try { req = indexedDB.open(Data.OLD_DB); } catch(e){ return resolve(0); }
+      req.onerror = () => resolve(0);
+      req.onupgradeneeded = () => {
+        // لم تكن موجودة أصلًا: نُجهض الإنشاء فلا نترك قاعدة فارغة خلفنا
+        try { req.transaction.abort(); } catch(e){}
+        resolve(0);
+      };
+      req.onsuccess = async () => {
+        const oldDb = req.result;
+        if (!oldDb.objectStoreNames.contains('questions')){ oldDb.close(); return resolve(0); }
+        const rows = await new Promise(r => {
+          try {
+            const g = oldDb.transaction('questions','readonly').objectStore('questions').getAll();
+            g.onsuccess = () => r(g.result || []); g.onerror = () => r([]);
+          } catch(e){ r([]); }
+        });
+        oldDb.close();
+        if (!rows.length){ try { indexedDB.deleteDatabase(Data.OLD_DB); } catch(e){} return resolve(0); }
+        const db = await Data.open();
+        if (!db) return resolve(0);
+        const tx = db.transaction('questions','readwrite');
+        const st = tx.objectStore('questions');
+        rows.forEach(q => { try { st.put(q); } catch(e){} });
+        tx.oncomplete = () => { try { indexedDB.deleteDatabase(Data.OLD_DB); } catch(e){} resolve(rows.length); };
+        tx.onerror = () => resolve(0);
+      };
+    });
+  },
 
   open(){
     if (!Data.hasIDB()) return Promise.resolve(null);
@@ -88,11 +130,11 @@ const Data = {
   },
 
   /* --- المحتوى المنشور: قائمة المواد خفيفة في localStorage، والأسئلة عند الطلب --- */
-  pack(){ return AMUSQ.store.get('pack', { subjects: [], settings: {} }); },
-  savePack(p){ AMUSQ.store.set('pack', p); },
+  pack(){ return QBANK.store.get('pack', { subjects: [], settings: {} }); },
+  savePack(p){ QBANK.store.set('pack', p); },
 
   async refreshPack(){
-    const r = await AMUSQ.api.rpc('content_pack');
+    const r = await QBANK.api.rpc('content_pack');
     if (r.ok && r.data && r.data.subjects) { Data.savePack(r.data); return { ok:true, data:r.data }; }
     return r;   // فشل أو بلا إنترنت: نبقى على النسخة المخزّنة — هذا جوهر العمل دون اتصال
   },
@@ -103,7 +145,7 @@ const Data = {
       const local = await Data.getQuestions(subjectId);
       if (local.length) return { ok:true, data:local, from:'device' };
     }
-    const r = await AMUSQ.api.rpc('subject_questions', { sid: subjectId });
+    const r = await QBANK.api.rpc('subject_questions', { sid: subjectId });
     if (r.ok && Array.isArray(r.data)) {
       await Data.putQuestions(subjectId, r.data);
       return { ok:true, data:r.data, from:'network' };
@@ -111,4 +153,4 @@ const Data = {
     return { ok:false, offline: r.offline, data: [] };
   }
 };
-AMUSQ.data = Data;
+QBANK.data = Data;

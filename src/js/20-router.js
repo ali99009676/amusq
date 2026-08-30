@@ -52,7 +52,7 @@ const Router = {
     const view = r.def && typeof r.def.view === 'function' ? r.def.view(r) : null;
     if (view) main.appendChild(view);
 
-    document.title = (r.def && r.def.title ? r.def.title + ' · ' : '') + 'AMUSQ';
+    document.title = (r.def && r.def.title ? r.def.title + ' · ' : '') + 'مراجعة';
     Router.paintNav(r.path);
     // نُعيد التركيز إلى المحتوى كي يعرف قارئ الشاشة أن الصفحة تبدّلت
     if (Router.booted) { try { main.focus(); } catch(e){} }
@@ -77,4 +77,4 @@ const Router = {
     Router.render(location.hash || '#/');
   }
 };
-AMUSQ.router = Router;
+QBANK.router = Router;

@@ -3,7 +3,7 @@
   لماذا مساحة اسم واحدة على window؟ لأن الفحوص الآلية (jsdom) تحتاج بابًا واحدًا
   تدخل منه إلى المنطق دون فتح كل شيء للعالم.
 */
-const AMUSQ = { version: '0.1.0', stage: 0 };
+const QBANK = { version: '0.1.0', stage: 0 };
 
 /* --- أدوات DOM مختصرة --- */
 /* الجذر قد يختفي إن رجع وعدٌ متأخر بعد تفكيك الصفحة (تنقّل أو إغلاق تبويب) — نُرجِع لا شيء بدل الانهيار */
@@ -38,7 +38,31 @@ function esc(s){
 /* --- التخزين المحلي: التقدّم والإعدادات في localStorage (خفيفة).
        الأسئلة لاحقًا في IndexedDB لأن سقف localStorage ≈ ٥ ميغابايت لا يكفي مئات الأسئلة. --- */
 const Store = {
-  NS: 'amusq:',
+  NS: 'qbank:',
+  OLD_NS: 'amusq:',   // البادئة قبل تغيير الهوية
+
+  /*
+    هجرة تخزين الطالب عند أول فتح بعد التحديث.
+
+    تغيير البادئة وحده كان سيجعل كل طالب يفتح المنصة فيجد تقدّمه ونجومه
+    وأخطاءه المحفوظة قد اختفت — وهي في جهازه لم تُمسّ، لكنها تحت اسم لا نقرؤه.
+    فننقلها مرة واحدة ثم نمسح القديم. من لا شيء عنده لا يدفع ثمن شيء.
+  */
+  migrate(){
+    let moved = 0;
+    try{
+      Object.keys(localStorage)
+        .filter(k => k.indexOf(Store.OLD_NS) === 0)
+        .forEach(k => {
+          const fresh = Store.NS + k.slice(Store.OLD_NS.length);
+          // لا نطمس قيمة جديدة كتبها المستخدم بعد التحديث
+          if (localStorage.getItem(fresh) === null) localStorage.setItem(fresh, localStorage.getItem(k));
+          localStorage.removeItem(k);
+          moved++;
+        });
+    } catch(e){}          // التصفح الخاص قد يمنع الكتابة — لا نُسقط التطبيق
+    return moved;
+  },
   get(key, fallback){
     try{
       const raw = localStorage.getItem(Store.NS + key);
@@ -73,6 +97,6 @@ function toast(msg, ms){
   toastTimer = setTimeout(() => box.classList.remove('is-on'), ms || 2400);
 }
 
-AMUSQ.dom = { $, $$, el, esc };
-AMUSQ.store = Store;
-AMUSQ.toast = toast;
+QBANK.dom = { $, $$, el, esc };
+QBANK.store = Store;
+QBANK.toast = toast;
