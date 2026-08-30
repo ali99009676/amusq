@@ -36,7 +36,9 @@ const Admin = {
   },
 
   /* ===== معالج الرفع — أربع خطوات، حالته قابلة للفحص بمعزل عن الواجهة ===== */
-  BATCH: 25,   // حد دفعة الذكاء — يحمي من مهلة الخادم ويسمح باستئناف الرفع
+  // ٤٠ لا ٢٥: تعليمات النظام تُرسل مرة لكل دفعة، فالدفعة الأكبر توزّع كلفتها
+  // على أسئلة أكثر. والسقف يبقى دون مهلة الخادم ويسمح باستئناف الرفع.
+  BATCH: 40,
   chunk(arr, n){
     const out = [];
     for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
@@ -44,7 +46,9 @@ const Admin = {
   },
   newWizard(){
     // strict افتراضًا: قاعدة القداسة هي الأصل، والتحسين اختيار صريح من الرافع
-    return { step:1, filename:'', subjectName:'', slug:'', mode:'strict',
+    // enrich=false افتراضًا: المسار المجاني هو الأصل، والإثراء اختيار واعٍ يُدفع ثمنه
+    return { step:1, filename:'', subjectName:'', slug:'', mode:'strict', enrich:false,
+             country:'', university:'', college:'', courseCode:'',
              raw:[], enriched:[], draftId:null, done:0, total:0, error:'' };
   },
   // تقدير التكلفة قبل التشغيل: عدد الأسئلة والدفعات — يقرّر المشرف على بيّنة
@@ -64,15 +68,65 @@ const Admin = {
   },
 
   // «افهمه بالذكاء» على دفعات: المسوّدة تُحفظ بعد كل دفعة فيمكن إغلاق الصفحة والعودة
+  /*
+    المسار المجاني: نبني الأسئلة من المقسّم مباشرة بلا نداء ذكاء.
+    ما ينقصها هو الشرح والترجمة وبطاقة الحفظ — والسؤال بلا إجابة معلنة
+    يبقى بلا إجابة، فنوسمه ليصحّحه صاحبه بيده في المحرر.
+  */
+  plainEnrich(w){
+    w.enriched = w.raw.map(q => ({
+      q: q.q, q_original: q.q, sanctity_mode: 'strict',
+      options: q.has_options ? q.options.slice() : [String(q.answer_text || '—')],
+      options_original: q.has_options ? q.options.slice() : [],
+      answer: (q.has_options && typeof q.answer === 'number' && q.answer >= 0) ? q.answer : 0,
+      derived: !(q.has_options && typeof q.answer === 'number' && q.answer >= 0),
+      opts_built: !q.has_options,
+      expl_ar:'', expl_en:'', translation:'', mnemonic:{}, topic:'', important:false
+    }));
+    w.done = w.total; w.step = 3; w.error = '';
+    return w;
+  },
+
+  /* كم كوينًا يلزم لإثراء هذا الملف */
+  creditsNeeded(w, costPerQ){
+    return Math.max(0, (w.raw.length - w.done)) * Math.max(0, costPerQ || 1);
+  },
+
   async wizardEnrich(w, onProgress){
+    // المسار المجاني لا يمرّ بالخادم إطلاقًا — لا تكلفة ولا انتظار
+    if (!w.enrich) { const r = Admin.plainEnrich(w); await Admin.saveDraft(r); return r; }
+
     const batches = Admin.chunk(w.raw, Admin.BATCH);
     for (let i = 0; i < batches.length; i++) {
       // لا إعادة معالجة لما اكتمل — الاستئناف يبدأ من حيث توقّف
       if (w.done >= (i + 1) * Admin.BATCH) continue;
+
+      /*
+        الحسم قبل النداء لا بعده. لو حسمنا بعده لكان كل انقطاع إثراءً مجانيًا،
+        ولو تعطّل الخادم بعد الحسم رددنا الرصيد في السطر التالي.
+      */
+      const need = batches[i].length * (w.costPerQ || 1);
+      const pay = await QBANK.api.rpc('spend_credits',
+        { n: need, p_reason: 'إثراء ' + batches[i].length + ' سؤالًا', p_draft: w.draftId });
+      if (!pay.ok || !pay.data || !pay.data.ok) {
+        const d = (pay.data) || {};
+        w.error = d.reason === 'insufficient'
+          ? 'رصيدك ' + (d.balance || 0) + ' كوين ولا يكفي — يلزم ' + need
+          : (d.reason === 'closed' ? 'الإثراء موقوف مؤقتًا' : 'تعذّر حسم الرصيد');
+        w.needCoins = d.reason === 'insufficient' ? need - (d.balance || 0) : 0;
+        return w;
+      }
+
       const r = await Admin.server('/api/ai', { questions: batches[i], sanctity_mode: w.mode || 'strict' });
-      if (!r.ok) { w.error = (r.data && r.data.error) || 'انقطعت الدفعة ' + (i + 1); return w; }
+      if (!r.ok) {
+        // الطالب لا يدفع ثمن عطل عندنا
+        await QBANK.api.rpc('refund_credits', { n: need, p_reason: 'تعذّرت الدفعة', p_draft: w.draftId });
+        w.error = (r.data && r.data.error) || 'انقطعت الدفعة ' + (i + 1) + ' — رُدّ رصيدها';
+        return w;
+      }
       w.enriched = w.enriched.concat(r.data.questions);
       w.done = Math.min(w.enriched.length, w.total);
+      if (r.data.usage) w.usage = r.data.usage;
       await Admin.saveDraft(w);
       if (onProgress) onProgress(w.done, w.total);
     }
@@ -114,12 +168,25 @@ const Admin = {
   async stamp(subjectId, w){
     if (!subjectId) return { ok:false };
     const u = QBANK.api.user() || {};
-    return QBANK.api.rest('subjects?id=eq.' + subjectId, { method:'PATCH', body: JSON.stringify({
+    const body = {
       created_by: u.id || null,
       sanctity_mode: w.mode === 'enhanced' ? 'enhanced' : 'strict',
       slug: w.slug || null,
-      status: 'published'
-    }) });
+      status: 'published',
+      course_code: w.courseCode || ''
+    };
+    // الجامعة والكلية تُنشآن في الخادم إن لم تكونا موجودتين — والتطبيع يمنع التكرار
+    if (w.country && w.university){
+      const r = await QBANK.api.rpc('ensure_university', { p_country: w.country, p_name: w.university });
+      if (r.ok && r.data && typeof r.data === 'string'){
+        body.university_id = r.data;
+        if (w.college){
+          const c = await QBANK.api.rpc('ensure_college', { p_university: r.data, p_name: w.college });
+          if (c.ok && c.data && typeof c.data === 'string') body.college_id = c.data;
+        }
+      }
+    }
+    return QBANK.api.rest('subjects?id=eq.' + subjectId, { method:'PATCH', body: JSON.stringify(body) });
   },
 
   // كشف المكرر بتشابه نصي بسيط: نفس الأحرف الدنيا بعد إزالة الفراغات — يوسم لا يحذف
@@ -134,11 +201,16 @@ const Admin = {
   }
 };
 
-/* ===== الواجهة ===== */
-function adminStat(label, value){
-  return el('div', { class:'card card--flat stat' }, [
-    el('span', { class:'stat__num num', text: String(value) }),
-    el('span', { class:'stat__lbl', text: label })
+/* ===== الواجهة =====
+   كل تبويبات اللوحة تستعمل مكوّنات واحدة: ad-kpi للمؤشرات، ad-panel للأقسام،
+   ad-row للصفوف. التفاوت بين التبويبات يجعل اللوحة تبدو مجموعة صفحات لا لوحة. */
+function adminPanel(title, sub, body){
+  return el('section', { class:'ad-panel' }, [
+    el('div', { class:'ad-panel__h' }, [
+      el('h2', { class:'ad-panel__t', text:title }),
+      sub ? el('span', { class:'ad-panel__s', text:sub }) : null
+    ]),
+    body
   ]);
 }
 
@@ -153,42 +225,53 @@ function adminStudentsTab(box){
         return;
       }
       const s = st.data;
-      box.appendChild(el('div', { class:'grid grid--2 stats' }, [
-        adminStat('طالبًا', s.students), adminStat('نشط آخر ٧ أيام', s.active_7d),
-        adminStat('اختبارًا', s.attempts), adminStat('متوسط النتائج ٪', s.avg_pct)
+      const K = QBANK.admin.charts.kpi;
+      box.appendChild(el('div', { class:'ad-kpis' }, [
+        K(s.students, 'طالبًا', 'مسجَّل'),
+        K(s.active_7d, 'نشط', 'آخر ٧ أيام', s.active_7d > 0 ? 'live' : null),
+        K(s.attempts, 'اختبارًا', 'منذ الإطلاق'),
+        K(s.avg_pct + '٪', 'متوسط النتائج', s.avg_pct >= 70 ? 'فوق حدّ النجاح' : 'تحت حدّ النجاح',
+          s.avg_pct >= 70 ? 'live' : (s.avg_pct > 0 ? 'warn' : null))
       ]));
       const list = (rows.ok && rows.data && rows.data.rows) || [];
       if (!list.length) { box.appendChild(QBANK.views.empty('👥', 'لا طلاب بعد', 'سيظهر الطلاب هنا فور تسجيلهم.')); return; }
-      const tbl = el('div', { class:'card stack' }, list.map(r => {
-        const row = el('button', { class:'row rowbtn', type:'button' }, [
-          el('span', { text: (r.avatar || '👤') + ' ' + (r.name || 'بلا اسم') }),
-          el('span', { class:'spacer' }),
-          el('span', { class:'badge num', text: r.attempts + ' اختبار' }),
-          el('span', { class:'badge badge--ok num', text: 'أفضل ' + Math.round(r.best) + '٪' })
+      const tbl = el('div', { class:'ad-table' }, list.map(r => {
+        const row = el('button', { class:'ad-row', type:'button' }, [
+          el('span', { class:'ad-feed__av', text: r.avatar || '👤' }),
+          el('span', { class:'ad-row__main' }, [
+            el('span', { class:'ad-row__t', text: r.name || 'بلا اسم' }),
+            el('span', { class:'ad-row__s', text: r.attempts + ' اختبار' })
+          ]),
+          el('span', { class:'badge num ' + (r.best >= 70 ? 'badge--ok' : ''),
+            text: 'أفضل ' + Math.round(r.best) + '٪' })
         ]);
         row.addEventListener('click', async () => {
           const at = await QBANK.api.rpc('admin_attempts', { uid: r.id });
           const items = (at.ok && Array.isArray(at.data)) ? at.data : [];
-          const det = el('div', { class:'card stack' },
-            items.length ? items.map(a => el('div', { class:'row' }, [
-              el('span', { text: a.subject }),
-              el('span', { class:'spacer' }),
-              el('span', { class:'badge num', text: Math.round(a.pct) + '٪' }),
-              el('span', { class:'badge num', text: Math.round(a.duration_s / 60) + ' د' })
-            ])) : [el('p', { class:'page__sub', text:'لا محاولات لهذا الطالب.' })]);
+          const det = el('div', { class:'ad-sub' },
+            items.length ? items.map(a => el('div', { class:'ad-feed__i' }, [
+              el('span', { class:'ad-row__main' }, [ el('span', { class:'ad-row__t', text: a.subject }) ]),
+              el('span', { class:'badge num ' + (a.pct >= 70 ? 'badge--ok' : 'badge--warn'),
+                text: Math.round(a.pct) + '٪' }),
+              el('span', { class:'ad-feed__t', text: Math.round(a.duration_s / 60) + ' د' })
+            ])) : [el('p', { class:'page__sub', style:'margin:0', text:'لا محاولات لهذا الطالب.' })]);
           row.parentNode.insertBefore(det, row.nextSibling);
         }, { once:true });
         return row;
       }));
-      box.appendChild(tbl);
+      box.appendChild(el('div', { class:'ad-panels', style:'margin-top:22px' }, [
+        adminPanel('الطلاب', list.length + ' طالبًا · اضغط أيًّا منهم لمحاولاته', tbl)
+      ]));
     });
 }
 
 function adminContentTab(box){
-  const upBtn = el('button', { class:'btn btn--block', type:'button', text:'⇪ ارفع ملف أسئلة جديدًا' });
-  upBtn.addEventListener('click', () => QBANK.router.go('#/admin/upload'));
-  box.appendChild(upBtn);
-  const listBox = el('div', { class:'stack', style:'margin-top:16px' });
+  const upBtn = el('a', { class:'btn', href:'#/admin/upload', text:'⇪ ارفع ملف أسئلة' });
+  box.appendChild(el('div', { class:'ad-bar' }, [
+    upBtn,
+    el('a', { class:'btn btn--ghost', href:'#/explore', text:'⌕ اعرض ما يراه الطالب' })
+  ]));
+  const listBox = el('div', { class:'ad-panels' });
   box.appendChild(listBox);
   listBox.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
 
@@ -202,25 +285,28 @@ function adminContentTab(box){
     const subjects = (subs.ok && subs.data) || [];
     const drafts = (drs.ok && drs.data) || [];
 
-    if (drafts.length) {
-      listBox.appendChild(el('h2', { text:'المسوّدات' }));
-      drafts.forEach(d => {
-        if (d.status === 'approved') return;
-        listBox.appendChild(el('div', { class:'card row' }, [
-          el('span', { text: d.name || 'بلا اسم' }),
-          el('span', { class:'badge ' + (d.status === 'reviewing' ? 'badge--warn' : ''), text:
-            d.status === 'reviewing' ? 'بانتظار المراجعة' : 'قيد المعالجة ' + d.done + ' من ' + d.total }),
-          el('span', { class:'spacer' }),
-          el('a', { class:'btn btn--sm btn--soft', href:'#/admin/upload?draft=' + d.id, text:'أكمل' })
-        ]));
-      });
+    const pending = drafts.filter(d => d.status !== 'approved');
+    if (pending.length) {
+      listBox.appendChild(adminPanel('المسوّدات', pending.length + ' غير معتمدة — لا يراها الطالب',
+        el('div', { class:'ad-table' }, pending.map(d =>
+          el('div', { class:'ad-row', style:'cursor:default' }, [
+            el('span', { class:'ad-row__main' }, [
+              el('span', { class:'ad-row__t', text: d.name || 'بلا اسم' }),
+              el('span', { class:'ad-row__s', text:
+                d.status === 'reviewing' ? 'اكتملت المعالجة — بانتظار مراجعتك'
+                                         : 'قيد المعالجة: ' + d.done + ' من ' + d.total })
+            ]),
+            el('span', { class:'badge ' + (d.status === 'reviewing' ? 'badge--warn' : ''),
+              text: d.status === 'reviewing' ? 'راجِعها' : 'تُعالَج' }),
+            el('a', { class:'btn btn--sm btn--soft', href:'#/admin/upload?draft=' + d.id, text:'أكمل' })
+          ])))));
     }
 
-    listBox.appendChild(el('h2', { text:'المواد' }));
     if (!subjects.length) {
       listBox.appendChild(QBANK.views.empty('▤', 'لا مواد بعد', 'ارفع أول ملف أسئلة وسيظهر هنا بعد الاعتماد.'));
       return;
     }
+    const subTable = el('div', { class:'ad-table' });
     subjects.forEach(sub => {
       const pubBtn = el('button', { class:'btn btn--sm ' + (sub.published ? 'btn--soft' : ''), type:'button',
         text: sub.published ? 'أخفِ' : 'انشر' });
@@ -244,17 +330,24 @@ function adminContentTab(box){
           { method:'PATCH', body: JSON.stringify({ free: !sub.free }) });
         QBANK.router.render('#/admin/content');
       });
-      listBox.appendChild(el('div', { class:'card stack' }, [
-        el('div', { class:'row' }, [
-          el('span', { text: (sub.icon || '▤') + ' ' + sub.name }),
-          el('span', { class:'badge num', text: sub.q_count + ' سؤالًا' }),
-          sub.published ? el('span', { class:'badge badge--ok', text:'منشورة ✓' })
-                        : el('span', { class:'badge', text:'مخفية' }),
-          el('span', { class:'spacer' }), pubBtn
+      subTable.appendChild(el('div', { class:'ad-row', style:'cursor:default;flex-wrap:wrap' }, [
+        el('span', { text: sub.icon || '▤' }),
+        el('span', { class:'ad-row__main' }, [
+          el('span', { class:'ad-row__t', text: sub.name }),
+          el('span', { class:'ad-row__s', text: sub.q_count + ' سؤالًا' })
         ]),
-        el('div', { class:'row' }, [ dateIn, freeBtn ])
+        sub.published ? el('span', { class:'badge badge--ok', text:'منشورة' })
+                      : el('span', { class:'badge', text:'مخفية' }),
+        el('a', { class:'btn btn--sm btn--soft', href:'#/admin/subject/' + sub.id, text:'حرّر' }),
+        pubBtn,
+        el('span', { class:'ad-sub', style:'flex:1 0 100%' }, [
+          el('label', { class:'ad-inline' }, [
+            el('span', { class:'ad-inline__l', text:'موعد الاختبار' }), dateIn ]),
+          freeBtn
+        ])
       ]));
     });
+    listBox.appendChild(adminPanel('المواد', subjects.length + ' مادة على المنصة', subTable));
   });
 }
 

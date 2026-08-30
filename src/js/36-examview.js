@@ -96,8 +96,9 @@ function examRunner(){
       else if (oi === answered.choice) { cls += ' is-wrong'; mark = '✗'; }
     } else if (answered && answered.choice === oi) { cls += ' is-answer'; mark = '●'; }
     const b = el('button', { class: cls, type:'button', disabled: answered ? true : null }, [
-      el('span', { class:'opt__mark', 'aria-hidden':'true', text: mark }),
-      el('span', { class:'ltr', text: opt })
+      el('span', { class:'opt__l', 'aria-hidden':'true', text: QBANK.views.optLetter(oi) }),
+      el('span', { class:'ltr', text: opt }),
+      el('span', { class:'opt__mark', 'aria-hidden':'true', text: mark })
     ]);
     b.addEventListener('click', () => {
       QBANK.exam.answer(exam, oi);
@@ -169,8 +170,10 @@ function examResult(){
       el('p', { class:'ltr q__text', text: rv.q }),
       el('div', { class:'stack q__opts' }, rv.options.map((o, oi) =>
         el('div', { class:'opt' + (oi === rv.correct ? ' is-answer' : (oi === rv.chosen ? ' is-wrong' : '')) }, [
-          el('span', { class:'opt__mark', 'aria-hidden':'true', text: oi === rv.correct ? '✓' : (oi === rv.chosen ? '✗' : '') }),
-          el('span', { class:'ltr', text: o })
+          el('span', { class:'opt__l', 'aria-hidden':'true', text: QBANK.views.optLetter(oi) }),
+          el('span', { class:'ltr', text: o }),
+          oi === rv.correct ? el('span', { class:'opt__tag', text:'الإجابة' }) : null,
+          el('span', { class:'opt__mark', 'aria-hidden':'true', text: oi === rv.correct ? '✓' : (oi === rv.chosen ? '✗' : '') })
         ]))),
       rv.expl_ar ? el('p', { class:'field__hint', text: rv.expl_ar }) : null
     ])))

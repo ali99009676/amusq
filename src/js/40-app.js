@@ -4,7 +4,9 @@
 */
 const NAV = [
   { path:'#/',         label:'الرئيسية',  ico:'▤' },
-  { path:'#/board',    label:'المتصدرون', ico:'🏆' },
+  // «ارفع مادة» في الشريط لا مدفونة في صفحة الحساب: ميزة لا يراها الطالب ميزة لا وجود لها
+  { path:'#/explore',  label:'استكشف',    ico:'⌕' },
+  { path:'#/upload',   label:'ارفع مادة', ico:'⇪' },
   { path:'#/settings', label:'الإعدادات', ico:'☰' },
   { path:'#/account',  label:'حسابي',     ico:'◍' }
 ];
@@ -31,6 +33,8 @@ function registerRoutes(){
     .add('#/settings',    V.ViewSettings)
     .add('#/account',     V.ViewAccount)
     .add('#/admin/upload', V.ViewUpload)
+    .add('#/upload',       V.ViewUpload)   // المسار الذي يُعطى للطالب — والقديم يبقى للمشرف
+    .add('#/explore',      V.ViewExplore)
     .add('#/admin/subject', V.ViewAdminSubject)
     .add('#/s',            V.ViewShare)      // رابط المشاركة: يقبل #s/slug و #/s/slug معًا
     .add('#/subject',      V.ViewSubject)

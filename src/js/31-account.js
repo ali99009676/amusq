@@ -92,7 +92,8 @@ const ViewAccount = {
     if (!QBANK.api.user()) return QBANK.views.ViewLogin.view();
     // المحفظة تُبنى في 47-wallet.js — تُلحق هنا حين تكون محمّلة
     const wallet = (QBANK.wallet && QBANK.wallet.body) ? QBANK.wallet.body() : null;
-    return QBANK.views.page('حسابي', null, [ accountBody(), wallet ]);
+    const links  = (QBANK.wallet && QBANK.wallet.links) ? QBANK.wallet.links() : null;
+    return QBANK.views.page('حسابي', null, [ accountBody(), wallet, links ]);
   }
 };
 

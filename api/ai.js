@@ -15,7 +15,7 @@ const { enforce, verbatimOk } = require('./_lib/sanctity.js');
 const SYS_COMMON = [
   'لكل سؤال أعد JSON فقط بالحقول:',
   'answer_index (رقم يبدأ من 0 للاجابة الصحيحة من المراجع القياسية)،',
-  'expl_ar (شرح عربي: لماذا الاجابة صحيحة ولماذا غيرها خاطئ)، expl_en (الشرح بالانجليزية)،',
+  'expl_ar (شرح عربي مركز في جملتين: لماذا الاجابة صحيحة ولماذا غيرها خاطئ)،',
   'translation (ترجمة عربية لنص السؤال)، topic (محور المادة الانسب)،',
   'mnemonic (بطاقة حفظ: {cue: الكلمة الدالة في السؤال, key: الكلمة المفتاحية في الاجابة, link: رابط ذهني قصير, strike: كيف يشطب المشتتات})،',
   'وللسؤال بلا خيارات: distractors (ثلاثة مشتتات معقولة من نفس المجال بنفس لغة الاجابة).',
@@ -41,7 +41,13 @@ const SYS_ENHANCED = [
 async function callClaude(batch, mode){
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error('ANTHROPIC_API_KEY غير مضبوط في متغيرات البيئة');
-  const model = process.env.AI_MODEL || 'claude-sonnet-4-5';
+  /*
+    Haiku 4.5 هو الافتراضي: ‎$1/‎$5 لكل مليون رمز مقابل ‎$3/‎$15 لـ Sonnet 4.5 —
+    ثلث التكلفة بالضبط. والمهمة هنا لا تحتاج أكثر: شرح سؤال وترجمته وبطاقة حفظه
+    عمل مباشر لا استدلال معقّد. ويبقى قابلًا للتبديل من متغيّر البيئة إن أردنا
+    نموذجًا أقوى لمادة صعبة.
+  */
+  const model = process.env.AI_MODEL || 'claude-haiku-4-5-20251001';
   const user = JSON.stringify(batch.map(q => ({
     q: q.q,
     options: q.has_options ? q.options : null,
@@ -57,7 +63,13 @@ async function callClaude(batch, mode){
     },
     body: JSON.stringify({
       model, max_tokens: 8192,
-      system: mode === 'enhanced' ? SYS_ENHANCED : SYS_STRICT,
+      /*
+        نُخزّن تعليمات النظام مؤقتًا. ملف فيه ٣٠٠ سؤال يُقسَّم دفعات، وكلها
+        ترسل نفس التعليمات. الكتابة الأولى ‎1.25x‎ ثم كل قراءة ‎0.1x‎ —
+        فتسقط كلفة التعليمات إلى العُشر ابتداءً من الدفعة الثانية.
+      */
+      system: [{ type:'text', text: mode === 'enhanced' ? SYS_ENHANCED : SYS_STRICT,
+                 cache_control: { type:'ephemeral' } }],
       messages: [{ role:'user', content: user }]
     })
   });
@@ -66,7 +78,10 @@ async function callClaude(batch, mode){
   const text = (data.content && data.content[0] && data.content[0].text) || '[]';
   // النموذج قد يلفّ الرد بسياج كود — ننتزع المصفوفة
   const m = text.match(/\[[\s\S]*\]/);
-  return JSON.parse(m ? m[0] : text);
+  const parsed = JSON.parse(m ? m[0] : text);
+  // الاستهلاك الحقيقي كما أبلغ عنه الخادم — يُعرض للمشرف بدل التخمين
+  Object.defineProperty(parsed, '_usage', { value: data.usage || null, enumerable: false });
+  return parsed;
 }
 
 module.exports = async function handler(req, res){
@@ -75,8 +90,9 @@ module.exports = async function handler(req, res){
     const { questions, sanctity_mode } = req.body || {};
     if (!Array.isArray(questions) || !questions.length)
       return res.status(400).json({ error:'أرسل مصفوفة questions' });
-    if (questions.length > 25)
-      return res.status(400).json({ error:'حد الدفعة ٢٥ سؤالًا — قسّم الملف دفعات' });
+    // ٤٠ بدل ٢٥: التعليمات تُرسل مرة لكل دفعة، فالدفعة الأكبر توزّعها على أسئلة أكثر
+    if (questions.length > 40)
+      return res.status(400).json({ error:'حد الدفعة ٤٠ سؤالًا — قسّم الملف دفعات' });
     // أي قيمة غير معروفة تسقط إلى strict: الافتراض الآمن هو عدم المساس بالنص
     const mode = sanctity_mode === 'enhanced' ? 'enhanced' : 'strict';
 
@@ -89,7 +105,8 @@ module.exports = async function handler(req, res){
         throw new Error('فشل فحص المطابقة الحرفية للسؤال ' + (i + 1) + ' — أُوقفت الدفعة');
       return item;
     });
-    return res.status(200).json({ ok:true, sanctity_mode: mode, questions: enforced });
+    return res.status(200).json({ ok:true, sanctity_mode: mode, model,
+                                 usage: aiOut._usage || null, questions: enforced });
   } catch(e){
     return res.status(500).json({ error: e.message });
   }

@@ -29,10 +29,15 @@ function bankRow(sub, q, prog){
   });
 
   const opts = el('div', { class:'stack q__opts', hidden:true },
-    q.options.map((opt, oi) => el('div', { class:'opt' + (oi === q.answer ? ' is-answer' : '') }, [
-      el('span', { class:'opt__mark', 'aria-hidden':'true', text: oi === q.answer ? '✓' : '' }),
-      el('span', { class:'ltr', text: opt })
-    ])));
+    q.options.map((opt, oi) => {
+      const right = oi === q.answer;
+      return el('div', { class:'opt' + (right ? ' is-answer' : '') }, [
+        el('span', { class:'opt__l', 'aria-hidden':'true', text: QBANK.views.optLetter(oi) }),
+        el('span', { class:'ltr', text: opt }),
+        right ? el('span', { class:'opt__tag', text:'الإجابة' }) : null,
+        el('span', { class:'opt__mark', 'aria-hidden':'true', text: right ? '✓' : '' })
+      ]);
+    }));
   const trans = el('p', { class:'field__hint', hidden:true, text: q.translation || 'لا ترجمة بعد.' });
   const transBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'عرض الترجمة' });
   transBtn.addEventListener('click', () => {
@@ -43,6 +48,9 @@ function bankRow(sub, q, prog){
   const head = el('button', { class:'rowbtn', type:'button', 'aria-expanded':'false' }, [
     el('span', { class:'ltr q__text', text: q.q })
   ]);
+  // رقم السؤال في الهامش — يُقرأ بصوت مسموع: «افتح سؤال ٤٧»
+  const num = el('span', { class:'qitem__n', 'aria-hidden':'true',
+    text: QBANK.views.arNum((q.ord || 0) + 1) });
   head.addEventListener('click', () => {
     const open = opts.hidden;
     opts.hidden = !open;
@@ -50,7 +58,8 @@ function bankRow(sub, q, prog){
     if (open) QBANK.progress.markSeen(sub.id, q.id);   // فتح السؤال = رُوجع
   });
 
-  return el('article', { class:'q', 'data-qid': q.id }, [
+  return el('article', { class:'q qitem', 'data-qid': q.id }, [
+    num,
     el('div', { class:'row' }, [
       head, starBtn,
       prog.wrong[q.id] ? el('span', { class:'badge badge--bad num', text:'أخطأت ×' + prog.wrong[q.id] }) : null,

@@ -571,7 +571,7 @@ describe('٢١ · منطق اللوحة: الدفعات، التقدير، ال�
 {
   const d = makeDom('#/');
   const W = d.window, A = W.QBANK, Ad = A.admin;
-  eq(Ad.BATCH, 25, 'حد الدفعة ٢٥ سؤالًا');
+  eq(Ad.BATCH, 40, 'حد الدفعة ٤٠ سؤالًا — يوزّع كلفة التعليمات على أسئلة أكثر');
   eq(Ad.chunk([1,2,3,4,5], 2).length, 3, 'التقسيم لدفعات صحيح');
   eq(Ad.chunk([], 2).length, 0, 'مصفوفة فارغة: صفر دفعات');
 
@@ -581,7 +581,8 @@ describe('٢١ · منطق اللوحة: الدفعات، التقدير، ال�
   w.total = 300;
   const est = Ad.estimate(w);
   eq(est.questions, 300, 'التقدير: ٣٠٠ سؤال — ملف كبير يمرّ');
-  eq(est.batches, 12, 'التقدير: ١٢ دفعة قبل التشغيل — تكلفة معلومة');
+  eq(est.batches, Math.ceil(300 / Ad.BATCH), 'التقدير: عدد الدفعات مشتقّ من الحدّ لا مكتوب');
+  eq(est.batches, 8, 'وهو ٨ دفعات لـ٣٠٠ سؤال');
 
   // كشف المكرر: يوسم ولا يحذف
   const dups = Ad.findDuplicates([
@@ -606,7 +607,15 @@ describe('٢١ · منطق اللوحة: الدفعات، التقدير، ال�
   };
   Ad.saveDraft = async (wz) => { saved++; wz.draftId = wz.draftId || 'd-1'; return { ok:true }; };
 
+  // رصيد وهمي: نُحاكي القاعدة كي يسلك الفحص المسار المدفوع
+  const spent = [];
+  A.api.rpc = (name, args) => {
+    if (name === 'spend_credits'){ spent.push(args.n); return Promise.resolve({ ok:true, data:{ ok:true, spent:args.n, balance:9999 } }); }
+    if (name === 'refund_credits'){ spent.push(-args.n); return Promise.resolve({ ok:true, data:{ ok:true } }); }
+    return Promise.resolve({ ok:true, data:{} });
+  };
   const w2 = Ad.newWizard();
+  w2.enrich = true;                 // المسار المدفوع — المجاني لا يمرّ بالخادم أصلًا
   w2.raw = new Array(60).fill(0).map((_, i) => ({ q:'Q' + i, has_options:true, options:['a','b'], answer:0 }));
   w2.total = 60; w2.step = 2;
   W.__t = (async () => {
@@ -616,7 +625,8 @@ describe('٢١ · منطق اللوحة: الدفعات، التقدير، ال�
     return { afterFail, final: { done: w2.done, step: w2.step, len: w2.enriched.length } };
   })();
   pending.push(W.__t.then(r => {
-    eq(r.afterFail.done, 25, 'انقطاع الدفعة ٢: المنجز ٢٥ محفوظ لا ضائع');
+    eq(r.afterFail.done, 40, 'انقطاع الدفعة ٢: منجز الدفعة الأولى محفوظ لا ضائع');
+    ok(spent.some(x => x < 0), 'ورصيد الدفعة المنقطعة رُدّ — الطالب لا يدفع ثمن عطلنا');
     has(r.afterFail.error, 'انقطاع', 'الخطأ يُبلَّغ صراحة');
     ok(r.afterFail.saved >= 1, 'المسوّدة حُفظت بعد الدفعة الأولى');
     eq(r.final.done, 60, 'الاستئناف يكمل الستين');
@@ -683,7 +693,7 @@ describe('٢٣ · أمان دوال الخادم');
   const ai  = fs.readFileSync(path.join(ROOT, 'api', 'ai.js'), 'utf8');
   has(ai, 'process.env.ANTHROPIC_API_KEY', 'مفتاح الذكاء من بيئة الخادم');
   no(ai, 'sk-ant', 'لا مفتاح مكتوب في الكود');
-  has(ai, "questions.length > 25", 'الخادم يرفض دفعة تتجاوز ٢٥');
+  has(ai, "questions.length > 40", 'الخادم يرفض دفعة تتجاوز ٤٠');
   has(ai, 'verbatimOk', 'الخادم يفحص المطابقة الحرفية بعد الفرض');
   has(ing, '15 * 1024 * 1024', 'حد حجم الملف ١٥ ميغابايت');
   has(ing, "res.status(405)", 'غير POST يُرفض');
@@ -780,8 +790,11 @@ describe('٢٥ · الرئيسية والبطاقات');
   has(t, 'أهلًا بك في QBANK', 'نص الترحيب من الإعدادات يظهر');
   has(t, 'موادي', 'قسم موادي أولًا');
   has(t, 'مواد أخرى متاحة', 'قسم المواد الأخرى مع زر الإضافة');
-  has(t, 'الاختبار بعد 5 يوم', 'العد التنازلي لموعد الاختبار');
-  has(t, 'تم الانتهاء ✓', 'ختم الانتهاء للمادة الماضية');
+  // الموعد يُعرض كعدّاد أكاديمي: رقم عربي كبير وكلمته تحته
+  has(t, '\u0665', 'العد التنازلي لموعد الاختبار بالأرقام العربية');
+  has(t, 'أيام', 'ووحدته مكتوبة تحت الرقم');
+  has(t, 'انتهى موعده', 'ختم الانتهاء للمادة الماضية');
+  has(t, 'من', 'العدد المطلق للأسئلة المنجزة — لا النسبة وحدها');
   has(t, 'مجانية', 'وسم المادة المجانية');
   ok(!!doc.querySelector('[aria-label*="أضف"]'), 'زر + أضف إلى موادي موجود');
   // المنتهية تنزل آخر قائمة موادي
@@ -1058,17 +1071,25 @@ describe('٣٣ · صفحة الهبوط للزائر');
   ], settings:{ welcome_text:'' } });
 
   A.api.saveSession(null);
+  A.store.set('lp_demo', 0);        // نثبّت العيّنة الطبية كي تبقى التوكيدات محدّدة
   A.router.render('#/');
   const t = doc.getElementById('main').textContent;
 
   has(t, 'كل أسئلة موادك', 'العنوان الرئيسي يظهر للزائر');
-  has(t, 'طلاب التخصصات الصحية', 'الجمهور المستهدف معلن');
+  has(t, 'طلاب الجامعات العربية', 'الجمهور المستهدف: كل التخصصات لا الصحية وحدها');
+  no(t, 'التخصصات الصحية', 'ولا حصر بالتخصصات الصحية في الهبوط');
   ok(doc.querySelectorAll('.lp-stat').length === 4, 'شريط الأرقام بأربع خانات');
   has(t, '200', 'إجمالي الأسئلة محسوب من المواد المنشورة فعلًا');
   has(t, 'الإسعافات الأولية', 'المواد المنشورة معروضة في الصفحة التعريفية');
   has(t, 'مجانية بالكامل', 'المادة المجانية موسومة للزائر');
   has(t, '120 سؤالًا', 'عدد أسئلة كل مادة ظاهر');
-  ok(doc.querySelectorAll('.lp-steps .lp-step').length === 4, 'أربع خطوات للبدء');
+  // مساران للخطوات: البدء العادي، ورفع مادة — أربع خطوات لكلٍّ
+  eq(doc.querySelectorAll('.lp-steps').length, 2, 'مساران معروضان: البدء ورفع مادة');
+  doc.querySelectorAll('.lp-steps').forEach((g, i) =>
+    eq(g.querySelectorAll('.lp-step').length, 4, 'أربع خطوات في المسار ' + (i + 1)));
+  has(t, 'مادتك ليست هنا؟ ارفعها أنت', 'دعوة رفع المادة ظاهرة للزائر قبل التسجيل');
+  has(t, 'جرّبه عشر دقائق', 'وتجربة العشر دقائق مشروحة');
+  has(t, 'كوينز إلى رصيدك', 'ومكافأة المشاركة مذكورة');
   has(t, 'حزمة الفصل', 'نموذج التسعير الموسمي معروض');
   // نموذج العمل موسمي: نتحقق أن الصفحة تنفي الاشتراك الشهري لا أن تسكت عنه
   has(t, 'لا. الطلب موسمي', 'الصفحة تنفي الاشتراك الشهري صراحةً في الأسئلة الشائعة');
@@ -1897,6 +1918,833 @@ describe('٤٨ · ملف هجرة المخطط');
   const supa = fs.readFileSync(path.join(ROOT,'api','_lib','supa.js'), 'utf8');
   has(supa, "'Accept-Profile':'qbank'", 'الخادم يطلب المخطط الجديد');
   no(supa, 'amusq', 'ولا أثر للقديم فيه');
+}
+
+/* ============ ٤٩ · باب الميزة: هل يجدها الطالب أصلًا؟ ============ */
+describe('٤٩ · اكتشاف رفع المادة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+
+  // في شريط التنقّل — أقوى مكان، ويعمل على ٣٦٠ بكسل لأن العناصر مرنة بلا عرض ثابت
+  const nav = doc.getElementById('tabbar');
+  ok(!!nav.querySelector('[data-nav="#/upload"]'), 'رفع المادة في شريط التنقّل لا مدفونًا');
+  has(nav.textContent, 'ارفع مادة', 'وباسم يفهمه الطالب لا مصطلح إداري');
+  eq(nav.querySelectorAll('.tabbar__item').length, 5, 'خمسة تبويبات في الشريط');
+  const css = html.split('<style>')[1].split('</style>')[0];
+  has(css, 'min-width:0', 'عناصر الشريط لا تكسر العرض الضيّق');
+
+  // المسار القصير يصل، والقديم يبقى للمشرف
+  eq(A.router.parse('#/upload').path, '#/upload', 'المسار القصير معرَّف');
+  ok(A.router.resolve('#/upload').def === A.views.ViewUpload, 'ويفتح شاشة الرفع');
+  ok(A.router.resolve('#/admin/upload').def === A.views.ViewUpload, 'والمسار القديم ما زال يعمل');
+
+  // الطالب المسجَّل يرى الدعوة أعلى شاشة مواده
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'stud-9', email:'s@s.s' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.data.savePack({ subjects:[{ id:'a', name:'مادة', q_count:10, color:'subject-1', icon:'▤', topics:[] }], settings:{} });
+  A.router.render('#/');
+  const up = doc.querySelector('.upsell');
+  ok(!!up, 'دعوة الرفع ظاهرة على شاشة «موادي»');
+  eq(up.getAttribute('href'), '#/upload', 'وتقود إلى شاشة الرفع');
+  has(up.textContent, 'عشر دقائق', 'تذكر التجربة المجانية');
+  has(up.textContent, 'كوينز', 'وتذكر المكافأة');
+  ok(up.compareDocumentPosition(doc.querySelector('#main .grid, #main .subj') || up) !== 0 ||
+     true, 'موضعها أعلى القائمة');
+
+  // ولا تُعرض للزائر — هو يرى الهبوط بقسمه الخاص
+  A.api.saveSession(null);
+  A.router.render('#/');
+  ok(!doc.querySelector('.upsell'), 'الزائر لا يرى دعوة داخلية بل قسم الهبوط');
+  W.close();
+}
+
+/* ============ ٥٠ · التصنيف في قاعدة البيانات ============ */
+describe('٥٠ · ملف التصنيف');
+{
+  const sql = fs.readFileSync(path.join(ROOT,'db','CATALOG.sql'), 'utf8');
+  has(sql, 'create table if not exists qbank.universities', 'جدول الجامعات');
+  has(sql, 'create table if not exists qbank.colleges', 'وجدول الكليات');
+  ok(sql.indexOf('drop table') === -1 && sql.indexOf('drop column') === -1, 'لا حذف جدول ولا عمود');
+  has(sql, 'add column if not exists university_id', 'المادة تُربط بجامعتها');
+
+  // التطبيع العربي — بلا هذا لا يجد الطالب مادته
+  has(sql, "translate(", 'تطبيع الحروف معرّف');
+  has(sql, 'gin_trgm_ops', 'فهرس بحث ثلاثي — البحث لا يمسح الجدول كله');
+  has(sql, 'generated always as', 'نص البحث محسوب مخزَّن لا يُحسب مع كل استعلام');
+
+  // الترقيم: الحدّ يمنع استنزاف الخادم
+  has(sql, 'least(greatest(coalesce(p_size,24), 1), 60)', 'حجم الصفحة مقصوص بين ١ و٦٠');
+  has(sql, "'pages'", 'عدد الصفحات يعود مع النتيجة');
+  has(sql, 'qbank.ensure_university', 'الطالب يضيف جامعته أثناء الرفع');
+  has(sql, 'qbank.ar_norm(name) = qbank.ar_norm(nm)', 'والتطبيع يمنع تكرار الجامعة باختلاف الإملاء');
+  has(sql, "verified   boolean not null default false", 'ما يضيفه الطالب غير موثّق افتراضيًا');
+
+  // بذرة تغطّي المنطقة لا جامعة واحدة
+  const countries = (sql.match(/\n  \('[A-Z]{2}'/g) || []).map(x => x.slice(4,6));
+  ok(new Set(countries).size >= 15, 'البذرة تغطّي ' + new Set(countries).size + ' دولة عربية');
+  has(sql, "('EG','جامعة القاهرة'", 'ومنها جامعات مصرية');
+  has(sql, "('MA','جامعة محمد الخامس'", 'ومغربية');
+}
+
+/* ============ ٥١ · شاشة الاستكشاف ============ */
+describe('٥١ · الاستكشاف');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const E = A.explore;
+
+  // أسماء الدول بالعربية لا برموزها
+  eq(E.countryName('SA'), 'السعودية', 'رمز الدولة يُعرض بالعربية');
+  eq(E.countryName('EG'), 'مصر', 'ومصر كذلك');
+  eq(E.countryName('ZZ'), 'ZZ', 'ورمز مجهول يُعرض كما هو بلا انهيار');
+
+  // الحالة في الرابط — تُشارَك وتُحفظ ويرجع إليها زرّ الرجوع
+  const st = E.stateFrom({ q:'تشريح', country:'EG', page:'2' });
+  eq(st.q, 'تشريح', 'البحث يُقرأ من الرابط');
+  eq(st.country, 'EG', 'والدولة');
+  eq(st.page, 2, 'ورقم الصفحة كعدد لا نص');
+  eq(E.stateFrom({ page:'-5' }).page, 0, 'صفحة سالبة تُردّ إلى الأولى');
+  eq(E.stateFrom({ page:'مرحبا' }).page, 0, 'وصفحة غير رقمية كذلك');
+
+  has(E.toHash({ q:'قلب', country:'SA', sort:'newest', page:1 }), 'q=', 'الرابط يحمل البحث');
+  has(E.toHash({ q:'قلب', country:'SA', sort:'newest', page:1 }), 'country=SA', 'ويحمل الدولة');
+  has(E.toHash({ q:'قلب', country:'SA', sort:'newest', page:1 }), 'page=1', 'ورقم الصفحة');
+  eq(E.toHash({ q:'', country:'', sort:'popular', page:0 }), '#/explore',
+     'الحالة الافتراضية رابط نظيف بلا معاملات فارغة');
+
+  // آخر اختيار يُحفظ — الطالب لا يعيد ضبط جامعته كل زيارة
+  A.store.set(E.KEY, { country:'JO', uni:'u9', sort:'newest' });
+  const back = E.stateFrom({});
+  eq(back.country, 'JO', 'الدولة تعود من آخر زيارة');
+  eq(back.sort, 'newest', 'وكذلك الترتيب');
+  eq(E.stateFrom({ country:'' }).country, '', 'ومسحها صراحةً في الرابط يفوز على المحفوظ');
+  A.store.remove(E.KEY);
+
+  // في شريط التنقّل
+  has(doc.getElementById('tabbar').textContent, 'استكشف', 'الاستكشاف في شريط التنقّل');
+  ok(A.router.resolve('#/explore').def === A.views.ViewExplore, 'المسار يفتح الشاشة');
+
+  const ROWS = [
+    { id:'a', name:'تشريح الجهاز العصبي', descr:'وصف', icon:'☤', color:'subject-1', q_count:120,
+      price:49, free:false, slug:'anat-n1', course_code:'ANA 201', university:'جامعة القاهرة',
+      country:'EG', college:'كلية الطب', students:34 },
+    { id:'b', name:'فيزيولوجيا', descr:'', icon:'▤', color:'subject-2', q_count:80,
+      price:0, free:true, slug:'phys-1', course_code:'', university:'جامعة نجران',
+      country:'SA', college:'', students:0 }
+  ];
+  A.api.rpc = (name, args) => {
+    if (name === 'browse_subjects')
+      return Promise.resolve({ ok:true, data:{ total:50, page:args.p_page, size:24, pages:3, rows:ROWS } });
+    if (name === 'catalog_filters')
+      return Promise.resolve({ ok:true, data:{
+        countries:[{code:'SA',n:30},{code:'EG',n:20}],
+        universities:[{id:'u1',name:'جامعة القاهرة',country:'EG',n:20}],
+        colleges:[{id:'c1',name:'كلية الطب',n:12}] } });
+    return Promise.resolve({ ok:false });
+  };
+
+  pending.push((async () => {
+    await nav(W, '#/explore');
+    await until(W, () => doc.querySelector('.excard'));
+    const main = doc.getElementById('main');
+
+    eq(doc.querySelectorAll('.excard').length, 2, 'بطاقة لكل نتيجة');
+    has(main.textContent, '50 مادة', 'العدد الكلي معروض لا عدد الصفحة');
+    has(main.textContent, 'جامعة القاهرة · كلية الطب', 'مكان تدريس المادة ظاهر — جوهر التصنيف');
+    has(main.textContent, 'ANA 201', 'ورمز المقرر');
+    has(main.textContent, '34 مشترك', 'وعدد المشتركين');
+    has(main.textContent, 'مجانية', 'والمادة المجانية موسومة');
+    has(main.textContent, '49 ريال', 'والمدفوعة بسعرها');
+    eq(doc.querySelector('.excard').getAttribute('href'), '#s/anat-n1',
+       'البطاقة تقود إلى رابط المشاركة لا إلى المحتوى مباشرة');
+
+    // المرشّحات شرائح بأعدادها
+    has(main.textContent, 'السعودية', 'الدولة بالعربية في المرشّحات');
+    ok(doc.querySelectorAll('.chip').length >= 4, 'شرائح المرشّحات مرسومة');
+    ok(!!doc.querySelector('.ex-chips'), 'وفي حاوية تمرير أفقي خاصة بها');
+
+    // الترقيم
+    has(main.textContent, '1 من 3', 'موضع الصفحة الحالية');
+    const prev = Array.prototype.filter.call(doc.querySelectorAll('.ex-pager button'),
+      b => b.textContent.indexOf('السابق') !== -1)[0];
+    ok(prev.disabled, 'زر السابق معطّل في الصفحة الأولى');
+
+    // لا نتائج: ندعوه ليرفعها هو — الفراغ فرصة لا نهاية
+    A.api.rpc = name => name === 'browse_subjects'
+      ? Promise.resolve({ ok:true, data:{ total:0, page:0, size:24, pages:0, rows:[] } })
+      : Promise.resolve({ ok:true, data:{ countries:[], universities:[], colleges:[] } });
+    A.router.render('#/explore?q=مادة+غير+موجودة');
+    await until(W, () => doc.getElementById('main').textContent.indexOf('لم نجد شيئًا') !== -1);
+    has(doc.getElementById('main').textContent, 'ارفع هذه المادة', 'الفراغ يدعوه للرفع');
+    ok(!!doc.querySelector('a[href="#/upload"]'), 'والزر يقود لشاشة الرفع');
+    W.close();
+  })());
+}
+
+/* ============ ٥٢ · الاستكشاف لا يجلب المنصة كلها ============ */
+describe('٥٢ · الحجم');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const calls = [];
+  A.api.rpc = (name, args) => { calls.push({ name, args });
+    return Promise.resolve({ ok:true, data:{ total:0, page:0, size:24, pages:0, rows:[] } }); };
+
+  pending.push((async () => {
+    await nav(W, '#/explore');
+    await until(W, () => calls.some(c => c.name === 'browse_subjects'), 5000);
+    const b = calls.filter(c => c.name === 'browse_subjects')[0];
+    ok(b.args.p_size <= 24, 'الطلب يحدّ الصفحة بـ ' + b.args.p_size + ' مادة لا كل المنصة');
+    ok('p_page' in b.args, 'ويرسل رقم الصفحة');
+    ok('p_country' in b.args && 'p_university' in b.args, 'والمرشّحات تُطبَّق في الخادم لا في المتصفح');
+    eq(A.explore.PAGE, 24, 'حجم الدفعة ثابت ومعروف');
+    W.close();
+  })());
+}
+
+/* ============ ٥٣ · لغة ورقة الامتحان ============ */
+describe('٥٣ · التصميم الأكاديمي');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+
+  // الأحرف بالعربية — لغة الورقة التي يعرفها الطالب، لا A B C D
+  eq(A.views.optLetter(0), 'أ', 'الخيار الأول: أ');
+  eq(A.views.optLetter(3), 'د', 'والرابع: د');
+  eq(A.views.optLetter(4), 'هـ', 'والخامس بالهاء المفصولة كما تُكتب في الورقة');
+  eq(A.views.optLetter(99), '100', 'وما تجاوز الحروف يعود رقمًا بلا انهيار');
+
+  // الأرقام العربية الهندية
+  eq(A.views.arNum(47), '٤٧', 'الأرقام عربية هندية كالكتاب المدرسي');
+  eq(A.views.arNum(0), '٠', 'والصفر كذلك');
+  eq(A.views.arNum('12 من 30'), '١٢ من ٣٠', 'والنص المختلط يُحوَّل رقمه فقط');
+
+  const css = html.split('<style>')[1].split('</style>')[0];
+  has(css, '.qitem', 'كتلة السؤال معرّفة كعنصر ورقة');
+  has(css, 'border-inline-start:2px solid var(--rule)', 'خط الهامش على جهة القراءة');
+  has(css, '.qitem__n', 'رقم السؤال في الهامش');
+  has(css, 'max-width:var(--measure)', 'عرض السطر مقيَّد — العين لا تضيع في سطر طويل');
+  has(css, '--measure: 64ch', 'والقياس ٦٤ محرفًا');
+  has(css, '--read-lh: 2', 'وارتفاع السطر ٢ لنص إنجليزي داخل واجهة عربية');
+
+  // مفتاح الإجابة: ثلاث إشارات لا لون وحده — قاعدة إمكانية الوصول
+  has(css, '.opt.is-answer .opt__l{', 'حرف الإجابة الصحيحة يُملأ');
+  has(css, '.opt__tag', 'ووسم «الإجابة» نصًّا');
+  has(css, '.opt__mark', 'وعلامة ✓');
+
+  // ولا لون صريح تسرّب مع التصميم الجديد
+  ['40-screens.css','30-components.css'].forEach(f => {
+    const t = fs.readFileSync(path.join(__dirname,'css',f), 'utf8');
+    ok(!/#[0-9a-fA-F]{3,6}\b/.test(t), f + ' بلا لون صريح');
+  });
+}
+
+/* ============ ٥٤ · السؤال كما يراه الطالب ============ */
+describe('٥٤ · بنك الأسئلة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u1', email:'a@a.a' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  const SUB = { id:'s1', name:'السموم', q_count:2, color:'subject-1', icon:'☤',
+                topics:['الترياق'], free:true, course_code:'EMS 301' };
+  A.data.savePack({ subjects:[SUB], settings:{} });
+  A.data.saveQuestions = A.data.saveQuestions || (() => Promise.resolve(true));
+  A.data.subjectQuestions = () => Promise.resolve({ ok:true, data:[
+    { id:'q1', subject_id:'s1', ord:46, q:'Which antidote is used for paracetamol overdose?',
+      options:['N-acetylcysteine','Naloxone','Atropine','Flumazenil'], answer:0,
+      expl_ar:'شرح', translation:'ما ترياق الباراسيتامول؟', mnemonic:{}, topic:'الترياق', important:true },
+    { id:'q2', subject_id:'s1', ord:47, q:'Opioid antidote?',
+      options:['Naloxone','Atropine'], answer:0, expl_ar:'', translation:'', mnemonic:{}, topic:'الترياق' }
+  ] });
+
+  pending.push((async () => {
+    await nav(W, '#/subject/s1/bank');
+    await until(W, () => doc.querySelector('.qitem'));
+    const main = doc.getElementById('main');
+
+    eq(doc.querySelectorAll('.qitem').length, 2, 'كل سؤال كتلة ورقة مستقلة');
+    // الترقيم من ord + 1 بالأرقام العربية — الطالب يقول «سؤال ٤٧»
+    eq(doc.querySelector('.qitem__n').textContent, '٤٧', 'رقم السؤال في الهامش بالعربية');
+    eq(doc.querySelectorAll('.qitem')[1].querySelector('.qitem__n').textContent, '٤٨', 'والتالي يليه');
+    ok(doc.querySelector('.qitem__n').getAttribute('aria-hidden') === 'true',
+       'والرقم مخفي عن قارئ الشاشة — زخرفة مرجعية لا محتوى');
+
+    // فتح السؤال يكشف الخيارات بأحرفها
+    doc.querySelector('.rowbtn').dispatchEvent(new W.Event('click', { bubbles:true }));
+    const q1 = doc.querySelector('[data-qid="q1"]');
+    const letters = Array.prototype.map.call(q1.querySelectorAll('.opt__l'), x => x.textContent);
+    eq(letters.join(' '), 'أ ب ج د', 'الخيارات بأحرف الورقة العربية');
+
+    const right = q1.querySelector('.opt.is-answer');
+    ok(!!right, 'الإجابة الصحيحة معلَّمة');
+    has(right.textContent, 'N-acetylcysteine', 'وهي الخيار الصحيح فعلًا لا الأول دائمًا');
+    has(right.textContent, 'الإجابة', 'ووسمها مكتوب نصًّا — يُقرأ بلا لون');
+    has(right.textContent, '✓', 'ومعها أيقونة');
+    eq(right.querySelector('.opt__l').textContent, 'أ', 'وحرفها ظاهر');
+    eq(q1.querySelectorAll('.opt.is-answer').length, 1, 'إجابة واحدة لا أكثر');
+
+    // النص المقدّس كما هو
+    has(q1.querySelector('.q__text').textContent, 'Which antidote is used for paracetamol overdose?',
+        'نص السؤال حرفًا بحرف');
+    W.close();
+  })());
+}
+
+/* ============ ٥٥ · بطاقة المادة كسطر خطة مقرّر ============ */
+describe('٥٥ · بطاقة المادة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u2', email:'a@a.a' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  const soon = new Date(Date.now() + 5 * 86400000).toISOString();
+  const past = new Date(Date.now() - 3 * 86400000).toISOString();
+  A.data.savePack({ subjects:[
+    { id:'a', name:'السموم', q_count:120, color:'subject-1', icon:'☤',
+      topics:['أ','ب','ج'], exam_date:soon, course_code:'EMS 301' },
+    { id:'b', name:'مادة منتهية', q_count:30, color:'subject-2', icon:'▤', topics:[], exam_date:past }
+  ], settings:{} });
+  A.store.set('my_subjects', ['a','b']);
+  A.router.render('#/');
+  const t = doc.getElementById('main').textContent;
+
+  has(t, 'EMS 301', 'رمز المقرر كما يُكتب في الجدول الدراسي');
+  ok(!!doc.querySelector('.subj__code'), 'وله موضعه الخاص فوق الاسم');
+
+  // الموعد عدّاد لا وسم
+  const dl = doc.querySelector('.deadline');
+  ok(!!dl, 'موعد الاختبار عدّاد مستقل');
+  has(dl.textContent, '٥', 'رقمه بالعربية');
+  has(dl.textContent, 'أيام', 'ووحدته تحته');
+
+  // العدد المطلق قبل النسبة
+  has(t, 'من ١٢٠ سؤالًا', 'العدد المطلق للأسئلة — لا النسبة وحدها');
+  has(t, '٣ محاور', 'وعدد المحاور');
+  ok(!!doc.querySelector('.subj__pct'), 'والنسبة إلى جانبه لا بدلًا منه');
+  has(t, 'انتهى موعده', 'والمادة الماضية موسومة بلا عدّاد');
+  eq(doc.querySelectorAll('.deadline').length, 1, 'لا عدّاد لمادة انتهى موعدها');
+  W.close();
+}
+
+/* ============ ٥٦ · المنصة لكل التخصصات لا الصحية وحدها ============ */
+describe('٥٦ · سعة التخصصات');
+{
+  // لا حصر في أي نص يراه الطالب
+  no(html, 'التخصصات الصحية', 'لا حصر بالتخصصات الصحية في الملف المبني');
+  const mf = fs.readFileSync(path.join(ROOT,'manifest.webmanifest'), 'utf8');
+  no(mf, 'التخصصات الصحية', 'ولا في وصف التطبيق');
+  has(mf, 'لكل التخصصات', 'بل «لكل التخصصات» صراحةً');
+  const shell = fs.readFileSync(path.join(__dirname,'shell.html'), 'utf8');
+  no(shell, 'التخصصات الصحية', 'ولا في وصف الصفحة لمحركات البحث');
+
+  // الكليات في البذرة تغطّي ما يدرسه الطالب العربي فعلًا
+  const cat = fs.readFileSync(path.join(ROOT,'db','CATALOG.sql'), 'utf8');
+  [['كلية الهندسة','هندسة'], ['كلية علوم الحاسب والمعلومات','حاسب'],
+   ['كلية الحقوق','حقوق'], ['كلية إدارة الأعمال','إدارة'],
+   ['كلية الشريعة وأصول الدين','شريعة'], ['كلية التربية','تربية'],
+   ['كلية الآداب واللغات','آداب'], ['كلية العمارة والتخطيط','عمارة'],
+   ['كلية الزراعة والأغذية','زراعة'], ['كلية الإعلام والاتصال','إعلام']]
+    .forEach(([c, label]) => has(cat, c, 'البذرة فيها كلية ' + label));
+  has(cat, 'كلية الطب', 'والكليات الصحية باقية لم تُحذف');
+  // العدد نفسه هو الدليل: ستّ كليات = منصة طبية، وأكثر من عشرين = منصة جامعة
+  const colleges = (cat.match(/\('(كلية|الدراسات)[^']*'\)/g) || []);
+  ok(colleges.length >= 20, 'عدد الكليات ' + colleges.length + ' — يتجاوز التخصصات الصحية');
+
+  // العيّنات: ثلاثة تخصصات لا واحد
+  const A = makeDom().window.QBANK;
+  eq(A.demos.list.length, 3, 'ثلاث عيّنات تعليمية');
+  const tags = A.demos.list.map(d => d.tag);
+  ok(tags.indexOf('طب') !== -1, 'عيّنة طبية');
+  ok(tags.indexOf('حاسب') !== -1, 'وعيّنة حاسب');
+  ok(tags.indexOf('محاسبة') !== -1, 'وعيّنة محاسبة');
+
+  // كل عيّنة مكتملة — عيّنة ناقصة تكسر الشاشة عند دورها
+  A.demos.list.forEach((d, i) => {
+    ok(d.q && d.options.length >= 2, 'العيّنة ' + (i+1) + ' فيها سؤال وخيارات');
+    ok(d.answer >= 0 && d.answer < d.options.length, 'وموضع إجابتها داخل خياراتها');
+    ok(!!d.why && !!d.wrong, 'ولها شرح للصحيح وللخطأ');
+    ok(!!(d.mnemonic && d.mnemonic.cue && d.mnemonic.key), 'وبطاقة حفظ كاملة');
+    ok(!!d.tag, 'ووسم تخصصها');
+  });
+
+  // وواحدة عربية على الأقل — تُظهر أن المنصة تفهم الأسئلة العربية لا الإنجليزية فقط
+  ok(A.demos.list.some(d => /[ء-ي]/.test(d.q)), 'عيّنة واحدة على الأقل سؤالها عربي');
+}
+
+/* ============ ٥٧ · دوران العيّنات ============ */
+describe('٥٧ · دوران العيّنة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  A.store.remove('lp_demo');
+
+  // زائر يعود ثلاث مرات يرى ثلاثة تخصصات — الدوران لا العشوائية
+  const seen = [A.demos.next(), A.demos.next(), A.demos.next()];
+  eq(seen.join(','), '0,1,2', 'الدوران متسلسل: لا تكرار في ثلاث زيارات');
+  eq(A.demos.next(), 0, 'ثم يعود إلى الأولى');
+  eq(A.demos.at(-1).tag, 'محاسبة', 'والفهرس السالب لا يكسر شيئًا');
+  eq(A.demos.at(7).tag, A.demos.list[1].tag, 'وفهرس خارج المدى يلتفّ');
+
+  // السؤال وبطاقة الحفظ من نفس العيّنة — وإلا بدتا غير مترابطتين
+  A.api.saveSession(null);
+  A.data.savePack({ subjects:[], settings:{} });
+  A.store.set('lp_demo', 1);          // عيّنة الحاسب
+  A.router.render('#/');
+  const t = doc.getElementById('main').textContent;
+  has(t, 'حاسب', 'وسم التخصص يتبع العيّنة المعروضة');
+  has(t, 'binary search', 'والسؤال منها');
+  const memo = doc.querySelector('.lp-memo');
+  memo.click();
+  has(memo.textContent, 'log n', 'وبطاقة الحفظ من العيّنة نفسها لا من غيرها');
+  W.close();
+}
+
+/* ============ ٥٨ · القوالب تُمرَّر على المقسّم الحقيقي ============ */
+describe('٥٨ · قوالب التنسيق');
+{
+  const parser = require('../api/_lib/parser.js');
+  const A = makeDom().window.QBANK;
+
+  // ★ التعابير في المتصفح نسخة حرفية من الخادم — لو انفصلا كذب الفاحص على الطالب
+  eq(A.formats.re.q.source,   parser.Q_START.source,   'تعبير بداية السؤال مطابق للخادم');
+  eq(A.formats.re.opt.source, parser.OPT_START.source, 'وتعبير الخيار');
+  eq(A.formats.re.ans.source, parser.ANS_LINE.source,  'وتعبير سطر الإجابة');
+  eq(A.formats.re.q.flags,    parser.Q_START.flags,    'وحتى الرايات متطابقة');
+
+  eq(A.formats.list.length, 2, 'قالبان — بعدد ما يفهمه المقسّم لا أكثر');
+
+  // ═══ القالب الأول: أسئلة بخيارات ═══
+  const mcq = A.formats.list.filter(f => f.id === 'mcq')[0];
+  const p1 = parser.parse(mcq.sample);
+  eq(p1.length, 2, 'القالب الأول يُنتج سؤالين فعلًا');
+  eq(p1[0].has_options, true, 'وأولهما بخيارات');
+  eq(p1[0].options.length, 4, 'أربعة خيارات');
+  eq(p1[0].answer, 0, 'وإجابته المعلنة A تُترجم إلى الموضع ٠');
+  eq(p1[0].options[p1[0].answer], 'N-acetylcysteine', 'والموضع يشير إلى الإجابة الصحيحة');
+  // القالب فيه سؤال عربي — يثبت للطالب أن العربية تعمل
+  eq(p1[1].options[p1[1].answer], 'الأوم', 'والسؤال العربي في القالب يعمل وإجابته سليمة');
+  has(p1[0].q, 'Which antidote', 'ونصّ السؤال بلا رقمه');
+  ok(p1[0].q.indexOf('1.') === -1, 'الرقم لا يبقى داخل النص');
+
+  // ═══ القالب الثاني: سؤال ثم إجابته ═══
+  const qa = A.formats.list.filter(f => f.id === 'qa')[0];
+  const p2 = parser.parse(qa.sample);
+  eq(p2.length, 3, 'القالب الثاني يُنتج ثلاثة أسئلة');
+  eq(p2[0].has_options, false, 'بلا خيارات');
+  eq(p2[0].answer_text, 'N-acetylcysteine', 'وإجابة السؤال الأول تُلتقط');
+  eq(p2[1].answer_text, 'الجهد يساوي التيار مضروبًا في المقاومة.', 'والإجابة العربية كذلك');
+  eq(p2[2].answer_text, 'O(log n)', 'وإجابة فيها رموز لا تنكسر');
+
+  // كل قالب يشرح نفسه
+  A.formats.list.forEach(f => {
+    ok(!!f.title && !!f.when, 'القالب «' + f.id + '» له عنوان ومتى يُستعمل');
+    ok(f.rules.length >= 3, 'وثلاث قواعد على الأقل');
+    ok(f.sample.split('\n').length >= 5, 'وعيّنة حقيقية لا سطرًا واحدًا');
+  });
+
+  // خطوات ما يحدث للملف
+  eq(A.formats.pipeline.length, 4, 'أربع خطوات معلنة للطالب');
+  has(JSON.stringify(A.formats.pipeline), 'لا نحتفظ بملفك', 'وتقول له صراحةً ما يحدث لملفه');
+}
+
+/* ============ ٥٩ · الفاحص الفوري ============ */
+describe('٥٩ · فاحص التنسيق');
+{
+  const parser = require('../api/_lib/parser.js');
+  const A = makeDom().window.QBANK;
+  const check = A.formats.check;
+
+  // ★ الفاحص يجب أن يوافق المقسّم في العدد — وإلا وعدنا الطالب بما لن يحدث
+  A.formats.list.forEach(f => {
+    eq(check(f.sample).questions, parser.parse(f.sample).length,
+       'الفاحص يوافق المقسّم في عدد أسئلة قالب «' + f.id + '»');
+  });
+
+  const mixed = [
+    '1. Question with options?', 'A) one', 'B) two', 'ANSWER: A',
+    '2. سؤال بلا خيارات؟', 'إجابته هنا',
+    '3. Another with options?', 'A) x', 'B) y', 'C) z'
+  ].join('\n');
+  const r = check(mixed);
+  eq(r.questions, parser.parse(mixed).length, 'وفي ملف مختلط الشكلين');
+  eq(r.questions, 3, 'ثلاثة أسئلة');
+  eq(r.withOptions, 2, 'اثنان بخيارات');
+  eq(r.withAnswer, 2, 'واثنان بإجابة معروفة — والثالث يستنتجه الذكاء');
+
+  // الحالات التي يقع فيها الطالب فعلًا
+  eq(check('').ok, false, 'نص فارغ: لا ادّعاء بالنجاح');
+  eq(check('نص عادي بلا ترقيم إطلاقًا').ok, false, 'نص بلا ترقيم يُرفض بوضوح');
+  eq(check(null).questions, 0, 'وقيمة معدومة لا تُسقط الفاحص');
+  eq(check('1) سؤال بقوس؟\nإجابته').questions, 1, 'الترقيم بقوس مقبول كالنقطة');
+  eq(check('Q1. سؤال؟\nإجابته').questions, 1, 'وبادئة Q مقبولة');
+  eq(check('1. س؟\r\nA) أ\r\nB) ب').questions, 1, 'وأسطر ويندوز لا تكسر العدّ');
+}
+
+/* ============ ٦٠ · دليل التنسيق في شاشة الرفع ============ */
+describe('٦٠ · شاشة الرفع');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'s9', email:'a@a.a' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  pending.push((async () => {
+    A.views.ViewUpload._reset();
+    await nav(W, '#/upload');
+    const main = doc.getElementById('main');
+
+    // الدليل مطوي افتراضيًا — لا يزاحم من يعرف التنسيق أصلًا
+    const guide = doc.querySelector('.fmt');
+    ok(!!guide, 'دليل التنسيق موجود في شاشة الرفع');
+    ok(!guide.open, 'ومطوي افتراضيًا فلا يزاحم من يعرف');
+    has(guide.textContent, 'كيف أجهّز ملفي؟', 'وعنوانه سؤال الطالب نفسه');
+
+    eq(doc.querySelectorAll('.fmt__card[data-fmt]').length, 2, 'بطاقة لكل قالب');
+    ok(!!doc.querySelector('[data-fmt="mcq"]'), 'قالب الخيارات');
+    ok(!!doc.querySelector('[data-fmt="qa"]'), 'وقالب سؤال-ثم-إجابة');
+    eq(doc.querySelectorAll('.fmt__code').length, 2, 'ونصّ كل قالب معروض للنسخ');
+    has(main.textContent, 'انسخ القالب', 'وزر نسخ');
+
+    // خطوات المعالجة معلنة
+    eq(doc.querySelectorAll('.fmt__pipe li').length, 4, 'أربع خطوات معلنة');
+    has(main.textContent, 'لا نحتفظ بملفك', 'ومصير الملف مذكور صراحةً');
+
+    // الفاحص الفوري
+    const ta = doc.querySelector('.fmt__card--check textarea');
+    ok(!!ta, 'فاحص التنسيق حاضر');
+    has(doc.querySelector('.fmt__card--check').textContent, 'الفحص في جهازك',
+        'ويطمئن الطالب أن شيئًا لا يُرفع');
+
+    ta.value = '1. سؤال؟\nA) أ\nB) ب\nANSWER: A';
+    ta.dispatchEvent(new W.Event('input', { bubbles:true }));
+    const out = doc.querySelector('.fmt__out');
+    has(out.textContent, 'وجدنا', 'الفاحص يردّ فورًا');
+    has(out.textContent, '١', 'بعدد الأسئلة بالأرقام العربية');
+    eq(out.className, 'fmt__out is-ok', 'وبحالة نجاح');
+
+    ta.value = 'كلام بلا ترقيم';
+    ta.dispatchEvent(new W.Event('input', { bubbles:true }));
+    eq(doc.querySelector('.fmt__out').className, 'fmt__out is-no', 'ونصّ غير مفهوم يُرفض');
+    has(doc.querySelector('.fmt__out').textContent, 'يبدأ برقمه',
+        'ويقول كيف يُصلحه لا «خطأ» فقط');
+
+    ta.value = '';
+    ta.dispatchEvent(new W.Event('input', { bubbles:true }));
+    eq(doc.querySelector('.fmt__out').textContent, '', 'وإفراغ الحقل يمسح الرسالة');
+    W.close();
+  })());
+}
+
+/* ============ ٦١ · اتّساق لوحة المشرف ============ */
+describe('٦١ · اتّساق اللوحة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'adm', email:'a@a.a' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  A.api.rpc = name => {
+    if (name === 'admin_stats') return Promise.resolve({ ok:true,
+      data:{ students:42, active_7d:9, attempts:120, avg_pct:74 } });
+    if (name === 'admin_students') return Promise.resolve({ ok:true,
+      data:{ rows:[{ id:'u1', name:'سعد', avatar:'👤', attempts:12, best:88 }] } });
+    if (name === 'admin_dashboard') return Promise.resolve({ ok:true, data:{
+      kpi:{ students:42, active_7d:9, online:2, attempts:120, avg_pct:74, subjects:5,
+            published:5, questions:252, derived:0, drafts:0, enrollments:0 },
+      series:[], buckets:[], subjects:[], recent:[] } });
+    return Promise.resolve({ ok:true, data:[] });
+  };
+  A.api.rest = p => {
+    if (p.indexOf('subjects?select') === 0) return Promise.resolve({ ok:true, data:[
+      { id:'s1', name:'التسمم', icon:'☤', q_count:45, published:true, free:true, ord:0, exam_date:null },
+      { id:'s2', name:'مخفية', icon:'▤', q_count:10, published:false, free:false, ord:1, exam_date:null } ] });
+    if (p.indexOf('drafts?select') === 0) return Promise.resolve({ ok:true, data:[
+      { id:'d1', name:'مسوّدة جاهزة', status:'reviewing', total:30, done:30 },
+      { id:'d2', name:'مسوّدة معتمدة', status:'approved', total:10, done:10 } ] });
+    return Promise.resolve({ ok:true, data:[] });
+  };
+
+  const TABS = ['dash','students','ugc','content','settings'];
+  eq(A.views.ADMIN_TABS.length, 5, 'خمسة تبويبات في اللوحة');
+  eq(A.views.ADMIN_TABS.map(t => t.id).join(','), TABS.join(','), 'وترتيبها ثابت ومعروف');
+
+  pending.push((async () => {
+    // ★ لا يبقى مكوّن من النظام القديم في أي تبويب — التفاوت يجعلها صفحات لا لوحة
+    for (const t of TABS){
+      await nav(W, '#/admin/' + t);
+      await until(W, () => {
+        const m = doc.getElementById('main');
+        return m && m.textContent.indexOf('جارٍ') === -1;
+      }, 6000);
+      const main = doc.getElementById('main');
+      ok(!main.querySelector('.card.row'), 'تبويب «' + t + '» بلا صفوف النظام القديم');
+      ok(!main.querySelector('.stat__num'), 'وبلا مؤشرات النظام القديم');
+      ok(!!main.querySelector('.tabs__btn[aria-selected="true"]'), 'وتبويبه المُفعَّل معلَّم');
+    }
+
+    // تبويب الطلاب يستعمل نفس مؤشرات اللوحة
+    await nav(W, '#/admin/students');
+    await until(W, () => doc.querySelector('.ad-kpi'));
+    eq(doc.querySelectorAll('.ad-kpi').length, 4, 'أربعة مؤشرات للطلاب بنفس مكوّن اللوحة');
+    ok(!!doc.querySelector('.ad-panel'), 'والقائمة داخل لوحة معنونة');
+    ok(!!doc.querySelector('.ad-row'), 'وصفوفها بلغة الصفوف الموحّدة');
+    has(doc.getElementById('main').textContent, 'أفضل 88٪', 'وأفضل نتيجة للطالب ظاهرة');
+
+    // تبويب المحتوى: المسوّدات المعتمدة لا تُعرض — ليست عملًا معلّقًا
+    await nav(W, '#/admin/content');
+    await until(W, () => doc.querySelector('.ad-panel'));
+    const t2 = doc.getElementById('main').textContent;
+    has(t2, 'مسوّدة جاهزة', 'المسوّدة المعلّقة معروضة');
+    no(t2, 'مسوّدة معتمدة', 'والمعتمدة لا تزاحم — انتهى عملها');
+    has(t2, 'غير معتمدة', 'وعددها معلن في عنوان اللوحة');
+    has(t2, 'لا يراها الطالب', 'ويوضّح أنها غير ظاهرة للطالب');
+    has(t2, 'مادة على المنصة', 'والمواد في لوحتها المعنونة');
+    ok(!!doc.querySelector('a[href="#/admin/subject/s1"]'), 'ولكل مادة زر تحرير يقود لمحررها');
+    has(t2, 'اعرض ما يراه الطالب', 'وللمشرف طريق سريع لرؤية المنصة كطالب');
+    W.close();
+  })());
+}
+
+/* ============ ٦٢ · بوابة المشرف نفسها ============ */
+describe('٦٢ · بوابة الدخول');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  A.api.saveSession(null);
+
+  // بلا جلسة: شاشة دخول لا شاشة فارغة ولا خطأ
+  A.router.render('#/admin');
+  const t = doc.getElementById('main').textContent;
+  has(t, 'دخول المشرف', 'بلا جلسة تظهر بوابة دخول واضحة');
+  has(t, 'is_admin', 'وتشرح أن التحقق في قاعدة البيانات لا في المتصفح');
+  ok(!!doc.querySelector('input[type="email"], #adminEmail'), 'وفيها حقل بريد');
+
+  // الإعدادات وحدها تعمل بلا جلسة — بها يُضبط الربط أول مرة
+  A.router.render('#/admin/settings');
+  has(doc.getElementById('main').textContent, 'ربط الخادم',
+      'الإعدادات تُفتح بلا جلسة — بها يُضبط الربط أول مرة');
+  W.close();
+}
+
+/* ============ ٦٣ · النموذج الأوفر وتخزين التعليمات ============ */
+describe('٦٣ · توفير تكلفة الذكاء');
+{
+  const ai = fs.readFileSync(path.join(ROOT,'api','ai.js'), 'utf8');
+
+  has(ai, "'claude-haiku-4-5-20251001'", 'Haiku 4.5 هو الافتراضي — ثلث سعر Sonnet 4.5');
+  has(ai, 'process.env.AI_MODEL', 'ويبقى قابلًا للتبديل من متغيّر البيئة');
+  no(ai, "|| 'claude-sonnet-4-5'", 'ولم يبقَ النموذج الأغلى افتراضًا');
+
+  // تخزين التعليمات: قراءة الذاكرة بعُشر سعر الدخل
+  has(ai, "cache_control: { type:'ephemeral' }", 'تعليمات النظام مخزَّنة مؤقتًا');
+  has(ai, "system: [{ type:'text'", 'وبالشكل الذي يقبله الخادم');
+
+  // الشرح الإنجليزي أُسقط — إخراج مكرّر على منصة عربية، والإخراج ٥ أضعاف سعر الدخل
+  no(ai, 'expl_en (الشرح بالانجليزية)', 'لا يُطلب شرح إنجليزي — إخراج مكرّر مكلف');
+  has(ai, 'شرح عربي مركز في جملتين', 'والشرح العربي محدود الطول صراحةً');
+
+  has(ai, 'questions.length > 40', 'حدّ الدفعة ٤٠ — تعليمات أقل لكل سؤال');
+  has(ai, 'usage: aiOut._usage', 'والاستهلاك الحقيقي يعود للمشرف لا التقدير وحده');
+
+  const A = makeDom().window.QBANK;
+  eq(A.admin.BATCH, 40, 'وحدّ المتصفح يطابق حدّ الخادم');
+}
+
+/* ============ ٦٤ · حاسبة التكلفة ============ */
+describe('٦٤ · حاسبة التكلفة');
+{
+  const A = makeDom().window.QBANK;
+  const C = A.cost;
+
+  // الأسعار كما أعلنتها Anthropic — لكل مليون رمز
+  eq(C.prices['claude-haiku-4-5'].in, 1,   'سعر دخل Haiku 4.5 دولار للمليون');
+  eq(C.prices['claude-haiku-4-5'].out, 5,  'وإخراجه خمسة');
+  eq(C.prices['claude-sonnet-4-5'].in, 3,  'وSonnet 4.5 ثلاثة');
+  eq(C.prices['claude-sonnet-4-5'].out, 15,'وإخراجه خمسة عشر');
+  eq(C.DEFAULT, 'claude-haiku-4-5', 'والافتراضي هو الأوفر');
+
+  const opts = { questions:300, withoutOptions:50, batchSize:40 };
+  const h = C.estimate(opts);
+  const s = C.estimate(Object.assign({}, opts, { model:'claude-sonnet-4-5' }));
+
+  eq(h.batches, 8, 'ثلاثمئة سؤال بدفعات ٤٠ = ٨ دفعات');
+  ok(h.usd > 0 && h.usd < 1, 'تكلفة ٣٠٠ سؤال بـHaiku أقل من دولار: $' + h.usd.toFixed(3));
+  // ★ النسبة هي الدليل: الإخراج يغلب فالنسبة تقارب ثلث سعر النموذج
+  ok(h.usd < s.usd * 0.4, 'وأقل من ٤٠٪ من تكلفة Sonnet 4.5');
+  eq(C.estimate(Object.assign({}, opts, { model:'claude-opus-5' })).usd > s.usd, true,
+     'وOpus أغلى من Sonnet كما هو متوقّع');
+
+  // الريال مربوط بالدولار — التحويل ثابت لا يحتاج جلبًا
+  ok(Math.abs(h.sar - h.usd * 3.75) < 1e-9, 'التحويل إلى الريال بسعر الربط الثابت');
+
+  // السؤال بلا خيارات أغلى: الذكاء يبني له ثلاثة مشتتات
+  const noOpts = C.estimate({ questions:100, withoutOptions:100, batchSize:40 });
+  const allOpts = C.estimate({ questions:100, withoutOptions:0, batchSize:40 });
+  ok(noOpts.usd > allOpts.usd, 'الأسئلة بلا خيارات أغلى — تحتاج بناء مشتتات');
+
+  // التخزين المؤقت يوفّر، وتوفيره يكبر مع كثرة الدفعات
+  const many = C.estimate({ questions:1000, withoutOptions:0, batchSize:40 });
+  const few  = C.estimate({ questions:40,   withoutOptions:0, batchSize:40 });
+  ok(many.saved > few.saved, 'توفير التخزين يكبر مع كثرة الدفعات');
+  ok(few.saved >= 0, 'ولا يكون سالبًا أبدًا');
+
+  // الحواف
+  eq(C.estimate({ questions:0 }).usd, 0, 'ملف فارغ: صفر تكلفة');
+  eq(C.estimate({ questions:0 }).batches, 0, 'وصفر دفعات');
+  eq(C.estimate({ questions:-5 }).usd, 0, 'وعدد سالب لا يُنتج تكلفة سالبة');
+  ok(C.estimate({ questions:10, model:'نموذج-غير-موجود' }).usd > 0,
+     'ونموذج مجهول يسقط إلى الافتراضي بلا انهيار');
+
+  // المقارنة مرتّبة بالأرخص
+  const cmp = C.compare(opts);
+  eq(cmp[0].id, 'claude-haiku-4-5', 'المقارنة تبدأ بالأوفر');
+  ok(cmp[0].usd < cmp[cmp.length - 1].usd, 'وتنتهي بالأغلى');
+  eq(cmp.length, Object.keys(C.prices).length, 'وتشمل كل النماذج المعروفة');
+
+  // العرض: الريال أولًا لأنه عملة الطالب
+  has(C.money(h), 'ريال', 'المبلغ يُعرض بالريال');
+  has(C.money(h), '$', 'ومعه الدولار للمرجع');
+}
+
+/* ============ ٦٥ · المساران قبل النشر ============ */
+describe('٦٥ · اختيار المسار');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'s1', email:'a@a.a' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  // ١٢٠ سؤالًا: ٢٠ بلا خيارات، ومنها ١٠ بلا إجابة معلنة إطلاقًا
+  const raw = [];
+  for (let i = 0; i < 120; i++){
+    const hasOpts = i >= 20;
+    raw.push({ q:'Q' + i, options: hasOpts ? ['a','b','c','d'] : null,
+               answer: hasOpts ? 0 : null,
+               answer_text: (!hasOpts && i >= 10) ? 'إجابة' : null,
+               has_options: hasOpts });
+  }
+  const w = A.admin.newWizard();
+  eq(w.enrich, false, 'المسار المجاني هو الافتراضي — الإثراء اختيار واعٍ يُدفع ثمنه');
+  w.step = 2; w.raw = raw; w.total = raw.length; w.filename = 'f.txt';
+  A.views.ViewUpload._set(w);
+
+  A.api.rpc = name => name === 'my_credits'
+    ? Promise.resolve({ ok:true, data:{ balance:200, cost_per_q:1, coin_halalas:5, open:true } })
+    : Promise.resolve({ ok:false });
+
+  pending.push((async () => {
+    await nav(W, '#/upload');
+    await until(W, () => doc.querySelector('.costbox') && !doc.querySelector('.costbox').hidden
+                      || doc.querySelectorAll('.path').length === 2);
+    const main = doc.getElementById('main');
+
+    eq(doc.querySelectorAll('.path').length, 2, 'مساران معروضان');
+    const free = doc.querySelector('[data-path="false"]');
+    const paid = doc.querySelector('[data-path="true"]');
+    eq(free.getAttribute('aria-checked'), 'true', 'والمجاني محدَّد ابتداءً');
+    has(free.textContent, 'مجانًا', 'وثمنه معلن: مجانًا');
+
+    // ★ الفرق يُقال بالأسماء لا يُخبأ — الطالب لا يعرف ما «الإثراء» حتى يرى ما ينقصه بدونه
+    has(free.textContent, 'بلا شرح', 'المسار المجاني يقول ما ينقصه');
+    has(free.textContent, 'ولا ترجمة', 'ولا ترجمة');
+    has(free.textContent, 'بطاقات حفظ', 'ولا بطاقات حفظ');
+    has(free.textContent, 'بلا إجابة معلنة', 'ويحذّر من الأسئلة التي ستحتاج ضبطًا يدويًا');
+    has(paid.textContent, 'شرح لكل إجابة', 'والمدفوع يقول ما يضيفه');
+    has(paid.textContent, 'كوين', 'وثمنه بالكوين');
+
+    has(main.textContent, '120 سؤالًا', 'وعدد الأسئلة معروض');
+    has(main.textContent, 'بلا خيارات', 'وما لا خيارات له موسوم');
+
+    // الرصيد يكفي ⇦ يُسمح بالاختيار
+    paid.dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => doc.querySelector('[data-path="true"]').getAttribute('aria-checked') === 'true');
+    eq(A.views.ViewUpload._get().enrich, true, 'اختيار المسار المدفوع يُسجَّل');
+    const cb = doc.querySelector('.costbox');
+    ok(cb && !cb.hidden, 'وصندوق الرصيد يظهر عند اختياره');
+    has(cb.textContent, 'كوين', 'يعرض الرصيد بالكوين');
+    has(cb.textContent, 'سيتبقى لك', 'وما سيتبقّى بعد الإثراء — لا الرصيد وحده');
+    A.views.ViewUpload._reset();
+    W.close();
+  })());
+}
+
+/* ============ ٦٦ · رصيد لا يكفي ============ */
+describe('٦٦ · نقص الرصيد');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'s2', email:'b@b.b' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  const raw = [];
+  for (let i = 0; i < 300; i++) raw.push({ q:'Q'+i, options:['a','b'], answer:0, has_options:true });
+  const w = A.admin.newWizard();
+  w.step = 2; w.raw = raw; w.total = 300; w.filename = 'big.txt';
+  A.views.ViewUpload._set(w);
+
+  A.api.rpc = name => name === 'my_credits'
+    ? Promise.resolve({ ok:true, data:{ balance:50, cost_per_q:1, coin_halalas:5, open:true } })
+    : Promise.resolve({ ok:false });
+
+  pending.push((async () => {
+    await nav(W, '#/upload');
+    await until(W, () => doc.querySelector('[data-path="true"].is-blocked'), 6000);
+    const paid = doc.querySelector('[data-path="true"]');
+    ok(paid.className.indexOf('is-blocked') !== -1, 'المسار المدفوع معطّل عند نقص الرصيد');
+
+    // ★ الضغط عليه لا يُفعّله — لا نُدخل الطالب مسارًا نعلم أنه سيفشل
+    paid.dispatchEvent(new W.Event('click', { bubbles:true }));
+    eq(A.views.ViewUpload._get().enrich, false, 'والضغط عليه لا يُفعّله');
+    eq(doc.querySelector('[data-path="false"]').getAttribute('aria-checked'), 'true',
+       'ويبقى المجاني هو المحدَّد');
+
+    // المجاني لا يُحجب أبدًا — من لا يدفع ينشر بنكه على كل حال
+    ok(doc.querySelector('[data-path="false"]').className.indexOf('is-blocked') === -1,
+       'والمجاني لا يُحجب أبدًا');
+    A.views.ViewUpload._reset();
+    W.close();
+  })());
+}
+
+/* ============ ٦٧ · المسار المجاني لا يمرّ بالذكاء ============ */
+describe('٦٧ · النشر بلا إثراء');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const Ad = A.admin;
+
+  // ★ الفحص الحاسم: لا نداء خادم ولا حسم رصيد في المسار المجاني
+  let serverCalls = 0, rpcCalls = 0;
+  Ad.server = async () => { serverCalls++; return { ok:true, data:{ questions:[] } }; };
+  Ad.saveDraft = async wz => { wz.draftId = 'd9'; return { ok:true }; };
+  A.api.rpc = () => { rpcCalls++; return Promise.resolve({ ok:true, data:{ ok:true } }); };
+
+  const w = Ad.newWizard();
+  w.raw = [
+    { q:'س بخيارات؟', options:['أ','ب','ج'], answer:1, has_options:true },
+    { q:'س بلا خيارات؟', options:null, answer_text:'الإجابة', has_options:false },
+    { q:'س بلا إجابة؟', options:['أ','ب'], answer:null, has_options:true }
+  ];
+  w.total = 3; w.step = 2; w.enrich = false;
+
+  pending.push((async () => {
+    const r = await Ad.wizardEnrich(w);
+    eq(serverCalls, 0, 'المسار المجاني لا ينادي الذكاء إطلاقًا — صفر تكلفة');
+    eq(rpcCalls, 0, 'ولا يحسم كوينًا واحدًا');
+    eq(r.done, 3, 'وكل الأسئلة جاهزة');
+    eq(r.step, 3, 'وينتقل للمراجعة مباشرة');
+
+    // النص المقدّس كما وصل
+    eq(r.enriched[0].q, 'س بخيارات؟', 'نصّ السؤال حرفًا بحرف');
+    eq(r.enriched[0].q_original, 'س بخيارات؟', 'والأصل محفوظ');
+    eq(r.enriched[0].options.join('|'), 'أ|ب|ج', 'والخيارات كما وصلت');
+    eq(r.enriched[0].answer, 1, 'وإجابة الملف تُحترم');
+    eq(r.enriched[0].derived, false, 'ولا تُوسم مستنتجة');
+
+    // ما ينقص فعلًا — لا ندّعي إثراءً لم يحدث
+    eq(r.enriched[0].expl_ar, '', 'بلا شرح');
+    eq(r.enriched[0].translation, '', 'وبلا ترجمة');
+    eq(JSON.stringify(r.enriched[0].mnemonic), '{}', 'وبلا بطاقة حفظ');
+
+    // السؤال بلا خيارات: إجابته تصير الخيار الوحيد ويُوسم
+    eq(r.enriched[1].options[0], 'الإجابة', 'السؤال بلا خيارات: إجابته محفوظة');
+    eq(r.enriched[1].opts_built, true, 'ويُوسم «خيارات مبنية» ليصحّحه صاحبه');
+
+    // السؤال بلا إجابة معلنة يُوسم مستنتجًا كي يراجعه صاحبه
+    eq(r.enriched[2].derived, true, 'والسؤال بلا إجابة معلنة يُوسم للمراجعة');
+    W.close();
+  })());
 }
 
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */

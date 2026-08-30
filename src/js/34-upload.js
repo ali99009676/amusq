@@ -42,17 +42,124 @@ function subjectMeta(){
       return b;
     }));
 
+  /* أين تُدرَّس؟ — بلا هذا تضيع المادة في بحر المنصة ولا يجدها من يحتاجها.
+     نكتب الاسم ولا نختار من قائمة: الجامعات العربية أكثر من أن تُحصى سلفًا،
+     والخادم يوحّد الإملاء فلا تنقسم الجامعة الواحدة إلى عشر. */
+  const countryIn = el('select', { class:'input', 'aria-label':'الدولة' });
+  countryIn.appendChild(el('option', { value:'', text:'— اختر الدولة —' }));
+  Object.keys(QBANK.explore ? { SA:1,EG:1,JO:1,AE:1,KW:1,QA:1,BH:1,OM:1,IQ:1,MA:1,DZ:1,TN:1,SD:1,YE:1,LY:1,SY:1,LB:1,PS:1 } : {})
+    .forEach(c => countryIn.appendChild(el('option', { value:c, text: QBANK.explore.countryName(c) })));
+  countryIn.value = wizard.country || '';
+  countryIn.addEventListener('change', () => { wizard.country = countryIn.value; });
+
+  const uniIn = el('input', { class:'input', value: wizard.university || '',
+    placeholder:'مثال: جامعة نجران', list:'uniList' });
+  uniIn.addEventListener('input', () => { wizard.university = uniIn.value; });
+
+  const colIn = el('input', { class:'input', value: wizard.college || '',
+    placeholder:'مثال: كلية العلوم الطبية التطبيقية' });
+  colIn.addEventListener('input', () => { wizard.college = colIn.value; });
+
+  const codeIn = el('input', { class:'input', dir:'ltr', value: wizard.courseCode || '',
+    placeholder:'EMS 301' });
+  codeIn.addEventListener('input', () => { wizard.courseCode = codeIn.value; });
+
   return el('div', { class:'card stack' }, [
     el('label', { class:'field', style:'margin:0' }, [
       el('span', { class:'field__label', text:'اسم المادة' }), nameIn ]),
+    el('div', { class:'ad-edit ad-edit--2' }, [
+      el('label', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'الدولة' }), countryIn ]),
+      el('label', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'الجامعة' }), uniIn ]),
+      el('label', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'الكلية' }), colIn ]),
+      el('label', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'رمز المقرر — اختياري' }), codeIn ])
+    ]),
+    el('p', { class:'field__hint', style:'margin:0',
+      text:'هذه البيانات هي ما يجعل زميلك في جامعتك يجد مادتك. اكتبها ولو تقريبية.' }),
     el('span', { class:'field__label', text:'كيف نعالج أسئلتك؟' }),
     wrap
   ]);
 }
 
+/* ═══ دليل التنسيق: قالبان جاهزان وفاحص فوري ═══
+   الطالب اليوم يكتشف أن ملفه غير مفهوم بعد الرفع والانتظار. هنا يعرف قبلها. */
+function formatGuide(){
+  const box = el('details', { class:'fmt' });
+  box.appendChild(el('summary', { class:'fmt__sum' }, [
+    el('span', { text:'كيف أجهّز ملفي؟' }),
+    el('span', { class:'fmt__hint', text:'قالبان جاهزان وفاحص فوري' })
+  ]));
+
+  const body = el('div', { class:'fmt__body' });
+
+  // ما يحدث للملف — خطوات لا وعود
+  body.appendChild(el('ol', { class:'fmt__pipe' }, QBANK.formats.pipeline.map((p, i) =>
+    el('li', {}, [
+      el('span', { class:'fmt__pn num', text: QBANK.views.arNum(i + 1) }),
+      el('span', {}, [
+        el('b', { text: p[0] }),
+        el('span', { class:'fmt__pd', text: p[1] })
+      ])
+    ]))));
+
+  // القالبان
+  QBANK.formats.list.forEach(f => {
+    const pre = el('pre', { class:'fmt__code', dir:'auto' }, [ el('code', { text: f.sample }) ]);
+    const copy = el('button', { class:'btn btn--sm', type:'button', text:'انسخ القالب' });
+    copy.addEventListener('click', () => {
+      const done = (navigator.clipboard && navigator.clipboard.writeText)
+        ? (navigator.clipboard.writeText(f.sample), true)
+        : (function(){ try{
+              const ta = document.createElement('textarea'); ta.value = f.sample;
+              document.body.appendChild(ta); ta.select();
+              const r = document.execCommand('copy'); ta.remove(); return r;
+            } catch(e){ return false; } })();
+      QBANK.toast(done ? 'نُسخ القالب — الصقه في ملفك' : 'حدّد النص وانسخه يدويًا');
+    });
+    body.appendChild(el('section', { class:'fmt__card', 'data-fmt': f.id }, [
+      el('h3', { class:'fmt__t', text: f.title }),
+      el('p', { class:'fmt__when', text: f.when }),
+      el('ul', { class:'fmt__rules' }, f.rules.map(r => el('li', { text: r }))),
+      pre,
+      el('div', { class:'row' }, [ copy ])
+    ]));
+  });
+
+  // الفاحص: يلصق الطالب جزءًا من ملفه فيرى النتيجة فورًا
+  const ta = el('textarea', { class:'input', rows:'4',
+    placeholder:'الصق هنا سؤالين أو ثلاثة من ملفك…', 'aria-label':'فاحص التنسيق' });
+  const out = el('p', { class:'fmt__out', role:'status' });
+  ta.addEventListener('input', () => {
+    const v = ta.value.trim();
+    if (!v){ out.textContent = ''; out.className = 'fmt__out'; return; }
+    const r = QBANK.formats.check(v);
+    if (!r.ok){
+      out.className = 'fmt__out is-no';
+      out.textContent = 'لم نتعرّف على سؤال واحد. تأكد أن كل سؤال يبدأ برقمه ثم نقطة، مثل ‎1.‎';
+      return;
+    }
+    out.className = 'fmt__out is-ok';
+    out.textContent = 'وجدنا ' + QBANK.views.arNum(r.questions) + ' سؤالًا · '
+      + QBANK.views.arNum(r.withOptions) + ' بخيارات · '
+      + QBANK.views.arNum(r.withAnswer) + ' بإجابة معروفة';
+  });
+  body.appendChild(el('section', { class:'fmt__card fmt__card--check' }, [
+    el('h3', { class:'fmt__t', text:'افحص تنسيقك الآن' }),
+    el('p', { class:'fmt__when', text:'الصق جزءًا من ملفك — لا يُرفع شيء، الفحص في جهازك.' }),
+    ta, out
+  ]));
+
+  box.appendChild(body);
+  return box;
+}
+
 /* الخطوة ١: سحب وإفلات أو اختيار ملف */
 function stepRead(box, rerender){
   box.appendChild(subjectMeta());
+  box.appendChild(formatGuide());
   const drop = el('div', { class:'drop', tabindex:'0', role:'button', 'aria-label':'اختر ملف أسئلة' }, [
     el('span', { class:'empty__ico', 'aria-hidden':'true', text:'⇪' }),
     el('p', { class:'empty__title', text:'أسقط ملف الأسئلة هنا أو اضغط للاختيار' }),
@@ -106,14 +213,87 @@ function stepEnrich(box, rerender){
     rerender();
   });
 
+  /*
+    مساران، والفرق بينهما معروض لا مخبوء.
+    الطالب لا يعرف ما «الإثراء» حتى يرى ماذا ينقصه بدونه — فنقوله بالأسماء.
+  */
+  const withoutOpts = wizard.raw.filter(q => !q.has_options).length;
+  const noAnswer = wizard.raw.filter(q =>
+    !(q.has_options && typeof q.answer === 'number' && q.answer >= 0) && !q.answer_text).length;
+
+  const paths = el('div', { class:'paths', role:'radiogroup', 'aria-label':'طريقة المعالجة' });
+  const creditBox = el('div', { class:'costbox', hidden:true });
+  const N = QBANK.views.arNum;
+
+  function paint(credits){
+    const cost = QBANK.admin.creditsNeeded(wizard, (credits && credits.cost_per_q) || 1);
+    const bal = (credits && credits.balance) || 0;
+    const enough = bal >= cost;
+    wizard.costPerQ = (credits && credits.cost_per_q) || 1;
+
+    paths.innerHTML = '';
+    [
+      { id:false, t:'انشر بلا إثراء', price:'مجانًا',
+        d:'أسئلتك وخياراتها كما وصلت، جاهزة للمراجعة والاختبار حالًا.',
+        miss: 'بلا شرح لكل إجابة، ولا ترجمة، ولا بطاقات حفظ'
+              + (noAnswer ? '. و' + N(noAnswer) + ' سؤالًا بلا إجابة معلنة في ملفك ستحتاج ضبطها بيدك' : '') },
+      { id:true, t:'انشر مع الإثراء', price: N(cost) + ' كوين',
+        d:'شرح لكل إجابة، وترجمة عربية، وبطاقة حفظ، وتصنيف بالمحاور.',
+        miss: noAnswer ? 'ويستنتج الذكاء إجابات ' + N(noAnswer) + ' سؤالًا لم تُعلَن في ملفك'
+                       : 'وكل أسئلتك فيها إجاباتها أصلًا — فلن يُغيّر الذكاء إجابة واحدة' }
+    ].forEach(o => {
+      const on = wizard.enrich === o.id;
+      const blocked = o.id && !enough;
+      const b = el('button', { class:'path' + (on ? ' is-on' : '') + (blocked ? ' is-blocked' : ''),
+        type:'button', role:'radio', 'data-path': String(o.id),
+        'aria-checked': on ? 'true' : 'false' }, [
+        el('span', { class:'path__h' }, [
+          el('span', { class:'path__t', text:o.t }),
+          el('span', { class:'path__p num', text:o.price })
+        ]),
+        el('span', { class:'path__d', text:o.d }),
+        el('span', { class:'path__m', text:o.miss })
+      ]);
+      b.addEventListener('click', () => {
+        if (blocked) return;
+        wizard.enrich = o.id;
+        paint(credits);
+      });
+      paths.appendChild(b);
+    });
+
+    creditBox.hidden = !wizard.enrich;
+    creditBox.innerHTML = '';
+    if (wizard.enrich){
+      creditBox.appendChild(el('span', { class:'costbox__l', text:'رصيدك' }));
+      creditBox.appendChild(el('span', { class:'costbox__n num',
+        text: N(bal) + ' كوين' + (enough ? '' : ' — لا يكفي') }));
+      creditBox.appendChild(el('span', { class:'costbox__s',
+        text: enough ? 'سيتبقى لك ' + N(bal - cost) + ' كوين بعد الإثراء.'
+                     : 'ينقصك ' + N(cost - bal) + ' كوين لإثراء هذا الملف.' }));
+      if (!enough)
+        creditBox.appendChild(el('a', { class:'btn btn--sm', href:'#/account', text:'اشحن رصيدك' }));
+    }
+    go.textContent = wizard.done ? 'أكمل من حيث توقفت (' + wizard.done + ')'
+                    : (wizard.enrich ? 'أثرِ وانشر' : 'انشر بلا إثراء');
+    go.setAttribute('aria-disabled', (wizard.enrich && !enough) ? 'true' : 'false');
+  }
+
+  paint(null);
+  QBANK.api.rpc('my_credits').then(r => {
+    if (!paths.isConnected) return;
+    if (r.ok && r.data && !r.data.error) paint(r.data);
+  });
+
   box.appendChild(el('div', { class:'card stack' }, [
-    el('h2', { text:'قبل التشغيل — التقدير' }),
+    el('h2', { text:'كيف ننشرها؟' }),
     el('div', { class:'row' }, [
       el('span', { class:'badge num', text: est.questions + ' سؤالًا' }),
-      el('span', { class:'badge num', text: est.batches + ' دفعة ذكاء' }),
+      withoutOpts ? el('span', { class:'badge badge--warn num',
+        text: N(withoutOpts) + ' بلا خيارات' }) : null,
       el('span', { class:'badge', text:'المسوّدة تُحفظ بعد كل دفعة' })
     ]),
-    bar, label, go, msg
+    paths, creditBox, bar, label, go, msg
   ]));
 }
 

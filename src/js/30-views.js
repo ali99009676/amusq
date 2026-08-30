@@ -32,6 +32,20 @@ function stageNote(){
 }
 
 /* ١ · الرئيسية — بطاقات المواد: «موادي» ثم «مواد أخرى متاحة» */
+/*
+  أحرف الخيارات بالعربية: أ ب ج د — لا A B C D.
+  هذه لغة ورقة الامتحان التي جلس عليها الطالب طوال دراسته، ويقول بها
+  «الجواب ج» لزميله. والحرف عرضٌ فقط: موضع الإجابة يبقى رقمًا في القاعدة
+  فلا ينكسر شيء عند خلط الخيارات.
+*/
+const OPT_LETTERS = ['أ','ب','ج','د','هـ','و','ز','ح','ط','ي'];
+function optLetter(i){ return OPT_LETTERS[i] || String(i + 1); }
+
+/* الأرقام العربية الهندية — كما تُطبع في الكتاب المدرسي العربي */
+function arNum(n){
+  return String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[+d]);
+}
+
 function subjectColor(c){
   // اللون اسم متغيّر من نظام التصميم — لا hex حر من قاعدة البيانات
   return /^subject-[1-6]$/.test(c || '') ? 'var(--' + c + ')' : 'var(--subject-1)';
@@ -50,19 +64,32 @@ function subjectCard(sub){
   const pct = QBANK.progress.pctDone(sub.id, sub.q_count);
   const color = subjectColor(sub.color);
 
+  // العدد المطلق قبل النسبة: «٤٧ من ١٢٠» يقول للطالب ما بقي عليه فعلًا،
+  // والنسبة وحدها تخفي أن ٩٠٪ من مادة صغيرة أقل عملًا من ٣٠٪ من مادة كبيرة.
+  const done = Math.round((sub.q_count || 0) * pct / 100);
+  const topics = (sub.topics && sub.topics.length) || 0;
+
   const card = el('article', { class:'card subj' + (past ? ' is-past' : ''), tabindex:'0', role:'link',
     'aria-label':'مادة ' + sub.name }, [
     el('div', { class:'subj__bar', style:'background:' + color, 'aria-hidden':'true' }),
     el('div', { class:'row' }, [
       el('span', { class:'subj__ico', 'aria-hidden':'true', text: sub.icon || '▤' }),
-      el('div', {}, [
-        el('h3', { style:'margin:0', text: sub.name }),
-        el('span', { class:'badge num', text: sub.q_count + ' سؤالًا' })
+      el('div', { class:'subj__id' }, [
+        sub.course_code ? el('span', { class:'subj__code', text: sub.course_code }) : null,
+        el('h3', { class:'subj__name', text: sub.name })
       ]),
       el('span', { class:'spacer' }),
-      past ? el('span', { class:'stamp', text:'تم الانتهاء ✓' })
-           : (left !== null ? el('span', { class:'badge badge--warn num', text:'الاختبار بعد ' + left + ' يوم' }) : null),
+      past ? el('span', { class:'stamp', text:'انتهى موعده' })
+           : (left !== null ? el('span', { class:'deadline num' }, [
+               el('span', { class:'deadline__n', text: QBANK.views.arNum(left) }),
+               el('span', { class:'deadline__l', text: left === 1 ? 'يوم' : 'أيام' })
+             ]) : null),
       sub.free ? el('span', { class:'badge badge--ok', text:'مجانية' }) : null
+    ]),
+    el('div', { class:'subj__facts num' }, [
+      el('span', { text: QBANK.views.arNum(done) + ' من ' + QBANK.views.arNum(sub.q_count || 0) + ' سؤالًا' }),
+      topics ? el('span', { text: QBANK.views.arNum(topics) + ' محاور' }) : null,
+      el('span', { class:'subj__pct', text: QBANK.views.arNum(pct) + '٪' })
     ]),
     el('div', { class:'subj__meter', 'aria-label':'أنجزت ' + pct + '٪' }, [
       el('div', { style:'width:' + pct + '%;background:' + color })
@@ -83,6 +110,16 @@ const ViewHome = {
     const pack = QBANK.data.pack();
     const subjects = (pack.subjects || []).slice();
     const body = [];
+
+    // دعوة الرفع أعلى الشاشة: الطالب لا يبحث عن ميزة لا يعرف بوجودها
+    body.push(el('a', { class:'upsell', href:'#/upload' }, [
+      el('span', { class:'upsell__ico', 'aria-hidden':'true', text:'⇪' }),
+      el('span', { class:'upsell__x' }, [
+        el('span', { class:'upsell__t', text:'عندك بنك أسئلة لمادة ناقصة؟' }),
+        el('span', { class:'upsell__d', text:'ارفعه، وجرّبه عشر دقائق مجانًا، وشاركه مع زملائك بكوينز لك على كل بيعة.' })
+      ]),
+      el('span', { class:'upsell__go', 'aria-hidden':'true', text:'←' })
+    ]));
 
     if (pack.settings && pack.settings.welcome_text)
       body.push(el('div', { class:'card' }, [ el('p', { style:'margin:0', text: pack.settings.welcome_text }) ]));
@@ -228,7 +265,7 @@ const ViewSettings = {
       el('div', { class:'card stack' }, [ themeRow, el('hr', { class:'divider' }), resetRow ]),
       el('div', { class:'card' }, [
         el('h2', { text:'عن المنصة' }),
-        el('p', { class:'page__sub', text:'QBANK — منصة مراجعة تفاعلية لطلاب التخصصات الصحية. الإصدار ' + QBANK.version + ' · المرحلة ' + QBANK.stage })
+        el('p', { class:'page__sub', text:'مراجعة — بنك أسئلة تفاعلي لطلاب الجامعات العربية. الإصدار ' + QBANK.version + ' · المرحلة ' + QBANK.stage })
       ])
     ]);
   }
@@ -247,4 +284,4 @@ const ViewNotFound = {
   }
 };
 
-QBANK.views = { ViewHome, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects };
+QBANK.views = { ViewHome, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects, optLetter, arNum };

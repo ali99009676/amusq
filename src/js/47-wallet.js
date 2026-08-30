@@ -62,4 +62,12 @@ function walletBody(){
   return box;
 }
 
-QBANK.wallet = { body: walletBody, subjectRow: walletSubjectRow };
+/* المتصدرون خرجوا من شريط التنقّل ليتّسع للاستكشاف — فبابهم هنا */
+function walletLinks(){
+  return el('div', { class:'row', style:'margin-top:16px' }, [
+    el('a', { class:'btn btn--soft', href:'#/board', text:'🏆 لوحة المتصدرين' }),
+    el('a', { class:'btn btn--ghost', href:'#/explore', text:'⌕ استكشف المواد' })
+  ]);
+}
+
+QBANK.wallet = { body: walletBody, subjectRow: walletSubjectRow, links: walletLinks };

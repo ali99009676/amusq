@@ -36,19 +36,61 @@
   border-radius:inherit; transition:width var(--t) var(--ease); }
 
 /* بطاقة السؤال وخياراته */
-.q__text{ font-weight:600; margin:0; white-space:pre-wrap; }
-.q__opts{ gap:var(--s2); }
-.opt{ display:flex; align-items:flex-start; gap:var(--s3); width:100%; text-align:start;
-  background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r2);
-  padding:var(--s3) var(--s4); cursor:pointer; min-height:44px; }
-.opt:hover{ border-color:var(--brand); }
-/* الإجابة الصحيحة: لون + أيقونة معًا — لا لون وحده (شرط إمكانية الوصول) */
-.opt.is-answer{ background:var(--ok-soft); border-color:var(--ok); font-weight:700; }
-.opt.is-wrong{ background:var(--bad-soft); border-color:var(--bad); }
-.opt__mark{ min-width:1.2em; font-weight:800; color:var(--ok); }
-.is-wrong .opt__mark{ color:var(--bad); }
+/* ═══ ورقة الامتحان ═══
+   المرجع البصري هنا ليس تطبيقًا بل كرّاسة الامتحان التي جلس عليها كل طالب:
+   خط هامش، ورقم السؤال في الهامش خارج كتلة النص، وخيارات بأحرف أ ب ج د،
+   ومفتاح إجابة يعلّم الصحيح. الطالب يعرف هذه اللغة قبل أن يقرأ سطرًا. */
+.qitem{
+  position:relative;
+  padding-inline-start:var(--s7);
+  border-inline-start:2px solid var(--rule);
+}
+.qitem + .qitem{ margin-top:var(--s6); }
+/* رقم السؤال في الهامش: يجعل الطالب يقول «سؤال ٤٧» لزميله بدل أن يصفه */
+.qitem__n{
+  position:absolute; inset-inline-start:0; top:2px;
+  width:var(--s7); text-align:center;
+  font-family:var(--font-num); font-size:.82rem; font-weight:700;
+  color:var(--brand); opacity:.75;
+}
+.q__text{
+  margin:0 0 var(--s4);
+  max-width:var(--measure);
+  font-size:var(--read-size); line-height:var(--read-lh); font-weight:500;
+  white-space:pre-wrap; text-wrap:pretty;
+}
+.q__opts{ gap:var(--s2); max-width:var(--measure); }
 
-/* بطاقة المادة في الرئيسية */
+/* الخيار: حرفه أولًا كما في كل ورقة امتحان، ثم نصّه */
+.opt{
+  display:flex; align-items:flex-start; gap:var(--s3); width:100%; text-align:start;
+  padding:var(--s3) var(--s4); border-radius:var(--r2); min-height:44px;
+  background:var(--surface); border:1px solid var(--line); color:var(--text);
+  line-height:1.8; transition:border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+.opt:hover{ border-color:var(--brand); }
+.opt__l{
+  flex:0 0 auto; width:26px; height:26px; border-radius:50%;
+  display:grid; place-items:center; margin-top:1px;
+  font-family:var(--font-display); font-size:.8rem; font-weight:700;
+  background:var(--bg-soft); color:var(--text-2); border:1px solid var(--line);
+}
+.opt__mark{ flex:0 0 auto; min-width:1.1em; font-weight:800; margin-inline-start:auto; }
+
+/* مفتاح الإجابة: لون وأيقونة وحرف مملوء — ثلاث إشارات لا لون وحده */
+.opt.is-answer{ background:var(--ok-soft); border-color:var(--ok); font-weight:600; }
+.opt.is-answer .opt__l{ background:var(--ok); color:var(--on-brand); border-color:var(--ok); }
+.opt.is-answer .opt__mark{ color:var(--ok); }
+.opt.is-wrong{ background:var(--bad-soft); border-color:var(--bad); }
+.opt.is-wrong .opt__l{ background:var(--bad); color:var(--on-brand); border-color:var(--bad); }
+.opt.is-wrong .opt__mark{ color:var(--bad); }
+
+/* وسم «الإجابة» — يُقرأ بلا لون ولا أيقونة */
+.opt__tag{
+  flex:0 0 auto; font-size:.7rem; font-weight:700; padding:2px 8px;
+  border-radius:var(--r-pill); background:var(--ok); color:var(--on-brand);
+}
+
 .subj{ position:relative; overflow:hidden; cursor:pointer; }
 .subj__bar{ position:absolute; inset-inline-start:0; top:0; bottom:0; width:5px; }
 .subj__ico{ font-size:1.6rem; }
@@ -81,3 +123,28 @@
 .fold > summary::before{ content:'◂'; display:inline-block; margin-inline-end:var(--s2);
   transition:transform var(--t) var(--ease); color:var(--text-3); }
 .fold[open] > summary::before{ transform:rotate(-90deg); }
+
+/* ═══ بطاقة المادة: سطر في خطة مقرّر ═══ */
+.subj__id{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+/* رمز المقرر أولًا كما يُكتب في الجدول الدراسي — يعرفه الطالب قبل الاسم */
+.subj__code{
+  font-family:var(--font-num); font-size:.7rem; font-weight:700;
+  color:var(--text-3); letter-spacing:.06em;
+}
+.subj__name{ margin:0; font-family:var(--font-display); font-size:1rem; line-height:1.45; }
+
+.subj__facts{
+  display:flex; align-items:baseline; gap:var(--s4); flex-wrap:wrap;
+  margin:var(--s3) 0 var(--s2);
+  font-size:.8rem; color:var(--text-2);
+}
+.subj__pct{ margin-inline-start:auto; font-weight:700; color:var(--brand); }
+
+/* موعد الاختبار كموعد نهائي لا كوسم: الرقم يكبر لأنه ما يقرأه الطالب أولًا */
+.deadline{
+  flex:0 0 auto; display:flex; flex-direction:column; align-items:center;
+  padding:var(--s2) var(--s3); border-radius:var(--r2);
+  background:var(--warn-soft); border:1px solid var(--warn); line-height:1.1;
+}
+.deadline__n{ font-size:1.15rem; font-weight:800; color:var(--warn); }
+.deadline__l{ font-size:.64rem; font-weight:700; color:var(--warn); }

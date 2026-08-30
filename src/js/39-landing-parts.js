@@ -28,18 +28,10 @@ function lpExams(subjects){
 }
 
 /* ===== ٢ · سؤال تجريبي حقيقي — يجيب عنه الزائر ويرى الشرح فورًا =====
-   عيّنة تعليمية موسومة بوضوح، لا تُنسب لملف دكتور. */
-const LP_DEMO = {
-  q: 'What is the recommended chest compression rate for an adult in CPR?',
-  q_ar: 'ما معدّل ضغطات الصدر الموصى به للبالغ في الإنعاش القلبي الرئوي؟',
-  options: ['60–80 / min', '80–100 / min', '100–120 / min', '130–150 / min'],
-  answer: 2,
-  why: 'المعدّل الموصى به عالميًا ١٠٠–١٢٠ ضغطة في الدقيقة. أبطأ من ذلك لا يولّد تدفقًا دمويًا كافيًا، وأسرع منه يمنع القلب من الامتلاء بين الضغطات فيقلّ الناتج القلبي.',
-  wrong: 'الخياران الأول والثاني أبطأ من الموصى به، والرابع أسرع من أن يسمح بامتلاء البطينين.',
-  mnemonic: { cue: 'compression rate', key: '100–120', link: 'إيقاع أغنية Stayin’ Alive' }
-};
-
-function lpTryQuestion(){
+   العيّنة تدور بين التخصصات (انظر 39-demos.js)، وموسومة كعيّنة تعليمية
+   لا تُنسب لملف دكتور. */
+function lpTryQuestion(demo){
+  const LP_DEMO = demo || QBANK.demos.at(0);
   const box = el('div', { class:'lp-try' });
   const feedback = el('div', { class:'lp-try__fb', hidden:true, role:'status' });
   let answered = false;
@@ -78,7 +70,7 @@ function lpTryQuestion(){
 
   box.appendChild(el('div', { class:'row', style:'margin-bottom:12px' }, [
     el('span', { class:'badge', text:'عيّنة تعليمية' }),
-    el('span', { class:'badge badge--ok', text:'BLS' })
+    el('span', { class:'badge badge--ok', text: LP_DEMO.tag })
   ]));
   box.appendChild(el('p', { class:'lp-try__q ltr', text: LP_DEMO.q }));
   box.appendChild(opts);
@@ -89,8 +81,8 @@ function lpTryQuestion(){
 }
 
 /* ===== ٣ · بطاقة حفظ حيّة — يقلبها الزائر ليرى كيف تعمل ===== */
-function lpMemoCard(){
-  const m = LP_DEMO.mnemonic;
+function lpMemoCard(demo){
+  const m = (demo || QBANK.demos.at(0)).mnemonic;
   let flipped = false;
   const card = el('div', { class:'lp-memo', tabindex:'0', role:'button', 'aria-label':'بطاقة حفظ — اضغط لقلبها' });
 
@@ -145,4 +137,4 @@ const LP_FAQ = [
    'نعم، بزر واحد من صفحة حسابي — يُحذف الحساب وكل بياناته نهائيًا في الحال.']
 ];
 
-QBANK.views.lpParts = { lpExams, lpTryQuestion, lpMemoCard, LP_TIPS, LP_FAQ, LP_DEMO };
+QBANK.views.lpParts = { lpExams, lpTryQuestion, lpMemoCard, LP_TIPS, LP_FAQ };
