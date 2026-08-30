@@ -76,6 +76,10 @@ function subjectCard(sub){
 const ViewHome = {
   title:'الرئيسية',
   view(){
+    // الزائر يرى صفحة تعريفية تشرح وتُقنع؛ والطالب المسجَّل يرى مواده فورًا.
+    // السبب: لكلٍّ حاجة مختلفة — إقناع أولًا، ومذاكرة سريعة ثانيًا.
+    if (!AMUSQ.api.user()) return AMUSQ.views.landingView();
+
     const pack = AMUSQ.data.pack();
     const subjects = (pack.subjects || []).slice();
     const body = [];

@@ -54,11 +54,21 @@ const Api = {
   },
 
   auth: {
-    // دخول برابط سحري: Supabase يرسل بريدًا فيه رابط يعود إلى موقعنا حاملًا الرموز في الهاش
+    // عنوان العودة بعد الضغط على الرابط: موقعنا الحالي لا الافتراضي في إعدادات Supabase.
+    // بدونه يعود المستخدم إلى localhost فلا يدخل — وهذا سبب فشل الدخول الأول.
+    redirectTo(){
+      if (typeof location === 'undefined') return '';
+      // نحذف الهاش كي لا يختلط مسار التطبيق برموز الجلسة العائدة
+      return location.origin + location.pathname;
+    },
     magic(email){
-      return Api.raw('/auth/v1/otp', {
+      const back = Api.auth.redirectTo();
+      return Api.raw('/auth/v1/otp' + (back ? '?redirect_to=' + encodeURIComponent(back) : ''), {
         method:'POST',
-        body: JSON.stringify({ email, create_user: true })
+        body: JSON.stringify({
+          email, create_user: true,
+          options: { emailRedirectTo: back }
+        })
       });
     },
     // دخول جوجل/آبل: توجيه كامل للصفحة — يصلح للويب والتطبيق معًا

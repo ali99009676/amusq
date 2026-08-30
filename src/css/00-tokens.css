@@ -4,7 +4,8 @@
 */
 :root{
   /* الخط: نعتمد خطوط النظام لأن أي خط خارجي = طلب شبكة = كسر شرط العمل بلا إنترنت */
-  --font: "Segoe UI", "Noto Sans Arabic", "Dubai", "Tahoma", system-ui, -apple-system, sans-serif;
+  /* خط كوفي عربي كما في AMSU — نعتمد المتوفر في النظام فقط (لا خط خارجي) */
+  --font: "Noto Kufi Arabic", "Dubai", "Tajawal", "Cairo", "Segoe UI", Tahoma, system-ui, sans-serif;
   --font-num: "Segoe UI", system-ui, sans-serif;
 
   /* الأساس المحايد — الوضع الفاتح هو الافتراضي */
@@ -39,7 +40,7 @@
   --s5: 20px; --s6: 24px; --s7: 32px; --s8: 48px;
 
   /* الأنصاف والظلال */
-  --r1: 8px; --r2: 12px; --r3: 16px; --r4: 22px; --r-pill: 999px;
+  --r1: 10px; --r2: 14px; --r3: 20px; --r4: 26px; --r-pill: 999px;
   --sh1: 0 1px 2px rgba(16,20,45,.06), 0 1px 3px rgba(16,20,45,.04);
   --sh2: 0 4px 12px rgba(16,20,45,.08), 0 2px 4px rgba(16,20,45,.04);
   --sh3: 0 12px 32px rgba(16,20,45,.14);

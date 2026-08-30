@@ -167,7 +167,7 @@ describe('٦ · الشاشات الفارغة تُرسم');
   const d = makeDom('#/');
   const W = d.window, A = W.AMUSQ, doc = W.document;
   const screens = [
-    ['#/',            'موادي'],
+    ['#/',            'ذاكر أذكى، لا أطول'],   // زائر: صفحة الهبوط التعريفية
     ['#/login',       'دخول الطالب'],
     ['#/admin/login', 'دخول المشرف'],
     ['#/admin',       'دخول المشرف'],   // بلا جلسة: اللوحة لا تُفتح — تعرض الدخول
@@ -193,9 +193,10 @@ describe('٦ · الشاشات الفارغة تُرسم');
   A.api.saveSession(null);   // نعيد حالة الزائر لبقية فحوص هذا القسم
 
   // المنصة تبدأ فارغة: لا مادة ولا سؤال داخل الكود
+  A.api.saveSession(null);
   A.router.render('#/');
-  eq(doc.querySelectorAll('#subjectsGrid > *').length, 0, 'لا مواد مدمجة في الكود — المنصة تبدأ فارغة');
-  ok(!!doc.querySelector('#main .empty'), 'الرئيسية تعرض حالة فارغة واضحة');
+  eq(doc.querySelectorAll('.lp-card').length, 6, 'صفحة الهبوط بلا مواد مدمجة — ست بطاقات مزايا فقط');
+  ok(!!doc.querySelector('#main .empty'), 'الهبوط يعلن بوضوح أن المواد لم تُنشر بعد');
   W.close();
 }
 
@@ -771,6 +772,9 @@ describe('٢٥ · الرئيسية والبطاقات');
     { id:'s3', name:'الأدوية',   color:'bad"inject', icon:'💊', q_count:20, ord:2, free:false }
   ], settings:{ welcome_text:'أهلًا بك في AMUSQ' } });
   A.store.set('my_subjects', ['s1','s2']);
+  // بطاقات المواد للطالب المسجَّل — الزائر يرى صفحة الهبوط بدلها
+  const pl25 = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'stu-1', email:'s@t.sa' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl25 + '.s&refresh_token=r&expires_in=9999');
   A.router.render('#/');
   const t = doc.getElementById('main').textContent;
   has(t, 'أهلًا بك في AMUSQ', 'نص الترحيب من الإعدادات يظهر');
@@ -1040,6 +1044,59 @@ describe('٣٢ · معايير القبول النهائية');
   has(ai, 'القاعدة المقدسة', 'الطبقة ١: في تعليمات الذكاء');
   has(ai, 'enforce(', 'الطبقة ٢: الفرض في الخادم بعد الرد');
   has(fs.readFileSync(__filename, 'utf8'), 'verbatimOk', 'الطبقة ٣: في الفحوص الآلية');
+}
+
+/* ============ ٣٣ · صفحة الهبوط التعريفية ============ */
+describe('٣٣ · صفحة الهبوط للزائر');
+{
+  const d = makeDom('#/');
+  const W = d.window, A = W.AMUSQ, doc = W.document;
+  A.data.savePack({ subjects:[
+    { id:'s1', name:'الإسعافات الأولية', color:'subject-1', icon:'🚑', q_count:120, free:true,
+      descr:'مبادئ الإنعاش', topics:['BLS','ALS'], ord:0 },
+    { id:'s2', name:'التشريح', color:'subject-2', icon:'🦴', q_count:80, free:false, ord:1, topics:[] }
+  ], settings:{ welcome_text:'' } });
+
+  A.api.saveSession(null);
+  A.router.render('#/');
+  const t = doc.getElementById('main').textContent;
+
+  has(t, 'ذاكر أذكى', 'العنوان الرئيسي يظهر للزائر');
+  has(t, 'طلاب التخصصات الصحية', 'الجمهور المستهدف معلن');
+  ok(doc.querySelectorAll('.lp-stat').length === 4, 'شريط الأرقام بأربع خانات');
+  has(t, '200', 'إجمالي الأسئلة محسوب من المواد المنشورة فعلًا');
+  has(t, 'الإسعافات الأولية', 'المواد المنشورة معروضة في الصفحة التعريفية');
+  has(t, 'مجانية بالكامل', 'المادة المجانية موسومة للزائر');
+  has(t, '120 سؤالًا', 'عدد أسئلة كل مادة ظاهر');
+  ok(doc.querySelectorAll('.lp-steps .lp-step').length === 4, 'أربع خطوات للبدء');
+  has(t, 'حزمة الفصل', 'نموذج التسعير الموسمي معروض');
+  no(t, 'اشتراك شهري', 'لا وعد باشتراك شهري — مخالف لنموذج العمل');
+  ok(doc.querySelectorAll('a[href="#/login"]').length >= 3, 'دعوات متعددة للتسجيل');
+  has(t, 'بلا إنترنت', 'ميزة العمل دون اتصال مذكورة');
+  has(t, 'حرفًا بحرف', 'قاعدة القداسة معروضة كميزة بيعية');
+
+  // الطالب المسجَّل لا يرى الهبوط بل مواده
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-lp', email:'a@b.c' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.router.render('#/');
+  const t2 = doc.getElementById('main').textContent;
+  eq(doc.querySelector('#main h1').textContent, 'موادي', 'المسجَّل يرى مواده مباشرة لا الصفحة التعريفية');
+  no(t2, 'ذاكر أذكى', 'الهبوط لا يظهر للمسجَّل');
+  ok(!!doc.querySelector('.subj'), 'بطاقات المواد التفاعلية للمسجَّل');
+  W.close();
+}
+
+/* ============ ٣٤ · هوية الهبوط البصرية ============ */
+describe('٣٤ · تصميم الهبوط');
+{
+  const css = html.split('<style>')[1].split('</style>')[0];
+  has(css, 'Noto Kufi Arabic', 'الخط الكوفي العربي أولًا — هوية AMSU');
+  has(css, '.lp-hero', 'قسم البطل معرّف');
+  has(css, 'prefers-reduced-motion', 'حركات الهبوط تحترم تقليل الحركة');
+  has(css, '@media print', 'الهبوط لا يُطبع');
+  ok(!/#[0-9a-fA-F]{3,6}\b/.test(fs.readFileSync(path.join(__dirname,'css','50-landing.css'),'utf8')),
+     'ملف الهبوط بلا لون صريح — كله من متغيّرات التصميم');
+  has(css, 'grid-template-columns:repeat(3,1fr)', 'شبكة ثلاثية على الشاشات الكبيرة');
 }
 
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */
