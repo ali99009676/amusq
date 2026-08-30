@@ -2,9 +2,10 @@
 .topbar{
   position:sticky; top:0; z-index:20;
   height:var(--topbar-h);
-  background:color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter:saturate(180%) blur(12px);
+  background:color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter:saturate(180%) blur(16px);
   border-bottom:1px solid var(--line);
+  transition:box-shadow var(--t) var(--ease);
 }
 .topbar__in{ height:100%; display:flex; align-items:center; justify-content:space-between; gap:var(--s3); }
 .topbar__actions{ display:flex; align-items:center; gap:var(--s2); }
@@ -12,11 +13,12 @@
 .brand{ display:inline-flex; align-items:center; gap:var(--s2); color:var(--text); font-weight:800; letter-spacing:.5px; }
 .brand:hover{ text-decoration:none; }
 .brand__mark{
-  width:30px; height:30px; border-radius:9px; display:grid; place-items:center;
-  background:linear-gradient(135deg,var(--brand),var(--brand-2)); color:var(--on-brand);
-  font-family:var(--font-num); font-weight:800; font-size:.95rem;
+  width:32px; height:32px; border-radius:10px; display:grid; place-items:center;
+  background:linear-gradient(140deg,var(--brand),var(--brand-2)); color:var(--on-brand);
+  font-family:var(--font-num); font-weight:700; font-size:.95rem;
+  box-shadow:0 2px 8px rgba(18,128,92,.28);
 }
-.brand__text{ font-family:var(--font-num); }
+.brand__text{ font-family:var(--font-display); font-weight:800; }
 
 .main{
   flex:1 0 auto;

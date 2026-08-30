@@ -1,89 +1,91 @@
 /*
   مصدر واحد للمظهر. أي لون أو مسافة في المشروع يأتي من هنا حصرًا.
-  لماذا؟ لأن تغيير هوية المنصة لاحقًا يجب أن يكون تعديل ملف واحد لا مطاردة ألوان في كل مكان.
+  الهوية مأخوذة من عالم طب الطوارئ: أخضر المراقبة الحيوية، كهرماني الفرز، وورق عيادي بارد.
 */
 :root{
-  /* الخط: نعتمد خطوط النظام لأن أي خط خارجي = طلب شبكة = كسر شرط العمل بلا إنترنت */
-  /* خط كوفي عربي كما في AMSU — نعتمد المتوفر في النظام فقط (لا خط خارجي) */
-  --font: "Noto Kufi Arabic", "Dubai", "Tajawal", "Cairo", "Segoe UI", Tahoma, system-ui, sans-serif;
-  --font-num: "Segoe UI", system-ui, sans-serif;
+  /* ثلاثة أدوار للخط — لا خط خارجي البتة (شرط العمل بلا إنترنت):
+     العناوين كوفي هندسي مميّز · النص خط أنعم للقراءة الطويلة · الأرقام أحادي المسافة كشاشة المراقبة */
+  --font-display: "Noto Kufi Arabic", "Tajawal", "Cairo", "Segoe UI", system-ui, sans-serif;
+  --font: "Dubai", "Segoe UI", "Noto Sans Arabic", Tahoma, system-ui, -apple-system, sans-serif;
+  --font-num: "Cascadia Mono", "Consolas", ui-monospace, "SF Mono", Menlo, monospace;
 
-  /* الأساس المحايد — الوضع الفاتح هو الافتراضي */
-  --bg:        #f6f7fb;
-  --bg-soft:   #eef0f7;
+  /* الورق العيادي: أبرد من الأبيض الميت وأدفأ من الرمادي */
+  --bg:        #f5f8fa;
+  --bg-soft:   #eaf0f4;
   --surface:   #ffffff;
-  --surface-2: #f9fafc;
-  --line:      #e3e6ef;
-  --line-soft: #eef0f6;
+  --surface-2: #f4f8fa;
+  --line:      #dde6ec;
+  --line-soft: #eaf1f5;
 
-  --text:      #16192b;
-  --text-2:    #4d5470;
-  --text-3:    #838aa5;
+  --text:      #0f1a20;
+  --text-2:    #4a5a64;
+  --text-3:    #7d8f9a;
 
-  /* اللون الأساسي للمنصة */
-  --brand:      #3b5bdb;
-  --brand-2:    #5a78ef;
-  --brand-soft: #e7ecfd;
+  /* أخضر المراقبة الحيوية — كان لون «الإجابة الصحيحة» فصار لون الهوية */
+  --brand:      #12805c;
+  --brand-2:    #17a074;
+  --brand-soft: #e2f4ed;
   --on-brand:   #ffffff;
 
-  /* ألوان الحالة — تُستعمل دائمًا مع أيقونة لا مع اللون وحده (شرط إمكانية الوصول) */
-  --ok:      #12855f;
-  --ok-soft: #dcf5ec;
-  --warn:      #a8620a;
-  --warn-soft: #fdeed6;
-  --bad:      #c0362c;
-  --bad-soft: #fbe3e1;
-  --star:     #d99400;
+  /* حالات — تُستعمل دائمًا مع أيقونة لا باللون وحده */
+  --ok:      #12805c; --ok-soft:   #e2f4ed;
+  --warn:    #b45309; --warn-soft: #fdf0dc;   /* كهرماني الفرز */
+  --bad:     #be3428; --bad-soft:  #fceceb;
+  --star:    #c98a06;
 
-  /* المسافات — سلّم واحد لا أرقام عشوائية */
+  /* سلّم مسافات أوسع نفَسًا */
   --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
-  --s5: 20px; --s6: 24px; --s7: 32px; --s8: 48px;
+  --s5: 22px; --s6: 30px; --s7: 44px; --s8: 68px;
 
-  /* الأنصاف والظلال */
-  --r1: 10px; --r2: 14px; --r3: 20px; --r4: 26px; --r-pill: 999px;
-  --sh1: 0 1px 2px rgba(16,20,45,.06), 0 1px 3px rgba(16,20,45,.04);
-  --sh2: 0 4px 12px rgba(16,20,45,.08), 0 2px 4px rgba(16,20,45,.04);
-  --sh3: 0 12px 32px rgba(16,20,45,.14);
+  /* حواف أنعم وظلال متعددة الطبقات — الجمال في الطبقات لا في القتامة */
+  --r1: 10px; --r2: 14px; --r3: 20px; --r4: 28px; --r-pill: 999px;
+  --sh1: 0 1px 2px rgba(15,26,32,.04), 0 2px 6px rgba(15,26,32,.05);
+  --sh2: 0 2px 4px rgba(15,26,32,.04), 0 8px 20px rgba(15,26,32,.07);
+  --sh3: 0 4px 8px rgba(15,26,32,.05), 0 20px 48px rgba(15,26,32,.12);
+  --ring: 0 0 0 3px rgba(18,128,92,.22);
 
-  /* المقاسات */
-  --wrap: 980px;
-  --topbar-h: 56px;
-  --tabbar-h: 60px;
+  --wrap: 1040px;
+  --topbar-h: 60px;
+  --tabbar-h: 62px;
 
-  /* الحركة — خفيفة، وتُلغى لمن يطلب تقليل الحركة */
-  --t-fast: 120ms;
-  --t: 200ms;
-  --ease: cubic-bezier(.4,0,.2,1);
+  --t-fast: 140ms;
+  --t: 240ms;
+  --t-slow: 420ms;
+  --ease: cubic-bezier(.22,.61,.36,1);
 
-  /* ألوان المواد الافتراضية — يختار المشرف واحدًا منها لكل مادة */
-  --subject-1: #3b5bdb; --subject-2: #0d9488; --subject-3: #b45309;
-  --subject-4: #9333ea; --subject-5: #be123c; --subject-6: #0369a1;
+  /* ألوان المواد — مشتقة من نفس العائلة العيادية لا ألوان عشوائية */
+  --subject-1: #12805c; --subject-2: #0f6f8c; --subject-3: #b45309;
+  --subject-4: #6d3fa0; --subject-5: #be3428; --subject-6: #1d5fa8;
 }
 
-/* الوضع الليلي اختياري: يُفعّل بصريح اختيار المستخدم [data-theme="dark"] */
+/* الوضع الليلي: شاشة مراقبة في غرفة مظلمة */
 :root[data-theme="dark"]{
-  --bg:        #0f1117;
-  --bg-soft:   #151824;
-  --surface:   #191d2a;
-  --surface-2: #1f2432;
-  --line:      #2b3142;
-  --line-soft: #232838;
+  --bg:        #0b1116;
+  --bg-soft:   #101a21;
+  --surface:   #14202a;
+  --surface-2: #1a2833;
+  --line:      #23343f;
+  --line-soft: #1d2b35;
 
-  --text:      #eef1f8;
-  --text-2:    #aab2c8;
-  --text-3:    #767f99;
+  --text:      #e8f1f5;
+  --text-2:    #9fb3bd;
+  --text-3:    #6f8794;
 
-  --brand:      #7b93f7;
-  --brand-2:    #96a9fa;
-  --brand-soft: #1e2748;
-  --on-brand:   #0f1117;
+  --brand:      #2fbf90;
+  --brand-2:    #4ad4a8;
+  --brand-soft: #10322a;
+  --on-brand:   #06120e;
 
-  --ok:      #35c99a; --ok-soft:   #123328;
-  --warn:    #e0a336; --warn-soft: #3a2c12;
-  --bad:     #f28b82; --bad-soft:  #3a1e1c;
-  --star:    #f2c14e;
+  --ok:      #2fbf90; --ok-soft:   #10322a;
+  --warn:    #e0a53a; --warn-soft: #33260f;
+  --bad:     #f2776b; --bad-soft:  #35191a;
+  --star:    #f0bd4e;
 
-  --sh1: 0 1px 2px rgba(0,0,0,.4);
-  --sh2: 0 4px 14px rgba(0,0,0,.45);
-  --sh3: 0 14px 36px rgba(0,0,0,.6);
+  --sh1: 0 1px 2px rgba(0,0,0,.5);
+  --sh2: 0 6px 20px rgba(0,0,0,.5);
+  --sh3: 0 22px 54px rgba(0,0,0,.62);
+  --ring: 0 0 0 3px rgba(47,191,144,.3);
+
+  --subject-1: #2fbf90; --subject-2: #48b4d4; --subject-3: #e0a53a;
+  --subject-4: #a887e0; --subject-5: #f2776b; --subject-6: #6aa8f0;
 }

@@ -3,6 +3,44 @@
   الطالب المسجَّل يرى بطاقات مواده مباشرة كما كان، فلا نضيف له خطوة.
   لماذا؟ لأن الزائر يحتاج إقناعًا وشرحًا، والمسجَّل يحتاج مذاكرة فورية.
 */
+/*
+  خط تخطيط القلب: دورة PQRST كاملة تتكرر عبر عرض الشاشة.
+  نبنيه برمجيًا لا كصورة، فيبقى الملف واحدًا ويتلوّن بمتغيّرات التصميم.
+*/
+function ecgPath(cycles, w, baseline){
+  const parts = [];
+  for (let i = 0; i < cycles; i++) {
+    const x = i * w;
+    parts.push(
+      (i === 0 ? 'M' : 'L') + x + ',' + baseline,                 // خط القاعدة
+      'L' + (x + 14) + ',' + baseline,
+      'Q' + (x + 20) + ',' + (baseline - 9) + ' ' + (x + 26) + ',' + baseline,  // موجة P
+      'L' + (x + 32) + ',' + baseline,
+      'L' + (x + 36) + ',' + (baseline + 6),                      // Q
+      'L' + (x + 41) + ',' + (baseline - 30),                     // R — الذروة
+      'L' + (x + 46) + ',' + (baseline + 14),                     // S
+      'L' + (x + 51) + ',' + baseline,
+      'L' + (x + 60) + ',' + baseline,
+      'Q' + (x + 70) + ',' + (baseline - 13) + ' ' + (x + 80) + ',' + baseline, // موجة T
+      'L' + (x + w) + ',' + baseline
+    );
+  }
+  return parts.join(' ');
+}
+
+function lpEcg(){
+  const W = 100, CYCLES = 4, BASE = 40;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'lp-ecg');
+  svg.setAttribute('viewBox', '0 0 ' + (W * CYCLES) + ' 80');
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', ecgPath(CYCLES, W, BASE));
+  svg.appendChild(path);
+  return svg;
+}
+
 function lpStat(n, label){
   return el('div', { class:'lp-stat' }, [
     el('span', { class:'lp-stat__n num', text: n }),
@@ -68,7 +106,8 @@ function landingView(){
   const goSubjects = el('a', { class:'btn btn--ghost btn--lg', href:'#subjects', text:'تصفّح المواد' });
   root.appendChild(el('header', { class:'lp-hero' }, [
     el('span', { class:'lp-hero__badge' }, [
-      el('span', { 'aria-hidden':'true', text:'🩺' }), ' منصة مراجعة لطلاب التخصصات الصحية'
+      el('span', { class:'dot', 'aria-hidden':'true' }),
+      'منصة مراجعة لطلاب التخصصات الصحية'
     ]),
     el('h1', { class:'lp-hero__title' }, [
       'ذاكر أذكى، ',
@@ -77,16 +116,31 @@ function landingView(){
     el('p', { class:'lp-hero__sub', text:
       (pack.settings && pack.settings.welcome_text) ||
       'بنك أسئلة منقّح من ملفات دكاترتك حرفًا بحرف، مع شرح لكل إجابة، وبطاقات حفظ ذكية، واختبارات تجريبية تحاكي الامتحان الحقيقي — وتعمل بلا إنترنت.' }),
-    el('div', { class:'lp-cta' }, [goSignup, goSubjects])
+    el('div', { class:'lp-cta' }, [goSignup, goSubjects]),
+    lpEcg()
   ]));
+
+  /* ١-ب · عدّاد الامتحانات القادمة — أنفع ما يراه الطالب فورًا */
+  const exams = AMUSQ.views.lpParts.lpExams(subjects);
+  if (exams) root.appendChild(exams);
 
   /* ٢ · الأرقام — حقيقية من المحتوى المنشور لا مبالغات */
   root.appendChild(el('div', { class:'lp-stats' }, [
-    lpStat(subjects.length || '—', 'مادة منشورة'),
-    lpStat(totalQ || '—', 'سؤالًا مراجَعًا'),
-    lpStat(freeCount || '—', 'مادة مجانية'),
-    lpStat('∞', 'مراجعة بلا إنترنت')
+    lpStat(subjects.length || '—', 'مادة'),
+    lpStat(totalQ || '—', 'سؤالًا'),
+    lpStat(freeCount || '—', 'مجانية'),
+    lpStat('٢٤/٧', 'بلا إنترنت')
   ]));
+
+  /* ٢-ب · جرّب سؤالًا الآن — الإقناع بالتجربة لا بالكلام */
+  root.appendChild(lpSection('جرّبها الآن', 'أجب عن سؤال واحد',
+    'هكذا يبدو كل سؤال في AMUSQ: النص كما ورد، وشرح يوضّح لماذا الإجابة صحيحة ولماذا غيرها خاطئ.',
+    [AMUSQ.views.lpParts.lpTryQuestion()]));
+
+  /* ٢-ج · بطاقة حفظ حيّة */
+  root.appendChild(lpSection('طريقة الحفظ', 'بطاقة لكل سؤال',
+    'الكلمة الدالة في السؤال ← الكلمة المفتاحية في الإجابة، ورابط ذهني يثبّتها. اقلب البطاقة لترى.',
+    [AMUSQ.views.lpParts.lpMemoCard()]));
 
   /* ٣ · المواد */
   const subjectsBody = subjects.length
@@ -129,6 +183,20 @@ function landingView(){
     ])
   ]));
 
+  /* ٥-ب · نصائح مراجعة — قيمة يأخذها الزائر حتى لو لم يسجّل */
+  root.appendChild(lpSection('كيف تذاكر بذكاء', 'أربع قواعد تختصر عليك ساعات',
+    'مبنية على ما تقوله أبحاث التعلّم عن الاسترجاع النشط والمراجعة الموزّعة.', [
+    el('div', { class:'lp-grid' }, AMUSQ.views.lpParts.LP_TIPS.map(t =>
+      el('div', { class:'lp-tip' }, [
+        el('span', { class:'lp-tip__i', 'aria-hidden':'true', text: t[0] }),
+        el('div', {}, [
+          el('p', { class:'lp-tip__t', text: t[1] }),
+          el('p', { class:'lp-tip__d', text: t[2] })
+        ])
+      ])
+    ))
+  ]));
+
   /* ٦ · الأسعار — نموذج الفصل لا اشتراك شهري */
   root.appendChild(lpSection('الاشتراك', 'ادفع لفصلك، لا لشهر لن تذاكر فيه',
     'الطلب موسمي حول الامتحانات، فالاشتراك موسمي مثله.', [
@@ -164,6 +232,16 @@ function landingView(){
         el('a', { class:'btn btn--ghost btn--block', href:'#/login', text:'أبلغني' })
       ])
     ])
+  ]));
+
+  /* ٦-ب · الأسئلة الشائعة — تُزيل التردد قبل التسجيل */
+  root.appendChild(lpSection('أسئلة شائعة', 'ما يسأل عنه الطلاب عادة', null, [
+    el('div', { class:'lp-faq' }, AMUSQ.views.lpParts.LP_FAQ.map(f =>
+      el('details', {}, [
+        el('summary', { text: f[0] }),
+        el('p', { text: f[1] })
+      ])
+    ))
   ]));
 
   /* ٧ · الدعوة الأخيرة */

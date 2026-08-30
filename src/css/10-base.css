@@ -4,8 +4,11 @@ html{ -webkit-text-size-adjust:100%; }
 body{
   margin:0;
   font-family:var(--font);
-  font-size:16px;
-  line-height:1.75;                 /* سطر مريح للعربية، فحروفها متصلة وتحتاج تنفّسًا */
+  font-size:16.5px;
+  line-height:1.8;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;                 /* سطر مريح للعربية، فحروفها متصلة وتحتاج تنفّسًا */
   color:var(--text);
   background:var(--bg);
   /* لماذا هنا؟ لأن أي تمرير أفقي على جوال ٣٦٠ بكسل يُعدّ عيبًا في معايير القبول */
@@ -14,8 +17,13 @@ body{
   display:flex; flex-direction:column;
   transition:background var(--t) var(--ease), color var(--t) var(--ease);
 }
-h1,h2,h3,h4{ margin:0 0 var(--s3); line-height:1.4; font-weight:700; }
-h1{ font-size:1.5rem; } h2{ font-size:1.25rem; } h3{ font-size:1.05rem; }
+/* العناوين بالخط الكوفي الهندسي — هو شخصية الصفحة، والنص بخط أنعم للقراءة */
+h1,h2,h3,h4{
+  font-family:var(--font-display);
+  margin:0 0 var(--s3); line-height:1.45; font-weight:700;
+  letter-spacing:-.015em;
+}
+h1{ font-size:1.6rem; } h2{ font-size:1.3rem; } h3{ font-size:1.06rem; }
 p{ margin:0 0 var(--s3); }
 a{ color:var(--brand); text-decoration:none; }
 a:hover{ text-decoration:underline; }
@@ -28,7 +36,8 @@ img,svg{ max-width:100%; height:auto; }
 /* نصوص الأسئلة تبقى بلغتها الأصلية واتجاهها */
 .ltr{ direction:ltr; text-align:left; unicode-bidi:isolate; }
 
-:focus-visible{ outline:3px solid var(--brand); outline-offset:2px; border-radius:var(--r1); }
+/* حلقة تركيز ناعمة بدل الخط الحاد — أوضح للوحة المفاتيح وأجمل */
+:focus-visible{ outline:none; box-shadow:var(--ring); border-radius:var(--r1); }
 
 .skip{
   position:absolute; inset-inline-start:-9999px; top:0; z-index:99;

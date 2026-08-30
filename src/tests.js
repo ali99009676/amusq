@@ -1070,10 +1070,36 @@ describe('٣٣ · صفحة الهبوط للزائر');
   has(t, '120 سؤالًا', 'عدد أسئلة كل مادة ظاهر');
   ok(doc.querySelectorAll('.lp-steps .lp-step').length === 4, 'أربع خطوات للبدء');
   has(t, 'حزمة الفصل', 'نموذج التسعير الموسمي معروض');
-  no(t, 'اشتراك شهري', 'لا وعد باشتراك شهري — مخالف لنموذج العمل');
+  // نموذج العمل موسمي: نتحقق أن الصفحة تنفي الاشتراك الشهري لا أن تسكت عنه
+  has(t, 'لا. الطلب موسمي', 'الصفحة تنفي الاشتراك الشهري صراحةً في الأسئلة الشائعة');
+  no(t, 'اشترك شهريًا', 'لا دعوة لاشتراك شهري');
   ok(doc.querySelectorAll('a[href="#/login"]').length >= 3, 'دعوات متعددة للتسجيل');
   has(t, 'بلا إنترنت', 'ميزة العمل دون اتصال مذكورة');
   has(t, 'حرفًا بحرف', 'قاعدة القداسة معروضة كميزة بيعية');
+
+  // الأجزاء النافعة الجديدة
+  ok(!!doc.querySelector('.lp-try'), 'سؤال تجريبي تفاعلي موجود');
+  eq(doc.querySelectorAll('.lp-try .opt').length, 4, 'أربعة خيارات في السؤال التجريبي');
+  ok(!!doc.querySelector('.lp-memo'), 'بطاقة حفظ حيّة موجودة');
+  eq(doc.querySelectorAll('.lp-tip').length, 4, 'أربع نصائح مراجعة');
+  eq(doc.querySelectorAll('.lp-faq details').length, 6, 'ستة أسئلة شائعة');
+  has(t, 'الاسترجاع النشط', 'نصيحة الاسترجاع النشط مذكورة');
+  has(t, 'عيّنة تعليمية', 'السؤال التجريبي موسوم كعيّنة لا كسؤال دكتور');
+
+  // التفاعل: الإجابة الخاطئة تُعلَّم وتظهر الصحيحة مع الشرح
+  const wrongIdx = 0;
+  doc.querySelectorAll('.lp-try .opt')[wrongIdx].click();
+  ok(!!doc.querySelector('.lp-try .opt.is-wrong'), 'الاختيار الخاطئ يُعلَّم');
+  ok(!!doc.querySelector('.lp-try .opt.is-answer'), 'الإجابة الصحيحة تُكشف');
+  ok(!doc.querySelector('.lp-try__fb').hidden, 'الشرح يظهر بعد الإجابة');
+  has(doc.querySelector('.lp-try__fb').textContent, '\u0661\u0660\u0660\u2013\u0661\u0662\u0660', 'الشرح يذكر المعدّل الصحيح بأرقام عربية');
+  has(doc.querySelector('.lp-try__fb').textContent, 'ليست الإجابة الصحيحة', 'التغذية الراجعة صريحة');
+
+  // بطاقة الحفظ تُقلب
+  const memo = doc.querySelector('.lp-memo');
+  has(memo.textContent, 'وجه البطاقة', 'البطاقة تبدأ بوجهها الأمامي');
+  memo.click();
+  has(memo.textContent, 'Stayin', 'القلب يكشف الرابط الذهني');
 
   // الطالب المسجَّل لا يرى الهبوط بل مواده
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-lp', email:'a@b.c' }))));
