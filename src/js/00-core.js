@@ -6,8 +6,10 @@
 const AMUSQ = { version: '0.1.0', stage: 0 };
 
 /* --- أدوات DOM مختصرة --- */
-const $  = (sel, root) => (root || document).querySelector(sel);
-const $$ = (sel, root) => Array.prototype.slice.call((root || document).querySelectorAll(sel));
+/* الجذر قد يختفي إن رجع وعدٌ متأخر بعد تفكيك الصفحة (تنقّل أو إغلاق تبويب) — نُرجِع لا شيء بدل الانهيار */
+const docOf = root => root || (typeof document !== 'undefined' ? document : null);
+const $  = (sel, root) => { const d = docOf(root); return d ? d.querySelector(sel) : null; };
+const $$ = (sel, root) => { const d = docOf(root); return d ? Array.prototype.slice.call(d.querySelectorAll(sel)) : []; };
 
 function el(tag, attrs, children){
   const node = document.createElement(tag);

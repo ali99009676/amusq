@@ -291,6 +291,7 @@ function adminSettingsTab(box){
 }
 
 const ADMIN_TABS = [
+  // تُحقن «اللوحة» من 42-admin-dash.js في المقدمة — أبقيناها منفصلة كي يبقى هذا الملف قابلًا للفحص وحده
   { id:'students', label:'الطلاب',   fill: adminStudentsTab },
   { id:'content',  label:'المحتوى',  fill: adminContentTab },
   { id:'settings', label:'الإعدادات', fill: adminSettingsTab }
@@ -303,7 +304,7 @@ const AdminView = {
     // بلا جلسة: نعرض دخول المشرف — إلا الإعدادات فهي تعمل محليًا لضبط الربط الأول
     if (!u && route.rest[0] !== 'settings') return AMUSQ.views.ViewAdminLogin.view();
 
-    const active = ADMIN_TABS.some(t => t.id === route.rest[0]) ? route.rest[0] : 'students';
+    const active = ADMIN_TABS.some(t => t.id === route.rest[0]) ? route.rest[0] : ADMIN_TABS[0].id;
     const tabs = el('div', { class:'tabs', role:'tablist' },
       ADMIN_TABS.map(t => el('button', {
         class:'tabs__btn', type:'button', role:'tab', 'data-tab':t.id,
@@ -318,5 +319,7 @@ const AdminView = {
   }
 };
 
+Object.assign(Admin, AMUSQ.admin || {});   // نحفظ ما ألحقته الملفات اللاحقة (charts وغيرها)
 AMUSQ.admin = Admin;
+AMUSQ.views.ADMIN_TABS = ADMIN_TABS;
 AMUSQ.views.ViewAdmin = AdminView;

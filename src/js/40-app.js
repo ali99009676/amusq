@@ -31,6 +31,7 @@ function registerRoutes(){
     .add('#/settings',    V.ViewSettings)
     .add('#/account',     V.ViewAccount)
     .add('#/admin/upload', V.ViewUpload)
+    .add('#/admin/subject', V.ViewAdminSubject)
     .add('#/subject',      V.ViewSubject)
     .add('#/exam',         V.ViewExam)
     .add('#/board',        V.ViewBoard);

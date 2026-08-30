@@ -186,10 +186,10 @@ describe('٦ · الشاشات الفارغة تُرسم');
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'admin-1', email:'a@a.a' }))));
   A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=3600');
   A.router.render('#/admin');
-  eq(doc.querySelector('[data-tab="students"]').getAttribute('aria-selected'), 'true', 'تبويب الطلاب هو الافتراضي');
+  eq(doc.querySelector('[data-tab="dash"]').getAttribute('aria-selected'), 'true', 'تبويب اللوحة هو الافتراضي');
   A.router.render('#/admin/content');
   eq(doc.querySelector('[data-tab="content"]').getAttribute('aria-selected'), 'true', 'تبويب المحتوى يُفعَّل من المسار');
-  eq(doc.querySelectorAll('.tabs__btn').length, 3, 'ثلاثة تبويبات في اللوحة');
+  eq(doc.querySelectorAll('.tabs__btn').length, 4, 'أربعة تبويبات في اللوحة');
   A.api.saveSession(null);   // نعيد حالة الزائر لبقية فحوص هذا القسم
 
   // المنصة تبدأ فارغة: لا مادة ولا سؤال داخل الكود
@@ -1123,6 +1123,261 @@ describe('٣٤ · تصميم الهبوط');
   ok(!/#[0-9a-fA-F]{3,6}\b/.test(fs.readFileSync(path.join(__dirname,'css','50-landing.css'),'utf8')),
      'ملف الهبوط بلا لون صريح — كله من متغيّرات التصميم');
   has(css, 'grid-template-columns:repeat(3,1fr)', 'شبكة ثلاثية على الشاشات الكبيرة');
+}
+
+/* ============ ٣٥ · لوحة المشرف الشاملة ============ */
+describe('٣٥ · لوحة المشرف');
+{
+  const css = html.split('<style>')[1].split('</style>')[0];
+  has(css, '.ad-kpis', 'شبكة المؤشرات معرّفة');
+  has(css, '.ad-chart', 'أنماط الرسم البياني معرّفة');
+  ok(!/#[0-9a-fA-F]{3,6}\b/.test(fs.readFileSync(path.join(__dirname,'css','60-admin.css'),'utf8')),
+     'ملف اللوحة بلا لون صريح — كله من متغيّرات التصميم');
+
+  const sql = fs.readFileSync(path.join(ROOT,'db','ADMIN-DASHBOARD.sql'), 'utf8');
+  has(sql, 'amusq.is_admin()', 'دالة اللوحة تتحقق من الصلاحية في الخادم لا في المتصفح');
+  has(sql, 'security definer', 'الدالة security definer كي تقرأ فوق RLS بعد التحقق');
+  has(sql, 'search_path = amusq', 'مسار البحث مثبّت — لا اختطاف عبر جدول وهمي');
+  ok(sql.indexOf('create schema') === -1, 'الدالة لا تمسّ مخططًا آخر');
+
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.AMUSQ;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'adm', email:'a@a.a' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  // بيانات وهمية بشكل ردّ admin_dashboard الحقيقي — تحققنا من الشكل على PostgreSQL فعلي
+  const DATA = {
+    kpi:{ students:42, active_7d:9, online:3, attempts:120, avg_pct:71.5, subjects:5,
+          published:4, questions:252, derived:30, drafts:2, enrollments:60 },
+    series:[{d:'2026-08-24',n:5,avg:60},{d:'2026-08-25',n:0,avg:0},{d:'2026-08-26',n:12,avg:80}],
+    buckets:[{label:'٠–٤٩',n:4},{label:'٥٠–٥٩',n:6},{label:'٦٠–٦٩',n:10},{label:'٧٠–٨٩',n:20},{label:'٩٠–١٠٠',n:5}],
+    subjects:[
+      { id:'s1', name:'التسمم', icon:'☤', q_count:45, published:true, attempts:80, avg_pct:74, students:20 },
+      { id:'s2', name:'الصدمات', icon:'✚', q_count:60, published:false, attempts:99, avg_pct:52, students:11 }
+    ],
+    recent:[{ student:'سارة', avatar:'👩', subject:'التسمم', pct:88, correct:22, total:25,
+              created_at:new Date(Date.now() - 300000).toISOString() }]
+  };
+  A.api.rpc = (name, args) => {
+    if (name !== 'admin_dashboard') return Promise.resolve({ ok:false, data:null });
+    ok(args && typeof args.days === 'number', 'اللوحة تمرّر مدى الأيام إلى الخادم');
+    return Promise.resolve({ ok:true, data: DATA });
+  };
+
+  pending.push((async () => {
+    await nav(W, '#/admin');
+    await until(W, () => doc.querySelector('.ad-kpi'));
+    const t = doc.getElementById('main').textContent;
+    has(t, '42', 'عدد الطلاب في المؤشرات');
+    has(t, '71.5٪', 'متوسط النتائج بعلامة النسبة');
+    has(t, '4/5', 'المنشور من إجمالي المواد');
+    has(t, 'مسوّدة معلّقة', 'المسوّدات المعلّقة تُنبَّه');
+    eq(doc.querySelectorAll('.ad-kpi').length, 6, 'ستة مؤشرات');
+
+    // الرسم: عمود لكل يوم، والفارغ يأخذ صنفًا مختلفًا كي يُقرأ الصفر لا يختفي
+    const bars = doc.querySelectorAll('.ad-chart .bar');
+    eq(bars.length, 3, 'عمود لكل يوم في السلسلة');
+    eq(doc.querySelectorAll('.ad-chart .bar--empty').length, 1, 'اليوم الخالي يُرسم شريطًا باهتًا لا فراغًا');
+    // أطول عمود هو الأعلى قيمة — الفحص على الارتفاع نفسه لا على وجود العنصر
+    const hs = Array.prototype.map.call(bars, b => parseFloat(b.getAttribute('height')));
+    ok(hs[2] > hs[0] && hs[0] > hs[1], 'ارتفاع الأعمدة يتناسب مع الأعداد ١٢ > ٥ > ٠');
+    ok(!!doc.querySelector('.ad-chart .line'), 'خط متوسط النتيجة مرسوم');
+    has(doc.getElementById('main').textContent, 'اختبارًا خلال', 'مجموع الفترة معروض');
+
+    eq(doc.querySelectorAll('.ad-bucket').length, 5, 'خمس شرائح للنتائج');
+    // المواد مرتبة بالمحاولات: «الصدمات» ٩٩ قبل «التسمم» ٨٠ رغم ترتيب المصفوفة
+    const rows = doc.querySelectorAll('.ad-row');
+    has(rows[0].textContent, 'الصدمات', 'المواد مرتبة بالأكثر استخدامًا لا بترتيب الجلب');
+    has(rows[0].textContent, 'مخفية', 'حالة النشر ظاهرة في الصف');
+    has(doc.querySelector('.ad-feed').textContent, 'سارة', 'آخر النشاط يعرض اسم الطالب');
+    has(doc.querySelector('.ad-feed').textContent, ' د', 'وقت النشاط نسبي بالدقائق');
+    W.close();
+  })());
+}
+
+/* ============ ٣٦ · محرر المادة والأسئلة ============ */
+describe('٣٦ · محرر المادة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.AMUSQ;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'adm', email:'a@a.a' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  const SUB = { id:'s1', name:'التسمم', color:'subject-2', icon:'☤', descr:'وصف',
+                topics:['مقدمة','الترياق'], published:false, free:false, ord:1, q_count:3, exam_date:null };
+  const QS = [
+    { id:'q1', subject_id:'s1', ord:0, q:'ما ترياق الباراسيتامول؟',
+      options:['N-acetylcysteine','Naloxone','Atropine','Flumazenil'], answer:0,
+      expl_ar:'شرح', expl_en:'', translation:'', mnemonic:{}, topic:'الترياق', derived:false, opts_built:false, important:true },
+    { id:'q2', subject_id:'s1', ord:1, q:'ما ترياق الأفيونات؟',
+      options:['Naloxone','Atropine'], answer:1, expl_ar:'', expl_en:'', translation:'',
+      mnemonic:{}, topic:'الترياق', derived:true, opts_built:false, important:false },
+    { id:'q3', subject_id:'s1', ord:2, q:'تعريف التسمم',
+      options:['أ','ب'], answer:0, expl_ar:'شرح', expl_en:'', translation:'',
+      mnemonic:{}, topic:'مقدمة', derived:false, opts_built:false, important:false }
+  ];
+  const sent = [];
+  A.api.rest = (p2, opt) => {
+    if (opt) sent.push({ path:p2, method:opt.method, body: JSON.parse(opt.body || '{}') });
+    if (p2.indexOf('subjects?id=eq.s1&select') === 0) return Promise.resolve({ ok:true, data:[SUB] });
+    if (p2.indexOf('questions?subject_id=eq.s1') === 0) return Promise.resolve({ ok:true, data:QS });
+    return Promise.resolve({ ok:true, data:[] });
+  };
+
+  // التصفية منطق خالص — نفحصه بمعزل عن أي DOM
+  const F = A.admin.subject.filter;
+  eq(F(QS, 'ترياق', '', '').length, 2, 'البحث يطابق نص السؤال');
+  eq(F(QS, 'Naloxone', '', '').length, 2, 'البحث يطابق نص الخيارات أيضًا');
+  eq(F(QS, '', 'مقدمة', '').length, 1, 'التصفية بالمحور');
+  eq(F(QS, '', '', 'important').length, 1, 'تصفية المهم فقط');
+  eq(F(QS, '', '', 'derived').length, 1, 'تصفية الإجابة المستنتجة');
+  eq(F(QS, '', '', 'noexpl').length, 1, 'تصفية ما لا شرح له');
+  eq(F(QS, 'ترياق', 'مقدمة', '').length, 0, 'المرشِّحات تتقاطع لا تتراكم');
+
+  pending.push((async () => {
+    await nav(W, '#/admin/subject/s1');
+    await until(W, () => doc.querySelector('.ad-q'));
+    const main = doc.getElementById('main');
+
+    eq(doc.querySelectorAll('.ad-q').length, 3, 'كل أسئلة المادة معروضة');
+    eq(doc.querySelectorAll('.ad-sw').length, 6, 'ست ألوان للمادة');
+    ok(doc.querySelector('.ad-sw[data-color="subject-2"]').getAttribute('aria-checked') === 'true',
+       'اللون الحالي للمادة معلَّم');
+    ok(doc.querySelector('.ad-ico[data-ico="☤"]').getAttribute('aria-checked') === 'true',
+       'الأيقونة الحالية معلَّمة');
+
+    // ★ قاعدة القداسة: لا حقل إدخال على نص السؤال ولا على خياراته
+    const qbox = doc.querySelector('[data-qid="q1"]');
+    has(qbox.textContent, 'ما ترياق الباراسيتامول؟', 'نص السؤال معروض كما هو');
+    eq(qbox.querySelectorAll('textarea, input[type="text"], [contenteditable="true"]').length, 0,
+       'قاعدة القداسة: لا حقل تحرير على نص السؤال أو خياراته');
+
+    // تصحيح الإجابة بالضغط على الخيار — والمستنتج يُنزع عنه الوسم
+    const q2 = doc.querySelector('[data-qid="q2"]');
+    ok(q2.querySelectorAll('.ad-q__opt')[1].className.indexOf('is-a') !== -1, 'الإجابة الحالية معلَّمة');
+    q2.querySelectorAll('.ad-q__opt')[0].dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => sent.some(x => x.path.indexOf('questions?id=eq.q2') === 0));
+    const fix = sent.filter(x => x.path.indexOf('questions?id=eq.q2') === 0)[0];
+    eq(fix.method, 'PATCH', 'تصحيح الإجابة يُرسل PATCH');
+    eq(fix.body.answer, 0, 'الموضع الرقمي هو ما يُرسل لا حرف الخيار');
+    eq(fix.body.derived, false, 'التصحيح اليدوي يرفع وسم «مستنتجة»');
+    await until(W, () => q2.querySelectorAll('.ad-q__opt')[0].className.indexOf('is-a') !== -1);
+    ok(q2.querySelectorAll('.ad-q__opt')[1].className.indexOf('is-a') === -1, 'العلامة انتقلت للخيار الجديد');
+
+    // وسوم الجودة تُقرأ من بيانات السؤال
+    has(q2.textContent, 'إجابة مستنتجة', 'السؤال المستنتج موسوم للمراجعة');
+    has(q2.textContent, 'بلا شرح', 'السؤال بلا شرح موسوم');
+
+    // لوح التحرير عند الطلب فقط
+    eq(qbox.querySelectorAll('textarea').length, 0, 'لوح التحرير لا يُبنى قبل طلبه');
+    Array.prototype.filter.call(qbox.querySelectorAll('button'), b => b.textContent === 'حرّر')[0]
+      .dispatchEvent(new W.Event('click', { bubbles:true }));
+    ok(qbox.querySelectorAll('textarea').length >= 3, 'لوح التحرير يفتح حقول الشرح والترجمة');
+    eq(qbox.querySelector('select').value, 'الترياق', 'محور السؤال محدَّد مسبقًا في القائمة');
+
+    // الحذف بضغطتين — الأولى تسلّح والثانية تنفّذ
+    const del = Array.prototype.filter.call(qbox.querySelectorAll('button'), b => b.textContent === 'احذف السؤال')[0];
+    del.dispatchEvent(new W.Event('click', { bubbles:true }));
+    ok(sent.every(x => x.method !== 'DELETE'), 'الضغطة الأولى لا تحذف');
+    has(del.textContent, 'اضغط ثانيةً', 'الزر يطلب تأكيدًا صريحًا');
+    del.dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => sent.some(x => x.method === 'DELETE'));
+    ok(sent.some(x => x.method === 'DELETE' && x.path.indexOf('questions?id=eq.q1') === 0), 'الضغطة الثانية تحذف');
+
+    // المحاور: العدّ من الأسئلة، ولا يُحذف محور مشغول
+    const tRow = Array.prototype.filter.call(main.querySelectorAll('.row'),
+      r => r.textContent.indexOf('الترياق') !== -1)[0];
+    has(tRow.textContent, '2 سؤالًا', 'عدد أسئلة المحور محسوب من الأسئلة نفسها');
+    W.close();
+  })());
+}
+
+/* ============ ٣٧ · الإعدادات الشاملة ============ */
+describe('٣٧ · الإعدادات');
+{
+  const sql = fs.readFileSync(path.join(ROOT,'db','SETTINGS-UPGRADE.sql'), 'utf8');
+  has(sql, 'add column if not exists', 'التوسعة آمنة التكرار — لا تُسقط عمودًا ولا قيمة');
+  ok(sql.indexOf('drop column') === -1 && sql.indexOf('drop table') === -1, 'التوسعة لا تحذف شيئًا');
+  has(sql, 'settings_sane', 'قيد يحرس المدى في القاعدة لا في الواجهة وحدها');
+  has(sql, 'amusq.is_admin()', 'التصدير والفحص محروسان بالصلاحية');
+  has(sql, 'security definer', 'دوال الإعدادات security definer');
+
+  const S = makeDom().window.AMUSQ.admin.settings;
+  // القصّ: القاعدة ترفض الخارج، والواجهة تمنع الرحلة أصلًا
+  eq(S.clamp('250', 0, 100), 100, 'الرقم فوق المدى يُقصّ إلى سقفه');
+  eq(S.clamp('-9', 1, 200), 1, 'الرقم تحت المدى يُقصّ إلى قاعه');
+  eq(S.clamp('', 1, 200), 1, 'الحقل الفارغ يعود إلى الحد الأدنى لا NaN');
+  eq(S.clamp('25', 1, 200), 25, 'الرقم داخل المدى يمرّ كما هو');
+  // الفرق: لا نرسل إلا ما تغيّر
+  eq(Object.keys(S.diff({ a:1, b:'x' }, { a:1, b:'x' })).length, 0, 'لا حمولة حين لا تغيير');
+  eq(JSON.stringify(S.diff({ a:1, b:'x' }, { a:2, b:'x' })), '{"a":2}', 'الحقل المتغيّر وحده يُرسل');
+  eq(JSON.stringify(S.diff({ a:true }, { a:false })), '{"a":false}', 'المفتاح المطفأ يُرسل لا يُحذف');
+
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.AMUSQ;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'adm', email:'a@a.a' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  const ROW = { id:1, platform_name:'AMUSQ', tagline:'', welcome_text:'أهلًا', support_email:'', whatsapp:'',
+    exam_count:25, exam_minutes:30, pass_mark:60, shuffle_q:true, shuffle_opts:true, instant_feedback:true,
+    signup_open:true, board_enabled:true, device_limit:3, trial_days:0, maintenance:false, maint_msg:'صيانة' };
+  const sent = [];
+  A.api.rest = (p2, opt) => {
+    if (opt) sent.push({ path:p2, method:opt.method, body: JSON.parse(opt.body || '{}') });
+    if (p2.indexOf('settings?id=eq.1&select') === 0) return Promise.resolve({ ok:true, data:[ROW] });
+    return Promise.resolve({ ok:true, data:[] });
+  };
+  A.api.rpc = name => Promise.resolve({ ok:true, data: name === 'admin_health'
+    ? { bad_answer:2, no_expl:5, derived:0, opts_built:0, no_topic:0, empty_subj:1, unpublished:3 } : {} });
+
+  pending.push((async () => {
+    await nav(W, '#/admin/settings');
+    await until(W, () => doc.querySelector('[data-group="exam"]'));
+    const main = doc.getElementById('main');
+
+    eq(doc.querySelectorAll('.ad-panel[data-group]').length, 3, 'ثلاث مجموعات إعدادات');
+    has(main.textContent, 'ربط الخادم', 'الربط حاضر — أول ما يُضبط عند التركيب');
+    has(main.textContent, 'انون'.replace('انون','anon'), 'المفتاح العام مشروح لا مخفي');
+
+    // زر الحفظ معطّل حتى يتغيّر شيء — لا يُرسل PATCH بلا سبب
+    const grp = doc.querySelector('[data-group="exam"]');
+    const save = Array.prototype.filter.call(grp.querySelectorAll('button'),
+      b => b.textContent.indexOf('احفظ') === 0)[0];
+    ok(save.disabled, 'الحفظ معطّل قبل أي تغيير');
+    has(grp.textContent, 'محفوظ', 'الحالة تقول محفوظ');
+
+    const cnt = grp.querySelector('[data-k="exam_count"]');
+    cnt.value = '40';
+    cnt.dispatchEvent(new W.Event('input', { bubbles:true }));
+    ok(!save.disabled, 'الحفظ يُفعَّل عند أول تغيير');
+    has(grp.textContent, '1 تغييرًا غير محفوظ', 'عدد التغييرات المعلّقة معروض');
+
+    // المفتاح الثنائي: زر واحد يحمل حالته في aria-checked
+    const sw = grp.querySelector('[data-k="shuffle_q"]');
+    eq(sw.getAttribute('aria-checked'), 'true', 'المفتاح يعكس القيمة الحالية');
+    sw.dispatchEvent(new W.Event('click', { bubbles:true }));
+    eq(sw.getAttribute('aria-checked'), 'false', 'الضغط يقلب المفتاح');
+
+    save.dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => sent.some(x => x.method === 'PATCH'));
+    const p3 = sent.filter(x => x.method === 'PATCH')[0];
+    eq(p3.path, 'settings?id=eq.1', 'الحفظ يعدّل صف الإعدادات الوحيد');
+    eq(JSON.stringify(p3.body), '{"exam_count":40,"shuffle_q":false}', 'المتغيّران وحدهما يُرسلان لا الصف كله');
+
+    // القصّ يمنع قيمة خارج المدى من مغادرة المتصفح
+    const pm = doc.querySelector('[data-k="pass_mark"]');
+    pm.value = '999'; pm.dispatchEvent(new W.Event('input', { bubbles:true }));
+    const save2 = Array.prototype.filter.call(grp.querySelectorAll('button'), b => b.textContent.indexOf('احفظ') === 0)[0];
+    save2.dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => sent.filter(x => x.method === 'PATCH').length > 1);
+    eq(sent.filter(x => x.method === 'PATCH')[1].body.pass_mark, 100, 'علامة نجاح ٩٩٩ تُقصّ إلى ١٠٠ قبل الإرسال');
+
+    // صحة المحتوى: تعرض الملاحظات فقط، والأخطر بلون أشد
+    await until(W, () => main.textContent.indexOf('صحة المحتوى') !== -1 && main.textContent.indexOf('جارٍ الفحص') === -1);
+    has(main.textContent, 'إجابة خارج نطاق الخيارات', 'فساد موضع الإجابة يُصرَّح به');
+    has(main.textContent, 'سؤالًا بلا شرح', 'النقص يُعرض');
+    no(main.textContent, 'سؤالًا بلا محور', 'ما لا ملاحظة عليه لا يُعرض — القائمة تبقى قصيرة');
+    ok(!!main.querySelector('.badge--bad'), 'الخطأ الحقيقي بلون التحذير الأشد');
+    has(main.textContent, 'صدّر نسخة كاملة', 'التصدير متاح للمشرف');
+    W.close();
+  })());
 }
 
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */

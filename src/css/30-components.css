@@ -87,3 +87,15 @@
 .toast.is-on{ opacity:1; transform:translateY(0); }
 
 .divider{ height:1px; background:var(--line); border:0; margin-block:var(--s5); }
+
+/* زر الفعل الذي لا رجعة فيه — لونه وحده يكفي تحذيرًا */
+.btn--danger{ background:var(--bad); color:var(--on-brand); border-color:var(--bad); }
+.btn--danger:hover{ filter:brightness(.94); }
+
+/* هيكل انتظار: يحجز مساحة المحتوى فلا تقفز الصفحة عند وصوله */
+.skel{ display:block; background:var(--bg-soft); border-radius:var(--r1); }
+.skel--line{ height:14px; width:70%; }
+@media (prefers-reduced-motion: no-preference){
+  .skel{ animation: skelPulse 1.4s var(--ease) infinite; }
+  @keyframes skelPulse{ 0%,100%{ opacity:.55 } 50%{ opacity:1 } }
+}

@@ -324,6 +324,18 @@ img,svg{ max-width:100%; height:auto; }
 
 .divider{ height:1px; background:var(--line); border:0; margin-block:var(--s5); }
 
+/* زر الفعل الذي لا رجعة فيه — لونه وحده يكفي تحذيرًا */
+.btn--danger{ background:var(--bad); color:var(--on-brand); border-color:var(--bad); }
+.btn--danger:hover{ filter:brightness(.94); }
+
+/* هيكل انتظار: يحجز مساحة المحتوى فلا تقفز الصفحة عند وصوله */
+.skel{ display:block; background:var(--bg-soft); border-radius:var(--r1); }
+.skel--line{ height:14px; width:70%; }
+@media (prefers-reduced-motion: no-preference){
+  .skel{ animation: skelPulse 1.4s var(--ease) infinite; }
+  @keyframes skelPulse{ 0%,100%{ opacity:.55 } 50%{ opacity:1 } }
+}
+
 
 /* ===== 40-screens.css ===== */
 /* تنسيقات الشاشات المركّبة: اللوحة، معالج الرفع، المادة، الاختبار — كلها من المتغيّرات */
@@ -689,6 +701,115 @@ img,svg{ max-width:100%; height:auto; }
 .lp-faq p{ color:var(--text-2); font-size:.92rem; margin:var(--s3) 0 0; padding-inline-start:calc(var(--s3) + 1ch); }
 
 
+/* ===== 60-admin.css ===== */
+/* لوحة تحكم المشرف — كثافة معلومات عالية بلا فوضى بصرية */
+
+/* ===== شبكة المؤشرات ===== */
+.ad-kpis{ display:grid; gap:var(--s3); grid-template-columns:repeat(2,1fr); }
+@media (min-width:700px){ .ad-kpis{ grid-template-columns:repeat(3,1fr); } }
+@media (min-width:1000px){ .ad-kpis{ grid-template-columns:repeat(6,1fr); } }
+.ad-kpi{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r2);
+  padding:var(--s4); box-shadow:var(--sh1); position:relative; overflow:hidden;
+}
+.ad-kpi__n{
+  display:block; font-family:var(--font-num); font-size:1.6rem; font-weight:700;
+  line-height:1.15; color:var(--text); letter-spacing:-.02em;
+}
+.ad-kpi__l{ font-size:.76rem; color:var(--text-3); font-weight:700; }
+.ad-kpi__s{ font-size:.7rem; color:var(--text-3); margin-top:var(--s1); display:block; }
+.ad-kpi--live .ad-kpi__n{ color:var(--brand); }
+.ad-kpi--warn .ad-kpi__n{ color:var(--warn); }
+.ad-kpi--bad .ad-kpi__n{ color:var(--bad); }
+
+/* ===== لوحات الرسوم ===== */
+.ad-panels{ display:grid; gap:var(--s4); grid-template-columns:1fr; margin-top:var(--s5); }
+@media (min-width:900px){ .ad-panels--2{ grid-template-columns:1.6fr 1fr; } }
+.ad-panel{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r3);
+  padding:var(--s5); box-shadow:var(--sh1);
+}
+.ad-panel__h{ display:flex; align-items:baseline; justify-content:space-between; gap:var(--s3); margin-bottom:var(--s5); }
+.ad-panel__t{ font-family:var(--font-display); font-weight:800; font-size:1rem; margin:0; }
+.ad-panel__s{ font-size:.78rem; color:var(--text-3); }
+
+/* رسم الأعمدة — SVG يدوي بلا مكتبات */
+.ad-chart{ width:100%; height:170px; display:block; overflow:visible; }
+.ad-chart .bar{ fill:var(--brand); opacity:.85; transition:opacity var(--t) var(--ease); }
+.ad-chart .bar:hover{ opacity:1; }
+.ad-chart .bar--empty{ fill:var(--line); opacity:.6; }
+.ad-chart .grid{ stroke:var(--line-soft); stroke-width:1; }
+.ad-chart .lbl{ fill:var(--text-3); font-size:9px; font-family:var(--font-num); }
+.ad-chart .line{ fill:none; stroke:var(--warn); stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.ad-chart .dot{ fill:var(--warn); }
+
+/* شرائح النتائج */
+.ad-bucket{ display:flex; align-items:center; gap:var(--s3); margin-bottom:var(--s3); }
+.ad-bucket__l{ min-width:66px; font-family:var(--font-num); font-size:.8rem; color:var(--text-2); }
+.ad-bucket__t{ flex:1; height:12px; border-radius:var(--r-pill); background:var(--bg-soft); overflow:hidden; }
+.ad-bucket__f{ height:100%; border-radius:inherit; transition:width var(--t-slow) var(--ease); }
+.ad-bucket__n{ min-width:34px; text-align:end; font-family:var(--font-num); font-size:.82rem; color:var(--text-2); }
+
+/* جدول عام */
+.ad-table{ width:100%; overflow-x:auto; }
+.ad-row{
+  display:flex; align-items:center; gap:var(--s3); width:100%;
+  padding:var(--s3) var(--s2); border-bottom:1px solid var(--line-soft);
+  background:none; border-inline:0; border-top:0; text-align:start; cursor:pointer;
+  min-height:52px; color:inherit; transition:background var(--t-fast) var(--ease);
+}
+.ad-row:hover{ background:var(--surface-2); }
+.ad-row:last-child{ border-bottom:0; }
+.ad-row__main{ flex:1; min-width:0; }
+.ad-row__t{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.ad-row__s{ font-size:.78rem; color:var(--text-3); }
+
+/* نشاط أخير */
+.ad-feed{ display:grid; gap:var(--s2); }
+.ad-feed__i{ display:flex; align-items:center; gap:var(--s3); font-size:.88rem; padding:var(--s2) 0; border-bottom:1px solid var(--line-soft); }
+.ad-feed__i:last-child{ border-bottom:0; }
+.ad-feed__av{ width:30px; height:30px; border-radius:50%; display:grid; place-items:center; background:var(--surface-2); }
+.ad-feed__x{ flex:1; min-width:0; }
+.ad-feed__t{ font-size:.72rem; color:var(--text-3); font-family:var(--font-num); }
+
+/* ===== محرر المادة ===== */
+.ad-edit{ display:grid; gap:var(--s4); }
+@media (min-width:760px){ .ad-edit--2{ grid-template-columns:1fr 1fr; } }
+.ad-swatches{ display:flex; gap:var(--s2); flex-wrap:wrap; }
+.ad-sw{
+  width:34px; height:34px; border-radius:var(--r1); cursor:pointer;
+  border:2px solid transparent; box-shadow:var(--sh1);
+}
+.ad-sw[aria-checked="true"]{ border-color:var(--text); transform:scale(1.08); }
+.ad-icons{ display:flex; gap:var(--s2); flex-wrap:wrap; }
+.ad-ico{
+  width:38px; height:38px; border-radius:var(--r1); display:grid; place-items:center;
+  background:var(--surface-2); border:2px solid transparent; cursor:pointer; font-size:1.1rem;
+}
+.ad-ico[aria-checked="true"]{ border-color:var(--brand); background:var(--brand-soft); }
+
+/* ===== متصفح الأسئلة ===== */
+.ad-q{ border:1px solid var(--line); border-radius:var(--r2); padding:var(--s4); background:var(--surface); }
+.ad-q + .ad-q{ margin-top:var(--s3); }
+.ad-q__head{ display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; margin-bottom:var(--s3); }
+.ad-q__text{ font-weight:600; margin:0 0 var(--s3); white-space:pre-wrap; }
+.ad-q__opt{
+  display:flex; gap:var(--s2); align-items:flex-start; width:100%; text-align:start;
+  padding:var(--s2) var(--s3); border-radius:var(--r1); border:1px solid var(--line);
+  background:var(--surface-2); cursor:pointer; margin-bottom:var(--s2); min-height:38px;
+}
+.ad-q__opt.is-a{ background:var(--ok-soft); border-color:var(--ok); font-weight:700; }
+.ad-q__opt:hover{ border-color:var(--brand); }
+
+/* ===== منطقة الخطر ===== */
+.ad-danger{ border-color:var(--bad); }
+.ad-danger .ad-panel__t{ color:var(--bad); }
+
+/* شريط أدوات */
+.ad-bar{ display:flex; gap:var(--s2); flex-wrap:wrap; align-items:center; margin-bottom:var(--s4); }
+.ad-bar .input{ width:auto; flex:1; min-width:180px; }
+
+
 /* ===== 90-print.css ===== */
 /*
   تنسيق الطباعة مستقل تمامًا عن الشاشة (شرط في المواصفات).
@@ -774,8 +895,10 @@ window.AMUSQ_INJECTED_CONFIG = {"url":"https://gbgjadqwqzxxyhydlgtj.supabase.co"
 const AMUSQ = { version: '0.1.0', stage: 0 };
 
 /* --- أدوات DOM مختصرة --- */
-const $  = (sel, root) => (root || document).querySelector(sel);
-const $$ = (sel, root) => Array.prototype.slice.call((root || document).querySelectorAll(sel));
+/* الجذر قد يختفي إن رجع وعدٌ متأخر بعد تفكيك الصفحة (تنقّل أو إغلاق تبويب) — نُرجِع لا شيء بدل الانهيار */
+const docOf = root => root || (typeof document !== 'undefined' ? document : null);
+const $  = (sel, root) => { const d = docOf(root); return d ? d.querySelector(sel) : null; };
+const $$ = (sel, root) => { const d = docOf(root); return d ? Array.prototype.slice.call(d.querySelectorAll(sel)) : []; };
 
 function el(tag, attrs, children){
   const node = document.createElement(tag);
@@ -2193,6 +2316,7 @@ function adminSettingsTab(box){
 }
 
 const ADMIN_TABS = [
+  // تُحقن «اللوحة» من 42-admin-dash.js في المقدمة — أبقيناها منفصلة كي يبقى هذا الملف قابلًا للفحص وحده
   { id:'students', label:'الطلاب',   fill: adminStudentsTab },
   { id:'content',  label:'المحتوى',  fill: adminContentTab },
   { id:'settings', label:'الإعدادات', fill: adminSettingsTab }
@@ -2205,7 +2329,7 @@ const AdminView = {
     // بلا جلسة: نعرض دخول المشرف — إلا الإعدادات فهي تعمل محليًا لضبط الربط الأول
     if (!u && route.rest[0] !== 'settings') return AMUSQ.views.ViewAdminLogin.view();
 
-    const active = ADMIN_TABS.some(t => t.id === route.rest[0]) ? route.rest[0] : 'students';
+    const active = ADMIN_TABS.some(t => t.id === route.rest[0]) ? route.rest[0] : ADMIN_TABS[0].id;
     const tabs = el('div', { class:'tabs', role:'tablist' },
       ADMIN_TABS.map(t => el('button', {
         class:'tabs__btn', type:'button', role:'tab', 'data-tab':t.id,
@@ -2220,7 +2344,9 @@ const AdminView = {
   }
 };
 
+Object.assign(Admin, AMUSQ.admin || {});   // نحفظ ما ألحقته الملفات اللاحقة (charts وغيرها)
 AMUSQ.admin = Admin;
+AMUSQ.views.ADMIN_TABS = ADMIN_TABS;
 AMUSQ.views.ViewAdmin = AdminView;
 
 
@@ -3462,6 +3588,7 @@ function registerRoutes(){
     .add('#/settings',    V.ViewSettings)
     .add('#/account',     V.ViewAccount)
     .add('#/admin/upload', V.ViewUpload)
+    .add('#/admin/subject', V.ViewAdminSubject)
     .add('#/subject',      V.ViewSubject)
     .add('#/exam',         V.ViewExam)
     .add('#/board',        V.ViewBoard);
@@ -3514,6 +3641,817 @@ window.AMUSQ = AMUSQ;
 // jsdom في الفحوص يُحمّل الصفحة كاملة قبل تنفيذ السكربت، لذا نتحقق من الحالتين
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
 else boot();
+
+
+/* ===== 41-admin-charts.js ===== */
+/*
+  رسوم اللوحة — SVG مبني بيدنا لا مكتبة رسم.
+  السبب: قاعدة «لا مكتبة خارجية في المتصفح»، والرسوم التي نحتاجها بسيطة
+  (أعمدة وخط ومقاييس) فكتابتها أرخص من أي مكتبة وأخف على الجوال.
+*/
+const SVGNS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs){
+  const n = document.createElementNS(SVGNS, tag);
+  if (attrs) Object.keys(attrs).forEach(k => {
+    if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, String(attrs[k]));
+  });
+  return n;
+}
+
+/* أعمدة النشاط اليومي + خط متوسط النتيجة فوقها */
+function chartActivity(series){
+  const W = 640, H = 170, PAD_B = 22, PAD_T = 10;
+  const svg = svgEl('svg', { class:'ad-chart', viewBox:'0 0 ' + W + ' ' + H,
+    preserveAspectRatio:'none', role:'img', 'aria-label':'نشاط الاختبارات اليومي' });
+  const n = series.length || 1;
+  const maxN = Math.max(1, ...series.map(s => Number(s.n)));
+  const bw = W / n, gap = Math.min(6, bw * .25);
+  const plotH = H - PAD_B - PAD_T;
+
+  // خطوط شبكة أفقية — ثلاثة تكفي لقراءة المقياس بلا ضجيج
+  [0, .5, 1].forEach(f => {
+    const y = PAD_T + plotH * (1 - f);
+    svg.appendChild(svgEl('line', { class:'grid', x1:0, y1:y, x2:W, y2:y }));
+    svg.appendChild(Object.assign(svgEl('text', { class:'lbl', x:2, y:y - 3 }),
+      { textContent: String(Math.round(maxN * f)) }));
+  });
+
+  series.forEach((s, i) => {
+    const v = Number(s.n);
+    const h = Math.max(v > 0 ? 3 : 2, plotH * (v / maxN));
+    svg.appendChild(svgEl('rect', {
+      class: 'bar' + (v ? '' : ' bar--empty'),
+      x: i * bw + gap / 2, y: PAD_T + plotH - h,
+      width: Math.max(2, bw - gap), height: h, rx: 3
+    }));
+    // تسمية اليوم: نعرض كل يومين على الجوال كي لا تتداخل
+    if (n <= 8 || i % 2 === 0) {
+      const day = String(s.d).slice(8, 10);
+      svg.appendChild(Object.assign(
+        svgEl('text', { class:'lbl', x: i * bw + bw / 2, y: H - 6, 'text-anchor':'middle' }),
+        { textContent: day }));
+    }
+  });
+
+  // خط متوسط النتيجة — يقرأ على مقياس ٠–١٠٠ لا على مقياس العدد
+  const pts = series.map((s, i) => [i * bw + bw / 2, PAD_T + plotH * (1 - Number(s.avg) / 100)]);
+  if (pts.some((p, i) => Number(series[i].avg) > 0)) {
+    svg.appendChild(svgEl('path', { class:'line',
+      d: pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ') }));
+    pts.forEach((p, i) => { if (Number(series[i].avg) > 0)
+      svg.appendChild(svgEl('circle', { class:'dot', cx:p[0], cy:p[1], r:2.4 })); });
+  }
+  return svg;
+}
+
+/* شرائح النتائج — أشرطة أفقية تُقرأ أسرع من دائرة */
+function chartBuckets(buckets){
+  const total = buckets.reduce((n, b) => n + Number(b.n), 0) || 1;
+  const COLORS = ['var(--bad)','var(--warn)','var(--star)','var(--brand-2)','var(--ok)'];
+  return el('div', {}, buckets.map((b, i) => {
+    const pct = Number(b.n) / total * 100;
+    return el('div', { class:'ad-bucket' }, [
+      el('span', { class:'ad-bucket__l', text: b.label }),
+      el('span', { class:'ad-bucket__t' }, [
+        el('span', { class:'ad-bucket__f', style:'width:' + pct.toFixed(1) + '%;background:' + COLORS[i] })
+      ]),
+      el('span', { class:'ad-bucket__n', text: String(b.n) })
+    ]);
+  }));
+}
+
+/* بطاقة مؤشر */
+function kpi(n, label, sub, tone){
+  return el('div', { class:'ad-kpi' + (tone ? ' ad-kpi--' + tone : '') }, [
+    el('span', { class:'ad-kpi__n', text: String(n) }),
+    el('span', { class:'ad-kpi__l', text: label }),
+    sub ? el('span', { class:'ad-kpi__s', text: sub }) : null
+  ]);
+}
+
+/* وقت نسبي مختصر */
+function ago(iso){
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return 'الآن';
+  if (s < 3600) return Math.floor(s / 60) + ' د';
+  if (s < 86400) return Math.floor(s / 3600) + ' س';
+  return Math.floor(s / 86400) + ' يوم';
+}
+
+AMUSQ.admin = AMUSQ.admin || {};
+AMUSQ.admin.charts = { chartActivity, chartBuckets, kpi, ago, svgEl };
+
+
+/* ===== 42-admin-dash.js ===== */
+/*
+  تبويب «اللوحة» — كل ما يحتاجه المشرف ليعرف حال المنصة في نظرة واحدة.
+  نداء واحد إلى admin_dashboard يجلب كل شيء دفعةً واحدة: أرخص من ست نداءات،
+  وأدق لأن الأرقام كلها من نفس اللحظة.
+*/
+function dashSkeleton(){
+  return el('div', { class:'ad-kpis' }, [1,2,3,4,5,6].map(() =>
+    el('div', { class:'ad-kpi' }, [ el('span', { class:'skel skel--line' }) ])));
+}
+
+function dashKpis(k){
+  const C = AMUSQ.admin.charts;
+  return el('div', { class:'ad-kpis' }, [
+    C.kpi(k.students, 'طالبًا', k.active_7d + ' نشط هذا الأسبوع'),
+    C.kpi(k.online, 'متصل الآن', 'آخر ٤ ساعات', k.online > 0 ? 'live' : null),
+    C.kpi(k.attempts, 'اختبارًا', 'منذ الإطلاق'),
+    C.kpi(k.avg_pct + '٪', 'متوسط النتائج', k.avg_pct >= 70 ? 'فوق حدّ النجاح' : 'تحت حدّ النجاح',
+      k.avg_pct >= 70 ? 'live' : (k.avg_pct > 0 ? 'warn' : null)),
+    C.kpi(k.questions, 'سؤالًا', k.derived + ' مشتق'),
+    C.kpi(k.published + '/' + k.subjects, 'مادة منشورة', k.drafts ? k.drafts + ' مسوّدة معلّقة' : 'لا مسوّدات',
+      k.drafts ? 'warn' : null)
+  ]);
+}
+
+function dashPanel(title, sub, body, extraClass){
+  return el('section', { class:'ad-panel' + (extraClass ? ' ' + extraClass : '') }, [
+    el('div', { class:'ad-panel__h' }, [
+      el('h2', { class:'ad-panel__t', text:title }),
+      sub ? el('span', { class:'ad-panel__s', text:sub }) : null
+    ]),
+    body
+  ]);
+}
+
+function dashSubjects(subjects){
+  if (!subjects.length) return AMUSQ.views.empty('▤', 'لا مواد بعد', 'ارفع أول ملف أسئلة.');
+  // الترتيب حسب المحاولات: المادة التي يدرسها الطلاب فعلًا تستحق الصدارة
+  const rows = subjects.slice().sort((a, b) => Number(b.attempts) - Number(a.attempts));
+  return el('div', { class:'ad-table' }, rows.map(s => {
+    const row = el('button', { class:'ad-row', type:'button' }, [
+      el('span', { text: s.icon || '▤' }),
+      el('span', { class:'ad-row__main' }, [
+        el('span', { class:'ad-row__t', text: s.name }),
+        el('span', { class:'ad-row__s', text: s.q_count + ' سؤالًا · ' + s.students + ' مشترك' })
+      ]),
+      el('span', { class:'badge num', text: s.attempts + ' اختبار' }),
+      el('span', { class:'badge num ' + (Number(s.avg_pct) >= 70 ? 'badge--ok' : Number(s.avg_pct) > 0 ? 'badge--warn' : ''),
+        text: Math.round(s.avg_pct) + '٪' }),
+      s.published ? el('span', { class:'badge badge--ok', text:'منشورة' }) : el('span', { class:'badge', text:'مخفية' })
+    ]);
+    row.addEventListener('click', () => AMUSQ.router.go('#/admin/subject/' + s.id));
+    return row;
+  }));
+}
+
+function dashRecent(recent){
+  if (!recent.length) return AMUSQ.views.empty('◷', 'لا نشاط بعد', 'سيظهر هنا كل اختبار فور انتهائه.');
+  const C = AMUSQ.admin.charts;
+  return el('div', { class:'ad-feed' }, recent.map(a => el('div', { class:'ad-feed__i' }, [
+    el('span', { class:'ad-feed__av', text: a.avatar || '👤' }),
+    el('span', { class:'ad-feed__x' }, [
+      el('span', { class:'ad-row__t', text: a.student }),
+      el('span', { class:'ad-row__s', text: a.subject + ' · ' + a.correct + ' من ' + a.total })
+    ]),
+    el('span', { class:'badge num ' + (Number(a.pct) >= 70 ? 'badge--ok' : 'badge--warn'), text: Math.round(a.pct) + '٪' }),
+    el('span', { class:'ad-feed__t', text: C.ago(a.created_at) })
+  ])));
+}
+
+function adminDashTab(box){
+  const C = AMUSQ.admin.charts;
+  let days = AMUSQ.store.get('ad_days', 14);
+
+  const rangeBar = el('div', { class:'ad-bar' },
+    [7, 14, 30].map(d => {
+      const b = el('button', { class:'btn btn--sm ' + (d === days ? '' : 'btn--ghost'), type:'button',
+        text: d + ' يومًا' });
+      b.addEventListener('click', () => { AMUSQ.store.set('ad_days', d); days = d; load(); });
+      return b;
+    }));
+  const wrap = el('div', {});
+  box.appendChild(rangeBar);
+  box.appendChild(wrap);
+
+  function load(){
+    // نعيد بناء شريط المدى ليعكس الاختيار الجديد
+    rangeBar.querySelectorAll('button').forEach((b, i) => {
+      b.className = 'btn btn--sm ' + ([7,14,30][i] === days ? '' : 'btn--ghost');
+    });
+    wrap.innerHTML = '';
+    wrap.appendChild(dashSkeleton());
+    AMUSQ.api.rpc('admin_dashboard', { days }).then(r => {
+      if (!wrap.isConnected) return;     // غادر المشرف قبل وصول الرد
+      wrap.innerHTML = '';
+      if (!r.ok || !r.data || r.data.error) {
+        wrap.appendChild(AMUSQ.views.empty('⚠', 'تعذّر الجلب',
+          r.offline ? 'لا اتصال بالإنترنت.'
+                    : 'تأكد أن حسابك مشرف وأن ملف ADMIN-DASHBOARD.sql مُشغَّل على قاعدة البيانات.'));
+        return;
+      }
+      const d = r.data;
+      const total = (d.series || []).reduce((n, s) => n + Number(s.n), 0);
+      wrap.appendChild(dashKpis(d.kpi));
+      wrap.appendChild(el('div', { class:'ad-panels ad-panels--2' }, [
+        dashPanel('النشاط اليومي', total + ' اختبارًا خلال ' + days + ' يومًا',
+          C.chartActivity(d.series || [])),
+        dashPanel('توزيع النتائج', 'الخط البرتقالي = متوسط النتيجة',
+          C.chartBuckets(d.buckets || []))
+      ]));
+      wrap.appendChild(el('div', { class:'ad-panels' }, [
+        dashPanel('أداء المواد', 'اضغط مادة لفتح محررها', dashSubjects(d.subjects || [])),
+        dashPanel('آخر النشاط', null, dashRecent(d.recent || []))
+      ]));
+    });
+  }
+  load();
+}
+
+AMUSQ.admin.dashTab = adminDashTab;
+AMUSQ.views.ADMIN_TABS.unshift({ id:'dash', label:'اللوحة', fill: adminDashTab });
+
+
+/* ===== 43-admin-subject.js ===== */
+/*
+  محرر المادة — كل ما يخصّ مادة واحدة في شاشة واحدة: هويتها، محاورها، وأسئلتها.
+
+  قرار جوهري: نصّ السؤال وخياراته لا يُعدَّلان هنا ولا في أي مكان (قاعدة القداسة).
+  ما يملك المشرف تعديله هو ما أضفناه نحن حول النص: موضع الإجابة، المحور، الشرح،
+  الترجمة، بطاقة الحفظ، علامة الأهمية، والترتيب. الخطأ في نصّ الدكتور يُصلَح
+  برفع الملف من جديد لا بالكتابة فوقه.
+*/
+const SUBJ_COLORS = ['subject-1','subject-2','subject-3','subject-4','subject-5','subject-6'];
+const SUBJ_ICONS  = ['▤','☤','✚','♥','◈','⚕','☣','◐','⌁','⚗'];
+
+const SubjEditor = {
+  patchSubject(id, body){
+    return AMUSQ.api.rest('subjects?id=eq.' + id, { method:'PATCH', body: JSON.stringify(body) });
+  },
+  patchQuestion(id, body){
+    return AMUSQ.api.rest('questions?id=eq.' + id, { method:'PATCH', body: JSON.stringify(body) });
+  },
+  delQuestion(id){
+    return AMUSQ.api.rest('questions?id=eq.' + id, { method:'DELETE' });
+  },
+  /* تصفية محلية: البحث في مادة واحدة لا يستحق ذهابًا إلى الخادم مع كل حرف */
+  filter(list, q, topic, only){
+    const needle = String(q || '').trim().toLowerCase();
+    return list.filter(x => {
+      if (topic && (x.topic || '') !== topic) return false;
+      if (only === 'important' && !x.important) return false;
+      if (only === 'derived'   && !x.derived)   return false;
+      if (only === 'noexpl'    && x.expl_ar)    return false;
+      if (!needle) return true;
+      return (x.q + ' ' + (x.options || []).join(' ')).toLowerCase().indexOf(needle) !== -1;
+    });
+  }
+};
+
+/* ===== بطاقة هوية المادة ===== */
+function subjIdentity(sub, refresh){
+  const nameIn  = el('input', { class:'input', value: sub.name || '' });
+  const descrIn = el('textarea', { class:'input', rows:'2' }); descrIn.value = sub.descr || '';
+  const ordIn   = el('input', { class:'input', type:'number', value: String(sub.ord || 0), 'aria-label':'ترتيب المادة' });
+  const dateIn  = el('input', { class:'input', type:'date',
+    value: sub.exam_date ? String(sub.exam_date).slice(0,10) : '', 'aria-label':'موعد الاختبار' });
+
+  let color = sub.color || SUBJ_COLORS[0];
+  const swatches = el('div', { class:'ad-swatches', role:'radiogroup', 'aria-label':'لون المادة' },
+    SUBJ_COLORS.map(c => {
+      const b = el('button', { class:'ad-sw', type:'button', role:'radio', 'data-color':c,
+        'aria-checked': c === color ? 'true' : 'false', 'aria-label': c,
+        style:'background:var(--' + c + ')' });
+      b.addEventListener('click', () => {
+        color = c;
+        swatches.querySelectorAll('.ad-sw').forEach(x =>
+          x.setAttribute('aria-checked', x.getAttribute('data-color') === c ? 'true' : 'false'));
+      });
+      return b;
+    }));
+
+  let icon = sub.icon || SUBJ_ICONS[0];
+  const icons = el('div', { class:'ad-icons', role:'radiogroup', 'aria-label':'أيقونة المادة' },
+    SUBJ_ICONS.map(g => {
+      const b = el('button', { class:'ad-ico', type:'button', role:'radio', 'data-ico':g,
+        'aria-checked': g === icon ? 'true' : 'false', text:g });
+      b.addEventListener('click', () => {
+        icon = g;
+        icons.querySelectorAll('.ad-ico').forEach(x =>
+          x.setAttribute('aria-checked', x.getAttribute('data-ico') === g ? 'true' : 'false'));
+      });
+      return b;
+    }));
+
+  const save = el('button', { class:'btn', type:'button', text:'احفظ الهوية' });
+  save.addEventListener('click', async () => {
+    const r = await SubjEditor.patchSubject(sub.id, {
+      name: nameIn.value.trim() || sub.name, descr: descrIn.value, color, icon,
+      ord: parseInt(ordIn.value || '0', 10), exam_date: dateIn.value || null
+    });
+    AMUSQ.toast(r.ok ? 'حُفظت هوية المادة' : 'تعذّر الحفظ');
+    if (r.ok && refresh) refresh();
+  });
+
+  const pub = el('button', { class:'btn btn--sm ' + (sub.published ? 'btn--soft' : ''), type:'button',
+    text: sub.published ? 'منشورة — أخفِها' : 'مخفية — انشرها' });
+  pub.addEventListener('click', async () => {
+    const r = await SubjEditor.patchSubject(sub.id, { published: !sub.published });
+    AMUSQ.toast(r.ok ? (sub.published ? 'أُخفيت المادة' : 'نُشرت المادة') : 'تعذّر التعديل');
+    if (r.ok && refresh) refresh();
+  });
+  const free = el('button', { class:'btn btn--sm btn--ghost', type:'button',
+    text: sub.free ? '★ مجانية للتجربة' : 'اجعلها مجانية' });
+  free.addEventListener('click', async () => {
+    const r = await SubjEditor.patchSubject(sub.id, { free: !sub.free });
+    if (r.ok && refresh) refresh();
+  });
+
+  return el('div', { class:'ad-panel' }, [
+    el('div', { class:'ad-panel__h' }, [
+      el('h2', { class:'ad-panel__t', text:'هوية المادة' }),
+      el('span', { class:'ad-panel__s', text: sub.q_count + ' سؤالًا' })
+    ]),
+    el('div', { class:'ad-edit ad-edit--2' }, [
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الاسم' }), nameIn ]),
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'موعد الاختبار' }), dateIn ]),
+      el('label', { class:'field', style:'margin:0;grid-column:1/-1' }, [ el('span', { class:'field__label', text:'الوصف — يظهر للطالب على البطاقة' }), descrIn ]),
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'اللون' }), swatches ]),
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الأيقونة' }), icons ]),
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترتيب' }), ordIn ])
+    ]),
+    el('div', { class:'ad-bar', style:'margin:16px 0 0' }, [ save, pub, free ])
+  ]);
+}
+
+/* ===== المحاور ===== */
+function subjTopics(sub, questions, refresh){
+  const topics = Array.isArray(sub.topics) ? sub.topics.slice() : [];
+  // العدّ من الأسئلة نفسها: يكشف محورًا مكتوبًا في القائمة وليس عليه سؤال واحد
+  const counts = {};
+  questions.forEach(q => { const t = q.topic || ''; if (t) counts[t] = (counts[t] || 0) + 1; });
+  Object.keys(counts).forEach(t => { if (topics.indexOf(t) === -1) topics.push(t); });
+
+  const list = el('div', { class:'stack' });
+  function draw(){
+    list.innerHTML = '';
+    if (!topics.length) { list.appendChild(el('p', { class:'page__sub', text:'لا محاور بعد.' })); return; }
+    topics.forEach((t, i) => {
+      const up = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'↑', 'aria-label':'أعلِ ' + t });
+      up.addEventListener('click', () => { if (i > 0){ topics.splice(i-1, 0, topics.splice(i,1)[0]); draw(); } });
+      const del = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'✕', 'aria-label':'احذف ' + t });
+      del.addEventListener('click', () => {
+        if (counts[t]) return AMUSQ.toast('لا يُحذف محور عليه ' + counts[t] + ' سؤالًا — انقلها أولًا');
+        topics.splice(i, 1); draw();
+      });
+      list.appendChild(el('div', { class:'row' }, [
+        el('span', { text: t }),
+        el('span', { class:'badge num', text: (counts[t] || 0) + ' سؤالًا' }),
+        el('span', { class:'spacer' }), up, del
+      ]));
+    });
+  }
+  draw();
+
+  const addIn = el('input', { class:'input', placeholder:'اسم محور جديد' });
+  const add = el('button', { class:'btn btn--sm', type:'button', text:'أضف' });
+  add.addEventListener('click', () => {
+    const v = addIn.value.trim();
+    if (!v) return;
+    if (topics.indexOf(v) !== -1) return AMUSQ.toast('المحور موجود');
+    topics.push(v); addIn.value = ''; draw();
+  });
+  const save = el('button', { class:'btn', type:'button', text:'احفظ المحاور' });
+  save.addEventListener('click', async () => {
+    const r = await SubjEditor.patchSubject(sub.id, { topics });
+    AMUSQ.toast(r.ok ? 'حُفظت المحاور' : 'تعذّر الحفظ');
+    if (r.ok && refresh) refresh();
+  });
+
+  return el('div', { class:'ad-panel' }, [
+    el('div', { class:'ad-panel__h' }, [
+      el('h2', { class:'ad-panel__t', text:'المحاور' }),
+      el('span', { class:'ad-panel__s', text:'ترتيبها هنا هو ترتيب عرضها للطالب' })
+    ]),
+    list,
+    el('div', { class:'ad-bar', style:'margin:16px 0 0' }, [ addIn, add, save ])
+  ]);
+}
+
+/* ===== بطاقة سؤال واحد ===== */
+function qCard(q, sub, refresh){
+  const box = el('div', { class:'ad-q', 'data-qid': q.id });
+  const head = el('div', { class:'ad-q__head' }, [
+    el('span', { class:'badge num', text:'#' + (q.ord + 1) }),
+    q.topic ? el('span', { class:'badge', text: q.topic }) : null,
+    q.derived ? el('span', { class:'badge badge--warn', text:'إجابة مستنتجة' }) : null,
+    q.opts_built ? el('span', { class:'badge badge--warn', text:'خيارات مبنية' }) : null,
+    !q.expl_ar ? el('span', { class:'badge', text:'بلا شرح' }) : null,
+    el('span', { class:'spacer' })
+  ]);
+  const star = el('button', { class:'btn btn--sm btn--ghost', type:'button',
+    text: q.important ? '★ مهم' : '☆ علّمه مهمًا', 'aria-pressed': q.important ? 'true' : 'false' });
+  star.addEventListener('click', async () => {
+    const r = await SubjEditor.patchQuestion(q.id, { important: !q.important });
+    if (!r.ok) return AMUSQ.toast('تعذّر التعديل');
+    q.important = !q.important;
+    star.textContent = q.important ? '★ مهم' : '☆ علّمه مهمًا';
+    star.setAttribute('aria-pressed', q.important ? 'true' : 'false');
+  });
+  head.appendChild(star);
+
+  const more = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'حرّر' });
+  head.appendChild(more);
+  box.appendChild(head);
+
+  // النص والخيارات للعرض فقط — لا حقل إدخال عليهما (قاعدة القداسة)
+  box.appendChild(el('p', { class:'ad-q__text', text: q.q }));
+  const opts = el('div', {});
+  (q.options || []).forEach((o, i) => {
+    const b = el('button', { class:'ad-q__opt' + (i === q.answer ? ' is-a' : ''), type:'button',
+      'data-i': String(i), text: o });
+    b.addEventListener('click', async () => {
+      if (i === q.answer) return;
+      const r = await SubjEditor.patchQuestion(q.id, { answer: i, derived: false });
+      if (!r.ok) return AMUSQ.toast('تعذّر تصحيح الإجابة');
+      q.answer = i; q.derived = false;
+      opts.querySelectorAll('.ad-q__opt').forEach((x, xi) =>
+        x.className = 'ad-q__opt' + (xi === i ? ' is-a' : ''));
+      AMUSQ.toast('صُحّحت الإجابة');
+    });
+    opts.appendChild(b);
+  });
+  box.appendChild(opts);
+
+  // لوح التحرير يُبنى عند الطلب لا مع كل سؤال — القائمة قد تحمل مئات البطاقات
+  let panel = null;
+  more.addEventListener('click', () => {
+    if (panel){ panel.remove(); panel = null; more.textContent = 'حرّر'; return; }
+    more.textContent = 'أغلِق';
+    const topicSel = el('select', { class:'input' });
+    const tops = (Array.isArray(sub.topics) ? sub.topics : []).slice();
+    if (q.topic && tops.indexOf(q.topic) === -1) tops.push(q.topic);
+    topicSel.appendChild(el('option', { value:'', text:'— بلا محور —' }));
+    tops.forEach(t => topicSel.appendChild(el('option', { value:t, text:t, selected: t === q.topic ? 'selected' : null })));
+    topicSel.value = q.topic || '';
+
+    const ar = el('textarea', { class:'input', rows:'3' }); ar.value = q.expl_ar || '';
+    const en = el('textarea', { class:'input', rows:'2' }); en.value = q.expl_en || '';
+    const tr = el('textarea', { class:'input', rows:'2' }); tr.value = q.translation || '';
+    const m = q.mnemonic || {};
+    const cue  = el('input', { class:'input', value: m.cue || '',  placeholder:'الطُّعم' });
+    const key  = el('input', { class:'input', value: m.key || '',  placeholder:'المفتاح' });
+    const link = el('input', { class:'input', value: m.link || '', placeholder:'الرابط الذهني' });
+    const ordQ = el('input', { class:'input', type:'number', value: String(q.ord), 'aria-label':'ترتيب السؤال' });
+
+    const save = el('button', { class:'btn btn--sm', type:'button', text:'احفظ' });
+    save.addEventListener('click', async () => {
+      const r = await SubjEditor.patchQuestion(q.id, {
+        topic: topicSel.value, expl_ar: ar.value, expl_en: en.value, translation: tr.value,
+        mnemonic: { cue: cue.value, key: key.value, link: link.value, strike: m.strike || '' },
+        ord: parseInt(ordQ.value || String(q.ord), 10)
+      });
+      AMUSQ.toast(r.ok ? 'حُفظ السؤال' : 'تعذّر الحفظ');
+      if (r.ok && refresh) refresh();
+    });
+
+    // الحذف بتأكيد صريح: الضغطة الأولى تحوّل الزر، الثانية تنفّذ
+    const del = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'احذف السؤال' });
+    let armed = false;
+    del.addEventListener('click', async () => {
+      if (!armed){ armed = true; del.textContent = 'اضغط ثانيةً للحذف نهائيًا'; del.className = 'btn btn--sm btn--danger'; return; }
+      const r = await SubjEditor.delQuestion(q.id);
+      AMUSQ.toast(r.ok ? 'حُذف السؤال' : 'تعذّر الحذف');
+      if (r.ok){ if (refresh) refresh(); else box.remove(); }
+    });
+
+    panel = el('div', { class:'ad-edit ad-edit--2', style:'margin-top:12px' }, [
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'المحور' }), topicSel ]),
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترتيب' }), ordQ ]),
+      el('label', { class:'field', style:'margin:0;grid-column:1/-1' }, [ el('span', { class:'field__label', text:'الشرح بالعربية' }), ar ]),
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الشرح بالإنجليزية' }), en ]),
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترجمة' }), tr ]),
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'بطاقة الحفظ — الطُّعم' }), cue ]),
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'المفتاح' }), key ]),
+      el('label', { class:'field', style:'margin:0;grid-column:1/-1' }, [ el('span', { class:'field__label', text:'الرابط الذهني' }), link ]),
+      el('div', { class:'ad-bar', style:'grid-column:1/-1;margin:0' }, [ save, el('span', { class:'spacer' }), del ])
+    ]);
+    box.appendChild(panel);
+  });
+  return box;
+}
+
+/* ===== متصفح الأسئلة ===== */
+function subjQuestions(sub, questions, refresh){
+  const search = el('input', { class:'input', type:'search', placeholder:'ابحث في نص السؤال أو خياراته…' });
+  const topicSel = el('select', { class:'input', 'aria-label':'تصفية بالمحور' });
+  topicSel.appendChild(el('option', { value:'', text:'كل المحاور' }));
+  const seen = {};
+  questions.forEach(q => { if (q.topic && !seen[q.topic]){ seen[q.topic] = 1;
+    topicSel.appendChild(el('option', { value:q.topic, text:q.topic })); } });
+  const onlySel = el('select', { class:'input', 'aria-label':'تصفية بالحالة' });
+  [['','كل الأسئلة'],['important','المهمة فقط'],['derived','إجابة مستنتجة'],['noexpl','بلا شرح']]
+    .forEach(o => onlySel.appendChild(el('option', { value:o[0], text:o[1] })));
+
+  const count = el('span', { class:'ad-panel__s' });
+  const list = el('div', { class:'stack', style:'margin-top:12px' });
+  let shown = 40;   // نرسم دفعة أولى فقط: مادة فيها ٣٠٠ سؤال لا تُرسم كلها على جوال
+
+  function draw(){
+    const res = SubjEditor.filter(questions, search.value, topicSel.value, onlySel.value);
+    count.textContent = res.length + ' من ' + questions.length + ' سؤالًا';
+    list.innerHTML = '';
+    res.slice(0, shown).forEach(q => list.appendChild(qCard(q, sub, refresh)));
+    if (res.length > shown){
+      const more = el('button', { class:'btn btn--block btn--soft', type:'button',
+        text:'اعرض ' + Math.min(40, res.length - shown) + ' سؤالًا آخر' });
+      more.addEventListener('click', () => { shown += 40; draw(); });
+      list.appendChild(more);
+    }
+    if (!res.length) list.appendChild(AMUSQ.views.empty('⌕', 'لا نتائج', 'جرّب كلمة أخرى أو أزل التصفية.'));
+  }
+  [search, topicSel, onlySel].forEach(x =>
+    x.addEventListener('input', () => { shown = 40; draw(); }));
+  draw();
+
+  return el('div', { class:'ad-panel' }, [
+    el('div', { class:'ad-panel__h' }, [
+      el('h2', { class:'ad-panel__t', text:'الأسئلة' }), count
+    ]),
+    el('p', { class:'page__sub', style:'margin-top:0',
+      text:'نصّ السؤال وخياراته لا يُعدَّلان — يُصحَّح الخطأ برفع الملف من جديد. اضغط خيارًا لتجعله الإجابة الصحيحة.' }),
+    el('div', { class:'ad-bar' }, [ search, topicSel, onlySel ]),
+    list
+  ]);
+}
+
+/* ===== الشاشة ===== */
+const AdminSubjectView = {
+  title:'محرر المادة',
+  view(route){
+    if (!AMUSQ.api.user()) return AMUSQ.views.ViewAdminLogin.view();
+    const id = route.rest[0];
+    if (!id) return AMUSQ.views.ViewNotFound.view();
+
+    const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
+    function load(){
+      Promise.all([
+        AMUSQ.api.rest('subjects?id=eq.' + id + '&select=*'),
+        AMUSQ.api.rest('questions?subject_id=eq.' + id + '&select=*&order=ord')
+      ]).then(([sr, qr]) => {
+        if (!body.isConnected) return;
+        const sub = (sr.ok && sr.data && sr.data[0]) || null;
+        body.innerHTML = '';
+        if (!sub){
+          body.appendChild(AMUSQ.views.empty('⚠', 'لم نجد المادة', 'ربما حُذفت، أو حسابك ليس مشرفًا.'));
+          return;
+        }
+        const questions = (qr.ok && Array.isArray(qr.data)) ? qr.data : [];
+        body.appendChild(subjIdentity(sub, load));
+        body.appendChild(subjTopics(sub, questions, load));
+        body.appendChild(subjQuestions(sub, questions, load));
+      });
+    }
+    load();
+
+    const back = el('a', { class:'btn btn--sm btn--ghost', href:'#/admin/content', text:'→ كل المواد' });
+    return AMUSQ.views.page('محرر المادة', 'الهوية والمحاور والأسئلة في مكان واحد.', [back, body]);
+  }
+};
+
+AMUSQ.admin.subject = SubjEditor;
+AMUSQ.views.ViewAdminSubject = AdminSubjectView;
+
+
+/* ===== 44-admin-settings.js ===== */
+/*
+  الإعدادات — كل مقبض في المنصة في شاشة واحدة، مجموعًا بالمعنى لا بالجدول.
+  الحفظ لكل مجموعة على حدة: المشرف يغيّر شيئًا واحدًا فلا نعيد كتابة الصف كله
+  ولا نجعله يمرّ على عشرين حقلًا ليضغط زرًا واحدًا في القاع.
+*/
+const SET = {
+  /* وصف الحقول في مكان واحد — الواجهة تُبنى منه، والفحص يقرأه، فلا يفترقان */
+  GROUPS: [
+    { id:'identity', title:'هوية المنصة', sub:'ما يراه الطالب في الترويسة والصفحة التعريفية', fields:[
+      { k:'platform_name', t:'text',  label:'اسم المنصة' },
+      { k:'tagline',       t:'text',  label:'الشعار — سطر واحد' },
+      { k:'welcome_text',  t:'area',  label:'نص الترحيب' },
+      { k:'support_email', t:'text',  label:'بريد الدعم', dir:'ltr' },
+      { k:'whatsapp',      t:'text',  label:'رقم واتساب للتواصل', dir:'ltr' }
+    ]},
+    { id:'exam', title:'افتراضات الاختبار', sub:'يبدأ بها الطالب، وله تغييرها قبل كل اختبار', fields:[
+      { k:'exam_count',       t:'num',  label:'عدد الأسئلة', min:1, max:200 },
+      { k:'exam_minutes',     t:'num',  label:'المدة بالدقائق', min:1, max:300 },
+      { k:'pass_mark',        t:'num',  label:'علامة النجاح ٪', min:0, max:100 },
+      { k:'shuffle_q',        t:'bool', label:'خلط ترتيب الأسئلة' },
+      { k:'shuffle_opts',     t:'bool', label:'خلط ترتيب الخيارات' },
+      { k:'instant_feedback', t:'bool', label:'إظهار الصواب فور الإجابة' }
+    ]},
+    { id:'access', title:'الوصول والحسابات', sub:'من يدخل، وبكم جهاز، ومتى تُغلق المنصة', fields:[
+      { k:'signup_open',   t:'bool', label:'التسجيل مفتوح للطلاب الجدد' },
+      { k:'board_enabled', t:'bool', label:'لوحة المتصدرين ظاهرة' },
+      { k:'device_limit',  t:'num',  label:'حد الأجهزة لكل حساب', min:1, max:10 },
+      { k:'trial_days',    t:'num',  label:'أيام التجربة المجانية', min:0, max:365 },
+      { k:'maintenance',   t:'bool', label:'وضع الصيانة — يُوقف دخول الطلاب' },
+      { k:'maint_msg',     t:'area', label:'رسالة الصيانة' }
+    ]}
+  ],
+
+  /* لا نُرسل إلا ما تغيّر فعلًا: أقل حمولة، وأثر أوضح في سجل القاعدة */
+  diff(before, after){
+    const out = {};
+    Object.keys(after).forEach(k => { if (after[k] !== before[k]) out[k] = after[k]; });
+    return out;
+  },
+  /* الأرقام تُقصّ إلى مداها قبل الإرسال — القاعدة سترفض الخارج، ونحن نمنع الرحلة أصلًا */
+  clamp(v, min, max){
+    const n = parseInt(v, 10);
+    if (isNaN(n)) return min;
+    return Math.min(max, Math.max(min, n));
+  }
+};
+
+function setField(f, value, onChange){
+  if (f.t === 'bool'){
+    let on = !!value;
+    const b = el('button', { class:'btn btn--sm ' + (on ? '' : 'btn--ghost'), type:'button',
+      role:'switch', 'data-k':f.k, 'aria-checked': on ? 'true' : 'false',
+      text: (on ? '✓ ' : '') + f.label });
+    b.addEventListener('click', () => {
+      on = !on;
+      b.className = 'btn btn--sm ' + (on ? '' : 'btn--ghost');
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+      b.textContent = (on ? '✓ ' : '') + f.label;
+      onChange(f.k, on);
+    });
+    return b;
+  }
+  let inp;
+  if (f.t === 'area'){ inp = el('textarea', { class:'input', rows:'2', 'data-k':f.k }); inp.value = value || ''; }
+  else if (f.t === 'num'){
+    inp = el('input', { class:'input', type:'number', 'data-k':f.k,
+      min:String(f.min), max:String(f.max), value: String(value == null ? f.min : value) });
+  } else {
+    inp = el('input', { class:'input', type:'text', 'data-k':f.k, dir: f.dir || 'auto', value: value || '' });
+  }
+  inp.addEventListener('input', () => {
+    onChange(f.k, f.t === 'num' ? SET.clamp(inp.value, f.min, f.max) : inp.value);
+  });
+  return el('label', { class:'field', style:'margin:0' }, [
+    el('span', { class:'field__label', text:f.label }), inp
+  ]);
+}
+
+function setGroup(g, row, refresh){
+  const draft = {};
+  g.fields.forEach(f => { draft[f.k] = row[f.k]; });
+  const save = el('button', { class:'btn', type:'button', text:'احفظ ' + g.title, disabled:true });
+  const mark = el('span', { class:'ad-panel__s' });
+
+  function touched(){
+    const d = SET.diff(row, draft);
+    const n = Object.keys(d).length;
+    save.disabled = n === 0;
+    mark.textContent = n ? n + ' تغييرًا غير محفوظ' : 'محفوظ';
+  }
+  touched();
+
+  const body = el('div', { class:'ad-edit ad-edit--2' },
+    g.fields.map(f => setField(f, row[f.k], (k, v) => { draft[k] = v; touched(); })));
+
+  save.addEventListener('click', async () => {
+    const d = SET.diff(row, draft);
+    if (!Object.keys(d).length) return;
+    const r = await AMUSQ.api.rest('settings?id=eq.1', { method:'PATCH', body: JSON.stringify(d) });
+    AMUSQ.toast(r.ok ? 'حُفظت ' + g.title : 'تعذّر الحفظ');
+    if (r.ok && refresh) refresh();
+  });
+
+  return el('section', { class:'ad-panel', 'data-group':g.id }, [
+    el('div', { class:'ad-panel__h' }, [
+      el('h2', { class:'ad-panel__t', text:g.title }), mark
+    ]),
+    el('p', { class:'page__sub', style:'margin-top:0', text:g.sub }),
+    body,
+    el('div', { class:'ad-bar', style:'margin:16px 0 0' }, [ save ])
+  ]);
+}
+
+/* ===== الربط: يعمل قبل الدخول لأنه أول ما يُضبط عند التركيب ===== */
+function setConnection(){
+  const c = AMUSQ.config.get() || {};
+  const urlIn = el('input', { class:'input', dir:'ltr', id:'cfgUrl', value: c.url || '', placeholder:'https://xxxx.supabase.co' });
+  const keyIn = el('input', { class:'input', dir:'ltr', id:'cfgKey', value: c.anonKey || '', placeholder:'anon key' });
+  const apiIn = el('input', { class:'input', dir:'ltr', id:'cfgApi', value: AMUSQ.store.get('api_base',''),
+    placeholder:'اتركه فارغًا على نفس الموقع' });
+  const save = el('button', { class:'btn', type:'button', text:'احفظ الربط' });
+  save.addEventListener('click', () => {
+    const r = AMUSQ.config.set(urlIn.value.trim(), keyIn.value.trim());
+    AMUSQ.store.set('api_base', apiIn.value.trim());
+    AMUSQ.toast(r.ok ? 'حُفظ الربط — المنصة موصولة' : r.err);
+  });
+  return el('section', { class:'ad-panel' }, [
+    el('div', { class:'ad-panel__h' }, [ el('h2', { class:'ad-panel__t', text:'ربط الخادم' }) ]),
+    el('p', { class:'page__sub', style:'margin-top:0',
+      text:'المفتاح العام (anon) عام بطبيعته — الحماية كلها في RLS داخل القاعدة، لا في إخفائه.' }),
+    el('div', { class:'ad-edit' }, [
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'رابط Supabase' }), urlIn ]),
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'المفتاح العام (anon)' }), keyIn ]),
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'رابط دوال الخادم (Vercel)' }), apiIn ])
+    ]),
+    el('div', { class:'ad-bar', style:'margin:16px 0 0' }, [ save ])
+  ]);
+}
+
+/* ===== صحة المحتوى ===== */
+function setHealth(){
+  const box = el('section', { class:'ad-panel' }, [
+    el('div', { class:'ad-panel__h' }, [ el('h2', { class:'ad-panel__t', text:'صحة المحتوى' }) ]),
+    el('p', { class:'page__sub', text:'جارٍ الفحص…' })
+  ]);
+  AMUSQ.api.rpc('admin_health').then(r => {
+    if (!box.isConnected) return;
+    box.innerHTML = '';
+    box.appendChild(el('div', { class:'ad-panel__h' }, [ el('h2', { class:'ad-panel__t', text:'صحة المحتوى' }) ]));
+    if (!r.ok || !r.data || r.data.error){
+      box.appendChild(el('p', { class:'page__sub', text:'يظهر بعد تشغيل SETTINGS-UPGRADE.sql على القاعدة.' }));
+      return;
+    }
+    const h = r.data;
+    const ITEMS = [
+      ['bad_answer',  'إجابة خارج نطاق الخيارات', 'bad'],
+      ['no_expl',     'سؤالًا بلا شرح',            'warn'],
+      ['derived',     'إجابة استنتجها الذكاء',     'warn'],
+      ['opts_built',  'سؤالًا خياراته مبنية',      'warn'],
+      ['no_topic',    'سؤالًا بلا محور',           'warn'],
+      ['empty_subj',  'مادة بلا سؤال واحد',        'warn'],
+      ['unpublished', 'مادة غير منشورة',           null]
+    ];
+    const bad = ITEMS.filter(i => Number(h[i[0]]) > 0);
+    if (!bad.length){
+      box.appendChild(el('p', { class:'page__sub', text:'✓ لا ملاحظات — المحتوى جاهز للطالب.' }));
+      return;
+    }
+    bad.forEach(i => box.appendChild(el('div', { class:'row' }, [
+      el('span', { class:'badge num ' + (i[2] === 'bad' ? 'badge--bad' : i[2] === 'warn' ? 'badge--warn' : ''),
+        text: String(h[i[0]]) }),
+      el('span', { text: i[1] })
+    ])));
+  });
+  return box;
+}
+
+/* ===== التصدير ومنطقة الخطر ===== */
+function setData(){
+  const btn = el('button', { class:'btn', type:'button', text:'صدّر نسخة كاملة (JSON)' });
+  btn.addEventListener('click', async () => {
+    btn.disabled = true; btn.textContent = 'جارٍ التصدير…';
+    const r = await AMUSQ.api.rpc('admin_export');
+    btn.disabled = false; btn.textContent = 'صدّر نسخة كاملة (JSON)';
+    if (!r.ok || !r.data || r.data.error) return AMUSQ.toast('تعذّر التصدير');
+    const blob = new Blob([JSON.stringify(r.data, null, 2)], { type:'application/json' });
+    const a = el('a', { href: URL.createObjectURL(blob),
+      download: 'amusq-backup-' + new Date().toISOString().slice(0,10) + '.json' });
+    document.body.appendChild(a); a.click(); a.remove();
+    AMUSQ.toast('نُزّلت النسخة');
+  });
+
+  const clearLocal = el('button', { class:'btn btn--ghost', type:'button', text:'امسح ذاكرة هذا الجهاز' });
+  let armed = false;
+  clearLocal.addEventListener('click', () => {
+    if (!armed){ armed = true; clearLocal.textContent = 'اضغط ثانيةً — يُمسح التقدّم المحلي'; clearLocal.className = 'btn btn--danger'; return; }
+    AMUSQ.store.clearAll();
+    AMUSQ.toast('مُسحت الذاكرة المحلية — أعد التحميل');
+  });
+
+  return el('section', { class:'ad-panel ad-danger' }, [
+    el('div', { class:'ad-panel__h' }, [ el('h2', { class:'ad-panel__t', text:'البيانات' }) ]),
+    el('p', { class:'page__sub', style:'margin-top:0',
+      text:'التصدير يحفظ المواد والأسئلة والإعدادات كاملة. المسح يطال هذا الجهاز وحده ولا يلمس القاعدة.' }),
+    el('div', { class:'ad-bar', style:'margin:0' }, [ btn, el('span', { class:'spacer' }), clearLocal ])
+  ]);
+}
+
+/* ===== التبويب ===== */
+function adminSettingsTabFull(box){
+  box.appendChild(setConnection());
+  const rest = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ جلب الإعدادات…' }) ]);
+  box.appendChild(rest);
+
+  function load(){
+    AMUSQ.api.rest('settings?id=eq.1&select=*').then(r => {
+      if (!rest.isConnected) return;
+      rest.innerHTML = '';
+      const row = (r.ok && r.data && r.data[0]) || null;
+      if (!row){
+        rest.appendChild(AMUSQ.views.empty('⚙', 'الإعدادات غير متاحة',
+          'تُجلب بعد ربط الخادم والدخول كمشرف وتشغيل ملفات SQL.'));
+        return;
+      }
+      SET.GROUPS.forEach(g => rest.appendChild(setGroup(g, row, load)));
+      rest.appendChild(setHealth());
+      rest.appendChild(setData());
+    });
+  }
+  load();
+}
+
+AMUSQ.admin.settings = SET;
+// نستبدل تبويب الإعدادات القديم بالكامل — أُبقي المختصر في 33 كي يبقى ذاك الملف مستقلًا
+AMUSQ.views.ADMIN_TABS.forEach(t => { if (t.id === 'settings') t.fill = adminSettingsTabFull; });
 
 })();
 
