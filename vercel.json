@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "node src/build.js",
+  "_تعليق": "لا buildCommand عمدًا. index.html ملف مكتفٍ بذاته يُبنى ويُختبر قبل الرفع (node src/build.js محليًا). إعادة بنائه هنا من src تعني أن أي ملف مصدر ناقص في المستودع يدهس البناء الصحيح — وقد حدث ذلك فعلًا. الآن ما يُرفع هو ما يُقدَّم.",
   "outputDirectory": ".",
   "installCommand": "cd api && npm install --omit=dev",
   "framework": null,
