@@ -524,14 +524,15 @@ img,svg{ max-width:100%; height:auto; }
 /*
   صفحة الهبوط التعريفية — أول ما يراه الزائر قبل التسجيل.
   هوية «مراجعة — بنك الأسئلة»: ورق دافئ، عنّابي وذهبي، وحواف كتاب.
-  البنية من مواقع الدورات العربية: بطل ← أرقام ← مواد ← مزايا ← خطوات ← أسعار ← دعوة.
+  البنية: بطل ← كيف تعمل ← جرّب سؤالًا ← بطاقة حفظ ← مزايا ← ارفع مادتك ← نصائح ← أسعار ← دعوة.
+  ولا مادة بعينها هنا: المقررات تختلف بين الجامعات، ومكانها شاشة «استكشف».
 */
 
 .lp{ margin-inline:calc(var(--s4) * -1); }
 
 /* ===== البطل: صفحة كتاب مفتوح =====
-   التوقيع البصري للمنصة. ليس زخرفة: عرض كل كعب كتاب في الرفّ
-   مشتقّ من عدد أسئلة مادته فعلًا، فالصورة تقول ما تقوله الأرقام. */
+   التوقيع البصري للمنصة. الرفّ صورة لفكرة «بنك الأسئلة» لا عرضٌ لمخزون —
+   أوزان كعوبه ثابتة كي تبقى الصورة واحدة لكل زائر ولا تُقرأ كإحصاء. */
 .lp-hero{
   position:relative; overflow:hidden;
   padding:var(--s8) var(--s4) var(--s7);
@@ -574,8 +575,20 @@ img,svg{ max-width:100%; height:auto; }
 }
 .lp-hero__title em{ font-style:normal; color:var(--brand); }
 .lp-hero__sub{
-  max-width:54ch; margin:0 auto var(--s6);
+  max-width:54ch; margin:0 auto var(--s4);
   font-size:clamp(1rem, 2.4vw, 1.12rem); color:var(--text-2); line-height:1.95;
+}
+/*
+  سطر التوقّع: «كل جامعة موادها تخصّها».
+  أخفتُ نبرةً من الملخّص وبخطّ هامش عنّابي — كملاحظة على حاشية الورقة لا
+  كادّعاء إضافي. موضعه قبل الأزرار مقصود: يقرؤه الزائر قبل أن يقرّر أيّهما
+  يضغط، فيذهب إلى «استكشف» وهو يعرف أنه يبحث عن جامعته هو.
+*/
+.lp-hero__note{
+  max-width:52ch; margin:0 auto var(--s6);
+  padding-inline-start:var(--s3);
+  border-inline-start:2px solid var(--rule);
+  font-size:.94rem; color:var(--text-3); line-height:1.85; text-align:start;
 }
 
 /* الرفّ: الكتب تصعد واحدًا بعد آخر عند الفتح ثم تسكن */
@@ -589,39 +602,18 @@ img,svg{ max-width:100%; height:auto; }
   from{ transform:scaleY(.05); opacity:0; }
   to{ transform:scaleY(1); opacity:1; }
 }
+/*
+  كان سطر فتح هذه الكتلة مفقودًا، فطُبِّق animation:none على كل زائر
+  وتوقّفت النقطة الذهبية عن التنفّس عند الجميع لا عند من طلب تقليل الحركة.
+*/
+@media (prefers-reduced-motion: reduce){
+  .lp-shelf__book{ animation:none; }
   .lp-hero__badge .dot{ animation:none; }
 }
 
 .lp-cta{ display:flex; gap:var(--s3); justify-content:center; flex-wrap:wrap; }
 .lp-cta .btn{ padding:var(--s4) var(--s7); font-size:1.02rem; }
 .btn--lg{ min-height:54px; }
-
-/* ===== العلامات الحيوية: أرقامك كقراءة شاشة ===== */
-.lp-stats{
-  display:grid; grid-template-columns:repeat(2,1fr); gap:0;
-  max-width:720px; margin:var(--s7) auto 0;
-  background:var(--surface); border:1px solid var(--line);
-  border-radius:var(--r3); overflow:hidden; box-shadow:var(--sh2);
-}
-@media (min-width:640px){ .lp-stats{ grid-template-columns:repeat(4,1fr); } }
-.lp-stat{
-  padding:var(--s5) var(--s3); text-align:center;
-  border-inline-start:1px solid var(--line-soft);
-  border-top:1px solid var(--line-soft);
-}
-.lp-stat:nth-child(-n+2){ border-top:0; }
-@media (min-width:640px){ .lp-stat{ border-top:0; } }
-.lp-stat:first-child{ border-inline-start:0; }
-@media (max-width:639px){ .lp-stat:nth-child(odd){ border-inline-start:0; } }
-.lp-stat__n{
-  display:block; font-family:var(--font-num);
-  font-size:1.8rem; font-weight:700; color:var(--brand); line-height:1.15;
-  letter-spacing:-.02em;
-}
-.lp-stat__l{
-  font-size:.74rem; color:var(--text-3); font-weight:700;
-  letter-spacing:.03em; margin-top:var(--s1); display:block;
-}
 
 /* ===== أقسام عامة ===== */
 .lp-sec{ max-width:var(--wrap); margin-inline:auto; padding:var(--s8) var(--s4); }
@@ -640,7 +632,7 @@ img,svg{ max-width:100%; height:auto; }
 }
 .lp-sec__sub{ color:var(--text-2); max-width:52ch; margin-inline:auto; }
 
-/* ===== بطاقات المواد (العرض التعريفي) ===== */
+/* ===== شبكة البطاقات (المزايا) ===== */
 .lp-grid{ display:grid; gap:var(--s4); grid-template-columns:1fr; }
 @media (min-width:640px){ .lp-grid{ grid-template-columns:repeat(2,1fr); } }
 @media (min-width:960px){ .lp-grid--3{ grid-template-columns:repeat(3,1fr); } }
@@ -671,7 +663,8 @@ img,svg{ max-width:100%; height:auto; }
   display:grid; place-items:center; font-weight:700; font-size:1.05rem;
   font-family:var(--font-num);
   background:var(--brand); color:var(--on-brand);
-  box-shadow:0 4px 14px rgba(18,128,92,.3);
+  /* الظل من لون الهوية نفسه — كان أخضر طبيًّا ثابتًا وبقي بعد تحوّلها للعنّابي */
+  box-shadow:0 4px 14px color-mix(in srgb, var(--brand) 34%, transparent);
 }
 .lp-step__t{ font-weight:800; margin-bottom:var(--s1); }
 .lp-step__d{ color:var(--text-2); font-size:.9rem; margin:0; }
@@ -718,26 +711,6 @@ img,svg{ max-width:100%; height:auto; }
 /* الطباعة لا تعني صفحة الهبوط */
 @media print{ .lp{ display:none; } }
 
-/* ===== عدّاد الامتحانات القادمة — أنفع ما يراه الطالب أولًا ===== */
-.lp-exams{
-  max-width:var(--wrap); margin:var(--s6) auto 0; padding-inline:var(--s4);
-  display:grid; gap:var(--s3); grid-template-columns:1fr;
-}
-@media (min-width:640px){ .lp-exams{ grid-template-columns:repeat(3,1fr); } }
-.lp-exam{
-  display:flex; align-items:center; gap:var(--s3);
-  background:var(--surface); border:1px solid var(--line); border-radius:var(--r2);
-  padding:var(--s4); box-shadow:var(--sh1);
-}
-.lp-exam__d{
-  min-width:56px; height:56px; border-radius:var(--r2); display:grid; place-items:center;
-  background:var(--brand-soft); color:var(--brand); font-weight:800; line-height:1.1; text-align:center;
-}
-.lp-exam__d b{ display:block; font-family:var(--font-num); font-size:1.4rem; font-weight:700; }
-.lp-exam__d span{ font-size:.68rem; font-weight:700; }
-.lp-exam__n{ font-family:var(--font-display); font-weight:700; letter-spacing:-.01em; }
-.lp-exam__s{ font-size:.82rem; color:var(--text-3); }
-.lp-exam--soon .lp-exam__d{ background:var(--bad-soft); color:var(--bad); }
 
 /* ===== السؤال التجريبي ===== */
 .lp-try{
@@ -3993,37 +3966,37 @@ QBANK.views.buildPrintDoc = buildPrintDoc;
 /*
   صفحة الهبوط التعريفية — تُعرض للزائر غير المسجَّل فقط.
   الطالب المسجَّل يرى بطاقات مواده مباشرة كما كان، فلا نضيف له خطوة.
-  لماذا؟ لأن الزائر يحتاج إقناعًا وشرحًا، والمسجَّل يحتاج مذاكرة فورية.
-*/
-/*
-  خط تخطيط القلب: دورة PQRST كاملة تتكرر عبر عرض الشاشة.
-  نبنيه برمجيًا لا كصورة، فيبقى الملف واحدًا ويتلوّن بمتغيّرات التصميم.
+
+  ★ قاعدة هذه الصفحة: شرحُ عمل المنصة فقط — ولا مادة واحدة بعينها.
+
+  السبب أن المقررات تختلف من جامعة إلى جامعة ومن كلية إلى كلية. فزائر من
+  القاهرة يرى هنا مواد جامعة نجران فيظن أن المنصة لا تخصّه، أو أسوأ: يظن
+  أن هذه هي كل موادها. المكان الصحيح للمواد هو «استكشف» حيث يبحث الطالب
+  عن جامعته ويرى ما يخصّه هو. أما الصفحة الأولى فتُجيب عن سؤال واحد:
+  ما هذه المنصة وكيف تعمل؟
 */
 /*
   رفّ الكتب — التوقيع البصري للمنصة.
 
-  كان هنا خط تخطيط قلب حين كانت الهوية طبية. صار رفًّا لأن الاسم صار «بنك
-  الأسئلة»: كل كعب كتاب مادة، وعرضه يتناسب مع عدد أسئلتها فعلًا. الصورة
-  تقول ما تقوله الأرقام: كلما كبرت المكتبة طال الرفّ.
+  رفّ مجرَّد لا يُبنى من مواد حقيقية: هو صورة لفكرة «بنك الأسئلة» لا عرضٌ
+  لمخزون. تفاوت سُمك الكعوب وأطوالها ثابت مقصود، كي تبقى الصورة نفسها لكل
+  زائر مهما اختلف ما في القاعدة.
 */
-function shelfSvg(subjects){
+function shelfSvg(){
   const NS = 'http://www.w3.org/2000/svg';
   const W = 640, H = 116, FLOOR = 96;
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('class', 'lp-shelf');
   svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
   svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', 'رفّ فيه ' + (subjects.length || 6) + ' مادة');
+  svg.setAttribute('aria-label', 'رفّ كتب — صورة تعبيرية لبنوك الأسئلة');
 
-  // بلا مواد بعد: رفّ نموذجي كي لا يبدو الموقع فارغًا لأول زائر
-  const books = (subjects.length ? subjects : [1,2,3,4,5,6].map(i => ({ q_count: 30 + i * 12 })))
-    .slice(0, 9);
-  const maxQ = Math.max(1, ...books.map(b => Number(b.q_count) || 1));
+  // أوزان ثابتة: الصورة واحدة لكل زائر، ولا تُفسَّر كإحصاء
+  const WEIGHTS = [46, 30, 58, 38, 52, 34, 44, 60, 36];
 
   let x = 12;
-  books.forEach((b, i) => {
-    const q = Number(b.q_count) || 1;
-    const bw = 26 + Math.round(q / maxQ * 34);          // السُّمك من عدد الأسئلة
+  WEIGHTS.forEach((w, i) => {
+    const bw = 26 + Math.round(w / 60 * 34);
     const bh = 46 + ((i * 7) % 22);                     // تفاوت الطول: رفّ لا مسطرة
     const col = 'var(--subject-' + ((i % 6) + 1) + ')';
     const g = document.createElementNS(NS, 'g');
@@ -4057,13 +4030,6 @@ function shelfSvg(subjects){
   return svg;
 }
 
-function lpStat(n, label){
-  return el('div', { class:'lp-stat' }, [
-    el('span', { class:'lp-stat__n num', text: n }),
-    el('span', { class:'lp-stat__l', text: label })
-  ]);
-}
-
 function lpSection(kicker, title, sub, body){
   return el('section', { class:'lp-sec' }, [
     el('div', { class:'lp-sec__head' }, [
@@ -4072,24 +4038,6 @@ function lpSection(kicker, title, sub, body){
       sub ? el('p', { class:'lp-sec__sub', text: sub }) : null
     ])
   ].concat(body || []));
-}
-
-/* بطاقة مادة في العرض التعريفي — تدعو للتسجيل لا للفتح المباشر */
-function lpSubjectCard(sub){
-  const color = QBANK.views.subjectColor(sub.color);
-  const left = QBANK.views.daysLeft(sub.exam_date);
-  return el('article', { class:'lp-card' }, [
-    el('span', { class:'lp-card__top', style:'background:' + color, 'aria-hidden':'true' }),
-    el('span', { class:'lp-card__ico', 'aria-hidden':'true', text: sub.icon || '▤' }),
-    el('h3', { class:'lp-card__title', text: sub.name }),
-    el('p', { class:'lp-card__text', text: sub.descr || 'بنك أسئلة كامل مع شرح وبطاقات حفظ واختبار تجريبي.' }),
-    el('div', { class:'lp-card__meta' }, [
-      el('span', { class:'badge num', text: (sub.q_count || 0) + ' سؤالًا' }),
-      sub.free ? el('span', { class:'badge badge--ok', text:'مجانية بالكامل' }) : null,
-      (left !== null && left >= 0) ? el('span', { class:'badge badge--warn num', text:'الاختبار بعد ' + left + ' يوم' }) : null,
-      (sub.topics && sub.topics.length) ? el('span', { class:'badge num', text: sub.topics.length + ' محاور' }) : null
-    ])
-  ]);
 }
 
 /* بطاقة ميزة */
@@ -4111,17 +4059,15 @@ function lpStep(n, title, desc){
 
 function landingView(){
   const pack = QBANK.data.pack();
-  const subjects = (pack.subjects || []).slice().sort((a,b) => (a.ord||0) - (b.ord||0));
-  const totalQ = subjects.reduce((s, x) => s + (x.q_count || 0), 0);
-  const freeCount = subjects.filter(s => s.free).length;
-
   const root = el('div', { class:'lp' });
   // عيّنة واحدة للسؤال ولبطاقة الحفظ معًا — لو اختلفتا لبدتا غير مترابطتين
   const demo = QBANK.demos.at(QBANK.demos.next());
 
-  /* ١ · البطل */
+  /* ١ · البطل — ما هي المنصة، وإلى أين يذهب الزائر */
   const goSignup = el('a', { class:'btn btn--lg', href:'#/login', text:'ابدأ المراجعة مجانًا' });
-  const goSubjects = el('a', { class:'btn btn--ghost btn--lg', href:'#subjects', text:'تصفّح المواد' });
+  // ★ الوجهة «استكشف» لا قائمة مواد ثابتة: هناك يبحث الطالب عن جامعته هو
+  const goExplore = el('a', { class:'btn btn--ghost btn--lg', href:'#/explore',
+    text:'ابحث عن جامعتك' });
   root.appendChild(el('header', { class:'lp-hero' }, [
     el('span', { class:'lp-hero__badge' }, [
       el('span', { class:'dot', 'aria-hidden':'true' }),
@@ -4133,45 +4079,36 @@ function landingView(){
     ]),
     el('p', { class:'lp-hero__sub', text:
       (pack.settings && pack.settings.welcome_text) ||
-      'أيًّا كان تخصصك — طب أو هندسة أو حاسب أو قانون أو إدارة — بنك أسئلة منقّح من ملفات دكاترتك حرفًا بحرف، مع شرح لكل إجابة، وبطاقات حفظ ذكية، واختبارات تجريبية تحاكي الامتحان الحقيقي. ويعمل بلا إنترنت.' }),
-    el('div', { class:'lp-cta' }, [goSignup, goSubjects]),
-    shelfSvg(subjects)
+      'أيًّا كان تخصصك — طب أو هندسة أو حاسب أو قانون أو إدارة — تحوّل ملفات أسئلة دكاترتك إلى بنك مراجعة كامل: النص كما ورد حرفًا بحرف، وشرح لكل إجابة، وبطاقات حفظ، واختبار يحاكي الامتحان. ويعمل بلا إنترنت.' }),
+    // ★ توقّع صريح: المقررات تختلف بين الجامعات، فلا نعرض قائمة واحدة للجميع
+    el('p', { class:'lp-hero__note', text:
+      'وكل جامعة موادها تخصّها. ابحث عن جامعتك وكليتك في «استكشف» — وإن لم تجد مادتك فارفعها أنت في دقائق.' }),
+    el('div', { class:'lp-cta' }, [goSignup, goExplore]),
+    shelfSvg()
   ]));
 
-  /* ١-ب · عدّاد الامتحانات القادمة — أنفع ما يراه الطالب فورًا */
-  const exams = QBANK.views.lpParts.lpExams(subjects);
-  if (exams) root.appendChild(exams);
-
-  /* ٢ · الأرقام — حقيقية من المحتوى المنشور لا مبالغات */
-  root.appendChild(el('div', { class:'lp-stats' }, [
-    lpStat(subjects.length || '—', 'مادة'),
-    lpStat(totalQ || '—', 'سؤالًا'),
-    lpStat(freeCount || '—', 'مجانية'),
-    lpStat('٢٤/٧', 'بلا إنترنت')
+  /* ٢ · كيف تعمل — أول ما يحتاجه الزائر: الآلية لا المزايا */
+  root.appendChild(lpSection('كيف تعمل', 'من ملف الأسئلة إلى بنك مراجعة',
+    'أربع خطوات هي كل ما تفعله المنصة. لا شيء غامضًا فيها.', [
+    el('div', { class:'lp-steps' }, [
+      lpStep(1, 'يُرفع ملف الأسئلة', 'PDF أو Word أو نص. تقرؤه المنصة وتفصل كل سؤال عن خياراته وإجابته.'),
+      lpStep(2, 'يبقى النص كما هو', 'لا إعادة صياغة ولا تصحيح إملاء ولا تغيير ترتيب — تراجع ما ستُمتحن فيه بالضبط.'),
+      lpStep(3, 'يُضاف الشرح والحفظ', 'لكل إجابة شرح لماذا هي صحيحة ولماذا غيرها خاطئ، وبطاقة حفظ تربط الكلمة الدالة بالمفتاحية.'),
+      lpStep(4, 'تراجع وتختبر نفسك', 'بنك للمراجعة، واختبار مؤقّت بتصحيح فوري وتحليل حسب المحاور — ويعمل بلا إنترنت.')
+    ])
   ]));
 
-  /* ٢-ب · جرّب سؤالًا الآن — الإقناع بالتجربة لا بالكلام */
+  /* ٣ · جرّب سؤالًا الآن — الشرح بالتجربة لا بالكلام */
   root.appendChild(lpSection('جرّبها الآن', 'أجب عن سؤال واحد',
     'هكذا يبدو كل سؤال في «مراجعة»: النص كما ورد، وشرح يوضّح لماذا الإجابة صحيحة ولماذا غيرها خاطئ.',
     [QBANK.views.lpParts.lpTryQuestion(demo)]));
 
-  /* ٢-ج · بطاقة حفظ حيّة */
+  /* ٤ · بطاقة حفظ حيّة */
   root.appendChild(lpSection('طريقة الحفظ', 'بطاقة لكل سؤال',
     'الكلمة الدالة في السؤال ← الكلمة المفتاحية في الإجابة، ورابط ذهني يثبّتها. اقلب البطاقة لترى.',
     [QBANK.views.lpParts.lpMemoCard(demo)]));
 
-  /* ٣ · المواد */
-  const subjectsBody = subjects.length
-    ? [el('div', { class:'lp-grid lp-grid--3' }, subjects.map(lpSubjectCard))]
-    : [QBANK.views.empty('▤', 'المواد في الطريق',
-        'نعمل على تجهيز أول المواد. سجّل بريدك الآن ونخبرك فور نشر أول مادة.')];
-  const secSubjects = lpSection('المواد', 'ماذا ستراجع؟',
-    'كل مادة بنك أسئلة كامل: نص السؤال كما ورد من الدكتور، وشرح يوضّح لماذا الإجابة صحيحة ولماذا غيرها خاطئ.',
-    subjectsBody);
-  secSubjects.id = 'subjects';
-  root.appendChild(secSubjects);
-
-  /* ٤ · المزايا */
+  /* ٥ · المزايا */
   root.appendChild(lpSection('لماذا مراجعة؟', 'أدوات مراجعة لا مجرد ملفات',
     'كل ميزة هنا وُلدت من حاجة حقيقية في ليالي الامتحانات.', [
     el('div', { class:'lp-grid lp-grid--3' }, [
@@ -4190,22 +4127,11 @@ function landingView(){
     ])
   ]));
 
-  /* ٥ · الخطوات */
-  root.appendChild(lpSection('البداية', 'ثلاث دقائق وتبدأ',
-    null, [
-    el('div', { class:'lp-steps' }, [
-      lpStep(1, 'سجّل ببريدك', 'رابط دخول بلا كلمة مرور — أو بحساب جوجل أو آبل.'),
-      lpStep(2, 'اختر موادك', 'أضف مواد فصلك، واضبط موعد كل اختبار ليظهر لك العدّ التنازلي.'),
-      lpStep(3, 'راجع واحفظ', 'بنك الأسئلة والشرح وبطاقات الحفظ — وتقدّمك يُحفظ تلقائيًا.'),
-      lpStep(4, 'اختبر نفسك', 'اختبار تجريبي بنتيجة وتحليل، وأعد اختبار أخطائك حتى تتقنها.')
-    ])
-  ]));
-
-  /* ٥-ج · مواد الطلاب — الميزة التي تجعل المنصة تنمو بلا مشرف */
+  /* ٦ · مواد الطلاب — الميزة التي تجعل المنصة تنمو بلا مشرف */
   root.appendChild(lpSection('لطلاب المواد الناقصة', 'مادتك ليست هنا؟ ارفعها أنت',
     'لا تنتظر أحدًا. حوّل ملف أسئلة دكتورك إلى بنك كامل بالشرح وبطاقات الحفظ في دقائق، وجرّبه مجانًا قبل أي التزام.', [
     el('div', { class:'lp-steps' }, [
-      lpStep(1, 'ارفع ملفك', 'PDF أو Word أو نص. واختر: نحافظ على النص حرفًا بحرف، أو نحسّن صياغته بالذكاء — والأصل يبقى محفوظًا في الحالتين.'),
+      lpStep(1, 'ارفع ملفك', 'PDF أو Word أو نص. واختر: انشره كما هو مجانًا، أو أضف الشرح وبطاقات الحفظ برصيد الإثراء — والنص الأصلي يبقى محفوظًا في الحالتين.'),
       lpStep(2, 'جرّبه عشر دقائق', 'مجانًا وبالكامل. عدّاد ظاهر أمامك، فتعرف ما أخذت وما بقي قبل أن تقرّر.'),
       lpStep(3, 'شاركه بزملائك', 'يصلك رابط خاص بك جاهز للنسخ — أرسله في مجموعة دفعتك.'),
       lpStep(4, 'اكسب على كل بيعة', 'كل زميل يشتري عبر رابطك يضيف كوينز إلى رصيدك، وتراها في محفظتك لحظة بلحظة.')
@@ -4215,7 +4141,7 @@ function landingView(){
     ])
   ]));
 
-  /* ٥-ب · نصائح مراجعة — قيمة يأخذها الزائر حتى لو لم يسجّل */
+  /* ٧ · نصائح مراجعة — قيمة يأخذها الزائر حتى لو لم يسجّل */
   root.appendChild(lpSection('كيف تذاكر بذكاء', 'أربع قواعد تختصر عليك ساعات',
     'مبنية على ما تقوله أبحاث التعلّم عن الاسترجاع النشط والمراجعة الموزّعة.', [
     el('div', { class:'lp-grid' }, QBANK.views.lpParts.LP_TIPS.map(t =>
@@ -4229,7 +4155,7 @@ function landingView(){
     ))
   ]));
 
-  /* ٦ · الأسعار — نموذج الفصل لا اشتراك شهري */
+  /* ٨ · الأسعار — نموذج الفصل لا اشتراك شهري */
   root.appendChild(lpSection('الاشتراك', 'ادفع لفصلك، لا لشهر لن تذاكر فيه',
     'الطلب موسمي حول الامتحانات، فالاشتراك موسمي مثله.', [
     el('div', { class:'lp-grid lp-grid--3' }, [
@@ -4237,7 +4163,7 @@ function landingView(){
         el('span', { class:'lp-price__n', text:'المجانية' }),
         el('span', { class:'lp-price__v', text:'٠ ﷼' }),
         el('ul', {}, [
-          el('li', { text:'مادة كاملة مجانًا — بلا حدود' }),
+          el('li', { text:'مواد مجانية كاملة — بلا حدود' }),
           el('li', { text:'كل الأدوات: بنك وشرح وحفظ واختبار' }),
           el('li', { text:'بلا بطاقة ولا التزام' })
         ]),
@@ -4266,7 +4192,7 @@ function landingView(){
     ])
   ]));
 
-  /* ٦-ب · الأسئلة الشائعة — تُزيل التردد قبل التسجيل */
+  /* ٩ · الأسئلة الشائعة — تُزيل التردد قبل التسجيل */
   root.appendChild(lpSection('أسئلة شائعة', 'ما يسأل عنه الطلاب عادة', null, [
     el('div', { class:'lp-faq' }, QBANK.views.lpParts.LP_FAQ.map(f =>
       el('details', {}, [
@@ -4276,11 +4202,14 @@ function landingView(){
     ))
   ]));
 
-  /* ٧ · الدعوة الأخيرة */
+  /* ١٠ · الدعوة الأخيرة */
   root.appendChild(el('section', { class:'lp-final' }, [
     el('h2', { text:'امتحانك القادم أقرب مما تظن' }),
-    el('p', { text:'ابدأ بالمادة المجانية اليوم، وقرّر بعدها إن كانت تستحق.' }),
-    el('a', { class:'btn btn--lg', href:'#/login', text:'أنشئ حسابك مجانًا' })
+    el('p', { text:'ابحث عن جامعتك، أو ارفع مادتك الأولى اليوم.' }),
+    el('div', { class:'lp-cta' }, [
+      el('a', { class:'btn btn--lg', href:'#/login', text:'أنشئ حسابك مجانًا' }),
+      el('a', { class:'btn btn--ghost btn--lg', href:'#/explore', text:'استكشف بنوك الأسئلة' })
+    ])
   ]));
 
   return root;
@@ -4348,34 +4277,12 @@ QBANK.demos = { list: LP_DEMOS, next: nextDemoIndex, at: demoAt };
 /* ===== 39-landing-parts.js ===== */
 /*
   الأجزاء النافعة في صفحة الهبوط — لا تسويق بل أدوات يستفيد منها الطالب قبل التسجيل:
-  عدّاد امتحاناته، سؤال يجرّبه فعلًا، بطاقة حفظ حيّة، ونصائح مراجعة مبنية على أدلة.
+  سؤال يجرّبه فعلًا، بطاقة حفظ حيّة، ونصائح مراجعة مبنية على أدلة.
+  (حُذف عدّاد الامتحانات: كان يُبنى من مواد جامعة بعينها، والصفحة الأولى
+   صارت شرحًا للمنصة لا عرضًا لمحتواها.)
 */
 
-/* ===== ١ · عدّاد الامتحانات القادمة — من المواد المنشورة فعلًا ===== */
-function lpExams(subjects){
-  const now = Date.now();
-  const soon = subjects
-    .filter(s => s.exam_date && new Date(s.exam_date).getTime() > now)
-    .map(s => ({ s, d: Math.ceil((new Date(s.exam_date).getTime() - now) / 86400000) }))
-    .sort((a, b) => a.d - b.d)
-    .slice(0, 3);
-  if (!soon.length) return null;
-
-  return el('div', { class:'lp-exams' }, soon.map(x =>
-    el('div', { class:'lp-exam' + (x.d <= 7 ? ' lp-exam--soon' : '') }, [
-      el('div', { class:'lp-exam__d' }, [
-        el('b', { class:'num', text: String(x.d) }),
-        el('span', { text: x.d === 1 ? 'يوم' : 'أيام' })
-      ]),
-      el('div', {}, [
-        el('div', { class:'lp-exam__n', text: (x.s.icon || '▤') + ' ' + x.s.name }),
-        el('div', { class:'lp-exam__s', text: x.d <= 7 ? 'الامتحان قريب — ابدأ اليوم' : 'أمامك وقت كافٍ للمراجعة' })
-      ])
-    ])
-  ));
-}
-
-/* ===== ٢ · سؤال تجريبي حقيقي — يجيب عنه الزائر ويرى الشرح فورًا =====
+/* ===== ١ · سؤال تجريبي حقيقي — يجيب عنه الزائر ويرى الشرح فورًا =====
    العيّنة تدور بين التخصصات (انظر 39-demos.js)، وموسومة كعيّنة تعليمية
    لا تُنسب لملف دكتور. */
 function lpTryQuestion(demo){
@@ -4428,7 +4335,7 @@ function lpTryQuestion(demo){
   return box;
 }
 
-/* ===== ٣ · بطاقة حفظ حيّة — يقلبها الزائر ليرى كيف تعمل ===== */
+/* ===== ٢ · بطاقة حفظ حيّة — يقلبها الزائر ليرى كيف تعمل ===== */
 function lpMemoCard(demo){
   const m = (demo || QBANK.demos.at(0)).mnemonic;
   let flipped = false;
@@ -4457,7 +4364,7 @@ function lpMemoCard(demo){
   return card;
 }
 
-/* ===== ٤ · نصائح مراجعة مبنية على أدلة ===== */
+/* ===== ٣ · نصائح مراجعة مبنية على أدلة ===== */
 const LP_TIPS = [
   ['🔁', 'الاسترجاع النشط لا القراءة',
    'أن تسأل نفسك وتحاول التذكر أقوى أثرًا من إعادة قراءة الملف مرات. لهذا «مراجعة» تبدأ بالسؤال لا بالجواب.'],
@@ -4469,7 +4376,7 @@ const LP_TIPS = [
    'نصف الدرجة تأتي من استبعاد الخاطئ لا من معرفة الصحيح. كل بطاقة حفظ تشرح كيف تشطب المشتت في الورقة.']
 ];
 
-/* ===== ٥ · أسئلة شائعة ===== */
+/* ===== ٤ · أسئلة شائعة ===== */
 const LP_FAQ = [
   ['هل تُعدَّل نصوص أسئلة الدكتور؟',
    'أبدًا. النص والخيارات كما وصلت حرفًا بحرف — بلا تصحيح إملاء ولا إعادة صياغة ولا تغيير ترتيب. هذه قاعدة ثابتة تُفحص آليًا قبل كل نشر.'],
@@ -4485,7 +4392,7 @@ const LP_FAQ = [
    'نعم، بزر واحد من صفحة حسابي — يُحذف الحساب وكل بياناته نهائيًا في الحال.']
 ];
 
-QBANK.views.lpParts = { lpExams, lpTryQuestion, lpMemoCard, LP_TIPS, LP_FAQ };
+QBANK.views.lpParts = { lpTryQuestion, lpMemoCard, LP_TIPS, LP_FAQ };
 
 
 /* ===== 40-app.js ===== */
