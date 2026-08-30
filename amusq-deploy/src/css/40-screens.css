@@ -1,0 +1,83 @@
+/* تنسيقات الشاشات المركّبة: اللوحة، معالج الرفع، المادة، الاختبار — كلها من المتغيّرات */
+
+/* أرقام اللوحة السريعة */
+.stat{ text-align:center; padding:var(--s4); }
+.stat__num{ display:block; font-size:1.6rem; font-weight:800; color:var(--brand); }
+.stat__lbl{ font-size:.82rem; color:var(--text-2); }
+
+/* صف قابل للضغط في الجداول */
+.rowbtn{ width:100%; background:none; border:0; border-bottom:1px solid var(--line-soft);
+  padding:var(--s3) var(--s1); cursor:pointer; text-align:start; min-height:44px; }
+.rowbtn:hover{ background:var(--surface-2); }
+
+.input--sm{ min-height:38px; padding:var(--s2) var(--s3); width:auto; }
+
+/* خطوات المعالج */
+.steps{ display:flex; gap:var(--s2); list-style:none; padding:0; margin:0 0 var(--s5);
+  overflow-x:auto; }
+.steps__item{ display:flex; align-items:center; gap:var(--s2); padding:var(--s2) var(--s3);
+  border-radius:var(--r-pill); border:1px solid var(--line); color:var(--text-3);
+  font-size:.85rem; font-weight:600; white-space:nowrap; }
+.steps__item.is-on{ background:var(--brand-soft); color:var(--brand); border-color:transparent; }
+.steps__item.is-done{ color:var(--ok); }
+.steps__num{ width:22px; height:22px; border-radius:50%; display:grid; place-items:center;
+  background:var(--surface-2); font-size:.75rem; font-weight:800; }
+.is-on .steps__num{ background:var(--brand); color:var(--on-brand); }
+.is-done .steps__num{ background:var(--ok-soft); color:var(--ok); }
+
+/* منطقة الإسقاط */
+.drop{ border:2px dashed var(--line); border-radius:var(--r3); padding:var(--s7) var(--s4);
+  text-align:center; cursor:pointer; background:var(--surface); transition:border-color var(--t) var(--ease); }
+.drop:hover,.drop.is-over{ border-color:var(--brand); }
+
+/* شريط التقدّم «٨٠ من ٣٠٠» */
+.meter{ height:10px; border-radius:var(--r-pill); background:var(--bg-soft); overflow:hidden; }
+.meter__fill{ height:100%; background:linear-gradient(90deg,var(--brand),var(--brand-2));
+  border-radius:inherit; transition:width var(--t) var(--ease); }
+
+/* بطاقة السؤال وخياراته */
+.q__text{ font-weight:600; margin:0; white-space:pre-wrap; }
+.q__opts{ gap:var(--s2); }
+.opt{ display:flex; align-items:flex-start; gap:var(--s3); width:100%; text-align:start;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:var(--r2);
+  padding:var(--s3) var(--s4); cursor:pointer; min-height:44px; }
+.opt:hover{ border-color:var(--brand); }
+/* الإجابة الصحيحة: لون + أيقونة معًا — لا لون وحده (شرط إمكانية الوصول) */
+.opt.is-answer{ background:var(--ok-soft); border-color:var(--ok); font-weight:700; }
+.opt.is-wrong{ background:var(--bad-soft); border-color:var(--bad); }
+.opt__mark{ min-width:1.2em; font-weight:800; color:var(--ok); }
+.is-wrong .opt__mark{ color:var(--bad); }
+
+/* بطاقة المادة في الرئيسية */
+.subj{ position:relative; overflow:hidden; cursor:pointer; }
+.subj__bar{ position:absolute; inset-inline-start:0; top:0; bottom:0; width:5px; }
+.subj__ico{ font-size:1.6rem; }
+.subj__meter{ height:6px; border-radius:var(--r-pill); background:var(--bg-soft); overflow:hidden; }
+.subj__meter > div{ height:100%; border-radius:inherit; }
+.subj.is-past{ opacity:.72; }
+.stamp{ display:inline-block; padding:2px var(--s3); border:2px solid var(--ok); color:var(--ok);
+  border-radius:var(--r1); font-weight:800; font-size:.8rem; transform:rotate(-3deg); }
+
+/* البطاقات المقلوبة ثلاثية الأبعاد لوضع الحفظ */
+.flip{ perspective:900px; min-height:150px; cursor:pointer; }
+.flip__in{ position:relative; width:100%; height:100%; min-height:150px;
+  transform-style:preserve-3d; transition:transform .5s var(--ease); }
+.flip.is-flipped .flip__in{ transform:rotateY(180deg); }
+.flip__face{ position:absolute; inset:0; backface-visibility:hidden;
+  display:flex; flex-direction:column; justify-content:center; gap:var(--s2);
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r3); padding:var(--s5); }
+.flip__face--back{ transform:rotateY(180deg); background:var(--brand-soft); }
+
+/* شاشة النتيجة */
+.result__pct{ font-size:3rem; font-weight:800; color:var(--brand); }
+.result__grade{ font-size:1.2rem; font-weight:700; }
+
+/* عدّاد تنازلي وموقّت */
+.timer{ font-weight:800; font-variant-numeric:tabular-nums; }
+.timer.is-low{ color:var(--bad); }
+
+/* أقسام مطوية */
+.fold > summary{ cursor:pointer; font-weight:700; padding:var(--s3) 0; list-style:none; }
+.fold > summary::before{ content:'◂'; display:inline-block; margin-inline-end:var(--s2);
+  transition:transform var(--t) var(--ease); color:var(--text-3); }
+.fold[open] > summary::before{ transform:rotate(-90deg); }

@@ -1,0 +1,91 @@
+/*
+  مصدر واحد للمظهر. أي لون أو مسافة في المشروع يأتي من هنا حصرًا.
+  الهوية مأخوذة من عالم طب الطوارئ: أخضر المراقبة الحيوية، كهرماني الفرز، وورق عيادي بارد.
+*/
+:root{
+  /* ثلاثة أدوار للخط — لا خط خارجي البتة (شرط العمل بلا إنترنت):
+     العناوين كوفي هندسي مميّز · النص خط أنعم للقراءة الطويلة · الأرقام أحادي المسافة كشاشة المراقبة */
+  --font-display: "Noto Kufi Arabic", "Tajawal", "Cairo", "Segoe UI", system-ui, sans-serif;
+  --font: "Dubai", "Segoe UI", "Noto Sans Arabic", Tahoma, system-ui, -apple-system, sans-serif;
+  --font-num: "Cascadia Mono", "Consolas", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* الورق العيادي: أبرد من الأبيض الميت وأدفأ من الرمادي */
+  --bg:        #f5f8fa;
+  --bg-soft:   #eaf0f4;
+  --surface:   #ffffff;
+  --surface-2: #f4f8fa;
+  --line:      #dde6ec;
+  --line-soft: #eaf1f5;
+
+  --text:      #0f1a20;
+  --text-2:    #4a5a64;
+  --text-3:    #7d8f9a;
+
+  /* أخضر المراقبة الحيوية — كان لون «الإجابة الصحيحة» فصار لون الهوية */
+  --brand:      #12805c;
+  --brand-2:    #17a074;
+  --brand-soft: #e2f4ed;
+  --on-brand:   #ffffff;
+
+  /* حالات — تُستعمل دائمًا مع أيقونة لا باللون وحده */
+  --ok:      #12805c; --ok-soft:   #e2f4ed;
+  --warn:    #b45309; --warn-soft: #fdf0dc;   /* كهرماني الفرز */
+  --bad:     #be3428; --bad-soft:  #fceceb;
+  --star:    #c98a06;
+
+  /* سلّم مسافات أوسع نفَسًا */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 22px; --s6: 30px; --s7: 44px; --s8: 68px;
+
+  /* حواف أنعم وظلال متعددة الطبقات — الجمال في الطبقات لا في القتامة */
+  --r1: 10px; --r2: 14px; --r3: 20px; --r4: 28px; --r-pill: 999px;
+  --sh1: 0 1px 2px rgba(15,26,32,.04), 0 2px 6px rgba(15,26,32,.05);
+  --sh2: 0 2px 4px rgba(15,26,32,.04), 0 8px 20px rgba(15,26,32,.07);
+  --sh3: 0 4px 8px rgba(15,26,32,.05), 0 20px 48px rgba(15,26,32,.12);
+  --ring: 0 0 0 3px rgba(18,128,92,.22);
+
+  --wrap: 1040px;
+  --topbar-h: 60px;
+  --tabbar-h: 62px;
+
+  --t-fast: 140ms;
+  --t: 240ms;
+  --t-slow: 420ms;
+  --ease: cubic-bezier(.22,.61,.36,1);
+
+  /* ألوان المواد — مشتقة من نفس العائلة العيادية لا ألوان عشوائية */
+  --subject-1: #12805c; --subject-2: #0f6f8c; --subject-3: #b45309;
+  --subject-4: #6d3fa0; --subject-5: #be3428; --subject-6: #1d5fa8;
+}
+
+/* الوضع الليلي: شاشة مراقبة في غرفة مظلمة */
+:root[data-theme="dark"]{
+  --bg:        #0b1116;
+  --bg-soft:   #101a21;
+  --surface:   #14202a;
+  --surface-2: #1a2833;
+  --line:      #23343f;
+  --line-soft: #1d2b35;
+
+  --text:      #e8f1f5;
+  --text-2:    #9fb3bd;
+  --text-3:    #6f8794;
+
+  --brand:      #2fbf90;
+  --brand-2:    #4ad4a8;
+  --brand-soft: #10322a;
+  --on-brand:   #06120e;
+
+  --ok:      #2fbf90; --ok-soft:   #10322a;
+  --warn:    #e0a53a; --warn-soft: #33260f;
+  --bad:     #f2776b; --bad-soft:  #35191a;
+  --star:    #f0bd4e;
+
+  --sh1: 0 1px 2px rgba(0,0,0,.5);
+  --sh2: 0 6px 20px rgba(0,0,0,.5);
+  --sh3: 0 22px 54px rgba(0,0,0,.62);
+  --ring: 0 0 0 3px rgba(47,191,144,.3);
+
+  --subject-1: #2fbf90; --subject-2: #48b4d4; --subject-3: #e0a53a;
+  --subject-4: #a887e0; --subject-5: #f2776b; --subject-6: #6aa8f0;
+}

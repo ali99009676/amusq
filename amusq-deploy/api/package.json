@@ -1,0 +1,9 @@
+{
+  "name": "amusq-api",
+  "private": true,
+  "description": "دوال خادم AMUSQ — تعمل على Vercel، والمفاتيح في متغيرات البيئة حصرًا",
+  "dependencies": {
+    "fflate": "^0.8.2",
+    "pdf-parse": "^1.1.1"
+  }
+}
