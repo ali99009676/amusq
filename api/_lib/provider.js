@@ -136,15 +136,28 @@ async function callGemini(system, user, model, retried, opts){
         // JSON إلزامًا من المزوّد نفسه — أوثق من الرجاء في نصّ التعليمات
         responseMimeType: 'application/json',
         maxOutputTokens: opts.maxTokens || 8192,
-        temperature: 0.2
+        temperature: 0.2,
+        /*
+          ★ التفكير مطفأ.
+          نماذج Flash الحديثة «تفكّر» قبل الردّ، وفي مهمة استخراجية بهذا
+          الوضوح يلتهم التفكيرُ دقائقَ ومهلةَ الخادم معًا — تحليلُ ١٢ سؤالًا
+          استغرق ٢٦٧ ثانية ثم قُتل. صفرُ ميزانيةٍ يجعله يجيب لا يتأمل.
+        */
+        thinkingConfig: opts._noThink ? undefined : { thinkingBudget: 0 }
       }
-    })
+    }),
+    // مهلة مسماة قبل أن تقتلنا بوابة Vercel بصمت
+    signal: AbortSignal.timeout(opts.timeoutMs || 120000)
   });
   if (!res.ok){
     const body = await res.text();
     // ★ تقاعُد النموذج: نأخذ البديل من نصّ الرفض ونعيد مرة واحدة
     const alt = res.status === 404 && !retried ? suggestedModel(body) : null;
     if (alt) return callGemini(system, user, alt, true, opts);
+    // نموذجٌ لا يعرف حقل التفكير؟ نعيد بدونه مرة واحدة
+    if (res.status === 400 && /thinking/i.test(body) && !opts._noThink)
+      return callGemini(system, user, model, retried,
+                        Object.assign({}, opts, { _noThink: true }));
     throw new Error('ردّ Gemini ' + res.status + ': ' + body.slice(0, 300));
   }
   const data = await res.json();
