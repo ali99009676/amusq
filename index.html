@@ -1253,6 +1253,17 @@ img,svg{ max-width:100%; height:auto; }
 .path.is-blocked:hover{ border-color:var(--line); }
 
 
+/* شريط تحذير البلاغات في محرّر المادة — بابٌ لا مجرد إشعار */
+.ad-warn{
+  display:flex; align-items:center; justify-content:space-between; gap:var(--s3);
+  margin-top:var(--s4); padding:var(--s3) var(--s4);
+  background:var(--warn-soft); border:1px solid var(--warn); border-radius:var(--r1);
+  color:var(--warn); font-weight:700; font-size:.9rem; text-decoration:none;
+}
+.ad-warn:hover{ filter:brightness(.97); }
+.ad-warn__go{ font-weight:800; }
+
+
 /* ===== 90-print.css ===== */
 /*
   تنسيق الطباعة مستقل تمامًا عن الشاشة (شرط في المواصفات).
@@ -4854,7 +4865,6 @@ function registerRoutes(){
     .add('#/explore',      V.ViewExplore)
     .add('#/u',            V.ViewUniversity)   // قسم الجامعة: #/u/<id>
     .add('#/admin/subject', V.ViewAdminSubject)
-    .add('#/admin/reports', V.ViewAdminReports)
     .add('#/s',            V.ViewShare)      // رابط المشاركة: يقبل #s/slug و #/s/slug معًا
     .add('#/subject',      V.ViewSubject)
     .add('#/exam',         V.ViewExam)
@@ -5230,10 +5240,37 @@ function subjIdentity(sub, refresh){
     if (r.ok && refresh) refresh();
   });
 
+
+  /*
+    ★ التوثيق قرار إنسان لا نتيجة حساب.
+    لو مُنح تلقائيًا بعدد تقييمات لصار وسمًا يُشترى بحسابات وهمية. فالمشرف
+    يفتح المادة، يقرأ عيّنة منها، ثم يسمها بيده — والوسم يقول للطالب:
+    «نظر فيها إنسان» لا «أعجبت كثيرين».
+  */
+  const verify = el('button', { class:'btn btn--sm ' + (sub.verified ? 'btn--soft' : 'btn--ghost'), type:'button',
+    text: sub.verified ? '✓ موثّقة — أزل التوثيق' : 'وثّق هذه المادة' });
+  verify.addEventListener('click', async () => {
+    // ★ تحذير لا منع: البلاغ قد يكون خاطئًا، لكن توثيق مادة عليها بلاغ مفتوح
+    //   يمنح خطأً محتملًا ختمَ المراجعة — وهو أسوأ ما تفعله طبقة الثقة بنفسها.
+    if (!sub.verified && Number(sub.reports_open) > 0 &&
+        !confirm('على هذه المادة ' + sub.reports_open + ' بلاغًا مفتوحًا لم يُبتّ فيه.\nتوثيقها الآن يمنح خطأً محتملًا ختمَ المراجعة. أتريد المتابعة؟'))
+      return;
+    verify.disabled = true;
+    const r = await QBANK.api.rpc('set_verified', { p_subject: sub.id, p_on: !sub.verified });
+    verify.disabled = false;
+    const ok = r.ok && r.data && r.data.ok !== false;
+    QBANK.toast(ok ? (sub.verified ? 'أُزيل التوثيق' : 'وُثّقت المادة') : 'تعذّر — تأكد من صلاحيتك');
+    if (ok) refresh();
+  });
+
   return el('div', { class:'ad-panel' }, [
     el('div', { class:'ad-panel__h' }, [
       el('h2', { class:'ad-panel__t', text:'هوية المادة' }),
-      el('span', { class:'ad-panel__s', text: sub.q_count + ' سؤالًا' })
+      el('span', { class:'ad-panel__s', text: sub.q_count + ' سؤالًا' }),
+      sub.verified ? el('span', { class:'badge badge--ok', text:'✓ موثّقة' }) : null,
+      Number(sub.rating_n) > 0 && QBANK.trust
+        ? el('span', { class:'badge badge--star num', text: QBANK.trust.starsText(sub.rating_avg, sub.rating_n) })
+        : null
     ]),
     el('div', { class:'ad-edit ad-edit--2' }, [
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الاسم' }), nameIn ]),
@@ -5243,7 +5280,15 @@ function subjIdentity(sub, refresh){
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الأيقونة' }), icons ]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترتيب' }), ordIn ])
     ]),
-    el('div', { class:'ad-bar', style:'margin:16px 0 0' }, [ save, pub, free ])
+    el('div', { class:'ad-bar', style:'margin:16px 0 0' }, [ save, pub, free, verify ]),
+    /* بابٌ من المادة إلى بلاغاتها: المشرف الذي يفتحها ليوثّقها يرى أولًا ما عليها */
+    Number(sub.reports_open) > 0
+      ? el('a', { class:'ad-warn', href:'#/admin/reports' }, [
+          el('span', { text:'⚑ عليها ' + QBANK.views.arNum(sub.reports_open) +
+            (Number(sub.reports_open) === 1 ? ' بلاغ مفتوح' : ' بلاغات مفتوحة') }),
+          el('span', { class:'ad-warn__go', text:'افتح الطابور ←' })
+        ])
+      : null
   ]);
 }
 
@@ -5484,6 +5529,7 @@ const AdminSubjectView = {
 
 QBANK.admin.subject = SubjEditor;
 QBANK.views.ViewAdminSubject = AdminSubjectView;
+QBANK.views.subjIdentity = subjIdentity;
 
 
 /* ===== 44-admin-settings.js ===== */
@@ -6995,7 +7041,7 @@ function reportCard(r, onDone){
 
 function reportsBody(){
   const wrap = el('div', { class:'stack' });
-  const tabs = el('div', { class:'tabs' });
+  const tabs = el('div', { class:'ex-chips', role:'group', 'aria-label':'تصفية البلاغات بالحالة' });
   const list = el('div', { class:'stack' });
   let status = 'open';
 
@@ -7017,13 +7063,22 @@ function reportsBody(){
     });
   };
 
+  /*
+    ★ شرائح لا تبويبات.
+    كانت هنا tabs__btn داخل شريط تبويبات اللوحة — تبويبات داخل تبويبات:
+    يرى المشرف صفَّين متطابقين فلا يعرف أيّهما يحدّد أين هو. والشريحة تقول
+    «تصفية» بينما التبويب يقول «مكان آخر»، وهذا الفرق هو الصواب هنا.
+  */
   [['open','المفتوحة'],['resolved','المعالَجة'],['rejected','المرفوضة']].forEach(t => {
-    const b = el('button', { class:'tabs__btn', type:'button', 'data-tab': t[0],
-      'aria-selected': t[0] === status ? 'true' : 'false', text: t[1] });
+    const b = el('button', { class:'chip' + (t[0] === status ? ' is-on' : ''), type:'button',
+      'data-status': t[0], 'aria-pressed': t[0] === status ? 'true' : 'false', text: t[1] });
     b.addEventListener('click', () => {
       status = t[0];
-      tabs.querySelectorAll('.tabs__btn').forEach(x =>
-        x.setAttribute('aria-selected', x.getAttribute('data-tab') === status ? 'true' : 'false'));
+      tabs.querySelectorAll('.chip').forEach(x => {
+        const on = x.getAttribute('data-status') === status;
+        x.classList.toggle('is-on', on);
+        x.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
       load();
     });
     tabs.appendChild(b);
@@ -7035,19 +7090,31 @@ function reportsBody(){
   return wrap;
 }
 
-const ViewAdminReports = {
-  title:'البلاغات',
-  view(){
-    // نفس حارس بقية شاشات المشرف: المخزَّن مرآة، والقرار في القاعدة (RLS + is_admin)
-    if (!QBANK.store.get('is_admin_check', {}).ok)
-      return QBANK.views.ViewAdminLogin.view();
-    return QBANK.views.page('البلاغات', 'كل بلاغ ومعه نصّ سؤاله — تقرّر بلا فتح المادة.', [reportsBody()]);
-  }
-};
-
-QBANK.views.ViewAdminReports = ViewAdminReports;
+/*
+  لا شاشة مستقلة للبلاغات ولا مسار خاص بها.
+  ★ سجّلنا مسار #/admin/reports مستقلًا في البداية، فابتلع التبويبَ ذا
+  الاسم نفسه: يضغط المشرف «البلاغات» فيخرج من اللوحة ويفقد شريطها ولا
+  يعرف أين هو. الطابور تبويب داخل اللوحة — والموجّه يمرّره إليها.
+*/
 QBANK.views.reportsBody = reportsBody;
 QBANK.views.reportCard = reportCard;
+
+/*
+  إدراج «البلاغات» تبويبًا في لوحة المشرف.
+
+  ★ شاشة بلا مدخل غير موجودة عمليًا. بنينا الطابور ثم كاد يبقى بلا رابط
+  يقود إليه — وطابور بلاغات لا يفتحه أحد أسوأ من غيابه: يمنح الطالب
+  ثقة كاذبة بأن أحدًا يتابع بلاغه.
+
+  ويُدرج قبل «الإعدادات» لا بعدها: الإعدادات آخر ما يُفتح، والبلاغات
+  أول ما ينبغي أن يُرى.
+*/
+if (QBANK.views.ADMIN_TABS && !QBANK.views.ADMIN_TABS.some(t => t.id === 'reports')){
+  const tabs = QBANK.views.ADMIN_TABS;
+  const at = tabs.findIndex(t => t.id === 'settings');
+  const tab = { id:'reports', label:'البلاغات', fill(box){ box.appendChild(reportsBody()); } };
+  if (at === -1) tabs.push(tab); else tabs.splice(at, 0, tab);
+}
 
 
 /* ===== 54-community.js ===== */
