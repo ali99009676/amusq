@@ -32,11 +32,38 @@ const DEFAULT_MODEL = {
     ‎١٥٠٠‎ طلب (= ٦٠ ألف سؤال). ثلاثون ضعفًا مقابل فارقٍ لا يظهر في مهمة
     بهذا الوضوح.
   */
-  gemini: 'gemini-2.5-flash'
+  gemini: 'gemini-3.6-flash'
 };
 
+/* ★ بادئة اسم كل مزوّد — الحارس أدناه يقوم عليها */
+const MODEL_PREFIX = { anthropic: 'claude', gemini: 'gemini' };
+
+/*
+  ★ AI_MODEL لا يُطاع إلا إن كان لهذا المزوّد.
+  كان متغيّرًا واحدًا لمزوّدين: ضُبط لـ Anthropic قبل يومين، ولو طُبّق على
+  Gemini لطلبنا من Google نموذج Claude — عطلٌ محيّر سببه إعدادٌ قديم صحيح
+  في زمنه. المتغيّر الغريب يُهمَل بصمت لا يُمرَّر.
+*/
 function modelFor(provider){
-  return process.env.AI_MODEL || DEFAULT_MODEL[provider] || '';
+  const want = String(process.env.AI_MODEL || '').trim();
+  const pre = MODEL_PREFIX[provider];
+  if (want && pre && want.toLowerCase().indexOf(pre) === 0) return want;
+  return DEFAULT_MODEL[provider] || '';
+}
+
+/*
+  ★ اسم النموذج يتقاعد، والمنصة لا يجوز أن تتقاعد معه.
+  Google تُخرج النماذج من الخدمة وتذكر البديل في نصّ الرفض نفسه. نلتقط
+  البديل ونعيد المحاولة مرة واحدة — مرةً لا أكثر، كي لا ندور بلا نهاية
+  إن ردّت برفضٍ لا بديل فيه. طالبٌ ليلة اختباره لا يعنيه أن اسمًا تغيّر.
+*/
+function suggestedModel(errText){
+  /* النقطة تفصل أجزاء الاسم ولا تُنهيه — «models/x-1.» في آخر الجملة
+     اسمه x-1، والنقطة علامة ترقيم. طلبُ نموذجٍ باسمٍ فيه نقطة زائدة
+     يُردّ بـ ٤٠٤ ثانيةً، فيبدو البديل عاطلًا وهو سليم. */
+  const m = String(errText || '')
+    .match(/use\s+models\/([A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*)/);
+  return m ? m[1] : null;
 }
 
 /* ═══ انتزاع المصفوفة من ردٍّ قد يكون ملفوفًا ═══
@@ -77,7 +104,7 @@ async function callAnthropic(system, user, model){
 }
 
 /* ═══ Gemini ═══ */
-async function callGemini(system, user, model){
+async function callGemini(system, user, model, retried){
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error('GEMINI_API_KEY غير مضبوط في متغيرات البيئة');
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
@@ -98,7 +125,13 @@ async function callGemini(system, user, model){
       }
     })
   });
-  if (!res.ok) throw new Error('ردّ Gemini ' + res.status + ': ' + (await res.text()).slice(0, 300));
+  if (!res.ok){
+    const body = await res.text();
+    // ★ تقاعُد النموذج: نأخذ البديل من نصّ الرفض ونعيد مرة واحدة
+    const alt = res.status === 404 && !retried ? suggestedModel(body) : null;
+    if (alt) return callGemini(system, user, alt, true);
+    throw new Error('ردّ Gemini ' + res.status + ': ' + body.slice(0, 300));
+  }
   const data = await res.json();
   const cand = (data.candidates && data.candidates[0]) || null;
   /* حاجزُ الأمان قد يبتلع الردّ كله: سؤالٌ عن جرعةٍ دوائية أو تشريحٍ قد
@@ -115,6 +148,8 @@ async function callGemini(system, user, model){
   const u = data.usageMetadata || null;
   return {
     items: parseArray(text),
+    // ★ النموذج الذي أجاب فعلًا لا الذي طلبناه — قد يكون البديل بعد التقاعد
+    model,
     // نوحّد أسماء الحقول كي لا تعرف بقية المنصة أيَّ مزوّد تكلّمنا
     usage: u ? { input_tokens: u.promptTokenCount || 0,
                  output_tokens: u.candidatesTokenCount || 0 } : null
@@ -131,7 +166,9 @@ async function callAI(system, user){
   const r = provider === 'gemini'
     ? await callGemini(system, user, model)
     : await callAnthropic(system, user, model);
-  return { items: r.items, usage: r.usage, model, provider };
+  // ما أجاب فعلًا يفوز على ما طلبناه — وإلا كذب سجلّ المشرف بعد أي بديل
+  return { items: r.items, usage: r.usage, model: r.model || model, provider };
 }
 
-module.exports = { callAI, pickProvider, modelFor, parseArray, DEFAULT_MODEL };
+module.exports = { callAI, pickProvider, modelFor, parseArray,
+                   suggestedModel, DEFAULT_MODEL };
