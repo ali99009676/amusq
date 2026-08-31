@@ -80,15 +80,28 @@ function parseArray(text){
   return out;
 }
 
+/* الكائن المفرد — للتحليل الشامل الذي يُرجع مادةً واحدة لا قائمة */
+function parseObject(text){
+  const raw = String(text || '').trim();
+  const m = raw.match(/\{[\s\S]*\}/);
+  let out;
+  try { out = JSON.parse(m ? m[0] : raw); }
+  catch(e){ throw new Error('ردّ الذكاء ليس JSON صالحًا: ' + raw.slice(0, 200)); }
+  if (!out || Array.isArray(out) || typeof out !== 'object')
+    throw new Error('ردّ الذكاء ليس كائنًا واحدًا');
+  return out;
+}
+
 /* ═══ Anthropic ═══ */
-async function callAnthropic(system, user, model){
+async function callAnthropic(system, user, model, opts){
+  opts = opts || {};
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw new Error('ANTHROPIC_API_KEY غير مضبوط في متغيرات البيئة');
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method:'POST',
     headers:{ 'x-api-key': key, 'anthropic-version':'2023-06-01', 'content-type':'application/json' },
     body: JSON.stringify({
-      model, max_tokens: 8192,
+      model, max_tokens: opts.maxTokens || 8192,
       /*
         تخزين التعليمات مؤقتًا: ملفٌ من ٣٠٠ سؤال يُقسَّم دفعات كلها ترسل
         التعليمات نفسها. الكتابة الأولى ‎1.25x‎ ثم كل قراءة ‎0.1x‎.
@@ -100,11 +113,13 @@ async function callAnthropic(system, user, model){
   if (!res.ok) throw new Error('ردّ Anthropic ' + res.status + ': ' + (await res.text()).slice(0, 300));
   const data = await res.json();
   const text = (data.content && data.content[0] && data.content[0].text) || '[]';
-  return { items: parseArray(text), usage: data.usage || null };
+  return { items: opts.expectObject ? parseObject(text) : parseArray(text),
+           usage: data.usage || null };
 }
 
 /* ═══ Gemini ═══ */
-async function callGemini(system, user, model, retried){
+async function callGemini(system, user, model, retried, opts){
+  opts = opts || {};
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error('GEMINI_API_KEY غير مضبوط في متغيرات البيئة');
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
@@ -120,7 +135,7 @@ async function callGemini(system, user, model, retried){
       generationConfig: {
         // JSON إلزامًا من المزوّد نفسه — أوثق من الرجاء في نصّ التعليمات
         responseMimeType: 'application/json',
-        maxOutputTokens: 8192,
+        maxOutputTokens: opts.maxTokens || 8192,
         temperature: 0.2
       }
     })
@@ -129,7 +144,7 @@ async function callGemini(system, user, model, retried){
     const body = await res.text();
     // ★ تقاعُد النموذج: نأخذ البديل من نصّ الرفض ونعيد مرة واحدة
     const alt = res.status === 404 && !retried ? suggestedModel(body) : null;
-    if (alt) return callGemini(system, user, alt, true);
+    if (alt) return callGemini(system, user, alt, true, opts);
     throw new Error('ردّ Gemini ' + res.status + ': ' + body.slice(0, 300));
   }
   const data = await res.json();
@@ -147,7 +162,7 @@ async function callGemini(system, user, model, retried){
     .map(p => p.text || '').join('');
   const u = data.usageMetadata || null;
   return {
-    items: parseArray(text),
+    items: opts.expectObject ? parseObject(text) : parseArray(text),
     // ★ النموذج الذي أجاب فعلًا لا الذي طلبناه — قد يكون البديل بعد التقاعد
     model,
     // نوحّد أسماء الحقول كي لا تعرف بقية المنصة أيَّ مزوّد تكلّمنا
@@ -156,19 +171,23 @@ async function callGemini(system, user, model, retried){
   };
 }
 
-/* ═══ الواجهة الموحّدة ═══ */
-async function callAI(system, user){
+/* ═══ الواجهة الموحّدة ═══
+   opts.maxTokens: إثراء دفعةٍ يكفيه ٨١٩٢، وتحليل مادةٍ كاملة (نظرة عامة
+   وحفظ وأخطاء شائعة بجداولها) يحتاج أضعاف ذلك — فالسقف معامِلٌ لا ثابت.
+   opts.expectObject: التحليل يُرجع كائنًا واحدًا لا مصفوفة. */
+async function callAI(system, user, opts){
+  opts = opts || {};
   const provider = pickProvider();
   if (provider === 'none')
     throw new Error('لا مفتاح ذكاء مضبوط — أضف GEMINI_API_KEY أو ANTHROPIC_API_KEY ' +
                     'في متغيّرات بيئة Vercel، أو ارفع بلا إثراء');
   const model = modelFor(provider);
   const r = provider === 'gemini'
-    ? await callGemini(system, user, model)
-    : await callAnthropic(system, user, model);
+    ? await callGemini(system, user, model, false, opts)
+    : await callAnthropic(system, user, model, opts);
   // ما أجاب فعلًا يفوز على ما طلبناه — وإلا كذب سجلّ المشرف بعد أي بديل
   return { items: r.items, usage: r.usage, model: r.model || model, provider };
 }
 
-module.exports = { callAI, pickProvider, modelFor, parseArray,
+module.exports = { callAI, pickProvider, modelFor, parseArray, parseObject,
                    suggestedModel, DEFAULT_MODEL };
