@@ -519,6 +519,150 @@ img,svg{ max-width:100%; height:auto; }
 .deadline__n{ font-size:1.15rem; font-weight:800; color:var(--warn); }
 .deadline__l{ font-size:.64rem; font-weight:700; color:var(--warn); }
 
+/* ═══════════ قسم الجامعة ═══════════
+   الشريط أعلى الشاشة الأولى: باب جامعة الطالب. صُمِّم كلوحة على مدخل
+   مبنى — إطار عنّابي وأيقونة بيت — لا كبطاقة إعلان، لأنه انتماء لا عرض. */
+.campus-band{
+  display:flex; align-items:center; gap:var(--s4);
+  padding:var(--s4) var(--s5); margin-bottom:var(--s4);
+  background:var(--surface); border:1px solid var(--line);
+  border-inline-start:4px solid var(--brand);
+  border-radius:var(--r2); box-shadow:var(--sh1);
+  color:inherit; text-decoration:none;
+  transition:box-shadow var(--t) var(--ease), transform var(--t) var(--ease);
+}
+.campus-band:hover{ box-shadow:var(--sh2); transform:translateY(-1px); }
+/* من لم يحدّد جامعته: حدّ متقطّع — دعوة لم تكتمل بعد، لا حالة نهائية */
+.campus-band--ask{ border-style:dashed; border-inline-start-style:solid; background:var(--surface-2); }
+.campus-band__ico{
+  width:42px; height:42px; flex:0 0 42px; border-radius:var(--r2);
+  display:grid; place-items:center; font-size:1.2rem;
+  background:var(--brand-soft); color:var(--brand);
+}
+.campus-band__x{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.campus-band__t{ font-family:var(--font-display); font-weight:800; letter-spacing:-.01em; }
+.campus-band__d{ font-size:.85rem; color:var(--text-3); line-height:1.7; }
+.campus-band__go{ margin-inline-start:auto; color:var(--brand); font-weight:800; }
+
+/* ترويسة القسم */
+.uni-head{
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:var(--s4); flex-wrap:wrap; margin-bottom:var(--s6);
+  padding-bottom:var(--s4); border-bottom:2px solid var(--rule);
+}
+.uni-head__t{
+  font-family:var(--font-display); font-size:clamp(1.3rem, 4vw, 1.8rem);
+  margin:0 0 var(--s2); letter-spacing:-.025em;
+  display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap;
+}
+.uni-head__s{ margin:0; color:var(--text-3); font-size:.9rem; }
+
+/* عنوان الكلية: خط هامش الورقة يفصل مجموعة عن مجموعة بلا ثقل */
+.uni-col{
+  display:flex; align-items:center; gap:var(--s3);
+  margin:var(--s7) 0 var(--s4); font-family:var(--font-display); font-size:1.05rem;
+}
+.uni-col::after{ content:''; flex:1; height:1px; background:var(--line); }
+.uni-col__n{
+  order:3; font-size:.78rem; color:var(--text-3);
+  background:var(--surface-2); border:1px solid var(--line-soft);
+  padding:1px var(--s3); border-radius:var(--r-pill);
+}
+
+/* منتقي الجامعة */
+.campus-pick__row{ display:grid; gap:var(--s4); grid-template-columns:1fr; }
+@media (min-width:720px){ .campus-pick__row{ grid-template-columns:repeat(3,1fr); } }
+.campus-pick .field{ margin:0; }
+
+/* ═══════════ الجودة والثقة ═══════════ */
+.badge--star{ background:var(--gold-soft); color:var(--warn); border-color:var(--gold); }
+
+/* نجوم التقييم: كبيرة بما يكفي للّمس بالإبهام على الجوال (٤٤ بكسل) */
+.rate__stars{ display:flex; gap:var(--s1); margin-bottom:var(--s3); }
+.rate__star{
+  min-width:44px; height:44px; font-size:1.5rem; line-height:1;
+  background:none; border:0; cursor:pointer; color:var(--text-3);
+  transition:transform var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.rate__star:hover{ transform:scale(1.12); }
+.rate__star.is-on{ color:var(--star); }
+
+/* زر البلاغ: باهت حتى يُحتاج — لا نُغري بالإبلاغ، نُتيحه */
+.qitem__flag{
+  background:none; border:0; cursor:pointer; color:var(--text-3);
+  font-size:.95rem; padding:var(--s1) var(--s2); border-radius:var(--r1);
+  opacity:.55; transition:opacity var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.qitem__flag:hover, .qitem__flag:focus-visible{ opacity:1; color:var(--bad); }
+.report{ margin-top:var(--s3); border-color:var(--warn); }
+
+/* بطاقة البلاغ في طابور المشرف */
+.rep{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r2);
+  padding:var(--s5); display:flex; flex-direction:column; gap:var(--s3);
+}
+.rep__head{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
+.rep__subj{ font-weight:700; color:var(--brand); }
+.rep__when{ margin-inline-start:auto; font-size:.78rem; color:var(--text-3); }
+.rep__q{ background:var(--surface-2); border-radius:var(--r1); padding:var(--s4); }
+.rep__qt{ margin:0 0 var(--s3); font-weight:600; line-height:1.8; }
+.rep__opts{ margin:0; padding-inline-start:var(--s5); display:grid; gap:var(--s2); }
+.rep__opts li{ display:flex; align-items:center; gap:var(--s2); font-size:.9rem; }
+.rep__opts li.is-answer{ color:var(--ok); font-weight:700; }
+.rep__note{ margin:0; color:var(--text-2); font-style:italic; }
+.rep__act{ display:flex; flex-direction:column; gap:var(--s3); padding-top:var(--s3); border-top:1px solid var(--line-soft); }
+
+/* تحذير المكرر */
+.dupwarn{ border-color:var(--warn); background:var(--warn-soft); }
+.dupwarn__row{
+  display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap;
+  padding:var(--s3) var(--s4); background:var(--surface);
+  border:1px solid var(--line); border-radius:var(--r1); color:inherit; text-decoration:none;
+}
+.dupwarn__row:hover{ border-color:var(--brand); }
+.dupwarn__n{ font-weight:700; }
+
+/* ═══════════ المجتمع ═══════════ */
+.brd{ display:flex; flex-direction:column; gap:var(--s2); }
+.brd__row{
+  display:flex; align-items:center; gap:var(--s3);
+  padding:var(--s3) var(--s4);
+  background:var(--surface); border:1px solid var(--line-soft); border-radius:var(--r1);
+}
+/* الثلاثة الأوائل بخلفية ذهبية خفيفة — تمييز يُرى بلمحة بلا صراخ */
+.brd__row.is-top{ background:var(--gold-soft); border-color:var(--gold); }
+/* صفّك أنت بإطار الهوية: تجده في اللوحة بلا قراءة الأسماء */
+.brd__row.is-me{ border-inline-start:3px solid var(--brand); font-weight:700; }
+.brd__row.is-mine-out{ margin-top:var(--s3); border-style:dashed; }
+.brd__rank{ min-width:2.2em; text-align:center; font-weight:800; }
+.brd__av{ font-size:1.1rem; }
+.brd__name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.brd__pts{ font-size:.85rem; color:var(--text-2); }
+
+/* نبض المادة: نقطة تتنفّس — حياة لا تنبيه */
+.pulse{
+  display:inline-flex; align-items:center; gap:var(--s2);
+  padding:var(--s2) var(--s4); border-radius:var(--r-pill);
+  background:var(--ok-soft); color:var(--ok); font-size:.85rem; font-weight:700;
+}
+.pulse__dot{ width:8px; height:8px; border-radius:50%; background:var(--ok); }
+@media (prefers-reduced-motion: no-preference){
+  .pulse__dot{ animation:pulse-beat 2.4s var(--ease) infinite; }
+}
+@keyframes pulse-beat{ 0%,100%{ opacity:1; } 50%{ opacity:.35; } }
+
+/* رمز التحدّي: كبير متباعد — يُملى صوتًا في مجموعة الدفعة */
+.chall__code{
+  font-family:var(--font-num); font-size:2rem; font-weight:800;
+  letter-spacing:.28em; color:var(--brand); margin:var(--s3) 0;
+  text-align:center; background:var(--brand-soft);
+  padding:var(--s4); border-radius:var(--r2); border:2px dashed var(--brand);
+}
+.chall__code--sm{
+  font-size:.95rem; letter-spacing:.16em; padding:2px var(--s3);
+  margin:0; border-width:1px; border-radius:var(--r1);
+}
+
 
 /* ===== 50-landing.css ===== */
 /*
@@ -2150,6 +2294,37 @@ function subjectCard(sub){
   return card;
 }
 
+
+/* شريط جامعتي على الشاشة الأولى — يُحدَّث فور وصول الخادم بلا وميض */
+function campusBand(){
+  const wrap = el('div');
+  const draw = c => {
+    wrap.innerHTML = '';
+    if (c && c.university_id){
+      wrap.appendChild(el('a', { class:'campus-band', href: QBANK.campus.href(c.university_id) }, [
+        el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'⌂' }),
+        el('span', { class:'campus-band__x' }, [
+          el('span', { class:'campus-band__t', text: c.university }),
+          el('span', { class:'campus-band__d', text: (c.college ? c.college + ' · ' : '') + 'افتح قسم جامعتك وشاركه بدفعتك' })
+        ]),
+        el('span', { class:'campus-band__go', 'aria-hidden':'true', text:'←' })
+      ]));
+    } else {
+      wrap.appendChild(el('a', { class:'campus-band campus-band--ask', href:'#/account' }, [
+        el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'⌕' }),
+        el('span', { class:'campus-band__x' }, [
+          el('span', { class:'campus-band__t', text:'حدّد جامعتك' }),
+          el('span', { class:'campus-band__d', text:'مرة واحدة — فتفتح المنصة على بنوك جامعتك، وتُملأ خاناتها عند رفع أي مادة.' })
+        ]),
+        el('span', { class:'campus-band__go', 'aria-hidden':'true', text:'←' })
+      ]));
+    }
+  };
+  draw(QBANK.campus ? QBANK.campus.cached() : null);
+  if (QBANK.campus) QBANK.campus.load().then(c => { if (wrap.isConnected) draw(c); });
+  return wrap;
+}
+
 const ViewHome = {
   title:'الرئيسية',
   view(){
@@ -2161,7 +2336,16 @@ const ViewHome = {
     const subjects = (pack.subjects || []).slice();
     const body = [];
 
-    // دعوة الرفع أعلى الشاشة: الطالب لا يبحث عن ميزة لا يعرف بوجودها
+    /*
+      شريط جامعتي أعلى كل شيء — أو دعوة لاختيارها.
+
+      الطالب الذي حدّد جامعته يفتح المنصة فيرى بابها لا قائمة عامة، ومن لم
+      يحدّدها يرى سببًا واضحًا ليفعل. وضعناه فوق دعوة الرفع لأن الانتماء
+      يسبق المساهمة: من لا يعرف أين يرفع لا يرفع.
+    */
+    body.push(campusBand());
+
+    // دعوة الرفع: الطالب لا يبحث عن ميزة لا يعرف بوجودها
     body.push(el('a', { class:'upsell', href:'#/upload' }, [
       el('span', { class:'upsell__ico', 'aria-hidden':'true', text:'⇪' }),
       el('span', { class:'upsell__x' }, [
@@ -2334,7 +2518,7 @@ const ViewNotFound = {
   }
 };
 
-QBANK.views = { ViewHome, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects, optLetter, arNum };
+QBANK.views = { ViewHome, campusBand, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects, optLetter, arNum };
 
 
 /* ===== 31-account.js ===== */
@@ -2426,6 +2610,37 @@ function accountBody(){
   ]);
 }
 
+
+/*
+  بطاقة «جامعتي» — الانتماء يُختار مرة ويخدم في ثلاثة مواضع:
+  شاشة الطالب الأولى، وخانات الرفع المملوءة تلقائيًا، ورابط القسم الذي يشاركه.
+  لهذا هي هنا في الحساب لا في الإعدادات: انتماء لا تفضيل.
+*/
+function campusCard(){
+  const box = el('div', { class:'card' });
+  const head = el('div', { class:'row', style:'justify-content:space-between;align-items:center;gap:8px' }, [
+    el('h2', { style:'margin:0', text:'جامعتي' }), el('span', { id:'campusGo' })
+  ]);
+  const hint = el('p', { class:'field__hint', style:'margin:4px 0 12px',
+    text:'اخترها مرة، فتفتح المنصة على قسم جامعتك وتُملأ خاناتها عند رفع أي مادة.' });
+  const slot = el('div');
+  box.appendChild(head); box.appendChild(hint); box.appendChild(slot);
+
+  const draw = c => {
+    slot.innerHTML = '';
+    slot.appendChild(QBANK.campus.picker(c || {}, drawn => draw(drawn)));
+    const go = head.querySelector('#campusGo');
+    go.innerHTML = '';
+    if (c && c.university_id)
+      go.appendChild(el('a', { class:'btn btn--sm btn--soft',
+        href: QBANK.campus.href(c.university_id), text:'افتح قسمي ←' }));
+  };
+
+  draw(QBANK.campus.cached());
+  QBANK.campus.load().then(c => { if (slot.isConnected) draw(c); });
+  return box;
+}
+
 const ViewAccount = {
   title:'حسابي',
   view(){
@@ -2433,11 +2648,14 @@ const ViewAccount = {
     // المحفظة تُبنى في 47-wallet.js — تُلحق هنا حين تكون محمّلة
     const wallet = (QBANK.wallet && QBANK.wallet.body) ? QBANK.wallet.body() : null;
     const links  = (QBANK.wallet && QBANK.wallet.links) ? QBANK.wallet.links() : null;
-    return QBANK.views.page('حسابي', null, [ accountBody(), wallet, links ]);
+    // بطاقة «جامعتي» تُبنى في 51-campus.js
+    const campus = campusCard();
+    return QBANK.views.page('حسابي', null, [ accountBody(), campus, wallet, links ]);
   }
 };
 
 QBANK.views.accountBody = accountBody;
+QBANK.views.campusCard = campusCard;
 QBANK.views.ViewAccount = ViewAccount;
 QBANK.views.AVATARS = AVATARS;
 
@@ -2451,6 +2669,16 @@ const ViewBoard = {
   title:'المتصدرون',
   view(){
     const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
+    /*
+      لوحة جامعتك فوق اللوحة العامة.
+      ★ المقارنة داخل الجامعة هي المُحفِّزة: طالب نجران يقارن نفسه بزملائه
+      في المقرّر نفسه، لا بمن يذاكر مادة أخرى في بلد آخر — والمقارنة
+      الظالمة تُحبط ولا تُحفّز، فتُغلق اللوحة بدل أن تُفتح.
+    */
+    const campus = QBANK.community ? el('div', { class:'card stack' }, [
+      el('h2', { style:'margin:0', text:'متصدّرو جامعتك' }),
+      QBANK.community.boardBody()
+    ]) : null;
     QBANK.api.rpc('board', { lim: 10 }).then(r => {
       if (!body.isConnected) return;
       body.innerHTML = '';
@@ -2469,7 +2697,8 @@ const ViewBoard = {
         el('span', { class:'badge num', text: row.attempts + ' اختبار' })
       ]))));
     });
-    return QBANK.views.page('المتصدرون', 'أفضل النتائج — بأسماء العرض فقط.', [body]);
+    return QBANK.views.page('المتصدرون', 'أفضل النتائج — بأسماء العرض فقط.',
+      [campus, el('h2', { text:'على مستوى المنصة' }), body]);
   }
 };
 QBANK.views.ViewBoard = ViewBoard;
@@ -2525,9 +2754,22 @@ const Admin = {
   newWizard(){
     // strict افتراضًا: قاعدة القداسة هي الأصل، والتحسين اختيار صريح من الرافع
     // enrich=false افتراضًا: المسار المجاني هو الأصل، والإثراء اختيار واعٍ يُدفع ثمنه
-    return { step:1, filename:'', subjectName:'', slug:'', mode:'strict', enrich:false,
-             country:'', university:'', college:'', courseCode:'',
-             raw:[], enriched:[], draftId:null, done:0, total:0, error:'' };
+    const w = { step:1, filename:'', subjectName:'', slug:'', mode:'strict', enrich:false,
+                country:'', university:'', college:'', courseCode:'',
+                raw:[], enriched:[], draftId:null, done:0, total:0, error:'' };
+    /*
+      ★ يرث انتماء الطالب عند الإنشاء لا عند الرسم.
+      عند الرسم كان يُملأ في الخطوة الأولى وحدها، فمن استأنف مسوّدة أو قفز
+      خطوة وجد الخانات فارغة. وإعادة كتابة اسم الجامعة ليست إزعاجًا فحسب:
+      هي المصدر الأول لتهجئات مختلفة تفتّت الجامعة الواحدة إلى عدّة.
+    */
+    const mine = QBANK.campus ? QBANK.campus.cached() : null;
+    if (mine && mine.university_id){
+      w.country    = mine.country || '';
+      w.university = mine.university || '';
+      w.college    = mine.college || '';
+    }
+    return w;
   },
   // تقدير التكلفة قبل التشغيل: عدد الأسئلة والدفعات — يقرّر المشرف على بيّنة
   estimate(w){
@@ -2965,6 +3207,19 @@ function subjectMeta(){
   /* أين تُدرَّس؟ — بلا هذا تضيع المادة في بحر المنصة ولا يجدها من يحتاجها.
      نكتب الاسم ولا نختار من قائمة: الجامعات العربية أكثر من أن تُحصى سلفًا،
      والخادم يوحّد الإملاء فلا تنقسم الجامعة الواحدة إلى عشر. */
+  /*
+    ★ الملء التلقائي من انتماء الطالب.
+    من حدّد جامعته في حسابه لا يعيد كتابتها مع كل مادة — وإعادة الكتابة
+    ليست مجرد إزعاج: هي المصدر الأول لتهجئات مختلفة تفتّت الجامعة الواحدة.
+    ولا نطمس ما كتبه بيده: نملأ الفارغ فقط.
+  */
+  const mine = QBANK.campus ? QBANK.campus.cached() : null;
+  if (mine && mine.university_id){
+    if (!wizard.country)    wizard.country    = mine.country || '';
+    if (!wizard.university) wizard.university = mine.university || '';
+    if (!wizard.college)    wizard.college    = mine.college || '';
+  }
+
   const countryIn = el('select', { class:'input', 'aria-label':'الدولة' });
   countryIn.appendChild(el('option', { value:'', text:'— اختر الدولة —' }));
   Object.keys(QBANK.explore ? { SA:1,EG:1,JO:1,AE:1,KW:1,QA:1,BH:1,OM:1,IQ:1,MA:1,DZ:1,TN:1,SD:1,YE:1,LY:1,SY:1,LB:1,PS:1 } : {})
@@ -3283,6 +3538,33 @@ function stepPublish(box){
   }
   pub.addEventListener('click', () => fire(true));
   hide.addEventListener('click', () => fire(false));
+  /*
+    ★ كشف المكرر قبل النشر لا بعده.
+    عشر نسخ من مقرّر واحد تُفتّت التقييمات وتشتّت الطالب: أيّها أكمل؟
+    فنُري الرافع ما هو موجود في جامعته باسم قريب، ونتركه يقرّر — لا نمنعه،
+    لأن «مبادئ الإدارة ١» قد لا تكون «مبادئ الإدارة ٢» رغم تشابه الاسم.
+  */
+  const dup = el('div', { hidden:true });
+  box.appendChild(dup);
+  if (QBANK.trust && wizard.subjectName)
+    QBANK.trust.similar(wizard.subjectName, null).then(r => {
+      if (!dup.isConnected) return;
+      const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+      if (!rows.length) return;
+      dup.hidden = false;
+      dup.className = 'card stack dupwarn';
+      dup.appendChild(el('h3', { style:'margin:0', text:'⚠ يوجد ما يشبهها في جامعتك' }));
+      dup.appendChild(el('p', { class:'field__hint', style:'margin:0',
+        text:'افتحها أولًا — إن كانت هي نفسها فأضف أسئلتك إليها بدل نسخة ثانية. وإن كانت مقرّرًا آخر فأكمل نشرك.' }));
+      rows.forEach(x => dup.appendChild(el('a', { class:'dupwarn__row', href:'#s/' + (x.slug || '') }, [
+        el('span', { class:'dupwarn__n', text: x.name }),
+        el('span', { class:'badge num', text: (x.q_count || 0) + ' سؤالًا' }),
+        x.verified ? el('span', { class:'badge badge--ok', text:'✓ موثّقة' }) : null,
+        x.rating_n ? el('span', { class:'badge badge--star num',
+          text: QBANK.trust.starsText(x.rating_avg, x.rating_n) }) : null
+      ])));
+    });
+
   box.appendChild(el('div', { class:'card stack' }, [
     el('h2', { text:'الاعتماد' }),
     el('p', { class:'page__sub num', text: wizard.total + ' سؤالًا جاهزًا' +
@@ -3405,6 +3687,9 @@ function bankRow(sub, q, prog){
     num,
     el('div', { class:'row' }, [
       head, starBtn,
+      // ★ البلاغ عند السؤال نفسه لا في آخر الصفحة: من يرى الخطأ يراه هنا،
+      //   وزرٌّ بعيد عن موضع المشكلة لا يُضغط
+      QBANK.trust ? QBANK.trust.reportButton(sub.id, q.id) : null,
       prog.wrong[q.id] ? el('span', { class:'badge badge--bad num', text:'أخطأت ×' + prog.wrong[q.id] }) : null,
       q.important ? el('span', { class:'badge badge--warn', text:'مهم' }) : null
     ]),
@@ -3572,6 +3857,19 @@ function overviewTab(sub, questions){
     (sub.topics && sub.topics.length) ? el('div', { class:'card' }, [
       el('h2', { text:'المحاور' }),
       el('div', { class:'row' }, sub.topics.map(t => el('span', { class:'badge', text: t })))
+    ]) : null,
+    /* نبض المادة: الرقم الذي يُبقي الطالب مستيقظًا ليلة الامتحان */
+    QBANK.community ? QBANK.community.pulseBand(sub.id) : null,
+    QBANK.community ? QBANK.community.challengeBox(sub) : null,
+    /* التقييم أسفل الشاشة لا أعلاها: يُقيّم من راجع، ومن راجع وصل إلى هنا */
+    QBANK.trust ? el('div', { class:'card stack' }, [
+      el('div', { class:'row', style:'justify-content:space-between;align-items:center' }, [
+        el('h2', { style:'margin:0', text:'قيّم هذه المادة' }),
+        el('div', { class:'row' }, QBANK.trust.badges(sub))
+      ]),
+      el('p', { class:'field__hint', style:'margin:0',
+        text:'تقييمك يرفع البنوك النافعة إلى أعلى نتائج زملائك — ويُنزل ما دونها.' }),
+      QBANK.trust.ratingWidget(sub)
     ]) : null
   ]);
 }
@@ -4514,10 +4812,13 @@ function registerRoutes(){
     .add('#/admin/upload', V.ViewUpload)
     .add('#/upload',       V.ViewUpload)   // المسار الذي يُعطى للطالب — والقديم يبقى للمشرف
     .add('#/explore',      V.ViewExplore)
+    .add('#/u',            V.ViewUniversity)   // قسم الجامعة: #/u/<id>
     .add('#/admin/subject', V.ViewAdminSubject)
+    .add('#/admin/reports', V.ViewAdminReports)
     .add('#/s',            V.ViewShare)      // رابط المشاركة: يقبل #s/slug و #/s/slug معًا
     .add('#/subject',      V.ViewSubject)
     .add('#/exam',         V.ViewExam)
+    .add('#/challenge',    V.ViewChallenge)
     .add('#/board',        V.ViewBoard);
   QBANK.router.notFound = V.ViewNotFound;
 }
@@ -6004,7 +6305,7 @@ function exCard(r){
       r.course_code ? el('span', { class:'badge', text: r.course_code }) : null,
       r.free ? el('span', { class:'badge badge--ok', text:'مجانية' })
              : (r.price ? el('span', { class:'badge num', text: r.price + ' ريال' }) : null)
-    ])
+    ].concat(QBANK.trust ? QBANK.trust.badges(r) : []))
   ]);
   return card;
 }
@@ -6128,6 +6429,817 @@ const ViewExplore = { title:'استكشف', view: ViewExploreRender };
 QBANK.explore = Explore;
 QBANK.explore.countryName = countryName;
 QBANK.views.ViewExplore = ViewExplore;
+
+
+/* ===== 51-campus.js ===== */
+/*
+  قسم الجامعة — البيت الذي تنتمي إليه كل مادة.
+
+  لماذا وُجد: الطالب يرفع مادته فتذهب إلى قائمة عامة تختلط فيها مقرّرات
+  الجامعات. فلا يجد زميله ما رفعه، ولا تتراكم فائدة داخل الدفعة الواحدة.
+  القسم يعطي كل جامعة صفحة ورابطًا يُشارَك في مجموعة الدفعة.
+
+  والانتماء يُحفظ في حساب الطالب مرة واحدة، فيفتح المنصة على قسم جامعته
+  لا على قائمة عامة، وتُملأ له خانات الجامعة والكلية تلقائيًا عند الرفع.
+*/
+const Campus = {
+  KEY: 'campus',                 // نسخة محلية تُقرأ فورًا قبل وصول الخادم
+  _loading: null,
+
+  /* المخزَّن محليًا: يُستعمل للرسم الفوري، والخادم هو المرجع */
+  cached(){ return QBANK.store.get(Campus.KEY, null); },
+
+  remember(c){
+    if (c && c.university_id) QBANK.store.set(Campus.KEY, c);
+    else QBANK.store.remove(Campus.KEY);
+    return c;
+  },
+
+  /* جلب من الخادم مع منع النداءات المتوازية — الشاشة الواحدة قد تطلبه مرتين */
+  load(){
+    if (!QBANK.api.user()) return Promise.resolve(null);
+    if (Campus._loading) return Campus._loading;
+    Campus._loading = QBANK.api.rpc('my_campus').then(r => {
+      Campus._loading = null;
+      if (r.ok && r.data && r.data.university_id) return Campus.remember(r.data);
+      return null;
+    }).catch(() => { Campus._loading = null; return null; });
+    return Campus._loading;
+  },
+
+  save(country, university, college){
+    return QBANK.api.rpc('set_my_campus', {
+      p_country: country || '', p_university: university || '', p_college: college || ''
+    }).then(r => {
+      if (!r.ok || !r.data) return null;
+      // ★ نمسح المخزَّن عند المسح لا نُبقي القديم — وإلا رأى الطالب جامعة تركها
+      return r.data.university_id ? Campus.remember(r.data) : (QBANK.store.remove(Campus.KEY), null);
+    });
+  },
+
+  href(id){ return '#/u/' + id; }
+};
+
+/* ═══ منتقي الجامعة والكلية ═══
+   لا قائمة منسدلة مغلقة: الطالب الأول في جامعته لن يجدها فيها. فحقل حر
+   مع اقتراحات — يختار الموجود أو يكتب الجديد، والخادم يوحّد الإملاء. */
+function campusPicker(current, onSaved){
+  const cur = current || {};
+  const box = el('div', { class:'campus-pick' });
+  const msg = el('p', { class:'field__hint', role:'status', style:'margin:0' });
+
+  const countrySel = el('select', { class:'input', 'aria-label':'الدولة' });
+  const COUNTRIES = QBANK.explore && QBANK.explore.countryName ? [
+    'SA','EG','JO','AE','KW','QA','BH','OM','IQ','MA','DZ','TN','SD','YE','LY','SY','LB','PS'
+  ] : ['SA'];
+  countrySel.appendChild(el('option', { value:'', text:'اختر الدولة' }));
+  COUNTRIES.forEach(c => countrySel.appendChild(el('option', {
+    value:c, text: QBANK.explore ? QBANK.explore.countryName(c) : c,
+    selected: c === cur.country ? 'selected' : null })));
+  if (cur.country) countrySel.value = cur.country;
+
+  const uniList = el('datalist', { id:'campusUniList' });
+  const uniIn = el('input', { class:'input', value: cur.university || '', list:'campusUniList',
+    placeholder:'اكتب اسم جامعتك — أو اخترها من الاقتراحات', 'aria-label':'الجامعة' });
+
+  const colList = el('datalist', { id:'campusColList' });
+  const colIn = el('input', { class:'input', value: cur.college || '', list:'campusColList',
+    placeholder:'مثال: كلية الهندسة', 'aria-label':'الكلية' });
+
+  /* الاقتراحات تتبع الدولة: قائمة ٣٥ جامعة كاملة تُربك، وقائمة دولته تُفيد */
+  function fillUniversities(){
+    QBANK.api.rpc('list_universities', { q:'', p_country: countrySel.value || '' }).then(r => {
+      if (!uniList.isConnected) return;
+      uniList.innerHTML = '';
+      (r.ok && Array.isArray(r.data) ? r.data : []).forEach(u =>
+        uniList.appendChild(el('option', { value: u.name })));
+    });
+  }
+  function fillColleges(){
+    const c = Campus.cached();
+    if (!c || !c.university_id) return;
+    QBANK.api.rpc('list_colleges', { p_university: c.university_id }).then(r => {
+      if (!colList.isConnected) return;
+      colList.innerHTML = '';
+      (r.ok && Array.isArray(r.data) ? r.data : []).forEach(x =>
+        colList.appendChild(el('option', { value: x.name })));
+    });
+  }
+  countrySel.addEventListener('change', fillUniversities);
+
+  const save = el('button', { class:'btn', type:'button', text:'احفظ جامعتي' });
+  save.addEventListener('click', () => {
+    if (!countrySel.value || !uniIn.value.trim()){
+      msg.className = 'field__hint is-bad';
+      msg.textContent = 'اختر الدولة واكتب اسم الجامعة.';
+      return;
+    }
+    save.disabled = true; msg.className = 'field__hint'; msg.textContent = 'جارٍ الحفظ…';
+    Campus.save(countrySel.value, uniIn.value.trim(), colIn.value.trim()).then(c => {
+      save.disabled = false;
+      if (!c){ msg.className = 'field__hint is-bad'; msg.textContent = 'تعذّر الحفظ — تأكد من الاتصال.'; return; }
+      msg.className = 'field__hint is-ok';
+      msg.textContent = 'حُفظت: ' + c.university + (c.college ? ' · ' + c.college : '');
+      fillColleges();
+      if (typeof onSaved === 'function') onSaved(c);
+    });
+  });
+
+  const clear = el('button', { class:'btn btn--ghost btn--sm', type:'button', text:'أزل الانتماء' });
+  clear.addEventListener('click', () => {
+    Campus.save('', '', '').then(() => {
+      countrySel.value = ''; uniIn.value = ''; colIn.value = '';
+      msg.className = 'field__hint'; msg.textContent = 'أُزيل الانتماء.';
+      if (typeof onSaved === 'function') onSaved(null);
+    });
+  });
+
+  box.appendChild(el('div', { class:'campus-pick__row' }, [
+    el('label', { class:'field' }, [ el('span', { class:'field__label', text:'الدولة' }), countrySel ]),
+    el('label', { class:'field' }, [ el('span', { class:'field__label', text:'الجامعة' }), uniIn ]),
+    el('label', { class:'field' }, [ el('span', { class:'field__label', text:'الكلية (اختياري)' }), colIn ])
+  ]));
+  box.appendChild(uniList); box.appendChild(colList);
+  box.appendChild(el('div', { class:'row', style:'gap:8px;margin-top:12px' }, [save, cur.university_id ? clear : null]));
+  box.appendChild(msg);
+
+  fillUniversities(); fillColleges();
+  return box;
+}
+
+/* ═══ صفحة القسم ═══ */
+function uniSubjectCard(r){
+  const color = QBANK.views.subjectColor(r.color);
+  return el('a', { class:'excard', href:'#s/' + (r.slug || ''), 'data-id': r.id }, [
+    el('span', { class:'excard__bar', style:'background:' + color, 'aria-hidden':'true' }),
+    el('span', { class:'excard__head' }, [
+      el('span', { class:'excard__ico', 'aria-hidden':'true', text: r.icon || '▤' }),
+      el('span', { class:'excard__t', text: r.name })
+    ]),
+    r.descr ? el('span', { class:'excard__d', text: r.descr }) : null,
+    el('span', { class:'excard__meta' }, [
+      el('span', { class:'badge num', text: (r.q_count || 0) + ' سؤالًا' }),
+      Number(r.students) > 0 ? el('span', { class:'badge num', text: r.students + ' مشترك' }) : null,
+      r.course_code ? el('span', { class:'badge', text: r.course_code }) : null,
+      r.free ? el('span', { class:'badge badge--ok', text:'مجانية' })
+             : (r.price ? el('span', { class:'badge num', text: r.price + ' ريال' }) : null)
+    ])
+  ]);
+}
+
+/*
+  المواد مجموعة تحت كلياتها. الترتيب داخل المجموعة بالأكثر اشتراكًا،
+  والكلية الأكبر أولًا — فيجد الطالب كليته في أعلى الصفحة غالبًا.
+  و«مواد بلا كلية» تنزل آخرًا لا تُخفى: صاحبها لم يحدّد كليته وقد تكون
+  مادة زميلك، فإخفاؤها خسارة صامتة.
+*/
+function groupByCollege(subjects, colleges){
+  const groups = [];
+  const byId = {};
+  (colleges || []).forEach(c => {
+    const g = { id:c.id, name:c.name, items:[] };
+    byId[c.id] = g; groups.push(g);
+  });
+  const orphan = { id:null, name:'مواد بلا كلية محدَّدة', items:[] };
+  (subjects || []).forEach(s => {
+    const g = s.college_id && byId[s.college_id] ? byId[s.college_id] : orphan;
+    g.items.push(s);
+  });
+  const out = groups.filter(g => g.items.length);
+  if (orphan.items.length) out.push(orphan);
+  return out;
+}
+
+function ViewUniversityRender(route){
+  const id = (route.rest && route.rest[0]) || '';
+  const wrap = el('div');
+
+  if (!id) return QBANK.views.page('قسم الجامعة', null, [
+    QBANK.views.empty('⌕', 'لم تُحدَّد جامعة', 'افتح «استكشف» واختر جامعتك من المرشّحات.',
+      el('a', { class:'btn', href:'#/explore', text:'استكشف' }))
+  ]);
+
+  const body = el('div');
+  body.appendChild(el('p', { class:'page__sub', text:'جارٍ التحميل…' }));
+  const head = el('div');
+  wrap.appendChild(head); wrap.appendChild(body);
+
+  QBANK.api.rpc('university_page', { p_uni: id }).then(r => {
+    if (!body.isConnected) return;
+    body.innerHTML = ''; head.innerHTML = '';
+
+    if (!r.ok || !r.data || r.data.ok === false){
+      body.appendChild(QBANK.views.empty('⚠', 'لم نجد هذه الجامعة',
+        'قد يكون الرابط قديمًا. ابحث عنها في «استكشف».',
+        el('a', { class:'btn', href:'#/explore', text:'استكشف' })));
+      return;
+    }
+
+    const d = r.data;
+    const u = d.university;
+    const cname = QBANK.explore ? QBANK.explore.countryName(u.country) : u.country;
+
+    head.appendChild(el('header', { class:'uni-head' }, [
+      el('div', { class:'uni-head__x' }, [
+        el('h1', { class:'uni-head__t' }, [
+          u.name,
+          u.verified ? el('span', { class:'badge badge--ok', text:'موثّقة' }) : null
+        ]),
+        el('p', { class:'uni-head__s', text: cname + (u.city ? ' · ' + u.city : '') +
+          ' · ' + QBANK.views.arNum(d.total) + ' بنك أسئلة' })
+      ]),
+      // ★ الرابط هو الميزة: قسمٌ لا يُشارَك لا يجمع دفعة
+      (function(){
+        const b = el('button', { class:'btn btn--soft btn--sm', type:'button', text:'انسخ رابط القسم' });
+        b.addEventListener('click', () => {
+          const url = location.href.split('#')[0] + Campus.href(u.id);
+          const done = () => { b.textContent = '✓ نُسخ'; setTimeout(() => { b.textContent = 'انسخ رابط القسم'; }, 1800); };
+          if (navigator.clipboard && navigator.clipboard.writeText)
+            navigator.clipboard.writeText(url).then(done, done);
+          else done();
+        });
+        return b;
+      })()
+    ]));
+
+    if (!d.subjects.length){
+      body.appendChild(QBANK.views.empty('▤', 'لا بنوك في هذه الجامعة بعد',
+        'كن أنت أول من يرفع — بنكك سيظهر هنا لكل زملائك فور نشره.',
+        el('a', { class:'btn', href:'#/upload', text:'⇪ ارفع أول مادة' })));
+      return;
+    }
+
+    groupByCollege(d.subjects, d.colleges).forEach(g => {
+      body.appendChild(el('h2', { class:'uni-col' }, [
+        g.name,
+        el('span', { class:'uni-col__n num', text: QBANK.views.arNum(g.items.length) })
+      ]));
+      body.appendChild(el('div', { class:'ex-grid' }, g.items.map(uniSubjectCard)));
+    });
+
+    if (d.total > d.subjects.length)
+      body.appendChild(el('p', { class:'lp-note' }, [
+        'معروض ' + QBANK.views.arNum(d.subjects.length) + ' من ' + QBANK.views.arNum(d.total) + ' — ',
+        el('a', { href:'#/explore?uni=' + u.id, text:'اعرض البقية في استكشف' }), '.'
+      ]));
+  });
+
+  return QBANK.views.page('قسم الجامعة', null, [wrap]);
+}
+
+const ViewUniversity = { title:'قسم الجامعة', view: ViewUniversityRender };
+
+QBANK.campus = Campus;
+QBANK.campus.picker = campusPicker;
+QBANK.campus.groupByCollege = groupByCollege;
+QBANK.views.ViewUniversity = ViewUniversity;
+
+
+/* ===== 52-trust.js ===== */
+/*
+  الجودة والثقة — الطبقة التي تجعل الرفع المفتوح آمنًا.
+
+  حين يفتح الرفع لكل طالب يدخل الرديء مع الجيد. وبنك فيه إجابة خاطئة أسوأ
+  من لا بنك: الطالب يحفظ الخطأ ويدخل به الامتحان واثقًا. فثلاث طبقات:
+  تقييم يرفع الجيد، وبلاغ يُسقط الخاطئ، ووسم «موثّق» لما راجعه إنسان.
+*/
+const REASONS = [
+  ['wrong_answer', 'الإجابة المعلَّمة خاطئة'],
+  ['typo',         'خطأ في نص السؤال أو الخيارات'],
+  ['duplicate',    'سؤال مكرَّر'],
+  ['offensive',    'محتوى مخالف'],
+  ['other',        'شيء آخر']
+];
+const REASON_AR = {};
+REASONS.forEach(r => { REASON_AR[r[0]] = r[1]; });
+
+const Trust = {
+  reasons: REASONS,
+  reasonName(k){ return REASON_AR[k] || k; },
+
+  rate(subjectId, stars, note){
+    return QBANK.api.rpc('rate_subject', { p_subject: subjectId, p_stars: stars, p_note: note || '' });
+  },
+  mine(subjectId){ return QBANK.api.rpc('my_rating', { p_subject: subjectId }); },
+  report(subjectId, questionId, reason, note){
+    return QBANK.api.rpc('report_issue', {
+      p_subject: subjectId, p_question: questionId || null,
+      p_reason: reason || 'other', p_note: note || '' });
+  },
+  queue(status){ return QBANK.api.rpc('admin_reports', { p_status: status || 'open', p_limit: 100 }); },
+  resolve(id, status, note){
+    return QBANK.api.rpc('resolve_report', { p_report: id, p_status: status, p_note: note || '' });
+  },
+  similar(name, universityId){
+    return QBANK.api.rpc('find_similar', { p_name: name || '', p_university: universityId || null });
+  },
+
+  /* عرض التقييم: النجوم مع العدد. بلا العدد يبدو ٥٫٠ من تقييم واحد
+     كأنه إجماع — وهو رأي شخص واحد. */
+  starsText(avg, n){
+    if (!n) return 'لم يُقيَّم بعد';
+    /*
+      الرقم بأرقام عربية وفاصلة عربية (٫) كبقية المنصة.
+      كان يخرج «4.5» وسط نصّ عربي — والخلط يكسر الاتجاه بصريًا ويجعل
+      السطر يقفز في المتصفحات ثنائية الاتجاه.
+    */
+    const ar = QBANK.views.arNum(Number(avg).toFixed(1)).replace('.', '٫');
+    return '★ ' + ar + ' · ' + QBANK.views.arNum(n) + (n === 1 ? ' تقييم' : ' تقييمات');
+  }
+};
+
+/* شارة الجودة على بطاقة/ترويسة المادة */
+function trustBadges(sub){
+  const out = [];
+  if (sub.verified)
+    out.push(el('span', { class:'badge badge--ok', title:'راجعها مشرف المنصة', text:'✓ موثّقة' }));
+  if (sub.rating_n)
+    out.push(el('span', { class:'badge badge--star num', text: Trust.starsText(sub.rating_avg, sub.rating_n) }));
+  return out;
+}
+
+/* ═══ ودجة التقييم ═══
+   خمس نجوم قابلة للّمس مع تعليق اختياري. التعليق اختياري عمدًا:
+   إلزامه يُسقط تسعة من كل عشرة تقييمات، والنجمة وحدها تكفي للترتيب. */
+function ratingWidget(sub, onDone){
+  const box = el('div', { class:'rate' });
+  const msg = el('p', { class:'field__hint', role:'status', style:'margin:8px 0 0' });
+  let picked = 0;
+
+  const row = el('div', { class:'rate__stars', role:'radiogroup', 'aria-label':'قيّم هذه المادة' });
+  const btns = [];
+  for (let i = 1; i <= 5; i++){
+    const b = el('button', { class:'rate__star', type:'button', role:'radio',
+      'aria-checked':'false', 'aria-label': i + ' من ٥', 'data-star': String(i), text:'☆' });
+    b.addEventListener('click', () => setStars(i));
+    btns.push(b); row.appendChild(b);
+  }
+  function setStars(n){
+    picked = n;
+    btns.forEach((b, i) => {
+      const on = i < n;
+      b.textContent = on ? '★' : '☆';
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-checked', i === n - 1 ? 'true' : 'false');
+    });
+  }
+
+  const note = el('textarea', { class:'input', rows:'2',
+    placeholder:'ما الذي أفادك أو نقصك فيها؟ (اختياري)', 'aria-label':'تعليق' });
+
+  const send = el('button', { class:'btn btn--sm', type:'button', text:'أرسل تقييمي' });
+  send.addEventListener('click', () => {
+    if (!picked){ msg.className = 'field__hint is-bad'; msg.textContent = 'اختر عدد النجوم أولًا.'; return; }
+    send.disabled = true; msg.className = 'field__hint'; msg.textContent = 'جارٍ الإرسال…';
+    Trust.rate(sub.id, picked, note.value).then(r => {
+      send.disabled = false;
+      if (!r.ok || !r.data || r.data.ok === false){
+        // ★ سبب الرفض يُقال بالاسم: «تعذّر» وحدها تجعل الطالب يعيد المحاولة بلا فائدة
+        const why = r.data && r.data.reason === 'not_enrolled'
+          ? 'افتح المادة وراجع منها أولًا — التقييم لمن جرّبها.'
+          : 'تعذّر الإرسال. تأكد من الاتصال.';
+        msg.className = 'field__hint is-bad'; msg.textContent = why; return;
+      }
+      msg.className = 'field__hint is-ok';
+      msg.textContent = 'شكرًا — صار متوسطها ' + Number(r.data.avg).toFixed(1);
+      if (typeof onDone === 'function') onDone(r.data);
+    });
+  });
+
+  box.appendChild(row);
+  box.appendChild(note);
+  box.appendChild(el('div', { class:'row', style:'margin-top:8px' }, [send]));
+  box.appendChild(msg);
+
+  // تقييمه السابق يظهر محدَّدًا: يعدّله لا يبدأ من الصفر
+  Trust.mine(sub.id).then(r => {
+    if (!box.isConnected || !r.ok || !r.data || !r.data.stars) return;
+    setStars(r.data.stars);
+    note.value = r.data.note || '';
+    msg.textContent = 'تقييمك السابق — عدّله متى شئت.';
+  });
+
+  return box;
+}
+
+/* ═══ زرّ الإبلاغ ═══
+   يُلحق بكل سؤال. البلاغ على سؤال بعينه لا على المادة: «فيها خطأ» بلا
+   تحديد بلاغٌ لا يستطيع المشرف التصرف فيه. */
+function reportButton(subjectId, questionId){
+  const b = el('button', { class:'qitem__flag', type:'button',
+    title:'أبلغ عن مشكلة في هذا السؤال', 'aria-label':'أبلغ عن مشكلة', text:'⚑' });
+  b.addEventListener('click', e => {
+    e.stopPropagation(); e.preventDefault();
+    openReport(subjectId, questionId, b);
+  });
+  return b;
+}
+
+function openReport(subjectId, questionId, anchor){
+  const sel = el('select', { class:'input', 'aria-label':'سبب البلاغ' });
+  REASONS.forEach(r => sel.appendChild(el('option', { value:r[0], text:r[1] })));
+  const note = el('textarea', { class:'input', rows:'2',
+    placeholder:'وضّح المشكلة — ما الإجابة الصحيحة في رأيك؟ (اختياري)' });
+  const msg = el('p', { class:'field__hint', role:'status', style:'margin:0' });
+
+  const send = el('button', { class:'btn btn--sm', type:'button', text:'أرسل البلاغ' });
+  const box = el('div', { class:'report card stack' }, [
+    el('h3', { style:'margin:0', text:'أبلغ عن مشكلة' }),
+    sel, note,
+    el('div', { class:'row', style:'gap:8px' }, [send,
+      (function(){
+        const c = el('button', { class:'btn btn--ghost btn--sm', type:'button', text:'إلغاء' });
+        c.addEventListener('click', () => box.remove());
+        return c;
+      })()
+    ]),
+    msg
+  ]);
+
+  send.addEventListener('click', () => {
+    send.disabled = true; msg.className = 'field__hint'; msg.textContent = 'جارٍ الإرسال…';
+    Trust.report(subjectId, questionId, sel.value, note.value).then(r => {
+      if (!r.ok || !r.data || r.data.ok === false){
+        send.disabled = false;
+        msg.className = 'field__hint is-bad'; msg.textContent = 'تعذّر الإرسال — تأكد من الاتصال.';
+        return;
+      }
+      box.innerHTML = '';
+      box.appendChild(el('p', { class:'field__hint is-ok', style:'margin:0',
+        text:'وصل بلاغك. يراجعه المشرف، ويبقى السؤال ظاهرًا حتى يُبتّ فيه.' }));
+      setTimeout(() => box.remove(), 3200);
+    });
+  });
+
+  if (anchor && anchor.parentNode) anchor.parentNode.appendChild(box);
+  return box;
+}
+
+QBANK.trust = Trust;
+QBANK.trust.badges = trustBadges;
+QBANK.trust.ratingWidget = ratingWidget;
+QBANK.trust.reportButton = reportButton;
+QBANK.trust.openReport = openReport;
+
+
+/* ===== 53-admin-reports.js ===== */
+/*
+  طابور البلاغات — الشاشة التي تُحوّل الشكوى إلى تصحيح.
+
+  المبدأ الحاكم: البلاغ يصل ومعه نص السؤال وخياراته وإجابته المعلَّمة.
+  بلا ذلك يضطر المشرف إلى فتح المادة والبحث عن السؤال مع كل بلاغ، فيتراكم
+  الطابور ولا يُقرأ — وطابورٌ لا يُقرأ كأنه غير موجود، والبلاغ الذي لا
+  يُقرأ أسوأ من غيابه: يمنح الطالب ثقة كاذبة بأن أحدًا يتابع.
+*/
+function reportCard(r, onDone){
+  const card = el('article', { class:'rep', 'data-id': r.id });
+
+  card.appendChild(el('div', { class:'rep__head' }, [
+    el('span', { class:'badge badge--warn', text: QBANK.trust.reasonName(r.reason) }),
+    el('a', { class:'rep__subj', href:'#/admin/subject/' + r.subject_id, text: r.subject }),
+    el('span', { class:'rep__when num', text: new Date(r.created_at).toLocaleDateString('ar') })
+  ]));
+
+  // نصّ السؤال كما هو — هو موضوع البلاغ، ولا قرار بلا رؤيته
+  if (r.q){
+    const opts = Array.isArray(r.options) ? r.options : [];
+    card.appendChild(el('div', { class:'rep__q' }, [
+      el('p', { class:'rep__qt ltr', text: r.q }),
+      opts.length ? el('ol', { class:'rep__opts' }, opts.map((o, i) =>
+        el('li', { class: i === r.answer ? 'is-answer' : null }, [
+          el('span', { class:'opt__l', 'aria-hidden':'true', text: QBANK.views.optLetter(i) }),
+          el('span', { class:'ltr', text: String(o) }),
+          i === r.answer ? el('span', { class:'badge badge--ok', text:'المعلَّمة' }) : null
+        ]))) : null
+    ]));
+  } else {
+    card.appendChild(el('p', { class:'field__hint', style:'margin:0',
+      text:'بلاغ على المادة كلها لا على سؤال بعينه.' }));
+  }
+
+  if (r.note) card.appendChild(el('p', { class:'rep__note', text: '«' + r.note + '»' }));
+
+  const adminNote = el('input', { class:'input', placeholder:'ملاحظتك (اختياري)' });
+  const msg = el('span', { class:'field__hint', role:'status' });
+
+  const act = (status, label, cls) => {
+    const b = el('button', { class:'btn btn--sm ' + cls, type:'button', text: label });
+    b.addEventListener('click', () => {
+      b.disabled = true; msg.textContent = 'جارٍ الحفظ…';
+      QBANK.trust.resolve(r.id, status, adminNote.value).then(res => {
+        if (!res.ok || !res.data || res.data.ok === false){
+          b.disabled = false; msg.textContent = 'تعذّر — تأكد من صلاحيتك.'; return;
+        }
+        card.classList.add('is-done');
+        card.innerHTML = '';
+        card.appendChild(el('p', { class:'field__hint is-ok', style:'margin:0',
+          text: (status === 'resolved' ? '✓ عولج: ' : '✕ رُفض: ') + r.subject }));
+        if (typeof onDone === 'function') onDone();
+      });
+    });
+    return b;
+  };
+
+  if (r.status === 'open')
+    card.appendChild(el('div', { class:'rep__act' }, [
+      adminNote,
+      el('div', { class:'row', style:'gap:8px' }, [
+        act('resolved', '✓ عولج', 'btn--soft'),
+        act('rejected', '✕ لا مشكلة', 'btn--ghost'),
+        msg
+      ])
+    ]));
+
+  return card;
+}
+
+function reportsBody(){
+  const wrap = el('div', { class:'stack' });
+  const tabs = el('div', { class:'tabs' });
+  const list = el('div', { class:'stack' });
+  let status = 'open';
+
+  const load = () => {
+    list.innerHTML = '';
+    list.appendChild(el('p', { class:'page__sub', text:'جارٍ التحميل…' }));
+    QBANK.trust.queue(status).then(r => {
+      if (!list.isConnected) return;
+      list.innerHTML = '';
+      const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+      if (!rows.length){
+        list.appendChild(QBANK.views.empty('✓', status === 'open' ? 'لا بلاغات مفتوحة' : 'لا شيء هنا',
+          status === 'open'
+            ? 'الطابور فارغ — وهذا خبر جيد.'
+            : 'لم يُبتّ في بلاغات بهذه الحالة بعد.'));
+        return;
+      }
+      rows.forEach(x => list.appendChild(reportCard(x, load)));
+    });
+  };
+
+  [['open','المفتوحة'],['resolved','المعالَجة'],['rejected','المرفوضة']].forEach(t => {
+    const b = el('button', { class:'tabs__btn', type:'button', 'data-tab': t[0],
+      'aria-selected': t[0] === status ? 'true' : 'false', text: t[1] });
+    b.addEventListener('click', () => {
+      status = t[0];
+      tabs.querySelectorAll('.tabs__btn').forEach(x =>
+        x.setAttribute('aria-selected', x.getAttribute('data-tab') === status ? 'true' : 'false'));
+      load();
+    });
+    tabs.appendChild(b);
+  });
+
+  wrap.appendChild(tabs);
+  wrap.appendChild(list);
+  load();
+  return wrap;
+}
+
+const ViewAdminReports = {
+  title:'البلاغات',
+  view(){
+    // نفس حارس بقية شاشات المشرف: المخزَّن مرآة، والقرار في القاعدة (RLS + is_admin)
+    if (!QBANK.store.get('is_admin_check', {}).ok)
+      return QBANK.views.ViewAdminLogin.view();
+    return QBANK.views.page('البلاغات', 'كل بلاغ ومعه نصّ سؤاله — تقرّر بلا فتح المادة.', [reportsBody()]);
+  }
+};
+
+QBANK.views.ViewAdminReports = ViewAdminReports;
+QBANK.views.reportsBody = reportsBody;
+QBANK.views.reportCard = reportCard;
+
+
+/* ===== 54-community.js ===== */
+/*
+  المجتمع — الدفعة تراجع معًا.
+
+  المذاكرة وحدها تنقطع. ومن يعرف أن ثلاثين من دفعته يراجعون المادة نفسها
+  الليلة يُكمل، ومن يظنّ نفسه وحده يتوقّف.
+
+  قاعدتان تحكمان كل ما هنا:
+  ١ · المقارنة داخل الجامعة لا عبر المنصة — طالب نجران لا يُقارَن بمن
+      يذاكر مقرّرًا آخر في بلد آخر. المقارنة الظالمة تُحبط ولا تُحفّز.
+  ٢ · الاسم والصورة فقط. لا بريد ولا معرّف يخرج من أي دالة.
+*/
+const Community = {
+  board(uni, days){
+    return QBANK.api.rpc('university_board', {
+      p_uni: uni || null, p_days: days || 30, p_limit: 20 });
+  },
+  pulse(subjectId){ return QBANK.api.rpc('subject_pulse', { p_subject: subjectId, p_days: 7 }); },
+  createChallenge(subjectId, title, hours){
+    return QBANK.api.rpc('create_challenge', {
+      p_subject: subjectId, p_title: title || '', p_hours: hours || 48 });
+  },
+  submitChallenge(code, score, correct){
+    return QBANK.api.rpc('submit_challenge', {
+      p_code: code, p_score: score, p_correct: correct || 0 });
+  },
+  challengeBoard(code){ return QBANK.api.rpc('challenge_board', { p_code: code }); },
+
+  /* الوقت المتبقي بعبارة يفهمها الطالب بلمحة، لا بتاريخ يحسبه */
+  timeLeft(endsAt){
+    const ms = new Date(endsAt).getTime() - Date.now();
+    if (!(ms > 0)) return 'انتهى';
+    const h = Math.floor(ms / 3600000);
+    if (h >= 24) return 'يبقى ' + QBANK.views.arNum(Math.floor(h / 24)) + ' يوم';
+    if (h >= 1)  return 'يبقى ' + QBANK.views.arNum(h) + ' ساعة';
+    return 'يبقى ' + QBANK.views.arNum(Math.max(1, Math.floor(ms / 60000))) + ' دقيقة';
+  },
+
+  /* الميدالية للثلاثة الأوائل فقط — ولو منحناها للجميع لما ميّزت أحدًا */
+  medal(rank){ return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : ''; }
+};
+
+function boardRow(r){
+  const cls = 'brd__row' + (r.me ? ' is-me' : '') + (r.rank <= 3 ? ' is-top' : '');
+  return el('div', { class: cls }, [
+    el('span', { class:'brd__rank num', text: Community.medal(r.rank) || QBANK.views.arNum(r.rank) }),
+    el('span', { class:'brd__av', 'aria-hidden':'true', text: r.avatar || '◍' }),
+    // ★ من لم يضع اسمًا يظهر «طالب» لا فراغًا ولا بريدًا
+    el('span', { class:'brd__name', text: (r.name || 'طالب') + (r.me ? ' (أنت)' : '') }),
+    el('span', { class:'brd__pts num', text: QBANK.views.arNum(r.points) + ' نقطة' })
+  ]);
+}
+
+function boardBody(){
+  const wrap = el('div', { class:'stack' });
+  const list = el('div', { class:'brd' });
+  wrap.appendChild(el('p', { class:'field__hint', style:'margin:0',
+    text:'نقطة لكل إجابة صحيحة في اختبارات آخر ٣٠ يومًا — داخل جامعتك وحدها.' }));
+  wrap.appendChild(list);
+
+  list.appendChild(el('p', { class:'page__sub', text:'جارٍ التحميل…' }));
+  Community.board(null, 30).then(r => {
+    if (!list.isConnected) return;
+    list.innerHTML = '';
+    const d = r.ok ? r.data : null;
+
+    if (!d || d.ok === false){
+      // ★ سبب الفراغ يُقال: «لا جامعة» ليست عطلًا بل خطوة ناقصة
+      list.appendChild(QBANK.views.empty('⌕', 'حدّد جامعتك أولًا',
+        'المتصدرون داخل جامعتك — فنحتاج أن نعرف أيّها.',
+        el('a', { class:'btn', href:'#/account', text:'حدّد جامعتي' })));
+      return;
+    }
+    const rows = Array.isArray(d.rows) ? d.rows : [];
+    if (!rows.length){
+      list.appendChild(QBANK.views.empty('◇', 'لا اختبارات بعد هذا الشهر',
+        'أول من يختبر يتصدّر. افتح مادة وابدأ اختبارًا.',
+        el('a', { class:'btn', href:'#/', text:'إلى موادي' })));
+      return;
+    }
+    rows.forEach(x => list.appendChild(boardRow(x)));
+
+    /* ترتيبك ولو كنت خارج العشرين: «٤٧ من ٢٠٠» يُحفّز، والغياب يُحبط */
+    const mine = d.me;
+    if (mine && !rows.some(x => x.me))
+      list.appendChild(el('div', { class:'brd__row is-me is-mine-out' }, [
+        el('span', { class:'brd__rank num', text: QBANK.views.arNum(mine.rank) }),
+        el('span', { class:'brd__av', 'aria-hidden':'true', text:'◍' }),
+        el('span', { class:'brd__name', text:'ترتيبك أنت' }),
+        el('span', { class:'brd__pts num', text: QBANK.views.arNum(mine.points) + ' نقطة' })
+      ]));
+  });
+  return wrap;
+}
+
+/* نبض المادة: كم من دفعتك راجعوها هذا الأسبوع */
+function pulseBand(subjectId){
+  const box = el('div', { hidden:true });
+  Community.pulse(subjectId).then(r => {
+    if (!box.isConnected || !r.ok || !r.data || r.data.ok === false) return;
+    const d = r.data;
+    if (!d.week) return;                       // صفر لا يُعرض: «٠ يراجعون» تُحبط
+    box.hidden = false;
+    box.className = 'pulse';
+    box.appendChild(el('span', { class:'pulse__dot', 'aria-hidden':'true' }));
+    box.appendChild(el('span', { class:'pulse__t', text:
+      d.campus
+        ? QBANK.views.arNum(d.campus) + ' من جامعتك راجعوها هذا الأسبوع'
+        : QBANK.views.arNum(d.week) + ' طالبًا راجعوها هذا الأسبوع' }));
+  });
+  return box;
+}
+
+/* ═══ التحدّي ═══ */
+function challengeBox(sub){
+  const box = el('div', { class:'card stack' });
+  const msg = el('p', { class:'field__hint', role:'status', style:'margin:0' });
+
+  const title = el('input', { class:'input', placeholder:'اسم التحدّي — مثال: تحدّي دفعة ٢٠٢٦' });
+  const hours = el('select', { class:'input', 'aria-label':'مدة التحدي' });
+  [[24,'يوم واحد'],[48,'يومان'],[72,'ثلاثة أيام'],[168,'أسبوع']].forEach(h =>
+    hours.appendChild(el('option', { value:String(h[0]), text:h[1], selected: h[0] === 48 ? 'selected' : null })));
+
+  const make = el('button', { class:'btn btn--sm', type:'button', text:'افتح تحدّيًا' });
+  make.addEventListener('click', () => {
+    make.disabled = true; msg.className = 'field__hint'; msg.textContent = 'جارٍ الإنشاء…';
+    Community.createChallenge(sub.id, title.value, parseInt(hours.value, 10)).then(r => {
+      make.disabled = false;
+      if (!r.ok || !r.data || r.data.ok === false){
+        msg.className = 'field__hint is-bad'; msg.textContent = 'تعذّر — تأكد من الاتصال.'; return;
+      }
+      showCode(r.data.code);
+    });
+  });
+
+  const codeIn = el('input', { class:'input', dir:'ltr', placeholder:'ABC234',
+    'aria-label':'رمز تحدٍّ للانضمام' });
+  const join = el('button', { class:'btn btn--ghost btn--sm', type:'button', text:'انضم برمز' });
+  join.addEventListener('click', () => {
+    const c = (codeIn.value || '').trim().toUpperCase();
+    if (c.length < 4){ msg.className = 'field__hint is-bad'; msg.textContent = 'اكتب الرمز كاملًا.'; return; }
+    QBANK.router.go('#/challenge/' + c);
+  });
+
+  function showCode(code){
+    box.innerHTML = '';
+    box.appendChild(el('h2', { style:'margin:0', text:'تحدّيك جاهز' }));
+    // ★ الرمز بحروف كبيرة متباعدة: يُملى صوتًا في مجموعة الدفعة لا يُنسخ فقط
+    box.appendChild(el('p', { class:'chall__code ltr', text: code }));
+    box.appendChild(el('p', { class:'field__hint', style:'margin:0',
+      text:'أرسل الرمز لدفعتك — كل من يدخله يختبر على نفس المادة وتُقارَن نتائجكم.' }));
+    const go = el('a', { class:'btn btn--sm', href:'#/challenge/' + code, text:'افتح لوحة التحدّي' });
+    const copy = el('button', { class:'btn btn--soft btn--sm', type:'button', text:'انسخ الرابط' });
+    copy.addEventListener('click', () => {
+      const url = location.href.split('#')[0] + '#/challenge/' + code;
+      const done = () => { copy.textContent = '✓ نُسخ'; setTimeout(() => { copy.textContent = 'انسخ الرابط'; }, 1800); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, done);
+      else done();
+    });
+    box.appendChild(el('div', { class:'row', style:'gap:8px' }, [go, copy]));
+  }
+
+  box.appendChild(el('h2', { style:'margin:0', text:'تحدَّ دفعتك' }));
+  box.appendChild(el('p', { class:'field__hint', style:'margin:0',
+    text:'افتح تحدّيًا على هذه المادة، وأرسل رمزه لمجموعتكم — تُقارَن نتائجكم حتى ينتهي وقته.' }));
+  box.appendChild(el('div', { class:'ad-edit ad-edit--2' }, [
+    el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'اسم التحدّي' }), title ]),
+    el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'المدة' }), hours ])
+  ]));
+  box.appendChild(el('div', { class:'row', style:'gap:8px' }, [make]));
+  box.appendChild(el('hr', { class:'divider' }));
+  box.appendChild(el('div', { class:'row', style:'gap:8px' }, [codeIn, join]));
+  box.appendChild(msg);
+  return box;
+}
+
+function ViewChallengeRender(route){
+  const code = ((route.rest && route.rest[0]) || '').toUpperCase();
+  const body = el('div', { class:'stack' });
+  body.appendChild(el('p', { class:'page__sub', text:'جارٍ التحميل…' }));
+
+  if (code) Community.challengeBoard(code).then(r => {
+    if (!body.isConnected) return;
+    body.innerHTML = '';
+    const d = r.ok ? r.data : null;
+    if (!d || d.ok === false){
+      body.appendChild(QBANK.views.empty('؟', 'لم نجد هذا التحدّي',
+        'تأكد من الرمز — ستة محارف كما وصلك.'));
+      return;
+    }
+    body.appendChild(el('div', { class:'card stack' }, [
+      el('h2', { style:'margin:0', text: d.title || ('تحدّي ' + (d.subject || '')) }),
+      el('div', { class:'row' }, [
+        el('span', { class:'badge', text: d.subject || '' }),
+        el('span', { class: 'badge ' + (d.ended ? 'badge--bad' : 'badge--ok'),
+          text: d.ended ? 'انتهى' : Community.timeLeft(d.ends_at) }),
+        el('span', { class:'chall__code chall__code--sm ltr', text: d.code })
+      ]),
+      d.ended ? null : el('a', { class:'btn btn--sm',
+        href:'#/exam/' + d.subject_id + '?challenge=' + d.code, text:'ابدأ اختبار التحدّي' })
+    ]));
+
+    const rows = Array.isArray(d.rows) ? d.rows : [];
+    if (!rows.length){
+      body.appendChild(QBANK.views.empty('◇', 'لا نتائج بعد',
+        d.ended ? 'انتهى التحدّي بلا مشاركين.' : 'كن أول من يختبر — اسمك سيتصدّر اللوحة.'));
+      return;
+    }
+    const list = el('div', { class:'brd' });
+    rows.forEach(x => list.appendChild(el('div', {
+      class:'brd__row' + (x.me ? ' is-me' : '') + (x.rank <= 3 ? ' is-top' : '') }, [
+      el('span', { class:'brd__rank num', text: Community.medal(x.rank) || QBANK.views.arNum(x.rank) }),
+      el('span', { class:'brd__av', 'aria-hidden':'true', text: x.avatar || '◍' }),
+      el('span', { class:'brd__name', text: (x.name || 'طالب') + (x.me ? ' (أنت)' : '') }),
+      el('span', { class:'brd__pts num', text: QBANK.views.arNum(x.score) + '٪' })
+    ])));
+    body.appendChild(list);
+  });
+
+  return QBANK.views.page('التحدّي', null, [body]);
+}
+
+const ViewChallenge = { title:'التحدّي', view: ViewChallengeRender };
+
+QBANK.community = Community;
+QBANK.community.boardBody = boardBody;
+QBANK.community.boardRow = boardRow;
+QBANK.community.pulseBand = pulseBand;
+QBANK.community.challengeBox = challengeBox;
+QBANK.views.ViewChallenge = ViewChallenge;
 
 })();
 
