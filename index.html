@@ -3672,6 +3672,14 @@ function stepPublish(box){
     const newId = (typeof r.data === 'string') ? r.data : (r.data && r.data.id) || null;
     const w = wizard;
     await QBANK.admin.stamp(newId, w);
+    /*
+      ★ نُجدّد قائمة المواد قبل أن نُري الرابط.
+      القائمة تُجلب مرة عند الإقلاع وتعيش في التخزين المحلي، فالمادة التي
+      نُشرت قبل ثانية ليست فيها. وكنّا نعطي الرافع زر «افتح المادة» يقوده
+      إلى «المادة غير موجودة» — وهي موجودة، وهو من أنشأها. لا شيء يُحبط
+      الرافع مثل أن تختفي مادته لحظة نشرها.
+    */
+    if (publish) { try { await QBANK.data.refreshPack(); } catch(e){ /* الشاشة تُجدّد لاحقًا */ } }
     QBANK.toast(publish ? 'نُشرت المادة' : 'حُفظت مخفية');
     if (publish && newId && w.slug){
       // رابط المشاركة يظهر فورًا: هذه هي اللحظة التي يشارك فيها الطالب مادته
@@ -4019,14 +4027,50 @@ function overviewTab(sub, questions){
   ]);
 }
 
+/*
+  تجديد القائمة ثم إعادة المحاولة — مرة واحدة.
+  لو أخفقنا ثانيةً فالمادة غير متاحة فعلًا (أُخفيت، أو لم تُشترَ بعد، أو
+  الرابط خطأ)، وحينها فقط نقولها. والفشل بلا اتصال يُقال باسمه: «تعذّر
+  الوصول» غير «غير موجودة» — الأولى تُعاد المحاولة فيها، والثانية تُيئِس.
+*/
+function refetchThenSubject(sid, title){
+  const box = el('div', { class:'stack' }, [
+    el('p', { class:'page__sub', text:'جارٍ تحديث قائمة المواد…' }) ]);
+
+  QBANK.data.refreshPack().then(r => {
+    if (!box.isConnected) return;                 // غادر الطالب — لا نلمس شاشة أخرى
+    if (findSubject(sid)){
+      // نُعيد رسم المسار نفسه — لا نُنقل الطالب، فهو حيث أراد أن يكون
+      try { return void QBANK.router.render(location.hash || '#/'); }
+      catch(e){ return; }
+    }
+    box.innerHTML = '';
+    box.appendChild(r && r.ok === false && r.offline
+      ? QBANK.views.empty('⚡', 'تعذّر الوصول',
+          'لا اتصال الآن. المادة قد تكون موجودة — أعد المحاولة حين يعود الإنترنت.',
+          el('a', { class:'btn', href:'#/', text:'الرئيسية' }))
+      : QBANK.views.empty('؟', 'المادة غير متاحة',
+          'ربما أوقفها المشرف، أو تغيّر رابطها، أو لم تُنشر بعد.',
+          el('a', { class:'btn', href:'#/explore', text:'استكشف المواد' })));
+  });
+
+  return QBANK.views.page(title || 'المادة', null, [box]);
+}
+
 const ViewSubject = {
   title:'المادة',
   view(route){
     const sid = route.rest[0];
     const sub = findSubject(sid);
-    if (!sub) return QBANK.views.page('المادة', null, [
-      QBANK.views.empty('؟', 'المادة غير موجودة', 'ربما أُخفيت أو تغيّر رابطها.',
-        el('a', { class:'btn', href:'#/', text:'الرئيسية' })) ]);
+    /*
+      ★ «غير موجودة» ليست حقيقة عن القاعدة — هي حقيقة عن نسخةٍ في هذا الجهاز.
+      قائمة المواد تُجلب مرة عند الإقلاع وتبقى في التخزين المحلي. فمادةٌ
+      نُشرت بعدها — نشرتَها أنت قبل ثوانٍ، أو نشرها زميلك وأرسل لك رابطها،
+      أو أضفتَها من جوّالك وفتحتها على حاسوبك — ليست فيها. فكنّا نقول
+      للطالب «غير موجودة» ونحن لم نسأل الخادم أصلًا.
+      نسأل مرة، ثم نحكم.
+    */
+    if (!sub) return refetchThenSubject(sid);
 
     QBANK.gate.captureRef(route.query);          // ?ref= يُحفظ قبل أي شيء آخر
     QBANK.trial.stop();                          // مغادرة مادة توقف عدّادها
@@ -4297,8 +4341,8 @@ const ViewExam = {
   view(route){
     const sid = route.rest[0];
     const sub = (QBANK.data.pack().subjects || []).filter(s => s.id === sid)[0];
-    if (!sub) return QBANK.views.page('اختبار', null, [
-      QBANK.views.empty('؟', 'المادة غير موجودة', '', el('a', { class:'btn', href:'#/', text:'الرئيسية' })) ]);
+    // ★ نفس العلاج: رابط اختبارٍ مباشر قد يسبق قائمةَ هذا الجهاز
+    if (!sub) return refetchThenSubject(sid, 'اختبار');
 
     if (!QBANK.gate.localGuess(sub).allowed) {
       return QBANK.views.page(sub.name, null, [ QBANK.gate.paywallCard(sub) ]);
