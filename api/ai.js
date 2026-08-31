@@ -6,6 +6,7 @@
   المفتاح في process.env حصرًا — لا يصل المتصفح أبدًا.
 */
 const { enforce, verbatimOk } = require('./_lib/sanctity.js');
+const { callAI } = require('./_lib/provider.js');
 
 /*
   برومبتان لا واحد. السبب أن البرومبت الصارم يقول للنموذج «لا تلمس النص»،
@@ -38,49 +39,25 @@ const SYS_ENHANCED = [
   SYS_COMMON
 ].join('\n');
 
+/*
+  الاسم بقي callClaude ولم يعد يعني Claude وحدها — يمرّ عبر المحوّل،
+  والمزوّد يُختار من متغيّرات البيئة. أبقيناه لأن اختباراتٍ ومستدعياتٍ
+  تعرفه بهذا الاسم، وتغيير اسمٍ لا يشتري شيئًا يكسر ما يعمل.
+*/
 async function callClaude(batch, mode){
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error('ANTHROPIC_API_KEY غير مضبوط في متغيرات البيئة');
-  /*
-    Haiku 4.5 هو الافتراضي: ‎$1/‎$5 لكل مليون رمز مقابل ‎$3/‎$15 لـ Sonnet 4.5 —
-    ثلث التكلفة بالضبط. والمهمة هنا لا تحتاج أكثر: شرح سؤال وترجمته وبطاقة حفظه
-    عمل مباشر لا استدلال معقّد. ويبقى قابلًا للتبديل من متغيّر البيئة إن أردنا
-    نموذجًا أقوى لمادة صعبة.
-  */
-  const model = process.env.AI_MODEL || 'claude-haiku-4-5-20251001';
   const user = JSON.stringify(batch.map(q => ({
     q: q.q,
     options: q.has_options ? q.options : null,
     teacher_answer_letter: q.answer_letter || null,
     teacher_answer_text: q.answer_text || null
   })));
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method:'POST',
-    headers:{
-      'x-api-key': key,
-      'anthropic-version':'2023-06-01',
-      'content-type':'application/json'
-    },
-    body: JSON.stringify({
-      model, max_tokens: 8192,
-      /*
-        نُخزّن تعليمات النظام مؤقتًا. ملف فيه ٣٠٠ سؤال يُقسَّم دفعات، وكلها
-        ترسل نفس التعليمات. الكتابة الأولى ‎1.25x‎ ثم كل قراءة ‎0.1x‎ —
-        فتسقط كلفة التعليمات إلى العُشر ابتداءً من الدفعة الثانية.
-      */
-      system: [{ type:'text', text: mode === 'enhanced' ? SYS_ENHANCED : SYS_STRICT,
-                 cache_control: { type:'ephemeral' } }],
-      messages: [{ role:'user', content: user }]
-    })
-  });
-  if (!res.ok) throw new Error('رد الذكاء ' + res.status + ': ' + (await res.text()).slice(0, 300));
-  const data = await res.json();
-  const text = (data.content && data.content[0] && data.content[0].text) || '[]';
-  // النموذج قد يلفّ الرد بسياج كود — ننتزع المصفوفة
-  const m = text.match(/\[[\s\S]*\]/);
-  const parsed = JSON.parse(m ? m[0] : text);
-  // الاستهلاك الحقيقي كما أبلغ عنه الخادم — يُعرض للمشرف بدل التخمين
-  Object.defineProperty(parsed, '_usage', { value: data.usage || null, enumerable: false });
+  const r = await callAI(mode === 'enhanced' ? SYS_ENHANCED : SYS_STRICT, user);
+  const parsed = r.items;
+  /* الاستهلاك والنموذج والمزوّد كما أبلغ عنه الخادم لا كما نخمّن.
+     غير قابلة للعدّ كي لا تختلط بعناصر المصفوفة عند أي map لاحق. */
+  Object.defineProperty(parsed, '_usage',    { value: r.usage,    enumerable: false });
+  Object.defineProperty(parsed, '_model',    { value: r.model,    enumerable: false });
+  Object.defineProperty(parsed, '_provider', { value: r.provider, enumerable: false });
   return parsed;
 }
 
@@ -105,7 +82,12 @@ module.exports = async function handler(req, res){
         throw new Error('فشل فحص المطابقة الحرفية للسؤال ' + (i + 1) + ' — أُوقفت الدفعة');
       return item;
     });
-    return res.status(200).json({ ok:true, sanctity_mode: mode, model,
+    /* ★ كان هنا `model` مجرّدًا — متغيّرٌ محليٌّ داخل callClaude لا يراه هذا
+       النطاق، فكان كل نجاحٍ ينتهي بـ ReferenceError يُلتقط أدناه ويُعاد ٥٠٠.
+       أي أن المسار لم يكن ليعمل حتى بمفتاحٍ سليم. */
+    return res.status(200).json({ ok:true, sanctity_mode: mode,
+                                 model: aiOut._model || null,
+                                 provider: aiOut._provider || null,
                                  usage: aiOut._usage || null, questions: enforced });
   } catch(e){
     return res.status(500).json({ error: e.message });
