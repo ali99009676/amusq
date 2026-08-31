@@ -692,6 +692,13 @@ img,svg{ max-width:100%; height:auto; }
 .payrow__t{ font-weight:700; flex:1; min-width:0; }
 .payrow__d{ font-size:.78rem; color:var(--text-3); }
 
+/* شريط مالك المادة — تمييزٌ هادئ لا تنبيه: هذه حالة طيّبة لا تحذير */
+.ownerband{
+  border-color: color-mix(in srgb, var(--brand) 30%, var(--line));
+  background: color-mix(in srgb, var(--brand) 6%, var(--surface));
+  display:grid; gap:.25rem;
+}
+
 
 /* ===== 50-landing.css ===== */
 /*
@@ -2084,8 +2091,15 @@ const Gate = {
     if (Gate.list().some(e => new Date(e.expires_at).getTime() > t &&
         (e.kind === 'semester' || e.subject_id === sub.id)))
       return { allowed:true, reason:'entitled' };
-    // مادته هو؟ ربما بقيت تجربة — والقاعدة وحدها تعرف كم بقي منها
-    if (sub.created_by && sub.created_by === u.id) return { allowed:true, reason:'trial', pending:true };
+    /*
+      ★ مادته هو — يفتحها بلا سؤال.
+      من كتب البنك بيده لا يليق أن يُطلب منه ثمنُ فتحه. والقاعدة تكتب له
+      استحقاقًا لحظة النشر، لكنه قد لا يكون وصل إلى هذا الجهاز بعد، فنُقرّر
+      محليًا ولا ننتظر: صاحب المادة أولى الناس بها.
+      و`pending` باقية لأن القاعدة هي من يعرف متى تنتهي مدّته.
+    */
+    if (sub.created_by && sub.created_by === u.id)
+      return { allowed:true, reason:'owner', pending:true };
     return { allowed:false, reason:'paywall' };
   }
 };
@@ -4103,6 +4117,17 @@ const ViewSubject = {
         trialSlot.appendChild(QBANK.trial.start(sid, Number(a.seconds_left), () => {
           QBANK.router.render(location.hash);    // انتهت: نعيد الرسم فتظهر شاشة الشراء
         }));
+      } else if (a.reason === 'entitled' && a.owner && a.hours_left != null){
+        /* ★ مدّةٌ تنتهي بلا إعلان تبدو خيانة.
+           الرافع يفتح مادته اليوم فيظنّها ملكه أبدًا، فإن أُقفلت غدًا فجأة
+           شعر أنه أُخذ منه شيء. الرقم المعلن يجعلها اتفاقًا لا مفاجأة. */
+        trialSlot.appendChild(el('div', { class:'card ownerband' }, [
+          el('p', { style:'margin:0', text:'▣ هذه مادتك — رفعتَها أنت.' }),
+          el('p', { class:'field__hint', style:'margin:0', text:
+            Number(a.hours_left) > 0
+              ? 'وصولك المجاني ينتهي بعد ' + QBANK.views.arNum(Number(a.hours_left)) + ' ساعة.'
+              : 'وصولك المجاني ينتهي قريبًا.' })
+        ]));
       } else if (!a.allowed){
         // القاعدة رفضت رغم تخميننا — قرارها هو النافذ
         const p = trialSlot.closest('#main') || trialSlot.parentNode;
