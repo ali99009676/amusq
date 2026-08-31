@@ -6,7 +6,7 @@
   "author": "علي الصقور",
   "type": "commonjs",
   "scripts": {
-    "build": "node src/build.js",
+        "site": "node src/build.js",
     "test": "node src/tests.js",
     "check": "node src/build.js && node src/tests.js"
   },
