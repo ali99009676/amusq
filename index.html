@@ -699,6 +699,34 @@ img,svg{ max-width:100%; height:auto; }
   display:grid; gap:.25rem;
 }
 
+/* ═══ التحليل الشامل — HTML مولَّد يخضع لنظام التصميم ═══ */
+/* الوسوم تصل عارية من كل سمة (عقّمناها مرتين) — فالمظهر كله من هنا،
+   وبمتغيرات النظام حصرًا: التحليل يرث هوية المنصة لا يجلب هويته معه */
+.analysis{ line-height:1.9; }
+.analysis p{ margin:0 0 .6em; }
+.analysis h3{ margin:1.1em 0 .35em; font-size:1.05rem; color:var(--brand); }
+.analysis h4{ margin:.9em 0 .3em; font-size:.98rem; }
+.analysis ul{ margin:.3em 0 .8em; padding-inline-start:1.4em; }
+.analysis li{ margin-bottom:.3em; }
+.analysis table{
+  width:100%; border-collapse:collapse; margin:.5em 0 1em;
+  font-size:.92rem; overflow-wrap:anywhere;
+}
+.analysis th, .analysis td{
+  border:1px solid var(--line); padding:.45em .6em; text-align:start;
+  vertical-align:top;
+}
+.analysis thead th{ background:color-mix(in srgb, var(--brand) 8%, var(--surface)); }
+.analysis tbody tr:nth-child(even){ background:color-mix(in srgb, var(--ink) 3%, transparent); }
+.analysis section + section{ margin-top:1.2em; }
+
+/* عدّاد الاختبار — كل طالب وموعده */
+.exambar{ margin:0; }
+.exambar__t{
+  font-weight:800; font-variant-numeric:tabular-nums;
+  color:var(--brand); font-size:1.05rem;
+}
+
 
 /* ===== 50-landing.css ===== */
 /*
@@ -3675,6 +3703,29 @@ function stepPublish(box){
     return;
   }
   const derived = wizard.enriched.filter(q => q.derived).length;
+
+  /*
+    لغة التحليل الشامل — الرافع يختار. العربية الافتراض (نمط AMSU: أسئلة
+    إنجليزية وشرح عربي)، ومن يريد ماله كله بالإنجليزية فخياره محفوظ.
+  */
+  wizard.analysisLang = wizard.analysisLang || 'ar';
+  const langRow = el('div', { class:'row', role:'group', 'aria-label':'لغة التحليل' }, [
+    el('span', { class:'field__hint', text:'لغة الشرح والتحليل:' })
+  ]);
+  [['ar','عربي'],['en','English']].forEach(([v, label]) => {
+    const b = el('button', { class:'btn btn--sm ' + (wizard.analysisLang === v ? 'btn--soft' : 'btn--ghost'),
+      type:'button', 'data-lang': v, 'aria-pressed': String(wizard.analysisLang === v), text: label });
+    b.addEventListener('click', () => {
+      wizard.analysisLang = v;
+      langRow.querySelectorAll('[data-lang]').forEach(x => {
+        const on = x.getAttribute('data-lang') === v;
+        x.className = 'btn btn--sm ' + (on ? 'btn--soft' : 'btn--ghost');
+        x.setAttribute('aria-pressed', String(on));
+      });
+    });
+    langRow.appendChild(b);
+  });
+
   const pub = el('button', { class:'btn btn--block', type:'button', text:'اعتمد وانشر للطلاب' });
   const hide = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'احفظ مخفية' });
   const msg = el('p', { class:'field__hint', role:'status' });
@@ -3698,7 +3749,7 @@ function stepPublish(box){
     if (publish && newId && w.slug){
       // رابط المشاركة يظهر فورًا: هذه هي اللحظة التي يشارك فيها الطالب مادته
       wizard = null;
-      return void showShare(box, w.slug, w.subjectName);
+      return void showShare(box, w.slug, w.subjectName, newId, w.analysisLang || 'ar');
     }
     wizard = null;
     QBANK.router.go(QBANK.store.get('is_admin_check', {}).ok ? '#/admin/content' : '#/account');
@@ -3737,18 +3788,40 @@ function stepPublish(box){
     el('p', { class:'page__sub num', text: wizard.total + ' سؤالًا جاهزًا' +
       (derived ? ' — منها ' + derived + ' بإجابة مستنتجة راجعتَها' : '') }),
     el('p', { class:'field__hint', text:'الاعتماد عملية ذرّية: إما تُنشأ المادة وكل أسئلتها أو لا يتغير شيء.' }),
-    pub, hide, msg
+    langRow, pub, hide, msg
   ]));
 }
 
 /* شاشة ما بعد النشر: الرابط وزر النسخ — لا يُترك الطالب يبحث عن مادته */
-function showShare(box, slug, name){
+function showShare(box, slug, name, newId, analysisLang){
   const u = QBANK.api.user() || {};
   box.innerHTML = '';
+
+  /*
+    ★ التحليل الشامل يبدأ هنا — بعد النشر لا قبله.
+    لو حجزنا زرّ النشر حتى يكتمل التحليل (نصف دقيقة أحيانًا) لظنّ الرافع
+    أن النشر علق. المادة تُنشر فورًا، والتحليل يلحقها، وسطرُ الحالة يصدُق
+    معه: يجري ← اكتمل بمحاوره ← أو تعذّر مع «سيُعاد تلقائيًا عند فتح مادتك».
+  */
+  const aLine = el('p', { class:'field__hint', role:'status',
+    text: QBANK.analysis ? '🧠 يجري تحليل مادتك: النظرة العامة وطريقة الحفظ والأخطاء الشائعة…' : '' });
+  if (QBANK.analysis && newId)
+    QBANK.analysis.generate(newId, analysisLang).then(r => {
+      if (!aLine.isConnected) return;
+      if (r.ok && r.data && r.data.ok){
+        const n = (r.data.topics || []).length;
+        aLine.textContent = '✓ اكتمل التحليل — ' + QBANK.views.arNum(n) +
+          ' محاور وطريقة حفظ وأخطاء شائعة. كلها في صفحة مادتك.';
+      } else {
+        aLine.textContent = '⚠ تعذّر التحليل الآن — سيُعاد تلقائيًا أول ما تفتح صفحة مادتك.';
+      }
+    });
+
   box.appendChild(el('div', { class:'card stack', style:'text-align:center' }, [
     el('span', { class:'empty__ico', 'aria-hidden':'true', text:'✓' }),
     el('p', { class:'empty__title', text:'نُشرت «' + (name || 'مادتك') + '»' }),
     el('p', { class:'empty__text', text:'شاركها مع زملائك — كل شراء عبر رابطك يضيف كوينز لرصيدك.' }),
+    aLine,
     QBANK.share.copyRow(QBANK.share.shareUrl(slug, u.id)),
     el('a', { class:'btn btn--block', href:'#s/' + slug, text:'افتح صفحة المادة' }),
     el('a', { class:'btn btn--ghost btn--block', href:'#/account', text:'محفظتي' })
@@ -3985,11 +4058,33 @@ function explainTab(sub, questions){
     ])));
 }
 
-/* تبويب طريقة الحفظ: البطاقة الذهنية لكل سؤال */
+/* تبويب طريقة الحفظ: التحليل الشامل أولًا ثم بطاقات الأسئلة */
 function memoTab(sub, questions){
+  const box = el('div', { class:'stack' });
+
+  /*
+    ★ «طريقة الحفظ» الشاملة قبل البطاقات الفردية.
+    الجداول والحيل المنحوتة («مُتّت»، «قهأب») تُلخّص المادة كلها — يقرؤها
+    الطالب أولًا فتعطيه الهيكل، ثم بطاقات الأسئلة تملؤه. عكس الترتيب يغرقه
+    في التفاصيل قبل الخريطة.
+  */
+  const slot = el('div', { class:'stack' });
+  box.appendChild(slot);
+  if (QBANK.analysis) QBANK.analysis.get(sub.id).then(a => {
+    if (!slot.isConnected || !a) return;
+    if (a.memorize) slot.appendChild(el('div', { class:'card' }, [ QBANK.views.analysisHtml(a.memorize) ]));
+    if (a.mistakes) slot.appendChild(el('div', { class:'card stack' }, [
+      el('h2', { text:'الأخطاء الشائعة' }),
+      QBANK.views.analysisHtml(a.mistakes)
+    ]));
+  });
+
   const withMemo = questions.filter(q => q.mnemonic && (q.mnemonic.cue || q.mnemonic.key));
-  if (!withMemo.length) return QBANK.views.empty('🧠', 'لا بطاقات حفظ بعد', 'تُبنى بطاقات الحفظ مع معالجة الذكاء وتظهر هنا.');
-  return el('div', { class:'stack' }, withMemo.map(q => {
+  if (!withMemo.length){
+    box.appendChild(QBANK.views.empty('🧠', 'لا بطاقات حفظ للأسئلة بعد', 'تُبنى بطاقات الحفظ مع معالجة الذكاء وتظهر هنا.'));
+    return box;
+  }
+  box.appendChild(el('div', { class:'stack' }, withMemo.map(q => {
     const m = q.mnemonic;
     return el('div', { class:'card stack' }, [
       el('div', { class:'row' }, [
@@ -4002,15 +4097,41 @@ function memoTab(sub, questions){
       m.link ? el('p', { style:'margin:0', text:'🔗 ' + m.link }) : null,
       m.strike ? el('p', { class:'field__hint', style:'margin:0', text:'✂ ' + m.strike }) : null
     ]);
-  }));
+  })));
+  return box;
 }
 
 /* تبويب النظرة العامة */
 function overviewTab(sub, questions){
   const prog = QBANK.progress.forSubject(sub.id);
   const pct = QBANK.progress.pctDone(sub.id, questions.length);
+
+  /* «عن المادة» المحلَّلة والمحاور بعدّاداتها — تصل غير متزامنة فتملأ فتحتها */
+  const aSlot = el('div', { class:'stack' });
+  if (QBANK.analysis) QBANK.analysis.get(sub.id).then(a => {
+    if (!aSlot.isConnected || !a) return;
+    if (a.overview){
+      aSlot.appendChild(el('div', { class:'card stack' }, [
+        el('h2', { text:'عن المادة' }),
+        QBANK.views.analysisHtml(a.overview)
+      ]));
+      /* الاحتياط (الوصف القصير وشارات المحاور) ينسحب حين يصل الأصل */
+      const root = aSlot.parentNode;
+      if (root) root.querySelectorAll('[data-fallback]').forEach(x => x.remove());
+    }
+    const tc = QBANK.views.topicsCard(a);
+    if (tc) aSlot.appendChild(tc);
+    /* تحليل بَطَل (أُضيفت أسئلة بعده) يُعاد توليده تلقائيًا لصاحبه */
+    QBANK.analysis.maybeRefresh(sub, a, () => {
+      QBANK.analysis.get(sub.id, true).then(() => {
+        if (aSlot.isConnected) QBANK.router.render(location.hash);
+      });
+    });
+  });
+
   return el('div', { class:'stack' }, [
-    sub.descr ? el('div', { class:'card' }, [ el('p', { style:'margin:0', text: sub.descr }) ]) : null,
+    aSlot,
+    sub.descr ? el('div', { class:'card', 'data-fallback':'1' }, [ el('p', { style:'margin:0', text: sub.descr }) ]) : null,
     el('div', { class:'card stack' }, [
       el('h2', { text:'تقدّمك' }),
       el('div', { class:'subj__meter' }, [ el('div', { style:'width:' + pct + '%;background:' + QBANK.views.subjectColor(sub.color) }) ]),
@@ -4021,7 +4142,8 @@ function overviewTab(sub, questions){
         prog.best ? el('span', { class:'badge badge--ok num', text:'أفضل نتيجة ' + prog.best + '٪' }) : null
       ])
     ]),
-    (sub.topics && sub.topics.length) ? el('div', { class:'card' }, [
+    /* شارات المحاور القديمة احتياطٌ لمادة بلا تحليل — topicsCard أغنى منها */
+    (sub.topics && sub.topics.length) ? el('div', { class:'card', 'data-fallback':'1' }, [
       el('h2', { text:'المحاور' }),
       el('div', { class:'row' }, sub.topics.map(t => el('span', { class:'badge', text: t })))
     ]) : null,
@@ -4158,6 +4280,8 @@ const ViewSubject = {
 
     return QBANK.views.page(sub.name, (sub.q_count || 0) + ' سؤالًا · المذاكرة تعمل بلا إنترنت بعد أول فتح.', [
       trialSlot,
+      /* عدّاد كل طالبٍ لموعده هو — الشُّعب تختلف، وموعدك لا يخص زميلك */
+      QBANK.examDate ? QBANK.examDate.band(sid) : null,
       el('div', { class:'row' }, [examBtn, printBtn]),
       tabs, body
     ]);
@@ -4406,7 +4530,8 @@ function buildPrintDoc(sub, questions, opts){
   root.appendChild(el('header', { class:'print-head', style: opts.economic ? '' :
     'border-color:' + QBANK.views.subjectColor(sub.color) }, [
     el('h1', { text: sub.name }),
-    el('p', { text: { bank:'بنك الأسئلة', explain:'الشرح', memo:'بطاقات الحفظ', overview:'نظرة عامة' }[opts.what] })
+    el('p', { text: { bank:'بنك الأسئلة', explain:'الشرح', memo:'بطاقات الحفظ',
+                      overview:'نظرة عامة', full:'المادة كاملة' }[opts.what] })
   ]));
 
   let qs = questions;
@@ -4419,6 +4544,37 @@ function buildPrintDoc(sub, questions, opts){
   if (opts.what === 'overview') {
     root.appendChild(el('p', { text: sub.descr || '' }));
     (sub.topics || []).forEach(t => root.appendChild(el('p', { text:'• ' + t })));
+  } else if (opts.what === 'full') {
+    /*
+      ★ المادة كاملة — ورقة ليلة الاختبار.
+      «عن المادة» ثم كل سؤال بخياراته وإجابته وشرحه، ثم «طريقة الحفظ»
+      و«الأخطاء الشائعة» بجداولها. طالب كثيرون يذاكرون من الورق آخر ليلة،
+      وهذه الوثيقة تغنيه عن فتح الشاشة أصلًا.
+    */
+    if (opts.analysis && opts.analysis.overview){
+      root.appendChild(el('h2', { text:'عن المادة' }));
+      root.appendChild(QBANK.views.analysisHtml(opts.analysis.overview));
+    }
+    qs.forEach((q, i) => {
+      const block = el('div', { class:'q print-q' }, [
+        el('p', { class:'ltr', style:'font-weight:700', text: (i + 1) + ') ' + q.q })
+      ]);
+      q.options.forEach((o, oi) => {
+        const isAns = oi === q.answer;
+        block.appendChild(el('p', { class:'ltr print-opt' + (isAns ? ' print-ans' : ''),
+          text: String.fromCharCode(65 + oi) + ') ' + o + (isAns ? '  ✓' : '') }));
+      });
+      if (q.expl_ar) block.appendChild(el('p', { class:'print-expl', text: q.expl_ar }));
+      root.appendChild(block);
+    });
+    if (opts.analysis && opts.analysis.memorize){
+      root.appendChild(el('h2', { text:'طريقة الحفظ' }));
+      root.appendChild(QBANK.views.analysisHtml(opts.analysis.memorize));
+    }
+    if (opts.analysis && opts.analysis.mistakes){
+      root.appendChild(el('h2', { text:'الأخطاء الشائعة' }));
+      root.appendChild(QBANK.views.analysisHtml(opts.analysis.mistakes));
+    }
   } else if (opts.what === 'memo') {
     qs.forEach((q, i) => {
       const m = q.mnemonic || {};
@@ -4454,6 +4610,7 @@ function openPrintDialog(sub){
   if (old) old.remove();
 
   const what = el('select', { class:'input' }, [
+    el('option', { value:'full', text:'المادة كاملة — أسئلة وشرح وطريقة حفظ' }),
     el('option', { value:'bank', text:'بنك الأسئلة' }),
     el('option', { value:'explain', text:'الشرح' }),
     el('option', { value:'memo', text:'بطاقات الحفظ' }),
@@ -4485,8 +4642,11 @@ function openPrintDialog(sub){
   cancel.addEventListener('click', () => dialog.remove());
   go.addEventListener('click', async () => {
     const r = await QBANK.data.subjectQuestions(sub.id);
+    // «المادة كاملة» تحتاج التحليل — يُجلب هنا لا مع كل فتح للحوار
+    const analysis = (what.value === 'full' && QBANK.analysis)
+      ? await QBANK.analysis.get(sub.id) : null;
     const doc = buildPrintDoc(sub, r.data, {
-      what: what.value, range: range.value,
+      what: what.value, range: range.value, analysis,
       answers: ans.input.checked, expl: expl.input.checked,
       translation: trans.input.checked, economic: eco.input.checked
     });
@@ -8389,6 +8549,191 @@ if (QBANK.views.ADMIN_TABS){
   const st = QBANK.views.ADMIN_TABS.filter(t => t.id === 'students')[0];
   if (st) st.fill = proStudentsTab;
 }
+
+
+/* ===== 57-analysis.js ===== */
+/*
+  التحليل الشامل للمادة — واجهة الطبقة التي كانت يدوية.
+
+  «عن المادة» و«طريقة الحفظ» و«الأخطاء الشائعة» تصل من القاعدة HTML جاهزًا
+  (ولّده الخادم وتحقق منه)، وهنا: الجلب والعرض، وإعادة التوليد حين يبطل،
+  وعدّاد الاختبار الذي يضبطه كل طالب لنفسه.
+*/
+
+const ANALYSIS_TAGS = ['P','STRONG','EM','H3','H4','TABLE','THEAD','TBODY',
+                       'TR','TH','TD','UL','LI','SECTION','BR'];
+
+/*
+  ★ التعقيم مرتين — في الخادم وهنا.
+  الخادم عقّم قبل الكتابة، لكن القاعدة قد تُكتب من طريق آخر يومًا (مشرف
+  يحرّر يدويًا، هجرة، خطأ). الدفاع في العمق: المتصفح لا يثق حتى بقاعدته.
+  نبني DOM ونمسح كل وسم خارج القائمة وكل سمة — ثم نُعيد العقد لا innerHTML.
+*/
+function analysisHtml(html){
+  const box = document.createElement('div');
+  box.innerHTML = String(html || '');
+  const walk = (node) => {
+    const kids = Array.prototype.slice.call(node.children);
+    kids.forEach(el0 => {
+      walk(el0);
+      if (ANALYSIS_TAGS.indexOf(el0.tagName) === -1){
+        // الوسم الغريب يذوب: نصّه يبقى وعظمه يُنزع
+        while (el0.firstChild) node.insertBefore(el0.firstChild, el0);
+        node.removeChild(el0);
+      } else {
+        Array.prototype.slice.call(el0.attributes).forEach(a => el0.removeAttribute(a.name));
+      }
+    });
+  };
+  walk(box);
+  box.className = 'analysis';
+  return box;
+}
+
+const Analysis = {
+  _cache: {},
+
+  async get(sid, fresh){
+    if (!fresh && Analysis._cache[sid]) return Analysis._cache[sid];
+    const r = await QBANK.api.rpc('subject_analysis', { sid });
+    const a = (r.ok && r.data) ? r.data : null;
+    if (a) Analysis._cache[sid] = a;
+    return a;
+  },
+
+  /* توليد التحليل في الخادم — يصل بهوية الطالب فيتحقق الخادم أنها مادته */
+  async generate(sid, lang){
+    delete Analysis._cache[sid];
+    const base = QBANK.admin ? QBANK.admin.apiBase() : '';
+    const f = QBANK.api.fetchFn();
+    if (base === null || !f) return { ok:false, offline:true };
+    const s = QBANK.api.session();
+    try{
+      const res = await f(base + '/api/analyze', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json',
+                  'Authorization':'Bearer ' + (s && s.access_token || '') },
+        body: JSON.stringify({ subject_id: sid, lang: lang || 'ar' })
+      });
+      const data = await res.json().catch(() => null);
+      return { ok: res.ok, status: res.status, data };
+    } catch(e){ return { ok:false, offline:true, err: e.message }; }
+  },
+
+  /*
+    ★ التحديث الذاتي: تحليلٌ بَطَل (أُضيفت أسئلة بعده) يُعاد توليده تلقائيًا
+    أول ما يفتح صاحبُ المادة صفحتها — كما اختار علي. صاحبها لا زائرها:
+    الزائر يرى النسخة الأخيرة الصالحة، ولا يدفع كلفة توليدٍ ليس له.
+  */
+  maybeRefresh(sub, a, onDone){
+    if (!a || !a.stale) return false;
+    const u = QBANK.api.user();
+    const mine = u && sub.created_by === u.id;
+    const admin = QBANK.store.get('is_admin_check', {}).ok;
+    if (!mine && !admin) return false;
+    Analysis.generate(sub.id, a.lang || 'ar').then(r => { if (r.ok && onDone) onDone(); });
+    return true;
+  }
+};
+
+/* ═══ عدّاد الاختبار — كل طالب يضبط موعده ═══ */
+/*
+  محليّ في الجهاز عمدًا: الشُّعب تختلف مواعيدها، وموعد طالبٍ لا يخص زميله.
+  التخزين مفتاح واحد {sid: iso}، والعرض عدّاد حيّ بالثواني — الرقم الذي
+  يُبقي الطالب مستيقظًا هو «متبقٍ ١٨:٣٦:٢٤» لا تاريخ جامد.
+*/
+const ExamDate = {
+  KEY: 'exam_dates',
+  get(sid){ return QBANK.store.get(ExamDate.KEY, {})[sid] || null; },
+  set(sid, iso){
+    const d = QBANK.store.get(ExamDate.KEY, {});
+    if (iso) d[sid] = iso; else delete d[sid];
+    QBANK.store.set(ExamDate.KEY, d);
+  },
+
+  /* «متبقٍ ٤٥:١٢:٠٩» — بالساعات الكلية لا بالأيام: ٤٥ ساعة أوقع من «يومان» */
+  left(iso, now){
+    const ms = new Date(iso).getTime() - (now || Date.now());
+    if (isNaN(ms)) return null;
+    if (ms <= 0) return { over:true, text:'حان وقت الاختبار — بالتوفيق!' };
+    const s = Math.floor(ms / 1000);
+    const p2 = n => (n < 10 ? '0' : '') + n;
+    return { over:false, text:'متبقٍ ' + QBANK.views.arNum(Math.floor(s / 3600)) + ':' +
+      QBANK.views.arNum(p2(Math.floor(s / 60) % 60)) + ':' + QBANK.views.arNum(p2(s % 60)) };
+  },
+
+  band(sid){
+    const box = el('div', { class:'exambar' });
+    let timer = null;
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+
+    function render(){
+      stop();
+      box.innerHTML = '';
+      const iso = ExamDate.get(sid);
+      if (!iso){
+        const btn = el('button', { class:'btn btn--sm btn--ghost', type:'button',
+          text:'🗓 متى اختبارك؟ اضبط عدّادك' });
+        btn.addEventListener('click', () => edit());
+        box.appendChild(btn);
+        return;
+      }
+      const t = el('span', { class:'exambar__t num' });
+      const when = el('span', { class:'field__hint', text: new Date(iso).toLocaleString('ar', {
+        weekday:'long', day:'numeric', month:'long', hour:'numeric', minute:'2-digit' }) });
+      const change = el('button', { class:'iconbtn', type:'button', 'aria-label':'غيّر الموعد', text:'✎' });
+      change.addEventListener('click', () => edit());
+      box.appendChild(el('div', { class:'row', style:'align-items:center' }, [t, when, change]));
+      const tick = () => {
+        // ★ الوثيقة قد تُفكَّك والعدّاد حي — نوقفه بدل أن ينهار كل ثانية
+        if (!box.isConnected) return void stop();
+        const L = ExamDate.left(iso);
+        t.textContent = L ? L.text : '';
+        if (L && L.over) stop();
+      };
+      tick();
+      timer = setInterval(tick, 1000);
+    }
+
+    function edit(){
+      stop();
+      box.innerHTML = '';
+      const cur = ExamDate.get(sid);
+      const inp = el('input', { class:'input', type:'datetime-local',
+        'aria-label':'موعد اختبارك', value: cur ? cur.slice(0, 16) : '' });
+      const save = el('button', { class:'btn btn--sm', type:'button', text:'احفظ' });
+      const clear = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'أزل الموعد' });
+      save.addEventListener('click', () => {
+        if (inp.value) ExamDate.set(sid, new Date(inp.value).toISOString());
+        render();
+      });
+      clear.addEventListener('click', () => { ExamDate.set(sid, null); render(); });
+      box.appendChild(el('div', { class:'row' }, [inp, save, cur ? clear : null]));
+    }
+
+    render();
+    return box;
+  }
+};
+
+/* بطاقة المحاور بعدّاداتها — «الابتكار التسويقي (الفصل السادس) · ١١» */
+function topicsCard(a){
+  const ts = (a && a.topics) || [];
+  if (!ts.length) return null;
+  return el('div', { class:'card stack' }, [
+    el('h2', { text:'محاور المادة' }),
+    el('div', { class:'stack' }, ts.map(t =>
+      el('div', { class:'row', style:'justify-content:space-between' }, [
+        el('span', { text: t.name }),
+        el('span', { class:'badge num', text: QBANK.views.arNum(t.n) + ' سؤالًا' })
+      ])))
+  ]);
+}
+
+QBANK.analysis = Analysis;
+QBANK.examDate = ExamDate;
+QBANK.views.analysisHtml = analysisHtml;
+QBANK.views.topicsCard = topicsCard;
 
 })();
 
