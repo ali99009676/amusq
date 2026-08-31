@@ -2876,7 +2876,23 @@ const Admin = {
     const r = await Admin.server('/api/ingest', { filename, content_base64: base64,
       subject_name: w.subjectName || '', sanctity_mode: w.mode || 'strict' });
     if (!r.ok) { w.error = (r.data && r.data.error) || 'تعذّر الاتصال بالخادم'; return w; }
-    w.filename = filename; w.raw = r.data.questions; w.total = r.data.total;
+
+    /*
+      ★ الحارس الذي كان ناقصًا.
+      كان المعالج يتقدّم مهما كان عدد الأسئلة — حتى صفرًا. فملفٌ لم يتعرّف
+      عليه المحلّل يمرّ بصمت إلى «راجع» فيراها الطالب فارغة، ثم يضغط «انشر»
+      فتُنشأ مادة بصفر أسئلة تظهر في «استكشف» ولا يفتحها أحد.
+      وقع هذا فعلًا. الصمت هنا أسوأ من الفشل: الفشل يُصلَح، والصمت يُنشر.
+    */
+    const got = Array.isArray(r.data.questions) ? r.data.questions : [];
+    if (!got.length) {
+      w.error = 'لم نتعرّف على سؤال واحد في هذا الملف. تأكد أن كل سؤال يبدأ برقم، ' +
+                'وأن خياراته في أسطر تبدأ بـ A) أو أ) — وانظر «قالب بنك الأسئلة» أسفل الصفحة.';
+      w.raw = []; w.total = 0;
+      return w;
+    }
+
+    w.filename = filename; w.raw = got; w.total = r.data.total;
     w.subjectName = w.subjectName || r.data.subject_name || '';
     w.slug = r.data.slug || '';
     w.step = 2; w.error = '';
@@ -2890,6 +2906,15 @@ const Admin = {
     يبقى بلا إجابة، فنوسمه ليصحّحه صاحبه بيده في المحرر.
   */
   plainEnrich(w){
+    /*
+      ★ حتى المسار المجاني لا يتقدّم بلا سؤال.
+      «مجاني» يصف الثمن لا المحتوى: مادة بلا أسئلة ليست بنكًا مجانيًا،
+      هي عطل. وبدون هذا السطر كانت raw الفارغة تمرّ إلى الخطوة ٣ صامتة.
+    */
+    if (!Array.isArray(w.raw) || !w.raw.length) {
+      w.error = 'لا أسئلة في هذه المسوّدة — أعد رفع الملف من الخطوة الأولى.';
+      return w;
+    }
     w.enriched = w.raw.map(q => ({
       q: q.q, q_original: q.q, sanctity_mode: 'strict',
       options: q.has_options ? q.options.slice() : [String(q.answer_text || '—')],
@@ -3570,6 +3595,24 @@ function stepEnrich(box, rerender){
 
 /* الخطوة ٣: المراجعة — بطاقة لكل سؤال، تغيير الإجابة بضغطة، وسوم حمراء للمستنتَج */
 function stepReview(box, rerender){
+  /*
+    ★ لا نشر بلا سؤال واحد.
+    كانت الشاشة تُرسم فارغة ويبقى زر «تابع للنشر» تحتها، فيُنشر بنك خالٍ.
+    والحارس هنا ليس تكرارًا لحارس الاستيراد: مسوّدة قديمة محفوظة قد تصل
+    إلى هنا فارغة من طريق آخر — وكل باب إلى النشر يحتاج قفله.
+  */
+  if (!wizard.enriched || !wizard.enriched.length) {
+    box.appendChild(QBANK.views.empty('⚠', 'لا أسئلة في هذه المسوّدة',
+      'لم يصل شيء من خطوة القراءة. ارجع وارفع الملف مرة أخرى — وتأكد أن تنسيقه يطابق القالب.'));
+    const back = el('button', { class:'btn btn--block', type:'button', text:'← ارجع وارفع ملفًا آخر' });
+    back.addEventListener('click', () => {
+      wizard.step = 1; wizard.raw = []; wizard.enriched = []; wizard.total = 0;
+      wizard.error = ''; rerender();
+    });
+    box.appendChild(back);
+    return;
+  }
+
   const dups = QBANK.admin.findDuplicates(wizard.enriched);
   const dupSet = new Set(dups.map(d => d.index));
   if (dups.length) box.appendChild(el('p', { class:'row' }, [
@@ -3611,6 +3654,12 @@ function stepReview(box, rerender){
 
 /* الخطوة ٤: زران — اعتماد ذرّي أو حفظ مخفي */
 function stepPublish(box){
+  // ★ آخر قفل قبل القاعدة — والقاعدة نفسها تحرس أيضًا (approve_draft)
+  if (!wizard.enriched || !wizard.enriched.length) {
+    box.appendChild(QBANK.views.empty('⚠', 'لا شيء يُنشر',
+      'هذه المسوّدة بلا أسئلة. أعد رفع الملف من الخطوة الأولى.'));
+    return;
+  }
   const derived = wizard.enriched.filter(q => q.derived).length;
   const pub = el('button', { class:'btn btn--block', type:'button', text:'اعتمد وانشر للطلاب' });
   const hide = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'احفظ مخفية' });
