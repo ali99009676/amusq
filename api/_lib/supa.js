@@ -19,11 +19,17 @@ function creds(){
 */
 async function rpc(name, args, asUser){
   const { url, key } = creds();
+  /*
+    ★ Authorization لهوية الطالب فقط.
+    مفتاح الخدمة يمرّ في apikey وحدها — البوابة تشتق منه الدور بنفسها،
+    وهذا يعمل مع الجيلين: القديم (eyJ… JWT) والجديد (sb_secret_…).
+    أما وضع sb_secret في Bearer فيرفضه الجيل الجديد لأنه ليس JWT.
+  */
+  const headers = { 'apikey': key, 'Content-Type':'application/json',
+                    'Accept-Profile':'qbank', 'Content-Profile':'qbank' };
+  if (asUser) headers.Authorization = 'Bearer ' + asUser;
   const res = await fetch(url + '/rest/v1/rpc/' + name, {
-    method:'POST',
-    headers:{ 'apikey': key, 'Authorization':'Bearer ' + (asUser || key),
-              'Content-Type':'application/json', 'Accept-Profile':'qbank', 'Content-Profile':'qbank' },
-    body: JSON.stringify(args || {})
+    method:'POST', headers, body: JSON.stringify(args || {})
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) throw new Error('rpc ' + name + ' ← ' + res.status + ' ' + JSON.stringify(data));
