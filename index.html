@@ -654,6 +654,35 @@ img,svg{ max-width:100%; height:auto; }
 .lp-card__text{ color:var(--text-2); font-size:.92rem; margin:0; line-height:1.85; }
 .lp-card__meta{ display:flex; gap:var(--s2); flex-wrap:wrap; margin-top:auto; padding-top:var(--s2); }
 
+/* ===== نموذجا المادة =====
+   ختم «نموذج» ظاهر في أعلى البطاقة لا في هامشها: الزائر يقرأ البطاقات
+   قبل السطر الذي تحتها، فلو خفي الختم لحسبهما مادّتين معروضتين للبيع. */
+.lp-card--sample{ padding-top:var(--s6); }
+.lp-card__row{ display:flex; align-items:center; justify-content:space-between; gap:var(--s3); }
+.lp-card__stamp{
+  background:var(--gold-soft); color:var(--warn);
+  border:1px dashed var(--gold); font-weight:800; letter-spacing:.04em;
+}
+.lp-card__tag{
+  align-self:flex-start; font-size:.76rem; font-weight:800; color:var(--brand);
+  background:var(--brand-soft); padding:2px var(--s3); border-radius:var(--r-pill);
+}
+/* المحاور: ما يجده الطالب داخل المادة — بديل عن عدد أسئلة لا وجود له */
+.lp-topics{
+  display:flex; flex-wrap:wrap; gap:var(--s2);
+  margin-top:auto; padding-top:var(--s3); border-top:1px dashed var(--line);
+}
+.lp-topic{
+  font-size:.8rem; color:var(--text-2); background:var(--surface-2);
+  border:1px solid var(--line-soft); padding:2px var(--s3); border-radius:var(--r1);
+}
+/* سطر التنبيه أسفل النموذجين */
+.lp-note{
+  max-width:56ch; margin:var(--s5) auto 0; text-align:center;
+  font-size:.88rem; color:var(--text-3); line-height:1.85;
+}
+.lp-note a{ color:var(--brand); font-weight:700; }
+
 /* ===== الخطوات ===== */
 .lp-steps{ display:grid; gap:var(--s5); grid-template-columns:1fr; counter-reset:step; }
 @media (min-width:820px){ .lp-steps{ grid-template-columns:repeat(4,1fr); } }
@@ -4040,6 +4069,46 @@ function lpSection(kicker, title, sub, body){
   ].concat(body || []));
 }
 
+/*
+  نموذجا مادة — يشرحان شكل البنك لا يعرضان مخزون جامعة.
+
+  مادتان من تخصصين متباعدين عمدًا: طالب الهندسة يرى مادة حاسب فيعرف أن
+  المنصة له، وطالب الطب يرى مادته. ولو عرضنا هنا مواد جامعة حقيقية لعاد
+  العطل الذي أزلناه: زائر من القاهرة يظنّ المنصة لجامعة واحدة.
+
+  ولا أرقام أسئلة في البطاقتين — لأنها ستُقرأ كمخزون حقيقي وهي ليست كذلك.
+  المحاور تكفي لتوضيح ما يجده الطالب داخل المادة.
+*/
+const LP_SAMPLES = [
+  {
+    icon: '🫀', tag: 'طب', color: 'var(--subject-1)',
+    name: 'فسيولوجيا القلب والدورة الدموية',
+    descr: 'أسئلة الدكتور كما وردت — إنجليزية أو عربية — ومعها شرح عربي لكل خيار: لماذا هذا صحيح، ولماذا ذاك مشتِّت مصمَّم ليخدعك.',
+    topics: ['الدورة القلبية', 'الناتج القلبي', 'تنظيم ضغط الدم', 'تخطيط القلب']
+  },
+  {
+    icon: '⌨', tag: 'حاسب', color: 'var(--subject-6)',
+    name: 'هياكل البيانات والخوارزميات',
+    descr: 'الرموز والمعادلات تبقى كما كتبها دكتورك حرفًا بحرف، وبطاقة الحفظ تربط الكلمة الدالة في السؤال بمفتاح الإجابة.',
+    topics: ['التعقيد الزمني', 'الأشجار', 'الفرز والبحث', 'جداول التوزيع']
+  }
+];
+
+function lpSampleCard(s){
+  return el('article', { class:'lp-card lp-card--sample' }, [
+    el('span', { class:'lp-card__top', style:'background:' + s.color, 'aria-hidden':'true' }),
+    el('div', { class:'lp-card__row' }, [
+      el('span', { class:'lp-card__ico', 'aria-hidden':'true', text: s.icon }),
+      el('span', { class:'badge lp-card__stamp', text:'نموذج' })
+    ]),
+    el('h3', { class:'lp-card__title', text: s.name }),
+    el('span', { class:'lp-card__tag', text: s.tag }),
+    el('p', { class:'lp-card__text', text: s.descr }),
+    el('div', { class:'lp-topics', role:'list', 'aria-label':'محاور المادة' },
+      s.topics.map(t => el('span', { class:'lp-topic', role:'listitem', text: t })))
+  ]);
+}
+
 /* بطاقة ميزة */
 function lpFeature(ico, title, text){
   return el('article', { class:'lp-card' }, [
@@ -4098,17 +4167,29 @@ function landingView(){
     ])
   ]));
 
-  /* ٣ · جرّب سؤالًا الآن — الشرح بالتجربة لا بالكلام */
+  /* ٣ · ماذا ستراجع — نموذجان يوضّحان شكل المادة */
+  root.appendChild(lpSection('المواد', 'ماذا ستراجع؟',
+    'كل مادة بنك أسئلة كامل: نص السؤال كما ورد من الدكتور، وشرح يوضّح لماذا الإجابة صحيحة ولماذا غيرها خاطئ.', [
+    el('div', { class:'lp-grid' }, LP_SAMPLES.map(lpSampleCard)),
+    // ★ السطر الذي يمنع قراءة النموذجين كقائمة مواد المنصة
+    el('p', { class:'lp-note' }, [
+      'هذان نموذجان توضيحيان لا مادّتان معروضتان. المواد الحقيقية يرفعها الطلاب وتختلف بين الجامعات — ',
+      el('a', { href:'#/explore', text:'ابحث عن جامعتك في «استكشف»' }),
+      '.'
+    ])
+  ]));
+
+  /* ٤ · جرّب سؤالًا الآن — الشرح بالتجربة لا بالكلام */
   root.appendChild(lpSection('جرّبها الآن', 'أجب عن سؤال واحد',
     'هكذا يبدو كل سؤال في «مراجعة»: النص كما ورد، وشرح يوضّح لماذا الإجابة صحيحة ولماذا غيرها خاطئ.',
     [QBANK.views.lpParts.lpTryQuestion(demo)]));
 
-  /* ٤ · بطاقة حفظ حيّة */
+  /* ٥ · بطاقة حفظ حيّة */
   root.appendChild(lpSection('طريقة الحفظ', 'بطاقة لكل سؤال',
     'الكلمة الدالة في السؤال ← الكلمة المفتاحية في الإجابة، ورابط ذهني يثبّتها. اقلب البطاقة لترى.',
     [QBANK.views.lpParts.lpMemoCard(demo)]));
 
-  /* ٥ · المزايا */
+  /* ٦ · المزايا */
   root.appendChild(lpSection('لماذا مراجعة؟', 'أدوات مراجعة لا مجرد ملفات',
     'كل ميزة هنا وُلدت من حاجة حقيقية في ليالي الامتحانات.', [
     el('div', { class:'lp-grid lp-grid--3' }, [
@@ -4127,7 +4208,7 @@ function landingView(){
     ])
   ]));
 
-  /* ٦ · مواد الطلاب — الميزة التي تجعل المنصة تنمو بلا مشرف */
+  /* ٧ · مواد الطلاب — الميزة التي تجعل المنصة تنمو بلا مشرف */
   root.appendChild(lpSection('لطلاب المواد الناقصة', 'مادتك ليست هنا؟ ارفعها أنت',
     'لا تنتظر أحدًا. حوّل ملف أسئلة دكتورك إلى بنك كامل بالشرح وبطاقات الحفظ في دقائق، وجرّبه مجانًا قبل أي التزام.', [
     el('div', { class:'lp-steps' }, [
@@ -4141,7 +4222,7 @@ function landingView(){
     ])
   ]));
 
-  /* ٧ · نصائح مراجعة — قيمة يأخذها الزائر حتى لو لم يسجّل */
+  /* ٨ · نصائح مراجعة — قيمة يأخذها الزائر حتى لو لم يسجّل */
   root.appendChild(lpSection('كيف تذاكر بذكاء', 'أربع قواعد تختصر عليك ساعات',
     'مبنية على ما تقوله أبحاث التعلّم عن الاسترجاع النشط والمراجعة الموزّعة.', [
     el('div', { class:'lp-grid' }, QBANK.views.lpParts.LP_TIPS.map(t =>
@@ -4155,7 +4236,7 @@ function landingView(){
     ))
   ]));
 
-  /* ٨ · الأسعار — نموذج الفصل لا اشتراك شهري */
+  /* ٩ · الأسعار — نموذج الفصل لا اشتراك شهري */
   root.appendChild(lpSection('الاشتراك', 'ادفع لفصلك، لا لشهر لن تذاكر فيه',
     'الطلب موسمي حول الامتحانات، فالاشتراك موسمي مثله.', [
     el('div', { class:'lp-grid lp-grid--3' }, [
@@ -4192,7 +4273,7 @@ function landingView(){
     ])
   ]));
 
-  /* ٩ · الأسئلة الشائعة — تُزيل التردد قبل التسجيل */
+  /* ١٠ · الأسئلة الشائعة — تُزيل التردد قبل التسجيل */
   root.appendChild(lpSection('أسئلة شائعة', 'ما يسأل عنه الطلاب عادة', null, [
     el('div', { class:'lp-faq' }, QBANK.views.lpParts.LP_FAQ.map(f =>
       el('details', {}, [
@@ -4202,7 +4283,7 @@ function landingView(){
     ))
   ]));
 
-  /* ١٠ · الدعوة الأخيرة */
+  /* ١١ · الدعوة الأخيرة */
   root.appendChild(el('section', { class:'lp-final' }, [
     el('h2', { text:'امتحانك القادم أقرب مما تظن' }),
     el('p', { text:'ابحث عن جامعتك، أو ارفع مادتك الأولى اليوم.' }),
