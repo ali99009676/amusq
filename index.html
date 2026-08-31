@@ -663,6 +663,35 @@ img,svg{ max-width:100%; height:auto; }
   margin:0; border-width:1px; border-radius:var(--r1);
 }
 
+/* ═══════════ الدفع ═══════════
+   بطاقة الباقة: الرقم أولًا وأكبر — الطالب يقارن الكوينز لا الأسعار،
+   لأن السعر بلا معرفة ما يشتريه رقمٌ بلا معنى. */
+.pack{
+  display:flex; flex-direction:column; align-items:center; gap:var(--s1);
+  padding:var(--s6) var(--s4); text-align:center; position:relative;
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r3);
+  box-shadow:var(--sh1);
+}
+.pack--best{ border-color:var(--brand); box-shadow:var(--sh2); }
+.pack__tag{
+  position:absolute; top:calc(var(--s3) * -1); inset-inline-start:50%;
+  transform:translateX(50%); background:var(--brand); color:var(--on-brand);
+  font-size:.72rem; font-weight:800; padding:2px var(--s4); border-radius:var(--r-pill);
+}
+.pack__n{ font-family:var(--font-num); font-size:2.1rem; font-weight:800; color:var(--brand); line-height:1.1; }
+.pack__u{ font-size:.8rem; color:var(--text-3); font-weight:700; }
+/* ★ «≈ ٣٠٠ سؤالًا» هو ما يفهمه الطالب — الكوين وحدة داخلية لا قيمة */
+.pack__q{ font-size:.82rem; color:var(--text-2); margin:var(--s2) 0; }
+.pack__p{ font-family:var(--font-num); font-weight:700; margin-bottom:var(--s3); }
+
+.payrow{
+  display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap;
+  padding:var(--s3) var(--s4); background:var(--surface-2);
+  border:1px solid var(--line-soft); border-radius:var(--r1);
+}
+.payrow__t{ font-weight:700; flex:1; min-width:0; }
+.payrow__d{ font-size:.78rem; color:var(--text-3); }
+
 
 /* ===== 50-landing.css ===== */
 /*
@@ -1262,6 +1291,48 @@ img,svg{ max-width:100%; height:auto; }
 }
 .ad-warn:hover{ filter:brightness(.97); }
 .ad-warn__go{ font-weight:800; }
+
+/* ═══════════ لوحة الإشراف الكاملة ═══════════ */
+/* القمع: الشريط يُري الحجم، والنسبة تُري التسرّب — والاثنان معًا لا أحدهما */
+.fun{ display:flex; flex-direction:column; gap:var(--s2); }
+.fun__row{ display:flex; align-items:center; gap:var(--s3); }
+.fun__l{ min-width:7.5em; font-size:.88rem; color:var(--text-2); }
+.fun__bar{ flex:1; height:20px; background:var(--surface-2); border-radius:var(--r1); overflow:hidden; }
+.fun__fill{
+  display:block; height:100%; border-radius:var(--r1);
+  background:linear-gradient(90deg, var(--brand), var(--brand-2));
+}
+.fun__n{ min-width:3.5em; text-align:end; font-weight:700; }
+.fun__p{ min-width:3.5em; text-align:end; font-size:.8rem; color:var(--text-3); }
+/* ★ تحويلٌ دون الربع يُلوَّن: هو موضع التسرّب الذي يستحق عمل الغد */
+.fun__p.is-low{ color:var(--bad); font-weight:800; }
+
+.ad-grid2{ display:grid; gap:var(--s2); grid-template-columns:1fr; }
+@media (min-width:640px){ .ad-grid2{ grid-template-columns:repeat(2,1fr); } }
+.ad-fact{
+  display:flex; align-items:center; justify-content:space-between; gap:var(--s3);
+  padding:var(--s3) var(--s4); background:var(--surface-2);
+  border:1px solid var(--line-soft); border-radius:var(--r1);
+}
+.ad-fact__l{ color:var(--text-2); font-size:.88rem; }
+.ad-fact__v{ font-weight:700; }
+.ad-fact__v.is-out{ color:var(--bad); }
+.ad-panel--warn{ border-color:var(--warn); }
+
+/* بطاقة الطالب: العرض والتحكم في مكان واحد — لا شاشة ثانية لكل فعل */
+.stu{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r2);
+  padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3);
+}
+.stu__h{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
+.stu__av{ font-size:1.3rem; }
+.stu__x{ display:flex; flex-direction:column; flex:1; min-width:0; }
+.stu__n{ font-weight:800; }
+.stu__s{ font-size:.82rem; color:var(--text-3); }
+.stu__act{
+  display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap;
+  padding-top:var(--s3); border-top:1px solid var(--line-soft);
+}
 
 
 /* ===== 90-print.css ===== */
@@ -1973,9 +2044,18 @@ const Gate = {
     return isApp
       ? el('button', { class:'btn btn--block', type:'button', 'data-buy': sub.id,
           'data-ref': Gate.ref() || null, text:'اشترِ من داخل التطبيق' + price })
-      : el('a', { class:'btn btn--block', href:'https://www.alsoqoor.com', target:'_blank',
-          rel:'noopener noreferrer', 'data-ref': Gate.ref() || null,
-          text:'اشترِ من الموقع (مدى / Apple Pay)' + price });
+      /* ★ صار دفعًا حقيقيًا لا رابطًا خارجيًا.
+         كان يفتح alsoqoor.com — أي أن الطالب يغادر المنصة عند أهم لحظة
+         فيها، وهي اللحظة التي يقرّر فيها أن يدفع. والآن يشتري في مكانه. */
+      /*
+        ★ مادة مقفلة بلا سعر حالةٌ حقيقية — لا حالة فحص.
+        كان الرابط الخارجي يخفيها: يظهر زر شراء لمادة لا ثمن لها، فيضغطه
+        الطالب فلا يجد شيئًا يشتريه. الآن تُقال بصراحة، لأنها خطأ محتوى
+        على المشرف إصلاحه لا لغزٌ على الطالب حلّه.
+      */
+      : (QBANK.pay && QBANK.pay.buySubjectButton(sub)) ||
+        el('p', { class:'field__hint', 'data-noprice':'1',
+          text:'لم يُحدَّد سعر هذه المادة بعد — تواصل مع مشرف المنصة.' });
   },
 
   // بطاقة الشراء — تحترم قاعدة المتاجر: داخل التطبيق لا إحالة للموقع
@@ -4869,6 +4949,7 @@ function registerRoutes(){
     .add('#/subject',      V.ViewSubject)
     .add('#/exam',         V.ViewExam)
     .add('#/challenge',    V.ViewChallenge)
+    .add('#/pay',          V.ViewPayReturn)   // عودة الطالب من البوابة: #/pay/<payment_id>
     .add('#/board',        V.ViewBoard);
   QBANK.router.notFound = V.ViewNotFound;
 }
@@ -5141,7 +5222,14 @@ function adminDashTab(box){
   load();
 }
 
+/*
+  نُصدّر أجزاء اللوحة القديمة لا الشاشة وحدها.
+  ★ اللوحة الجديدة تُضيف القمع والمال والتحذيرات، لكن «أداء المواد» و«آخر
+  النشاط» و«توزيع النتائج» نافعة كما هي — واستبدال شاشة بأخرى يُلقي عملًا
+  صحيحًا لا لعيب فيه بل لأنه قديم. فتُدمج بدل أن تُرمى.
+*/
 QBANK.admin.dashTab = adminDashTab;
+QBANK.admin.dashParts = { dashKpis, dashPanel, dashSubjects, dashRecent, dashSkeleton };
 QBANK.views.ADMIN_TABS.unshift({ id:'dash', label:'اللوحة', fill: adminDashTab });
 
 
@@ -5879,8 +5967,18 @@ QBANK.trial = Trial;
   وسعرها وزر الشراء، ولا يُحتسب له رصيد تجربة.
 */
 function shareUrl(slug, userId){
-  const base = (typeof location !== 'undefined' && location.protocol.indexOf('http') === 0)
-    ? location.origin + location.pathname : 'https://amsuq.alsoqoor.com/';
+  /*
+    ★ typeof location !== 'undefined' لا يكفي.
+    الوصف موجود دائمًا، والذي يفشل هو القراءة منه: بعد تفكيك المستند
+    (إغلاق تبويب، أو صفحة أُخليت وطلبٌ غير متزامن ما زال يعود) يرمي
+    الوصفُ استثناءً فينهار كل ما بُني في تلك اللحظة. try هو الحارس الوحيد
+    الذي يمسك هذا، وليس فحص الوجود.
+  */
+  let base = 'https://amsuq.alsoqoor.com/';
+  try {
+    if (typeof location !== 'undefined' && location.protocol.indexOf('http') === 0)
+      base = location.origin + location.pathname;
+  } catch(e){ /* مستند مفكَّك — نبقى على العنوان الثابت */ }
   return base + '#s/' + slug + (userId ? '?ref=' + userId : '');
 }
 
@@ -6028,7 +6126,16 @@ function walletLinks(){
   ]);
 }
 
-QBANK.wallet = { body: walletBody, subjectRow: walletSubjectRow, links: walletLinks };
+/* المتجر والسجل يُبنيان في 55-pay.js — نُلحقهما هنا كي تبقى المحفظة مكانًا واحدًا */
+function walletWithShop(){
+  return el('div', { class:'stack' }, [
+    walletBody(),
+    QBANK.pay ? QBANK.pay.coinShop() : null,
+    QBANK.pay ? QBANK.pay.historyCard() : null
+  ]);
+}
+
+QBANK.wallet = { body: walletWithShop, subjectRow: walletSubjectRow, links: walletLinks };
 
 
 /* ===== 48-admin-ugc.js ===== */
@@ -7347,6 +7454,823 @@ QBANK.community.boardRow = boardRow;
 QBANK.community.pulseBand = pulseBand;
 QBANK.community.challengeBox = challengeBox;
 QBANK.views.ViewChallenge = ViewChallenge;
+
+
+/* ===== 55-pay.js ===== */
+/*
+  الدفع — الطبقة التي تحوّل المنصة من مشروع إلى عمل.
+
+  ثلاثة مبادئ في هذا الملف:
+
+  ١ · لا يُرسل المتصفح مبلغًا قط. يقول «هذه الباقة» أو «هذه المادة»،
+      والقاعدة تحسب السعر وتُجمّده. مبلغٌ يأتي من المتصفح يعني مادة بريال.
+
+  ٢ · شاشة العودة تسأل الخادم لا نفسها. الطالب قد يعود بعنوان يقول
+      «نجح» وهو لم يدفع — والحقيقة عند البوابة وحدها.
+
+  ٣ · كل مبلغ يُعرض بالريال لا بالهللات. الهللة وحدة تخزين لا وحدة عرض.
+*/
+const Pay = {
+  /* الهللات وحدة تخزين — نخزّن بها كي لا نجمع كسورًا عشرية، ونعرض بالريال */
+  money(halalas, currency){
+    const v = (Number(halalas) || 0) / 100;
+    const s = QBANK.views.arNum(v % 1 === 0 ? String(v) : v.toFixed(2)).replace('.', '٫');
+    return s + ' ' + (currency === 'SAR' || !currency ? 'ريال' : currency);
+  },
+
+  options(){ return QBANK.api.rpc('pay_options'); },
+  history(){ return QBANK.api.rpc('my_payments', { p_limit: 20 }); },
+  status(id){ return QBANK.api.rpc('payment_status', { p_payment: id }); },
+
+  /* ★ مصدر واحد للإحالة: مخزن البوابة نفسه الذي يلتقطها من #s/slug?ref=…
+     مفتاحٌ ثانٍ يعني إحالة تُلتقط ولا تُقرأ، ومكافأةً لا تصل صاحبها. */
+  referrer(){ return (QBANK.gate && QBANK.gate.ref && QBANK.gate.ref()) || null; },
+
+  /* الأصل الذي تعود إليه البوابة — بنفس حارس shareUrl */
+  origin(){
+    try {
+      if (typeof location !== 'undefined' && location.protocol.indexOf('http') === 0)
+        return location.href.split('#')[0].replace(/\/$/, '');
+    } catch(e){}
+    return 'https://amsuq.alsoqoor.com';
+  },
+
+  /*
+    الانتقال إلى صفحة البوابة.
+    ★ يُنادى داخل .then بعد رحلة شبكة — وقد يكون المستند قد فُكِّك في
+    تلك الأثناء (أغلق الطالب التبويب، أو انتقل قبل أن يعود الردّ).
+    والكتابة على وصف مفكَّك ترمي استثناءً يُسقط كل ما يليه.
+  */
+  goTo(url){
+    try { location.href = url; return true; } catch(e){ return false; }
+  },
+
+  async start(payload){
+    return QBANK.admin.server('/api/pay',
+      Object.assign({ origin: Pay.origin(), ref: Pay.referrer() }, payload));
+  },
+
+  async confirm(chargeId){
+    return QBANK.admin.server('/api/pay', { action:'confirm', charge_id: chargeId });
+  },
+
+  /* قيمة الباقة: كم سؤالًا يُثري بها الطالب — الرقم الذي يفهمه فعلًا */
+  questionsFor(coins, costPerQ){
+    const c = Math.max(1, Number(costPerQ) || 1);
+    return Math.floor((Number(coins) || 0) / c);
+  }
+};
+
+/* ═══ متجر الكوينز ═══ */
+function coinShop(){
+  const box = el('div', { class:'card stack' });
+  const msg = el('p', { class:'field__hint', role:'status', style:'margin:0' });
+  const grid = el('div', { class:'lp-grid lp-grid--3' });
+
+  box.appendChild(el('h2', { style:'margin:0', text:'اشترِ رصيدًا' }));
+  box.appendChild(el('p', { class:'field__hint', style:'margin:0',
+    text:'الرصيد يُنفَق على إثراء موادك بالشرح وبطاقات الحفظ. والنشر بلا إثراء مجاني دائمًا.' }));
+  box.appendChild(grid);
+  box.appendChild(msg);
+
+  grid.appendChild(el('p', { class:'page__sub', text:'جارٍ التحميل…' }));
+  Pay.options().then(r => {
+    if (!grid.isConnected) return;
+    grid.innerHTML = '';
+    const d = (r.ok && r.data) ? r.data : null;
+    if (!d || !d.open){
+      // ★ نقول «موقوف» لا نُخفي الزر: الطالب الذي يبحث عن الشراء ولا يجده يظنّه عطلًا
+      grid.appendChild(QBANK.views.empty('◔', 'الشراء موقوف مؤقتًا',
+        'رصيدك الحالي يبقى كما هو، وما اشتريته سابقًا لا يتأثر.'));
+      return;
+    }
+    const packs = Array.isArray(d.packages) ? d.packages : [];
+    if (!packs.length){
+      grid.appendChild(QBANK.views.empty('◔', 'لا باقات معروضة', 'يضبطها المشرف من الإعدادات.'));
+      return;
+    }
+    // الأكبر «الأوفر»: نحسبها ولا نكتبها يدويًا كي لا تكذب حين تتغير الأسعار
+    const best = packs.reduce((a, b) =>
+      (b.halalas / b.coins) < (a.halalas / a.coins) ? b : a, packs[0]);
+
+    packs.forEach(p => {
+      const isBest = p.coins === best.coins && packs.length > 1;
+      const card = el('div', { class:'pack' + (isBest ? ' pack--best' : '') }, [
+        isBest ? el('span', { class:'pack__tag', text:'الأوفر' }) : null,
+        el('span', { class:'pack__n num', text: QBANK.views.arNum(p.coins) }),
+        el('span', { class:'pack__u', text:'كوين' }),
+        el('span', { class:'pack__q', text:'≈ ' + QBANK.views.arNum(Pay.questionsFor(p.coins, d.cost_per_q)) + ' سؤالًا مُثرى' }),
+        el('span', { class:'pack__p', text: Pay.money(p.halalas, d.currency) })
+      ]);
+      const buy = el('button', { class:'btn btn--sm btn--block', type:'button', text:'اشترِ' });
+      buy.addEventListener('click', () => {
+        buy.disabled = true; msg.className = 'field__hint'; msg.textContent = 'جارٍ فتح صفحة الدفع…';
+        Pay.start({ kind:'coins', coins: p.coins }).then(r => {
+          buy.disabled = false;
+          if (r.ok && r.data && r.data.url){ Pay.goTo(r.data.url); return; }
+          msg.className = 'field__hint is-bad';
+          msg.textContent = (r.data && r.data.error) || 'تعذّر فتح صفحة الدفع.';
+        });
+      });
+      card.appendChild(buy);
+      grid.appendChild(card);
+    });
+  });
+  return box;
+}
+
+/* ═══ زرّ شراء مادة ═══ */
+function buySubjectButton(sub){
+  if (!sub || sub.free || !sub.price) return null;
+  /*
+    ★ المُحيل سمةٌ على الزر لا في جسم الطلب وحده.
+    الطلب يحمله فعلًا، لكن السمة تجعل الإحالة مرئية في الصفحة: تُفحَص
+    آليًا، ويُشخَّص «لماذا لم تصل كوينز فلان؟» بالنظر لا بالتخمين.
+  */
+  const b = el('button', { class:'btn btn--block', type:'button',
+    'data-buy': sub.id, 'data-ref': Pay.referrer() || null,
+    text:'اشترِ المادة — ' + Pay.money(Number(sub.price) * 100, 'SAR') });
+  const msg = el('p', { class:'field__hint', role:'status', style:'margin:8px 0 0' });
+  b.addEventListener('click', () => {
+    b.disabled = true; msg.className = 'field__hint'; msg.textContent = 'جارٍ فتح صفحة الدفع…';
+    Pay.start({ kind:'subject', subject_id: sub.id }).then(r => {
+      b.disabled = false;
+      if (r.ok && r.data && r.data.url){ Pay.goTo(r.data.url); return; }
+      msg.className = 'field__hint is-bad';
+      msg.textContent = (r.data && r.data.error) || 'تعذّر فتح صفحة الدفع.';
+    });
+  });
+  return el('div', {}, [b, msg]);
+}
+
+/* ═══ سجل الدفعات ═══ */
+function payHistory(){
+  const box = el('div', { class:'card stack' });
+  box.appendChild(el('h2', { style:'margin:0', text:'مشترياتي' }));
+  const list = el('div', { class:'stack' });
+  box.appendChild(list);
+
+  Pay.history().then(r => {
+    if (!list.isConnected) return;
+    const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+    if (!rows.length){
+      list.appendChild(el('p', { class:'field__hint', style:'margin:0', text:'لا مشتريات بعد.' }));
+      return;
+    }
+    const label = { paid:['badge--ok','مدفوعة'], pending:['badge--warn','معلّقة'], failed:['badge--bad','فاشلة'] };
+    rows.forEach(p => {
+      const st = label[p.status] || ['', p.status];
+      list.appendChild(el('div', { class:'payrow' }, [
+        el('span', { class:'payrow__t', text: p.kind === 'coins'
+          ? QBANK.views.arNum(p.coins) + ' كوين' : (p.subject || 'مادة') }),
+        el('span', { class:'badge num', text: Pay.money(p.amount_halalas, p.currency) }),
+        el('span', { class:'badge ' + st[0], text: st[1] }),
+        el('span', { class:'payrow__d num', text: new Date(p.created_at).toLocaleDateString('ar') })
+      ]));
+    });
+  });
+  return box;
+}
+
+/* ═══ شاشة العودة من البوابة ═══ */
+function ViewPayReturn(route){
+  const id = (route.rest && route.rest[0]) || '';
+  const box = el('div', { class:'card stack', style:'text-align:center' });
+  box.appendChild(el('p', { class:'page__sub', text:'نتحقق من دفعتك…' }));
+
+  /*
+    ★ لا نصدّق العنوان.
+    Tap تُعيد الطالب بمعامل tap_id، وقد يكتب أي أحد عنوانًا يقول «نجح».
+    فنُرسل المعرّف إلى خادمنا، وهو يسأل Tap مباشرة ثم يُسوّي. ثم نسأل
+    القاعدة عن حالة الصفّ — والقاعدة لا تُغيّرها إلا التسوية المؤكدة.
+  */
+  const tapId = route.query && (route.query.tap_id || route.query.charge_id);
+
+  const paint = d => {
+    box.innerHTML = '';
+    if (d && d.status === 'paid'){
+      box.appendChild(el('p', { style:'font-size:2.4rem;margin:0', text:'✓' }));
+      box.appendChild(el('h2', { style:'margin:0', text:'تمّت العملية' }));
+      box.appendChild(el('p', { class:'field__hint', style:'margin:0', text: d.kind === 'coins'
+        ? 'أُضيف ' + QBANK.views.arNum(d.coins) + ' كوين إلى رصيدك.'
+        : 'صارت المادة متاحة لك.' }));
+      box.appendChild(el('a', { class:'btn', href: d.kind === 'coins' ? '#/account' : ('#/subject/' + d.subject_id),
+        text: d.kind === 'coins' ? 'إلى محفظتي' : 'افتح المادة' }));
+      QBANK.data.sync && QBANK.data.sync();
+      return;
+    }
+    if (d && d.status === 'failed'){
+      box.appendChild(el('p', { style:'font-size:2.4rem;margin:0', text:'✕' }));
+      box.appendChild(el('h2', { style:'margin:0', text:'لم تكتمل العملية' }));
+      box.appendChild(el('p', { class:'field__hint', style:'margin:0',
+        text: d.reason || 'لم يُخصم منك شيء. جرّب مرة أخرى.' }));
+      box.appendChild(el('a', { class:'btn btn--ghost', href:'#/account', text:'إلى محفظتي' }));
+      return;
+    }
+    // معلّقة: البوابة قد تتأخر ثوانيَ — نقول ذلك ولا ندّعي فشلًا
+    box.appendChild(el('p', { style:'font-size:2.4rem;margin:0', text:'◔' }));
+    box.appendChild(el('h2', { style:'margin:0', text:'دفعتك قيد التأكيد' }));
+    box.appendChild(el('p', { class:'field__hint', style:'margin:0',
+      text:'قد تستغرق البوابة لحظات. سيصلك ما اشتريته تلقائيًا فور تأكيدها — لا تدفع مرة أخرى.' }));
+    const again = el('button', { class:'btn btn--ghost btn--sm', type:'button', text:'تحقّق الآن' });
+    again.addEventListener('click', () => run());
+    box.appendChild(again);
+  };
+
+  function run(){
+    const after = () => Pay.status(id).then(s => {
+      if (!box.isConnected) return;
+      paint(s.ok && s.data && s.data.ok ? s.data : null);
+    });
+    if (tapId) Pay.confirm(tapId).then(after, after);
+    else after();
+  }
+  if (id) run(); else paint(null);
+
+  return QBANK.views.page('الدفع', null, [box]);
+}
+
+/*
+  ★ أسماء التصدير لا تدهس أسماء الجلب.
+  كان هنا QBANK.pay.history = payHistory فدهس Pay.history — دالة جلب
+  السجل من القاعدة — فصارت payHistory تنادي نفسها بلا نهاية وتنهار
+  الصفحة كاملة. الفرق حرفٌ في اسم، والأثر شاشة بيضاء.
+*/
+QBANK.pay = Pay;
+QBANK.pay.coinShop = coinShop;
+QBANK.pay.buySubjectButton = buySubjectButton;
+QBANK.pay.historyCard = payHistory;
+QBANK.views.ViewPayReturn = { title:'الدفع', view: ViewPayReturn };
+
+
+/* ===== 56-admin-pro.js ===== */
+/*
+  لوحة الإشراف الكاملة — إحصاء دقيق وتحكم كامل.
+
+  مبدأ الشاشة: كل رقم هنا يجب أن يُغيّر قرارًا.
+  رقمٌ لا يُغيّر ما تفعله غدًا زينةٌ تُزاحم ما يُغيّره. لهذا لا «إجمالي
+  الزيارات» ولا «متوسط زمن الجلسة»: أرقام تُطمئن ولا تُوجّه.
+*/
+const Pro = {
+  overview(days){ return QBANK.api.rpc('admin_overview', { p_days: days || 30 }); },
+  coins(days){ return QBANK.api.rpc('admin_coins', { p_days: days || 30 }); },
+  hard(){ return QBANK.api.rpc('admin_hard_questions', { p_limit: 30 }); },
+  campus(){ return QBANK.api.rpc('admin_campus'); },
+  payments(status){ return QBANK.api.rpc('admin_payments', { p_status: status || '', p_limit: 50 }); },
+  audit(){ return QBANK.api.rpc('admin_audit', { p_limit: 60 }); },
+
+  grantCoins(user, amount, note){
+    return QBANK.api.rpc('admin_grant_coins', { p_user:user, p_amount:amount, p_note:note || '' }); },
+  setRole(user, isAdmin){
+    return QBANK.api.rpc('admin_set_role', { p_user:user, p_admin:isAdmin }); },
+  grantEntitlement(user, subject, days){
+    return QBANK.api.rpc('admin_grant_entitlement', { p_user:user, p_subject:subject, p_days:days || 180 }); },
+  setSubject(id, patch){
+    return QBANK.api.rpc('admin_set_subject', { p_subject:id, p_patch:patch }); },
+  mergeUniversity(from, into){
+    return QBANK.api.rpc('admin_merge_university', { p_from:from, p_into:into }); },
+  verifyUniversity(id, on){
+    return QBANK.api.rpc('admin_verify_university', { p_uni:id, p_on:on }); },
+  refund(payment, note){
+    return QBANK.api.rpc('admin_refund', { p_payment:payment, p_note:note || '' }); },
+
+  money(h){ return QBANK.pay ? QBANK.pay.money(h, 'SAR') : String(h); },
+  n(v){ return QBANK.views.arNum(Number(v) || 0); },
+
+  /* النسبة من الخطوة السابقة لا من القمة: «٤٠٪ من المسجّلين اشتركوا»
+     مفيدة، و«٤٪ من المسجّلين دفعوا» تُخفي أين وقع التسرّب فعلًا. */
+  step(n, prev){
+    if (!prev) return null;
+    return Math.round((Number(n) || 0) * 100 / prev);
+  }
+};
+
+/* ═══ القمع ═══ */
+function funnelPanel(f){
+  const steps = [
+    ['سجّل',        f.signed_up],
+    ['حدّد جامعته', f.has_campus],
+    ['فتح مادة',    f.enrolled],
+    ['اختبر نفسه',  f.examined],
+    ['رفع مادة',    f.uploaded],
+    ['دفع',         f.paid]
+  ];
+  const top = Math.max(1, Number(f.signed_up) || 1);
+  return el('div', { class:'fun' }, steps.map((s, i) => {
+    const v = Number(s[1]) || 0;
+    const pct = Math.round(v * 100 / top);
+    const drop = i > 0 ? Pro.step(v, Number(steps[i-1][1]) || 0) : null;
+    return el('div', { class:'fun__row' }, [
+      el('span', { class:'fun__l', text: s[0] }),
+      el('span', { class:'fun__bar' }, [
+        el('span', { class:'fun__fill', style:'width:' + Math.max(pct, 2) + '%' })
+      ]),
+      el('span', { class:'fun__n num', text: Pro.n(v) }),
+      // ★ نسبة التحويل من الخطوة السابقة — هي التي تكشف موضع التسرّب
+      /* ★ دون الثلث يُلوَّن: خطوةٌ يسقط فيها ثلثا الطلاب هي عمل الغد.
+         والحدّ مكتوب هنا مرة واحدة كي لا يتفرّق تقديره على الشاشات. */
+      drop !== null ? el('span', { class:'fun__p num' + (drop < 30 ? ' is-low' : ''),
+        title:'من الخطوة السابقة', text: Pro.n(drop) + '٪' }) : el('span', { class:'fun__p' })
+    ]);
+  }));
+}
+
+/* ═══ الشاشة الأولى ═══ */
+function proDashTab(box){
+  let days = 30;
+  const head = el('div', { class:'ad-bar' });
+  const body = el('div', { class:'stack' });
+  box.appendChild(head); box.appendChild(body);
+
+  [7, 30, 90].forEach(d => {
+    const b = el('button', { class:'chip' + (d === days ? ' is-on' : ''), type:'button',
+      'data-d': String(d), text: Pro.n(d) + ' يومًا' });
+    b.addEventListener('click', () => {
+      days = d;
+      head.querySelectorAll('.chip').forEach(x =>
+        x.classList.toggle('is-on', x.getAttribute('data-d') === String(d)));
+      load();
+    });
+    head.appendChild(b);
+  });
+
+  const legacy = el('div', { class:'ad-legacy' });
+
+  function load(){
+    body.innerHTML = '';
+    body.appendChild(el('p', { class:'page__sub', text:'جارٍ الحساب…' }));
+    Pro.overview(days).then(r => {
+      if (!body.isConnected) return;
+      body.innerHTML = '';
+      const d = (r.ok && r.data && r.data.ok) ? r.data : null;
+      if (!d){
+        body.appendChild(QBANK.views.empty('⚠', 'تعذّر الجلب',
+          'تأكد من تشغيل ADMIN-PRO.sql على القاعدة، ومن أن حسابك مشرف.'));
+        return;
+      }
+      const C = QBANK.admin.charts;
+      const m = d.money, a = d.activity, c = d.content, q = d.quality;
+
+      body.appendChild(el('div', { class:'ad-kpis' }, [
+        C.kpi(Pro.money(m.revenue), 'دخل المدة', Pro.n(m.paid_n) + ' عملية', m.revenue > 0 ? 'live' : null),
+        C.kpi(Pro.n(a.active), 'طالبًا نشطًا', Pro.n(a.new_users) + ' جديد'),
+        C.kpi(Pro.n(a.attempts), 'اختبارًا', 'متوسط ' + Pro.n(a.avg_pct) + '٪'),
+        C.kpi(Pro.n(c.published), 'مادة منشورة', Pro.n(c.verified) + ' موثّقة'),
+        C.kpi(Pro.n(q.reports_open), 'بلاغًا مفتوحًا',
+          q.reports_open ? 'تحتاج بتًّا' : 'الطابور نظيف', q.reports_open ? 'warn' : 'live'),
+        /* ★ الالتزام القادم: كوينز في الجيوب لم تُنفق — كلٌّ منها تكلفة ذكاء قادمة */
+        C.kpi(Pro.n(m.coins_outstanding), 'كوين لم يُنفَق', 'التزامك القادم',
+          m.coins_outstanding > 5000 ? 'warn' : null)
+      ]));
+
+      body.appendChild(el('section', { class:'ad-panel' }, [
+        el('div', { class:'ad-panel__h' }, [
+          el('h2', { class:'ad-panel__t', text:'قمع الطلاب' }),
+          el('span', { class:'ad-panel__s', text:'النسبة من الخطوة التي قبلها' })
+        ]),
+        funnelPanel(d.funnel)
+      ]));
+
+      /* الرسم اليومي — نُعيد استعمال chartActivity بدل رسم ثانٍ.
+         مكوّن رسم واحد في المنصة يعني مقياسًا واحدًا وعينًا متعوّدة عليه. */
+      const S = Array.isArray(d.series) ? d.series : [];
+      if (S.length > 1 && C.chartActivity){
+        const mk = (key, title) => el('section', { class:'ad-panel' }, [
+          el('div', { class:'ad-panel__h' }, [
+            el('h2', { class:'ad-panel__t', text: title }),
+            el('span', { class:'ad-panel__s', text: Pro.n(S.reduce((t,x) => t + Number(x[key]||0), 0)) + ' في المدة' })
+          ]),
+          C.chartActivity(S.map(x => ({ d: x.d, n: Number(x[key]) || 0 })))
+        ]);
+        body.appendChild(mk('attempts', 'الاختبارات يوميًا'));
+        body.appendChild(mk('users', 'التسجيلات يوميًا'));
+        if (S.some(x => Number(x.revenue) > 0))
+          body.appendChild(el('section', { class:'ad-panel' }, [
+            el('div', { class:'ad-panel__h' }, [
+              el('h2', { class:'ad-panel__t', text:'الدخل يوميًا' }),
+              el('span', { class:'ad-panel__s', text: Pro.money(S.reduce((t,x) => t + Number(x.revenue||0), 0)) })
+            ]),
+            // بالريال لا بالهللات: مقياسٌ بالهللات يجعل كل عمود جبلًا
+            C.chartActivity(S.map(x => ({ d: x.d, n: Math.round(Number(x.revenue||0) / 100) })))
+          ]));
+      }
+
+      const warn = [];
+      if (c.drafts)  warn.push(['▤', Pro.n(c.drafts) + ' مسوّدة تنتظر اعتمادك', '#/admin/ugc']);
+      if (c.orphan)  warn.push(['⌂', Pro.n(c.orphan) + ' مادة بلا جامعة — لا يجدها أحد في «استكشف»', '#/admin/content']);
+      if (q.low_rated) warn.push(['★', Pro.n(q.low_rated) + ' مادة تقييمها دون ٣ من ٥', '#/admin/content']);
+      if (m.pending_n) warn.push(['◔', Pro.n(m.pending_n) + ' دفعة معلّقة لم تُسوَّ', '#/admin/money']);
+      if (warn.length)
+        body.appendChild(el('section', { class:'ad-panel ad-panel--warn' }, [
+          el('div', { class:'ad-panel__h' }, [ el('h2', { class:'ad-panel__t', text:'يحتاج انتباهك' }) ]),
+          el('div', { class:'stack' }, warn.map(w =>
+            el('a', { class:'ad-warn', href: w[2] }, [
+              el('span', { text: w[0] + ' ' + w[1] }),
+              el('span', { class:'ad-warn__go', text:'←' })
+            ])))
+        ]));
+
+      /*
+        لوحات النسخة السابقة: توزيع النتائج وأداء المواد وآخر النشاط.
+        تُجلب بنداء ثانٍ لأنها من مصدر آخر (admin_dashboard)، وتُلحق كما هي —
+        فما بُني صحيحًا لا يُلقى لأن شيئًا جديدًا وُضع فوقه.
+      */
+      const P = QBANK.admin.dashParts;
+      if (P) QBANK.api.rpc('admin_dashboard', { days }).then(rr => {
+        if (!body.isConnected || !rr.ok || !rr.data || rr.data.error) return;
+        const dd = rr.data;
+        const total = (dd.series || []).reduce((n, x) => n + Number(x.n), 0);
+        legacy.innerHTML = '';
+        legacy.appendChild(el('div', { class:'ad-panels ad-panels--2' }, [
+          P.dashPanel('النشاط اليومي', total + ' اختبارًا خلال ' + days + ' يومًا',
+            C.chartActivity(dd.series || [])),
+          P.dashPanel('توزيع النتائج', 'الخط البرتقالي = متوسط النتيجة',
+            C.chartBuckets(dd.buckets || []))
+        ]));
+        legacy.appendChild(el('div', { class:'ad-panels' }, [
+          P.dashPanel('أداء المواد', 'اضغط مادة لفتح محررها', P.dashSubjects(dd.subjects || [])),
+          P.dashPanel('آخر النشاط', null, P.dashRecent(dd.recent || []))
+        ]));
+      });
+
+      body.appendChild(el('section', { class:'ad-panel' }, [
+        el('div', { class:'ad-panel__h' }, [ el('h2', { class:'ad-panel__t', text:'أرقام المنصة' }) ]),
+        el('div', { class:'ad-grid2' }, [
+          ['أسئلة', Pro.n(c.questions) + ' منها ' + Pro.n(c.derived) + ' مستنتجة'],
+          ['جامعات فيها محتوى', Pro.n(d.community.universities)],
+          ['كليات', Pro.n(d.community.colleges)],
+          ['تحديات جارية', Pro.n(d.community.challenges)],
+          ['تقييمات', Pro.n(q.ratings) + ' بمتوسط ' + q.avg_rating],
+          ['دخل منذ الإطلاق', Pro.money(m.revenue_all)],
+          ['دفعات فاشلة', Pro.n(m.failed_n)],
+          ['متصل الآن', Pro.n(a.online)]
+        ].map(x => el('div', { class:'ad-fact' }, [
+          el('span', { class:'ad-fact__l', text: x[0] }),
+          el('span', { class:'ad-fact__v num', text: x[1] })
+        ])))
+      ]));
+
+      body.appendChild(legacy);
+    });
+  }
+  load();
+}
+
+/* ═══ تبويب المال ═══ */
+function proMoneyTab(box){
+  const body = el('div', { class:'stack' });
+  box.appendChild(body);
+  let status = '';
+
+  const chips = el('div', { class:'ex-chips', role:'group', 'aria-label':'تصفية الدفعات' });
+  [['','الكل'],['paid','مدفوعة'],['pending','معلّقة'],['failed','فاشلة']].forEach(t => {
+    const b = el('button', { class:'chip' + (t[0] === status ? ' is-on' : ''), type:'button',
+      'data-s': t[0], text: t[1] });
+    b.addEventListener('click', () => {
+      status = t[0];
+      chips.querySelectorAll('.chip').forEach(x => x.classList.toggle('is-on', x.getAttribute('data-s') === status));
+      draw();
+    });
+    chips.appendChild(b);
+  });
+  box.insertBefore(chips, body);
+
+  function draw(){
+    body.innerHTML = '';
+    body.appendChild(el('p', { class:'page__sub', text:'جارٍ التحميل…' }));
+    Promise.all([Pro.payments(status), Pro.coins(30)]).then(([p, c]) => {
+      if (!body.isConnected) return;
+      body.innerHTML = '';
+
+      const coins = (c.ok && c.data && c.data.ok) ? c.data : null;
+      if (coins){
+        /* ★ الكوين يدخل من أبواب مختلفة: منحة (تكلفة تسويق)، شراء (إيراد)،
+           إحالة (تكلفة اكتساب). جمعها في رقم واحد يجعل كل تحليل ربحية كاذبًا. */
+        const KIND = { signup:'منحة تسجيل', purchase:'شراء', referral:'مكافأة إحالة',
+                       spend:'إنفاق على الإثراء', refund:'ردّ', admin:'تعديل مشرف' };
+        body.appendChild(el('section', { class:'ad-panel' }, [
+          el('div', { class:'ad-panel__h' }, [
+            el('h2', { class:'ad-panel__t', text:'دفتر الكوينز' }),
+            el('span', { class:'ad-panel__s', text:'آخر ٣٠ يومًا' })
+          ]),
+          el('div', { class:'ad-grid2' }, (coins.by_kind || []).map(k =>
+            el('div', { class:'ad-fact' }, [
+              el('span', { class:'ad-fact__l', text: KIND[k.kind] || k.kind }),
+              el('span', { class:'ad-fact__v num' + (Number(k.coins) < 0 ? ' is-out' : ''),
+                text: Pro.n(k.coins) + ' كوين · ' + Pro.n(k.n) + ' حركة' })
+            ])))
+        ]));
+      }
+
+      const rows = (p.ok && Array.isArray(p.data)) ? p.data : [];
+      if (!rows.length){
+        body.appendChild(QBANK.views.empty('◇', 'لا دفعات', 'ستظهر هنا فور أول عملية.'));
+        return;
+      }
+      const lbl = { paid:['badge--ok','مدفوعة'], pending:['badge--warn','معلّقة'], failed:['badge--bad','فاشلة'] };
+      body.appendChild(el('div', { class:'stack' }, rows.map(x => {
+        const st = lbl[x.status] || ['', x.status];
+        const row = el('div', { class:'payrow' }, [
+          el('span', { class:'payrow__t', text: (x.student || 'طالب') + ' — ' +
+            (x.kind === 'coins' ? Pro.n(x.coins) + ' كوين' : (x.subject || 'مادة')) }),
+          el('span', { class:'badge num', text: Pro.money(x.amount_halalas) }),
+          el('span', { class:'badge ' + st[0], text: st[1] }),
+          el('span', { class:'payrow__d num', text: new Date(x.created_at).toLocaleDateString('ar') })
+        ]);
+        if (x.status === 'paid'){
+          const rb = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'ردّ' });
+          rb.addEventListener('click', () => {
+            /* ★ نقول صراحةً إن هذا لا يُعيد المال إلى البطاقة — الردّ المالي
+               في لوحة البوابة. الوهم هنا يعني طالبًا ينتظر مالًا لن يصله. */
+            if (!confirm('سيُسحب ما مُنح لهذا الطالب ويُسجَّل الردّ عندنا.\n' +
+                         'أمّا إعادة المال إلى بطاقته فتتم في لوحة Tap — هذه لا تفعلها.\nأتريد المتابعة؟')) return;
+            rb.disabled = true;
+            Pro.refund(x.id, '').then(res => {
+              const ok = res.ok && res.data && res.data.ok;
+              QBANK.toast(ok ? 'سُجّل الردّ' : 'تعذّر');
+              if (ok) draw();
+            });
+          });
+          row.appendChild(rb);
+        }
+        if (x.fail_reason) row.appendChild(el('span', { class:'field__hint', text: x.fail_reason }));
+        return row;
+      })));
+    });
+  }
+  draw();
+}
+
+/* ═══ تبويب الجودة: أصعب الأسئلة ═══ */
+function proQualityTab(box){
+  const body = el('div', { class:'stack' });
+  box.appendChild(el('p', { class:'field__hint',
+    text:'سؤالٌ يخطئ فيه أكثر الطلاب إمّا صعبٌ جدًا وإمّا إجابته المعلَّمة خاطئة — والثاني لا يُبلّغ عنه أحد لأن كلًّا يظن أنه هو المخطئ.' }));
+  box.appendChild(body);
+  body.appendChild(el('p', { class:'page__sub', text:'جارٍ الحساب…' }));
+
+  Pro.hard().then(r => {
+    if (!body.isConnected) return;
+    body.innerHTML = '';
+    const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+    if (!rows.length){
+      body.appendChild(QBANK.views.empty('✓', 'لا أسئلة مريبة',
+        'لا سؤال أخطأ فيه ٦٠٪ فأكثر ممن رآه (بحدّ أدنى ٥ طلاب).'));
+      return;
+    }
+    rows.forEach(x => {
+      const card = el('article', { class:'rep' }, [
+        el('div', { class:'rep__head' }, [
+          el('span', { class:'badge badge--bad num', text: Pro.n(x.wrong_pct) + '٪ خطأ' }),
+          el('a', { class:'rep__subj', href:'#/admin/subject/' + x.subject_id, text: x.subject }),
+          el('span', { class:'rep__when num', text: Pro.n(x.seen) + ' طالبًا' })
+        ]),
+        el('p', { class:'rep__qt ltr', text: x.q }),
+        // ★ «مستنتجة» هي أهم إشارة: إجابة لم تأتِ من ملف الدكتور وأخطأ فيها الأكثرون
+        x.derived
+          ? el('p', { class:'field__hint is-bad', style:'margin:0',
+              text:'⚠ إجابتها مستنتجة لا من ملف الدكتور — راجعها أولًا.' })
+          : el('p', { class:'field__hint', style:'margin:0',
+              text:'إجابتها من ملف الدكتور. قد يكون السؤال صعبًا فعلًا.' })
+      ]);
+      body.appendChild(card);
+    });
+  });
+}
+
+/* ═══ تبويب الجامعات ═══ */
+function proCampusTab(box){
+  const body = el('div', { class:'stack' });
+  box.appendChild(body);
+
+  function draw(){
+    body.innerHTML = '';
+    body.appendChild(el('p', { class:'page__sub', text:'جارٍ التحميل…' }));
+    Pro.campus().then(r => {
+      if (!body.isConnected) return;
+      body.innerHTML = '';
+      const d = (r.ok && r.data && r.data.ok) ? r.data : null;
+      if (!d){ body.appendChild(QBANK.views.empty('⚠', 'تعذّر الجلب', 'شغّل ADMIN-PRO.sql.')); return; }
+
+      const unis = d.universities || [];
+      body.appendChild(el('section', { class:'ad-panel' }, [
+        el('div', { class:'ad-panel__h' }, [
+          el('h2', { class:'ad-panel__t', text:'الجامعات' }),
+          el('span', { class:'ad-panel__s', text: Pro.n(unis.length) + ' جامعة' })
+        ]),
+        el('div', { class:'stack' }, unis.map(u => {
+          const row = el('div', { class:'payrow' }, [
+            el('span', { class:'payrow__t', text: u.name }),
+            el('span', { class:'badge num', text: Pro.n(u.subjects) + ' مادة' }),
+            el('span', { class:'badge num', text: Pro.n(u.students) + ' طالب' }),
+            u.verified ? el('span', { class:'badge badge--ok', text:'موثّقة' }) : null
+          ]);
+          const v = el('button', { class:'btn btn--sm btn--ghost', type:'button',
+            text: u.verified ? 'أزل التوثيق' : 'وثّقها' });
+          v.addEventListener('click', () => {
+            v.disabled = true;
+            Pro.verifyUniversity(u.id, !u.verified).then(() => draw());
+          });
+          const mg = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'ادمجها في…' });
+          mg.addEventListener('click', () => {
+            /* ★ الدمج هو الإصلاح الذي ستحتاجه حتمًا: توحيد الإملاء يمنع أكثر
+               التكرار لا كلّه — «جامعة الملك سعود» و«KSU» لا تجمعهما خوارزمية. */
+            const names = unis.filter(x => x.id !== u.id).map((x, i) => (i+1) + ') ' + x.name).join('\n');
+            const pick = prompt('ادمج «' + u.name + '» في أيّ جامعة؟ اكتب رقمها:\n' + names);
+            const idx = parseInt(pick, 10);
+            const target = unis.filter(x => x.id !== u.id)[idx - 1];
+            if (!target) return;
+            if (!confirm('ستنتقل كل مواد وكليات وطلاب «' + u.name + '» إلى «' + target.name +
+                         '»، وتُحذف «' + u.name + '».\nلا رجعة في هذا. أتتابع؟')) return;
+            Pro.mergeUniversity(u.id, target.id).then(res => {
+              QBANK.toast(res.ok && res.data && res.data.ok ? 'تمّ الدمج' : 'تعذّر الدمج');
+              draw();
+            });
+          });
+          row.appendChild(v); row.appendChild(mg);
+          return row;
+        }))
+      ]));
+
+      const cr = d.top_creators || [];
+      if (cr.length)
+        body.appendChild(el('section', { class:'ad-panel' }, [
+          el('div', { class:'ad-panel__h' }, [ el('h2', { class:'ad-panel__t', text:'أكثر الرافعين' }) ]),
+          el('div', { class:'stack' }, cr.map((c, i) => el('div', { class:'brd__row' }, [
+            el('span', { class:'brd__rank num', text: Pro.n(i + 1) }),
+            el('span', { class:'brd__name', text: c.name || 'طالب' }),
+            el('span', { class:'brd__pts num', text: Pro.n(c.subjects) + ' مادة · ' + Pro.n(c.questions) + ' سؤال' })
+          ])))
+        ]));
+    });
+  }
+  draw();
+}
+
+/* ═══ تبويب السجل ═══ */
+function proAuditTab(box){
+  const body = el('div', { class:'stack' });
+  box.appendChild(el('p', { class:'field__hint',
+    text:'كل فعل إداري يُسجَّل ولا يُمحى — منح كوينز وردّ دفعة وترقية مشرف ودمج جامعة.' }));
+  box.appendChild(body);
+  body.appendChild(el('p', { class:'page__sub', text:'جارٍ التحميل…' }));
+
+  const AR = { grant_coins:'منح كوينز', set_role:'تغيير صلاحية', refund:'ردّ دفعة',
+               merge_university:'دمج جامعة', verify_university:'توثيق جامعة',
+               set_subject:'تعديل مادة', grant_entitlement:'منح استحقاق' };
+  Pro.audit().then(r => {
+    if (!body.isConnected) return;
+    body.innerHTML = '';
+    const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+    if (!rows.length){
+      body.appendChild(QBANK.views.empty('◷', 'لا أفعال بعد', 'سيظهر هنا كل تدخّل إداري.'));
+      return;
+    }
+    rows.forEach(x => body.appendChild(el('div', { class:'payrow' }, [
+      el('span', { class:'badge', text: AR[x.action] || x.action }),
+      el('span', { class:'payrow__t', text: JSON.stringify(x.detail) }),
+      el('span', { class:'badge num', text: x.actor || 'مشرف' }),
+      el('span', { class:'payrow__d num', text: new Date(x.created_at).toLocaleString('ar') })
+    ])));
+  });
+}
+
+QBANK.admin.pro = Pro;
+QBANK.views.proDashTab = proDashTab;
+QBANK.views.proMoneyTab = proMoneyTab;
+QBANK.views.proQualityTab = proQualityTab;
+QBANK.views.proCampusTab = proCampusTab;
+QBANK.views.proAuditTab = proAuditTab;
+QBANK.views.funnelPanel = funnelPanel;
+
+/*
+  ترتيب التبويبات = ترتيب ما يستحق أن يُرى.
+  اللوحة أولًا (الحال العام)، ثم ما يحتاج تدخلًا (مسوّدات، بلاغات، جودة)،
+  ثم المال، ثم البنية (جامعات)، ثم السجل، ثم الإعدادات آخرًا.
+*/
+if (QBANK.views.ADMIN_TABS){
+  const T = QBANK.views.ADMIN_TABS;
+  const dash = T.filter(t => t.id === 'dash')[0];
+  if (dash) dash.fill = proDashTab;          // نستبدل اللوحة القديمة بالكاملة
+
+  const add = (id, label, fill, before) => {
+    if (T.some(t => t.id === id)) return;
+    const at = T.findIndex(t => t.id === before);
+    const tab = { id, label, fill };
+    if (at === -1) T.push(tab); else T.splice(at, 0, tab);
+  };
+  add('quality', 'الجودة', proQualityTab, 'settings');
+  add('money',   'المال',   proMoneyTab,   'settings');
+  add('campus',  'الجامعات', proCampusTab, 'settings');
+  add('audit',   'السجل',   proAuditTab,   'settings');
+}
+
+/* ═══ تبويب الطلاب: عرض وتحكم ═══ */
+function proStudentsTab(box){
+  const search = el('input', { class:'input', type:'search', placeholder:'ابحث باسم الطالب…' });
+  const list = el('div', { class:'stack' });
+  box.appendChild(el('div', { class:'ad-bar' }, [search]));
+  box.appendChild(list);
+
+  let timer = null;
+  search.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(draw, 400); });
+
+  function studentCard(r){
+    const card = el('article', { class:'stu' });
+    const head = el('div', { class:'stu__h' }, [
+      el('span', { class:'stu__av', 'aria-hidden':'true', text: r.avatar || '◍' }),
+      el('div', { class:'stu__x' }, [
+        el('span', { class:'stu__n', text: (r.name || 'بلا اسم') + (r.is_admin ? ' · مشرف' : '') }),
+        el('span', { class:'stu__s', text: [
+          r.university || 'بلا جامعة',
+          Pro.n(r.attempts) + ' اختبار',
+          Pro.n(r.uploaded) + ' مادة مرفوعة'
+        ].join(' · ') })
+      ]),
+      el('span', { class:'badge num', text: Pro.n(r.coins) + ' كوين' }),
+      Number(r.paid) > 0 ? el('span', { class:'badge badge--ok num', text: Pro.money(r.paid) }) : null
+    ]);
+    card.appendChild(head);
+
+    const msg = el('span', { class:'field__hint', role:'status' });
+    const amount = el('input', { class:'input', type:'number', value:'100',
+      'aria-label':'عدد الكوينز', style:'max-width:8em' });
+
+    /*
+      ★ التحديث في مكانه لا إعادة بناء القائمة.
+      كانت تُنادى draw() بعد المنح فتُمحى الرسالة التي تقول «الرصيد الآن
+      ٣٥٠» قبل أن يقرأها المشرف — فيشكّ هل وصل المنح ويمنح ثانيةً.
+      وهذا في المال خطأٌ يُكلّف. فنُحدّث الشارة والرسالة ونُبقي البطاقة.
+    */
+    const coinBadge = head.querySelector('.badge.num');
+    const applyCoins = (delta, label) => {
+      const n = parseInt(amount.value, 10);
+      if (!n){ msg.className = 'field__hint is-bad'; msg.textContent = 'اكتب عددًا.'; return; }
+      msg.className = 'field__hint'; msg.textContent = 'جارٍ…';
+      Pro.grantCoins(r.id, delta * Math.abs(n), label).then(res => {
+        const ok = res.ok && res.data && res.data.ok;
+        if (!ok){ msg.className = 'field__hint is-bad'; msg.textContent = 'تعذّر'; return; }
+        r.coins = res.data.balance;
+        if (coinBadge) coinBadge.textContent = Pro.n(r.coins) + ' كوين';
+        msg.className = 'field__hint is-ok';
+        msg.textContent = 'الرصيد الآن ' + Pro.n(res.data.balance);
+      });
+    };
+
+    const give = el('button', { class:'btn btn--sm btn--soft', type:'button', text:'امنح' });
+    give.addEventListener('click', () => applyCoins(1, 'منح يدوي'));
+
+    const take = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'اسحب' });
+    take.addEventListener('click', () => applyCoins(-1, 'سحب يدوي'));
+
+    const role = el('button', { class:'btn btn--sm btn--ghost', type:'button',
+      text: r.is_admin ? 'أنزله من الإشراف' : 'ارفعه مشرفًا' });
+    role.addEventListener('click', () => {
+      if (!confirm(r.is_admin
+            ? 'سيفقد ' + (r.name || 'هذا الطالب') + ' كل صلاحيات الإشراف.'
+            : 'سيصير ' + (r.name || 'هذا الطالب') + ' مشرفًا: يرى كل البيانات ويعدّل كل شيء.')) return;
+      role.disabled = true;
+      Pro.setRole(r.id, !r.is_admin).then(res => {
+        role.disabled = false;
+        const d = res.data || {};
+        if (d.ok){ draw(); return; }
+        /* ★ سببان يستحقان اسمًا: لا تُنزل نفسك، ولا تترك المنصة بلا مشرف.
+           «تعذّر» وحدها تجعل المشرف يظنّ عطلًا وهو حارس متعمَّد. */
+        msg.textContent = d.reason === 'self_demote' ? 'لا تُنزل نفسك — لن يبقى من يرفعك.'
+          : d.reason === 'last_admin' ? 'هذا آخر مشرف — ارفع غيره أولًا.'
+          : 'تعذّر';
+      });
+    });
+
+    card.appendChild(el('div', { class:'stu__act' }, [
+      amount, give, take, role, msg
+    ]));
+    return card;
+  }
+
+  function draw(){
+    list.innerHTML = '';
+    list.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
+    QBANK.api.rpc('admin_students_pro', { p_search: search.value || '', p_limit: 50 }).then(r => {
+      if (!list.isConnected) return;
+      list.innerHTML = '';
+      const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+      if (!rows.length){
+        list.appendChild(QBANK.views.empty('◍', 'لا طلاب',
+          search.value ? 'لا مطابقة لبحثك.' : 'سيظهرون هنا فور تسجيلهم.'));
+        return;
+      }
+      rows.forEach(x => list.appendChild(studentCard(x)));
+    });
+  }
+  draw();
+}
+
+QBANK.views.proStudentsTab = proStudentsTab;
+if (QBANK.views.ADMIN_TABS){
+  const st = QBANK.views.ADMIN_TABS.filter(t => t.id === 'students')[0];
+  if (st) st.fill = proStudentsTab;
+}
 
 })();
 
