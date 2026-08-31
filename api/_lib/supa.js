@@ -25,9 +25,12 @@ async function rpc(name, args, asUser){
     وهذا يعمل مع الجيلين: القديم (eyJ… JWT) والجديد (sb_secret_…).
     أما وضع sb_secret في Bearer فيرفضه الجيل الجديد لأنه ليس JWT.
   */
-  const headers = { 'apikey': key, 'Content-Type':'application/json',
+  /* التجربة الحية حكمت: apikey وحدها تُعامل anon فتحجب RLS الصفوف.
+     البوابة تقبل sb_secret في Bearer أيضًا — فيمرّ المفتاح في الترويستين،
+     وهوية الطالب (asUser) تفوز عليه متى وُجدت. */
+  const headers = { 'apikey': key, 'Authorization': 'Bearer ' + (asUser || key),
+                    'Content-Type':'application/json',
                     'Accept-Profile':'qbank', 'Content-Profile':'qbank' };
-  if (asUser) headers.Authorization = 'Bearer ' + asUser;
   const res = await fetch(url + '/rest/v1/rpc/' + name, {
     method:'POST', headers, body: JSON.stringify(args || {})
   });
