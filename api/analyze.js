@@ -25,7 +25,8 @@ module.exports = async function handler(req, res){
 
     // المادة وأسئلتها بمفتاح الخدمة
     const { url, key } = supa.creds();
-    const H = { 'apikey': key, 'Authorization':'Bearer ' + key, 'Accept-Profile':'qbank' };
+    // المفتاح في apikey وحدها — يعمل مع مفاتيح الجيلين، القديم والجديد
+    const H = { 'apikey': key, 'Accept-Profile':'qbank' };
     const sres = await fetch(url + '/rest/v1/subjects?id=eq.' + encodeURIComponent(subject_id) +
       '&select=id,name,created_by', { headers: H });
     const sub = ((await sres.json()) || [])[0];
