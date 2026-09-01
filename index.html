@@ -6,80 +6,88 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
 <meta name="description" content="مراجعة — بنك الأسئلة · بنوك أسئلة لكل التخصصات، يرفعها طلاب الجامعات العربية ويراجعون منها">
-<meta name="theme-color" content="#8c2f39">
+<meta name="theme-color" content="#0e1117">
 <link rel="manifest" href="manifest.webmanifest">
 <title>مراجعة · بنك الأسئلة</title>
+<script>
+/* الوضع قبل أول رسم — وإلا ومض الفاتح لحظة ثم أظلم. الليلي هو الافتراضي (هوية AMSU) */
+try{
+  var __t = JSON.parse(localStorage.getItem('qbank:theme') || '"dark"');
+  if (__t === 'auto') __t = (matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', __t === 'light' ? 'light' : 'dark');
+}catch(e){ document.documentElement.setAttribute('data-theme','dark'); }
+</script>
 <style>
 
 /* ===== 00-tokens.css ===== */
 /*
   مصدر واحد للمظهر. أي لون أو مسافة في المشروع يأتي من هنا حصرًا.
 
-  هوية «مراجعة — بنك الأسئلة»: ورق ومكتبة.
-  عنّابي دافئ لون الجلد على كعب الكتاب، ورملي ذهبي لون الحرف المذهّب عليه،
-  وخلفية ورقية لا بيضاء ميتة. المرجع هنا ليس شاشة بل كتاب يُفتح على المكتب.
+  هوية AMSU — منقولة حرفيًا من مشروع علي الأول (amsu.alsoqoor.com) بطلبه:
+  «طريقة العرض خذها من هنا». نفس اللوحة، نفس الخط، نفس الأقطار والظلال،
+  والليلي هو الافتراضي كما في AMSU، والفاتح زرّ لمن يريده.
+
+  الأسماء مزدوجة عمدًا: أسماء المنصة التاريخية (--text --brand --sh1…)
+  تبقى كي لا يُعاد فتح كل ملف مكوّنات، وأسماء AMSU (--txt --acc --shadow-sm…)
+  تُعرَّف معها كي تُنقل وصفات AMSU كما هي بلا ترجمة.
 */
 :root{
-  /* ثلاثة أدوار للخط — لا خط خارجي البتة (شرط العمل بلا إنترنت):
-     العناوين خط عربي عريض له وقار الغلاف · النص أنعم للقراءة الطويلة ·
-     الأرقام أحادي المسافة كي تصطفّ في الجداول ولا ترقص عند تغيّرها */
-  --font-display: "Noto Kufi Arabic", "Tajawal", "Cairo", "Segoe UI", system-ui, sans-serif;
-  --font: "Dubai", "Segoe UI", "Noto Sans Arabic", Tahoma, system-ui, -apple-system, sans-serif;
-  --font-num: "Cascadia Mono", "Consolas", ui-monospace, "SF Mono", Menlo, monospace;
+  /* الخطوط كما في AMSU: كوفي عربي للواجهة كلها، ولاتيني نظيف للنص الأصلي.
+     لا خط خارجي — كلها أسماء نظامية تتوفر على أجهزة الطلاب أو تسقط بسلام */
+  --font: "Noto Kufi Arabic", "Dubai", "Tajawal", "Cairo", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font-display: var(--font);
+  --font-latin: "Inter", "Poppins", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  /* الأرقام: نفس اللاتيني مع أرقام جدولية ثابتة العرض كي لا ترقص العدّادات */
+  --font-num: var(--font-latin);
 
-  /* الورق: دافئ لا أبيض. العين تقرأ عليه ساعات بلا إجهاد الأبيض الصريح */
-  --bg:        #fbf7f0;
-  --bg-soft:   #f3ece0;
-  --surface:   #fffdf9;
-  --surface-2: #f8f2e8;
-  --line:      #e6dcc9;
-  --line-soft: #f0e8da;
+  /* لوحة AMSU الفاتحة */
+  --bg:        #f4f6f9;
+  --bg-soft:   #eaedf3;
+  --surface:   #ffffff;
+  --surface-2: #f8fafc;
+  --line:      #e4e8ef;
+  --line-soft: #eef1f5;
+  --line-2:    #d6dce6;
 
-  /* الحبر: بنّي مسودّ لا أسود صريح — كحبر على ورق لا بكسل على زجاج */
-  --text:      #241a15;
-  --text-2:    #5c4a3e;
-  --text-3:    #8b7565;
+  --text:      #141821;
+  --text-2:    #5a6273;
+  --text-3:    #8c94a5;
 
-  /* العنّابي: لون جلد الكعب. هوية المنصة وزرّها الأساسي */
-  --brand:      #8c2f39;
-  --brand-2:    #a8434d;
-  --brand-soft: #f7e8e6;
-  --on-brand:   #fffdf9;
+  /* المِحور اللوني: رمادي أردوازي محايد في العموم، وتلوّنه كل مادة بلونها
+     عبر --acc محلّيًا — هذه فكرة AMSU المركزية: الحياد في الهيكل واللون للمادة */
+  --brand:      #4b5563;
+  --brand-2:    #374151;
+  --brand-soft: #eef1f5;
+  --on-brand:   #ffffff;
 
-  /* الرملي الذهبي: الحرف المذهّب — للتمييز والنجوم لا للأزرار الأساسية */
-  --gold:      #c9a227;
-  --gold-soft: #fbf1d6;
+  --gold:      #e8a317;
+  --gold-soft: #fdf3dd;
 
-  /* حالات — تُستعمل دائمًا مع أيقونة لا باللون وحده.
-     الأخضر هنا غامق زيتوني كي لا يصرخ وسط الورق الدافئ */
-  --ok:      #4a7c46; --ok-soft:   #eaf2e6;
+  --ok:      #12805c; --ok-soft:   #e6f6ef;
   --warn:    #b06d1e; --warn-soft: #fdf0dc;
-  --bad:     #a3312a; --bad-soft:  #fbeae8;
-  --star:    #c9a227;
+  --bad:     #d92020; --bad-soft:  #fdecec;
+  --star:    #e8a317;
 
-  /* سلّم مسافات أوسع نفَسًا */
+  /* سلّم المسافات */
   --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
   --s5: 22px; --s6: 30px; --s7: 44px; --s8: 68px;
 
-  /* حواف أنعم وظلال دافئة — الظل هنا بنّي لا رمادي، وإلا بدا الورق متسخًا */
-  --r1: 10px; --r2: 14px; --r3: 20px; --r4: 28px; --r-pill: 999px;
-  --sh1: 0 1px 2px rgba(60,40,25,.05), 0 2px 6px rgba(60,40,25,.06);
-  --sh2: 0 2px 4px rgba(60,40,25,.05), 0 8px 20px rgba(60,40,25,.09);
-  --sh3: 0 4px 8px rgba(60,40,25,.06), 0 20px 48px rgba(60,40,25,.14);
-  --ring: 0 0 0 3px rgba(140,47,57,.24);
+  /* أقطار AMSU وظلالها */
+  --r1: 10px; --r2: 14px; --r3: 20px; --r4: 26px; --r-pill: 999px;
+  --sh1: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06);
+  --sh2: 0 4px 12px rgba(16,24,40,.07), 0 2px 4px rgba(16,24,40,.04);
+  --sh3: 0 18px 44px rgba(16,24,40,.12), 0 4px 12px rgba(16,24,40,.06);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--acc) 18%, transparent);
 
-  /* قياسات القراءة الأكاديمية.
-     العرض ٦٤ محرفًا لأن السطر الأطول يُفقد العين موضعها عند الانتقال للسطر التالي،
-     والارتفاع ٢ لأن نصوص الأسئلة إنجليزية طبية داخل واجهة عربية وتحتاج نفَسًا. */
+  /* قياسات القراءة الأكاديمية */
   --measure: 64ch;
-  --read-lh: 2;
+  --read-lh: 1.85;
   --read-size: 1.02rem;
 
-  /* خط هامش الورقة — كخط الهامش المطبوع على كرّاسات الامتحان */
-  --rule: color-mix(in srgb, var(--brand) 30%, transparent);
-  --rule-soft: color-mix(in srgb, var(--brand) 12%, transparent);
+  --rule: color-mix(in srgb, var(--acc) 30%, transparent);
+  --rule-soft: color-mix(in srgb, var(--acc) 12%, transparent);
 
-  --wrap: 1040px;
+  --wrap: 1080px;
   --topbar-h: 60px;
   --tabbar-h: 62px;
 
@@ -88,45 +96,65 @@
   --t-slow: 420ms;
   --ease: cubic-bezier(.22,.61,.36,1);
 
-  /* ألوان المواد — كعوب كتب على رفّ: كلها مكتومة من عائلة واحدة،
-     فلا تتنافر مادتان جنبًا إلى جنب كما تتنافر ألوان منتقاة عشوائيًا */
-  --subject-1: #8c2f39; --subject-2: #7a5c1f; --subject-3: #3f5f4a;
-  --subject-4: #5a4a7a; --subject-5: #a15a2b; --subject-6: #2f5a6b;
+  /* نص فوق الملوّن، وتدرّج علامة AMSU (بنفسجي ← فيروزي) */
+  --on-acc: #ffffff;
+  --mark-1: #6d5efc;
+  --mark-2: #2ec5c0;
+
+  /* ألوان المواد — حيوية مثل بطاقات AMSU: كل مادة تصبغ بطاقتها ورأسها */
+  --subject-1: #059669; --subject-2: #8b5cf6; --subject-3: #f59e0b;
+  --subject-4: #d946ef; --subject-5: #0ea5e9; --subject-6: #14b8a6;
+
+  /* ═══ أسماء AMSU كما هي — كي تُلصق وصفاتها بلا ترجمة ═══ */
+  --bg2: var(--bg-soft);
+  --surface2: var(--surface-2);
+  --txt: var(--text); --txt2: var(--text-2); --txt3: var(--text-3);
+  --line2: var(--line-2);
+  --ok-bg: var(--ok-soft); --bad-bg: var(--bad-soft);
+  --shadow-sm: var(--sh1); --shadow-md: var(--sh2); --shadow-lg: var(--sh3);
+  --r-sm: var(--r1); --r: var(--r2); --r-lg: var(--r3); --r-xl: var(--r4);
+  --maxw: var(--wrap);
+
+  /* --acc: لون السياق الحالي. افتراضه المحور المحايد، وكل بطاقة مادة أو
+     رأس مادة يضبطه محليًا style="--acc:…" فيتلوّن كل ما بداخله.
+     الغامق والناعم يُشتقّان منه آليًا — في AMSU كانت ثلاثة متغيرات تُضبط
+     يدويًا معًا، وضبطُ ثلاثة يدويًا ينسى أحدها يومًا */
+  --acc: var(--brand);
+  --acc-d: color-mix(in srgb, var(--acc) 78%, #000);
+  --acc-soft: color-mix(in srgb, var(--acc) 9%, var(--surface));
 }
 
-/* الوضع الليلي: مكتبة على ضوء مصباح — بنّي محروق لا أزرق بارد */
+/* الليلي — لوحة AMSU الليلية، وهو الافتراضي */
 :root[data-theme="dark"]{
-  --bg:        #16110e;
-  --bg-soft:   #1e1815;
-  --surface:   #221b17;
-  --surface-2: #2b221d;
-  --line:      #3a2e27;
-  --line-soft: #2f2621;
+  --bg:        #0e1117;
+  --bg-soft:   #0a0d12;
+  --surface:   #161b23;
+  --surface-2: #1c222c;
+  --line:      #252c38;
+  --line-soft: #1e2531;
+  --line-2:    #333c4b;
 
-  --text:      #f2e9dd;
-  --text-2:    #c0ac9a;
-  --text-3:    #93806f;
+  --text:      #e9edf5;
+  --text-2:    #a4aec0;
+  --text-3:    #78839a;
 
-  --brand:      #d97a83;
-  --brand-2:    #e8949c;
-  --brand-soft: #35211f;
-  --on-brand:   #1a0f10;
+  /* المحور في الليل أفتح درجة كي يبقى مقروءًا نصًّا على الأسطح الداكنة */
+  --brand:      #96a3b8;
+  --brand-2:    #b7c2d4;
+  --brand-soft: #1e2531;
+  --on-brand:   #0e1117;
 
-  --gold:      #e0bd52;
-  --gold-soft: #332a12;
+  --gold:      #f5c04e;
+  --gold-soft: #2e2410;
 
-  --ok:      #7fb06f; --ok-soft:   #1d2a17;
-  --warn:    #dda049; --warn-soft: #33260f;
-  --bad:     #e8756c; --bad-soft:  #351a18;
-  --star:    #e0bd52;
+  --ok:      #39d39a; --ok-soft:   #0f2a22;
+  --warn:    #dda049; --warn-soft: #2e2410;
+  --bad:     #ff6b6b; --bad-soft:  #33161a;
+  --star:    #f5c04e;
 
-  --sh1: 0 1px 2px rgba(0,0,0,.55);
-  --sh2: 0 6px 20px rgba(0,0,0,.55);
-  --sh3: 0 22px 54px rgba(0,0,0,.66);
-  --ring: 0 0 0 3px rgba(217,122,131,.32);
-
-  --subject-1: #d97a83; --subject-2: #d4b45e; --subject-3: #7fb08e;
-  --subject-4: #a898d8; --subject-5: #e0a06a; --subject-6: #6fa8bd;
+  --sh1: 0 1px 2px rgba(0,0,0,.4);
+  --sh2: 0 6px 18px rgba(0,0,0,.45);
+  --sh3: 0 20px 50px rgba(0,0,0,.55);
 }
 
 
@@ -137,8 +165,9 @@ html{ -webkit-text-size-adjust:100%; }
 body{
   margin:0;
   font-family:var(--font);
-  font-size:16.5px;
-  line-height:1.8;
+  /* مقياس AMSU: يتنفّس مع عرض الشاشة بين ١٥ و١٧ */
+  font-size:clamp(15px, 1.7vw + 10px, 17px);
+  line-height:1.85;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   text-rendering:optimizeLegibility;                 /* سطر مريح للعربية، فحروفها متصلة وتحتاج تنفّسًا */
@@ -153,12 +182,12 @@ body{
 /* العناوين بالخط الكوفي الهندسي — هو شخصية الصفحة، والنص بخط أنعم للقراءة */
 h1,h2,h3,h4{
   font-family:var(--font-display);
-  margin:0 0 var(--s3); line-height:1.45; font-weight:700;
-  letter-spacing:-.015em;
+  margin:0 0 var(--s3); line-height:1.45; font-weight:800;
+  letter-spacing:-.01em;
 }
 h1{ font-size:1.6rem; } h2{ font-size:1.3rem; } h3{ font-size:1.06rem; }
 p{ margin:0 0 var(--s3); }
-a{ color:var(--brand); text-decoration:none; }
+a{ color:var(--acc); text-decoration:none; }
 a:hover{ text-decoration:underline; }
 ul,ol{ margin:0 0 var(--s3); padding-inline-start:var(--s5); }
 button,input,select,textarea{ font:inherit; color:inherit; }
@@ -166,8 +195,9 @@ img,svg{ max-width:100%; height:auto; }
 
 /* الأرقام تبقى لاتينية داخل النصوص العربية لسهولة قراءة النتائج والنسب */
 .num,[data-num]{ font-family:var(--font-num); font-variant-numeric:tabular-nums; direction:ltr; unicode-bidi:isolate; }
-/* نصوص الأسئلة تبقى بلغتها الأصلية واتجاهها */
-.ltr{ direction:ltr; text-align:left; unicode-bidi:isolate; }
+/* نصوص الأسئلة تبقى بلغتها الأصلية واتجاهها — وبخط لاتيني نظيف كما في AMSU */
+.ltr{ direction:ltr; text-align:left; unicode-bidi:isolate; font-family:var(--font-latin); letter-spacing:0; }
+::selection{ background:var(--acc); color:#fff; }
 
 /* حلقة تركيز ناعمة بدل الخط الحاد — أوضح للوحة المفاتيح وأجمل */
 :focus-visible{ outline:none; box-shadow:var(--ring); border-radius:var(--r1); }
@@ -191,8 +221,10 @@ img,svg{ max-width:100%; height:auto; }
 .topbar{
   position:sticky; top:0; z-index:20;
   height:var(--topbar-h);
-  background:color-mix(in srgb, var(--surface) 82%, transparent);
-  backdrop-filter:saturate(180%) blur(16px);
+  /* زجاج AMSU: خلفية الصفحة نفسها مموّهة لا سطح أبيض */
+  background:color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter:saturate(180%) blur(14px);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);
   border-bottom:1px solid var(--line);
   transition:box-shadow var(--t) var(--ease);
 }
@@ -202,11 +234,10 @@ img,svg{ max-width:100%; height:auto; }
 .brand{ display:inline-flex; align-items:center; gap:var(--s2); color:var(--text); font-weight:800; letter-spacing:.5px; }
 .brand:hover{ text-decoration:none; }
 .brand__mark{
-  width:34px; height:34px; border-radius:9px; display:grid; place-items:center;
-  background:var(--brand); color:var(--on-brand);
-  box-shadow:var(--sh1);
-  /* حافة ذهبية رفيعة كحرف مذهّب على غلاف */
-  outline:1px solid var(--gold); outline-offset:-3px;
+  width:32px; height:32px; border-radius:9px; display:grid; place-items:center;
+  /* تدرّج علامة AMSU نفسه: بنفسجي إلى فيروزي بتوهّج ناعم */
+  background:linear-gradient(135deg, var(--mark-1), var(--mark-2)); color:var(--on-acc);
+  box-shadow:0 4px 12px -4px var(--mark-1);
 }
 /* الاسم فوق والوصف تحته: «مراجعة» هو الاسم، و«بنك الأسئلة» يشرحه لمن يراه أول مرة */
 .brand__text{ display:flex; flex-direction:column; line-height:1.15; }
@@ -251,7 +282,7 @@ img,svg{ max-width:100%; height:auto; }
 .footer__credit{ margin:0; }
 .footer__credit a{ font-weight:700; }
 
-.grid{ display:grid; gap:var(--s4); grid-template-columns:1fr; }
+.grid{ display:grid; gap:clamp(14px,2.2vw,20px); grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); }
 @media (min-width:640px){ .grid--2{ grid-template-columns:repeat(2,1fr); } }
 @media (min-width:900px){ .grid--3{ grid-template-columns:repeat(3,1fr); } }
 
@@ -264,7 +295,7 @@ img,svg{ max-width:100%; height:auto; }
 
 
 /* ===== 30-components.css ===== */
-/* مكوّنات مشتركة — تُستعمل في كل الشاشات فلا يُكتب تنسيق خاص بشاشة واحدة */
+/* مكوّنات مشتركة — وصفات AMSU حرفيًا بأسماء أصناف المنصة */
 
 .card{
   background:var(--surface); border:1px solid var(--line); border-radius:var(--r3);
@@ -274,55 +305,67 @@ img,svg{ max-width:100%; height:auto; }
 .card--flat{ box-shadow:none; }
 .card__head{ display:flex; align-items:center; justify-content:space-between; gap:var(--s3); margin-bottom:var(--s3); }
 
+/* زر AMSU: مستطيل بقطر --r2 لا حبّة، والأساسي بلون المحور مع ظل ملوّن */
 .btn{
-  display:inline-flex; align-items:center; justify-content:center; gap:var(--s2);
-  padding:var(--s3) var(--s5); border-radius:var(--r-pill); border:1px solid transparent;
-  background:var(--brand); color:var(--on-brand); font-weight:700; cursor:pointer;
-  min-height:46px;                  /* مساحة لمس آمنة على الجوال */
+  display:inline-flex; align-items:center; justify-content:center; gap:.5em;
+  padding:.72em 1.25em; border-radius:var(--r2); border:1px solid transparent;
+  background:var(--acc); color:var(--on-acc); font-weight:700; font-size:.94em; cursor:pointer;
+  min-height:44px; white-space:nowrap;
   font-family:var(--font-display); letter-spacing:-.01em;
-  box-shadow:0 1px 2px rgba(15,26,32,.06);
-  transition:transform var(--t-fast) var(--ease), box-shadow var(--t) var(--ease),
-             background var(--t) var(--ease), color var(--t) var(--ease);
+  box-shadow:0 6px 18px -6px var(--acc);
+  transition:transform .16s var(--ease), box-shadow .16s var(--ease),
+             background .16s var(--ease), color .16s var(--ease), border-color .16s;
 }
-.btn:hover{ text-decoration:none; transform:translateY(-1px); box-shadow:var(--sh2); }
-.btn:active{ transform:translateY(0); box-shadow:var(--sh1); }
-.btn[disabled],.btn[aria-disabled="true"]{ opacity:.5; cursor:not-allowed; }
-.btn--ghost{ background:var(--surface); color:var(--text); border-color:var(--line); }
-.btn--ghost:hover{ border-color:var(--brand); color:var(--brand); }
-.btn--soft{ background:var(--brand-soft); color:var(--brand); }
-.btn--sm{ padding:var(--s2) var(--s4); min-height:36px; font-size:.9rem; }
+.btn:hover{ text-decoration:none; transform:translateY(-1px); background:var(--acc-d); box-shadow:var(--sh2); }
+.btn:active{ transform:translateY(0) scale(.985); box-shadow:var(--sh1); }
+.btn[disabled],.btn[aria-disabled="true"]{ opacity:.45; cursor:not-allowed; transform:none; }
+.btn--ghost{
+  background:var(--surface); color:var(--text); border-color:var(--line-2); box-shadow:var(--sh1);
+}
+.btn--ghost:hover{ background:var(--surface); border-color:var(--acc); color:var(--acc-d); }
+:root[data-theme="dark"] .btn--ghost:hover{ color:var(--acc); }
+.btn--soft{ background:var(--acc-soft); color:var(--acc-d); box-shadow:none; }
+:root[data-theme="dark"] .btn--soft{ color:var(--acc); }
+.btn--sm{ padding:.5em .85em; min-height:38px; font-size:.85em; border-radius:var(--r1); }
 .btn--block{ width:100%; }
 
+/* زر الأيقونة كما في شريط AMSU العلوي */
 .iconbtn{
-  width:40px; height:40px; display:grid; place-items:center; cursor:pointer;
-  background:transparent; border:1px solid var(--line); border-radius:var(--r-pill); color:var(--text-2);
+  width:42px; height:42px; display:grid; place-items:center; cursor:pointer;
+  background:var(--surface); border:1px solid var(--line-2); border-radius:12px; color:var(--text-2);
+  box-shadow:var(--sh1);
+  transition:transform .16s var(--ease), background .16s;
 }
-.iconbtn:hover{ background:var(--surface-2); color:var(--text); }
+.iconbtn:hover{ transform:translateY(-1px); color:var(--text); }
 .iconbtn__ico{ font-size:1.05rem; line-height:1; }
 
 .field{ display:block; margin-bottom:var(--s4); }
 .field__label{ display:block; font-weight:600; font-size:.9rem; margin-bottom:var(--s2); color:var(--text-2); }
 .input{
   width:100%; padding:var(--s3) var(--s4); min-height:48px;
-  background:var(--surface); border:1px solid var(--line); border-radius:var(--r2); color:var(--text);
+  background:var(--surface); border:1px solid var(--line-2); border-radius:var(--r2); color:var(--text);
   transition:border-color var(--t) var(--ease), box-shadow var(--t) var(--ease);
 }
 .input:hover{ border-color:var(--text-3); }
-.input:focus{ outline:none; border-color:var(--brand); box-shadow:var(--ring); }
+.input:focus{ outline:none; border-color:var(--acc); box-shadow:var(--ring); }
 .input::placeholder{ color:var(--text-3); }
 .field__hint{ font-size:.82rem; color:var(--text-3); margin-top:var(--s1); }
 
+/* شارة AMSU: حبّة بلون المحور الناعم */
 .badge{
-  display:inline-flex; align-items:center; gap:var(--s1);
-  padding:3px var(--s3); border-radius:var(--r-pill);
-  font-size:.75rem; font-weight:700; line-height:1.7;
-  background:var(--surface-2); color:var(--text-2); border:1px solid var(--line);
+  display:inline-flex; align-items:center; gap:.35em; padding:.25em .7em; border-radius:var(--r-pill);
+  font-size:.78em; font-weight:700; line-height:1.7;
+  background:var(--acc-soft); color:var(--acc-d); border:1px solid transparent;
 }
-.badge--ok{ background:var(--ok-soft); color:var(--ok); border-color:transparent; }
-.badge--warn{ background:var(--warn-soft); color:var(--warn); border-color:transparent; }
-.badge--bad{ background:var(--bad-soft); color:var(--bad); border-color:transparent; }
+:root[data-theme="dark"] .badge{ color:var(--acc); }
+.badge--ok{ background:var(--ok-soft); color:var(--ok); }
+.badge--warn{ background:var(--warn-soft); color:var(--warn); }
+.badge--bad{ background:var(--bad-soft); color:var(--bad); }
 
-/* الحالة الفارغة: المرحلة ٠ كلها شاشات فارغة، فهذا المكوّن هو بطلها */
+/* شريط تقدّم AMSU */
+.prog{ height:7px; border-radius:99px; background:var(--line); overflow:hidden; }
+.prog>i{ display:block; height:100%; border-radius:99px; background:var(--acc); transition:width .5s var(--ease); }
+
 .empty{ text-align:center; padding:var(--s7) var(--s4); color:var(--text-2); }
 .empty__ico{ font-size:2.2rem; line-height:1; display:block; margin-bottom:var(--s3); opacity:.7; }
 .empty__title{ font-weight:700; color:var(--text); margin-bottom:var(--s2); }
@@ -336,17 +379,28 @@ img,svg{ max-width:100%; height:auto; }
 .row{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
 .spacer{ flex:1; }
 
-.tabs{ display:flex; gap:var(--s1); border-bottom:1px solid var(--line); margin-bottom:var(--s5); overflow-x:auto; }
-.tabs__btn{
-  background:none; border:0; border-bottom:2px solid transparent; cursor:pointer;
-  padding:var(--s3) var(--s4); color:var(--text-2); font-weight:600; white-space:nowrap;
+/* تبويبات AMSU: حبوب — النشط ممتلئ بلون المحور بظل ملوّن */
+.tabs{
+  display:flex; gap:.3rem; margin-bottom:var(--s5); overflow-x:auto;
+  scrollbar-width:none; padding:.5rem 0; border-bottom:1px solid var(--line);
 }
-.tabs__btn[aria-selected="true"]{ color:var(--brand); border-bottom-color:var(--brand); }
+.tabs::-webkit-scrollbar{ display:none; }
+.tabs__btn{
+  background:none; border:0; cursor:pointer; border-radius:11px;
+  padding:.6em 1em; color:var(--text-2); font-weight:700; font-size:.9em;
+  white-space:nowrap; min-height:42px;
+  transition:color .2s, background .2s;
+}
+.tabs__btn:hover{ color:var(--text); background:var(--acc-soft); }
+.tabs__btn[aria-selected="true"]{
+  color:var(--on-acc); background:var(--acc); box-shadow:0 6px 16px -8px var(--acc);
+}
 
 .toast{
   position:fixed; inset-inline:0; bottom:calc(var(--tabbar-h) + var(--s4)); margin-inline:auto;
   width:max-content; max-width:88vw; z-index:60;
-  background:var(--text); color:var(--bg); padding:var(--s3) var(--s5); border-radius:var(--r-pill);
+  background:var(--text); color:var(--bg); padding:.7em 1.2em; border-radius:var(--r-pill);
+  font-size:.88em; font-weight:700;
   box-shadow:var(--sh3); opacity:0; transform:translateY(8px); pointer-events:none;
   transition:opacity var(--t) var(--ease), transform var(--t) var(--ease);
 }
@@ -354,9 +408,8 @@ img,svg{ max-width:100%; height:auto; }
 
 .divider{ height:1px; background:var(--line); border:0; margin-block:var(--s5); }
 
-/* زر الفعل الذي لا رجعة فيه — لونه وحده يكفي تحذيرًا */
-.btn--danger{ background:var(--bad); color:var(--on-brand); border-color:var(--bad); }
-.btn--danger:hover{ filter:brightness(.94); }
+.btn--danger{ background:var(--bad); color:var(--on-acc); border-color:var(--bad); box-shadow:0 6px 18px -8px var(--bad); }
+.btn--danger:hover{ background:color-mix(in srgb, var(--bad) 80%, black); }
 
 /* هيكل انتظار: يحجز مساحة المحتوى فلا تقفز الصفحة عند وصوله */
 .skel{ display:block; background:var(--bg-soft); border-radius:var(--r1); }
@@ -461,14 +514,67 @@ img,svg{ max-width:100%; height:auto; }
   border-radius:var(--r-pill); background:var(--ok); color:var(--on-brand);
 }
 
-.subj{ position:relative; overflow:hidden; cursor:pointer; }
-.subj__bar{ position:absolute; inset-inline-start:0; top:0; bottom:0; width:5px; }
-.subj__ico{ font-size:1.6rem; }
-.subj__meter{ height:6px; border-radius:var(--r-pill); background:var(--bg-soft); overflow:hidden; }
-.subj__meter > div{ height:100%; border-radius:inherit; }
-.subj.is-past{ opacity:.72; }
-.stamp{ display:inline-block; padding:2px var(--s3); border:2px solid var(--ok); color:var(--ok);
-  border-radius:var(--r1); font-weight:800; font-size:.8rem; transform:rotate(-3deg); }
+/* ═══ بطاقة المادة — بطاقة AMSU حرفيًا ═══ */
+.sub-card{
+  position:relative; overflow:hidden; text-align:start; padding:0; border-radius:var(--r4);
+  background:var(--surface); border:1px solid var(--line); box-shadow:var(--sh2);
+  transition:transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s;
+  display:flex; flex-direction:column; width:100%; cursor:pointer;
+}
+.sub-card:hover{
+  transform:translateY(-5px); box-shadow:var(--sh3);
+  border-color:color-mix(in srgb, var(--acc) 40%, var(--line));
+}
+.sub-card .art{
+  height:118px; position:relative; display:flex; align-items:center; justify-content:space-between;
+  padding:0 18px; border-bottom:1px solid var(--line);
+  background:linear-gradient(135deg,
+    color-mix(in srgb, var(--acc) 16%, var(--surface)),
+    color-mix(in srgb, var(--acc) 4%, var(--surface)));
+}
+:root[data-theme="dark"] .sub-card .art{
+  background:linear-gradient(135deg, color-mix(in srgb, var(--acc) 26%, var(--surface)), var(--surface));
+}
+.sub-card .art__ico{ font-size:3.2rem; line-height:1; color:var(--acc); opacity:.95; }
+.sub-card .meta{ padding:16px 18px 18px; display:flex; flex-direction:column; gap:.5rem; flex:1; }
+.sub-card h3{ margin:0; font-size:1.12em; }
+.sub-card .qn{ color:var(--text-2); font-size:.86em; }
+.sub-card .foot{
+  display:flex; align-items:center; justify-content:space-between; gap:.6rem;
+  font-size:.79em; color:var(--text-3); margin-top:.15rem;
+}
+.sub-card .examline{
+  display:flex; align-items:center; gap:.45em; flex-wrap:wrap; margin-top:.3rem;
+  padding:.5em .7em; border-radius:11px; background:var(--acc-soft);
+  font-size:.78em; line-height:1.5;
+}
+.sub-card .examline .when{ color:var(--text-2); }
+.sub-card .examline b{
+  margin-inline-start:auto; font-weight:800; color:var(--acc-d); font-variant-numeric:tabular-nums;
+}
+:root[data-theme="dark"] .sub-card .examline b{ color:var(--acc); }
+.sub-card .examline b.urgent{ color:var(--bad); }
+.sub-card .cta{
+  display:inline-flex; align-items:center; gap:.35em;
+  color:var(--acc); font-weight:800; font-size:1.05em;
+}
+:root[data-theme="light"] .sub-card .cta{ color:var(--acc-d); }
+@keyframes urgentblink{ 0%,100%{opacity:1} 50%{opacity:.55} }
+.urgent{ animation:urgentblink 2s ease-in-out infinite; }
+
+/* ختم «تم الانتهاء» لمادة انقضى موعدها — كما في AMSU */
+.stamp{
+  display:block; position:absolute; z-index:6; top:50%; left:50%;
+  transform:translate(-50%,-50%) rotate(-13deg);
+  font-size:clamp(1.25rem,3.4vw,1.9rem); font-weight:900; letter-spacing:.02em; white-space:nowrap;
+  color:var(--bad); border:4px double var(--bad); border-radius:14px;
+  padding:.18em .7em; background:color-mix(in srgb, var(--bad) 12%, var(--surface));
+  pointer-events:none; opacity:.92;
+}
+.sub-card.exam-done{ filter:grayscale(.75); opacity:.72; }
+.sub-card.exam-done .art{ filter:saturate(.35); }
+.sub-card.exam-done h3{ text-decoration:line-through; text-decoration-thickness:2px; color:var(--text-2); }
+.sub-card.exam-done:hover{ filter:grayscale(.35); opacity:1; }
 
 /* البطاقات المقلوبة ثلاثية الأبعاد لوضع الحفظ */
 .flip{ perspective:900px; min-height:150px; cursor:pointer; }
@@ -702,29 +808,94 @@ img,svg{ max-width:100%; height:auto; }
 /* ═══ التحليل الشامل — HTML مولَّد يخضع لنظام التصميم ═══ */
 /* الوسوم تصل عارية من كل سمة (عقّمناها مرتين) — فالمظهر كله من هنا،
    وبمتغيرات النظام حصرًا: التحليل يرث هوية المنصة لا يجلب هويته معه */
+/* أسلوب prose في AMSU: عناوين بلون المادة، جداول بزوايا وترويسة ملوّنة ناعمة */
 .analysis{ line-height:1.9; }
 .analysis p{ margin:0 0 .6em; }
-.analysis h3{ margin:1.1em 0 .35em; font-size:1.05rem; color:var(--brand); }
-.analysis h4{ margin:.9em 0 .3em; font-size:.98rem; }
-.analysis ul{ margin:.3em 0 .8em; padding-inline-start:1.4em; }
-.analysis li{ margin-bottom:.3em; }
+.analysis h3{ margin:1.4em 0 .35em; font-size:1.1em; color:var(--acc-d); }
+:root[data-theme="dark"] .analysis h3{ color:var(--acc); }
+.analysis h3:first-child{ margin-top:0; }
+.analysis h4{ margin:1.1em 0 .3em; font-size:.98em; }
+.analysis ul{ margin:.5em 0 1em; padding-inline-start:1.25em; }
+.analysis li{ margin-bottom:.4em; }
+.analysis strong{ color:var(--text); font-weight:800; }
 .analysis table{
-  width:100%; border-collapse:collapse; margin:.5em 0 1em;
-  font-size:.92rem; overflow-wrap:anywhere;
+  width:100%; border-collapse:separate; border-spacing:0; margin:.7em 0 1.3em;
+  font-size:.88em; overflow-wrap:anywhere;
+  border:1px solid var(--line); border-radius:var(--r2); overflow:hidden;
 }
-.analysis th, .analysis td{
-  border:1px solid var(--line); padding:.45em .6em; text-align:start;
-  vertical-align:top;
-}
-.analysis thead th{ background:color-mix(in srgb, var(--brand) 8%, var(--surface)); }
-.analysis tbody tr:nth-child(even){ background:color-mix(in srgb, var(--ink) 3%, transparent); }
-.analysis section + section{ margin-top:1.2em; }
+.analysis th, .analysis td{ padding:.6em .8em; text-align:start; vertical-align:top; }
+.analysis td{ border-top:1px solid var(--line); }
+.analysis thead th{ background:var(--acc-soft); color:var(--acc-d); font-weight:800; font-size:.95em; }
+:root[data-theme="dark"] .analysis thead th{ color:var(--acc); }
+.analysis tbody tr:nth-child(even){ background:var(--surface-2); }
+.analysis section + section{ margin-top:1.6em; }
 
 /* عدّاد الاختبار — كل طالب وموعده */
 .exambar{ margin:0; }
 .exambar__t{
   font-weight:800; font-variant-numeric:tabular-nums;
-  color:var(--brand); font-size:1.05rem;
+  color:var(--acc); font-size:1.05rem;
+}
+
+/* ═══ رأس المادة — sub-hero من AMSU حرفيًا ═══
+   يهرب من قيد .wrap إلى حافتي الشاشة (هامش سالب بنصف الفارق)،
+   ثم يعيد .wrap الداخلي توسيط محتواه. */
+.sub-hero{
+  position:relative; overflow:hidden;
+  margin-inline:calc(50% - 50vw);
+  margin-top:calc(var(--s5) * -1);            /* يلتصق بالشريط العلوي كما في AMSU */
+  border-radius:0 0 var(--r4) var(--r4);
+  background:linear-gradient(135deg,
+    color-mix(in srgb, var(--acc) 92%, black),
+    color-mix(in srgb, var(--acc) 62%, rgb(17,17,17)));
+  color:var(--on-acc);
+  padding:clamp(20px,4vw,34px) 0 clamp(22px,4vw,30px);
+  margin-bottom:var(--s4);
+}
+.sub-hero .herotop{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; }
+.sub-hero .topacts{ display:flex; gap:.4rem; flex-wrap:wrap; justify-content:flex-end; }
+.copybtn{
+  display:inline-flex; align-items:center; gap:.4em; color:var(--on-acc); font-size:.8em; font-weight:700;
+  background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.28); cursor:pointer;
+  padding:.45em .85em; border-radius:var(--r-pill); margin-bottom:.9rem; transition:all .2s var(--ease);
+}
+.copybtn:hover{ background:var(--surface); color:var(--acc-d); transform:translateY(-1px); }
+.backbtn{
+  display:inline-flex; align-items:center; gap:.4em; color:var(--on-acc); opacity:.9;
+  font-size:.85em; font-weight:700; margin-bottom:.9rem;
+}
+.backbtn:hover{ opacity:1; text-decoration:none; }
+.sub-hero .inner{ position:relative; display:flex; align-items:center; gap:clamp(12px,3vw,26px); }
+.sub-hero .figwrap{
+  width:clamp(64px,15vw,104px); height:clamp(64px,15vw,104px); flex:none; border-radius:22px;
+  background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.24);
+  display:grid; place-items:center; backdrop-filter:blur(6px);
+}
+.sub-hero .fig{ font-size:clamp(2rem,7vw,3.4rem); line-height:1; }
+.sub-hero .hx{ min-width:0; }
+.sub-hero h2{ margin:0 0 .25em; font-size:clamp(1.15rem,4.2vw,1.85rem); letter-spacing:-.03em; color:var(--on-acc); }
+.sub-hero .sub{ opacity:.85; font-size:.85em; }
+.sub-hero .stats{ display:flex; flex-wrap:wrap; gap:.4rem .55rem; margin-top:.7rem; }
+.sub-hero .stat{
+  background:rgba(255,255,255,.16); border-radius:var(--r-pill);
+  padding:.2em .75em; font-size:.76em; font-weight:700;
+}
+.hero-exam{
+  margin-inline-start:auto; flex:none; display:inline-flex; align-items:center; gap:.6em;
+  background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.3); color:var(--on-acc);
+  padding:.7em 1.1em; border-radius:16px; font-weight:800; font-size:.92em; backdrop-filter:blur(6px);
+  transition:transform .2s var(--ease), background .2s var(--ease), box-shadow .2s var(--ease);
+  box-shadow:0 6px 20px -10px rgba(0,0,0,.6);
+}
+.hero-exam:hover{
+  background:var(--surface); color:var(--acc-d); transform:translateY(-2px);
+  text-decoration:none; box-shadow:0 12px 28px -12px rgba(0,0,0,.55);
+}
+.hero-exam span{ display:flex; flex-direction:column; align-items:flex-start; line-height:1.25; }
+.hero-exam small{ font-weight:600; opacity:.8; font-size:.78em; }
+@media (max-width:720px){
+  .sub-hero .inner{ flex-wrap:wrap; }
+  .hero-exam{ margin-inline-start:0; width:100%; justify-content:center; margin-top:.9rem; }
 }
 
 
@@ -1565,11 +1736,13 @@ QBANK.toast = toast;
 
 /* ===== 10-theme.js ===== */
 /*
-  الوضع الليلي اختياري لا تلقائي: نحترم اختيار المستخدم أولًا،
-  وإن لم يختر شيئًا نتبع نظام جهازه. السبب: طلاب يذاكرون ليلًا وطلاب يطبعون نهارًا.
+  الليلي هو الافتراضي — مثل AMSU تمامًا وبطلب علي.
+  اختيار المستخدم يُحترم أولًا، ومن لم يختر يفتح على الليل: الطلاب يذاكرون
+  ليلًا في الغالب، وهوية AMSU المنقولة صُمّمت على الأسود أولًا.
 */
 const Theme = {
   KEY: 'theme',
+  DEFAULT: 'dark',
   apply(mode){
     // mode: 'light' | 'dark' | 'auto'
     const root = document.documentElement;
@@ -1584,7 +1757,7 @@ const Theme = {
     try{ return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); }
     catch(e){ return false; }
   },
-  current(){ return QBANK.store.get(Theme.KEY, 'auto'); },
+  current(){ return QBANK.store.get(Theme.KEY, Theme.DEFAULT); },
   set(mode){ QBANK.store.set(Theme.KEY, mode); return Theme.apply(mode); },
   toggle(){
     const now = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -2401,30 +2574,37 @@ function subjectCard(sub){
   const done = Math.round((sub.q_count || 0) * pct / 100);
   const topics = (sub.topics && sub.topics.length) || 0;
 
-  const card = el('article', { class:'card subj' + (past ? ' is-past' : ''), tabindex:'0', role:'link',
-    'aria-label':'مادة ' + sub.name }, [
-    el('div', { class:'subj__bar', style:'background:' + color, 'aria-hidden':'true' }),
-    el('div', { class:'row' }, [
-      el('span', { class:'subj__ico', 'aria-hidden':'true', text: sub.icon || '▤' }),
-      el('div', { class:'subj__id' }, [
-        sub.course_code ? el('span', { class:'subj__code', text: sub.course_code }) : null,
-        el('h3', { class:'subj__name', text: sub.name })
+  /*
+    بطاقة AMSU: منطقة فنية بتدرّج لون المادة وأيقونتها، شارة «N سؤالًا»،
+    الاسم وتحته الإنجليزي، سطر موعد الاختبار بعدّه، شريط تقدّم، و«ابدأ المراجعة».
+    اللون يُحقن مرة واحدة في --acc فيتلوّن كل ما بالداخل من نظام التصميم.
+  */
+  const card = el('article', {
+    class:'sub-card' + (past ? ' exam-done' : ''), tabindex:'0', role:'link',
+    style:'--acc:' + color, 'aria-label':'مادة ' + sub.name }, [
+    past ? el('span', { class:'stamp', 'aria-hidden':'true', text:'تم الانتهاء' }) : null,
+    el('div', { class:'art', 'aria-hidden':'true' }, [
+      el('span', { class:'art__ico', text: sub.icon || '▤' }),
+      el('span', { class:'badge num', text: QBANK.views.arNum(sub.q_count || 0) + ' سؤالًا' })
+    ]),
+    el('div', { class:'meta' }, [
+      el('h3', { text: sub.name }),
+      sub.name_en ? el('span', { class:'qn ltr', text: sub.name_en })
+        : (sub.course_code ? el('span', { class:'qn ltr', text: sub.course_code }) : null),
+      left !== null ? el('div', { class:'examline num' }, [
+        el('span', { class:'when', text: past ? 'انتهى موعده' : 'موعد الاختبار' }),
+        past ? null : el('b', { class: left <= 2 ? 'urgent' : '',
+          text:'متبقٍ ' + QBANK.views.arNum(left) + (left === 1 ? ' يوم' : ' أيام') })
+      ]) : null,
+      el('div', { class:'prog', 'aria-label':'أنجزت ' + pct + '٪' }, [
+        el('i', { style:'width:' + pct + '%' })
       ]),
-      el('span', { class:'spacer' }),
-      past ? el('span', { class:'stamp', text:'انتهى موعده' })
-           : (left !== null ? el('span', { class:'deadline num' }, [
-               el('span', { class:'deadline__n', text: QBANK.views.arNum(left) }),
-               el('span', { class:'deadline__l', text: left === 1 ? 'يوم' : 'أيام' })
-             ]) : null),
-      sub.free ? el('span', { class:'badge badge--ok', text:'مجانية' }) : null
-    ]),
-    el('div', { class:'subj__facts num' }, [
-      el('span', { text: QBANK.views.arNum(done) + ' من ' + QBANK.views.arNum(sub.q_count || 0) + ' سؤالًا' }),
-      topics ? el('span', { text: QBANK.views.arNum(topics) + ' محاور' }) : null,
-      el('span', { class:'subj__pct', text: QBANK.views.arNum(pct) + '٪' })
-    ]),
-    el('div', { class:'subj__meter', 'aria-label':'أنجزت ' + pct + '٪' }, [
-      el('div', { style:'width:' + pct + '%;background:' + color })
+      el('div', { class:'foot num' }, [
+        el('span', { text:'راجعت ' + QBANK.views.arNum(done) + ' من ' +
+          QBANK.views.arNum(sub.q_count || 0) + ' · ' + QBANK.views.arNum(pct) + '٪' }),
+        sub.free ? el('span', { class:'badge badge--ok', text:'مجانية' }) : null,
+        el('span', { class:'cta', text:'ابدأ المراجعة ‹' })
+      ])
     ])
   ]);
   card.addEventListener('click', () => QBANK.router.go('#/subject/' + sub.id));
@@ -2504,7 +2684,7 @@ const ViewHome = {
         el('div', { class:'row', style:'justify-content:center;margin-top:16px' }, [
           el('a', { class:'btn', href:'#/admin', text:'افتح لوحة التحكم' })
         ])));
-      body.push(el('div', { class:'grid grid--2', id:'subjectsGrid' }));
+      body.push(el('div', { class:'grid', id:'subjectsGrid' }));
       return page('موادي', 'اختر مادة لتبدأ المراجعة.', body);
     }
 
@@ -2520,11 +2700,11 @@ const ViewHome = {
 
     if (mine.length) {
       body.push(el('h2', { text:'موادي' }));
-      body.push(el('div', { class:'grid grid--2', id:'subjectsGrid' }, mine.map(subjectCard)));
+      body.push(el('div', { class:'grid', id:'subjectsGrid' }, mine.map(subjectCard)));
     }
     if (other.length) {
       body.push(el('h2', { text: mine.length ? 'مواد أخرى متاحة' : 'المواد المتاحة' }));
-      body.push(el('div', { class:'grid grid--2', id: mine.length ? null : 'subjectsGrid' }, other.map(su => {
+      body.push(el('div', { class:'grid', id: mine.length ? null : 'subjectsGrid' }, other.map(su => {
         const c = subjectCard(su);
         const add = el('button', { class:'btn btn--sm btn--soft', type:'button',
           'aria-label':'أضف ' + su.name + ' إلى موادي', text:'+ أضف إلى موادي' });
@@ -4274,15 +4454,55 @@ const ViewSubject = {
       body.appendChild(fill(sub, qs));
     });
 
-    const examBtn = el('a', { class:'btn', href:'#/exam/' + sid, text:'▶ اختبار تجريبي' });
-    const printBtn = el('button', { class:'btn btn--ghost', type:'button', text:'🖨 طباعة / PDF' });
+    const printBtn = el('button', { class:'copybtn', type:'button', text:'🖨 طباعة / PDF' });
     printBtn.addEventListener('click', () => QBANK.views.openPrintDialog(sub));
+    const shareBtn = el('button', { class:'copybtn', type:'button', text:'⎘ نسخ الرابط' });
+    shareBtn.addEventListener('click', () => {
+      try{
+        navigator.clipboard.writeText(location.origin + location.pathname + '#/subject/' + sid);
+        QBANK.toast('نُسخ رابط المادة');
+      }catch(e){ QBANK.toast('تعذّر النسخ'); }
+    });
 
-    return QBANK.views.page(sub.name, (sub.q_count || 0) + ' سؤالًا · المذاكرة تعمل بلا إنترنت بعد أول فتح.', [
+    /*
+      رأس AMSU: تدرّج بلون المادة من حافة الشاشة لحافتها، أيقونة في صندوق
+      زجاجي، الاسم وتحته الإنجليزي، رقائق إحصائية، وزر الاختبار على الطرف.
+    */
+    const nTopics = (sub.topics && sub.topics.length) || 0;
+    const hero = el('section', { class:'sub-hero', style:'--acc:' + subjectColor(sub.color) }, [
+      el('div', { class:'wrap' }, [
+        el('div', { class:'herotop' }, [
+          el('a', { class:'backbtn', href:'#/', text:'‹ كل المواد' }),
+          el('div', { class:'topacts' }, [shareBtn, printBtn])
+        ]),
+        el('div', { class:'inner' }, [
+          el('div', { class:'figwrap', 'aria-hidden':'true' }, [
+            el('span', { class:'fig', text: sub.icon || '▤' })
+          ]),
+          el('div', { class:'hx' }, [
+            el('h2', { text: sub.name }),
+            sub.name_en ? el('div', { class:'sub ltr', text: sub.name_en }) : null,
+            el('div', { class:'stats num' }, [
+              el('span', { class:'stat', text: QBANK.views.arNum(sub.q_count || 0) + ' سؤالًا' }),
+              nTopics ? el('span', { class:'stat', text: QBANK.views.arNum(nTopics) + ' محاور' }) : null,
+              sub.free ? el('span', { class:'stat', text:'مجانية' }) : null
+            ])
+          ]),
+          el('a', { class:'hero-exam', href:'#/exam/' + sid }, [
+            el('span', {}, [
+              document.createTextNode('اختبار تجريبي'),
+              el('small', { text:'في هذه المادة' })
+            ])
+          ])
+        ])
+      ])
+    ]);
+
+    return el('div', { class:'page page--subject' }, [
+      hero,
       trialSlot,
       /* عدّاد كل طالبٍ لموعده هو — الشُّعب تختلف، وموعدك لا يخص زميلك */
       QBANK.examDate ? QBANK.examDate.band(sid) : null,
-      el('div', { class:'row' }, [examBtn, printBtn]),
       tabs, body
     ]);
   }
