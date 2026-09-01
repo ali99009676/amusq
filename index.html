@@ -1946,6 +1946,23 @@ const Store = {
         .forEach(k => localStorage.removeItem(k));
       return true;
     } catch(e){ return false; }
+  },
+
+  /*
+    ★ ما يخصّ الشخص لا الجهاز.
+    الجهاز واحد وقد يتناوب عليه شخصان: طالبٌ يخرج وزميله يدخل، أو صاحبُ
+    الجهاز نفسه بحسابٍ ثانٍ. وكان كل ما نخزّنه مفتاحًا عامًّا بلا هوية،
+    فيرث الداخلُ الجديدُ ملفَ من قبله: صورتَه ورقمَ جواله وتقدّمَه — بل
+    ومشترياته. هذا ليس خللًا في العرض، هو تسريبُ بياناتٍ بين حسابين.
+
+    القائمة صريحة لا نمطية: مفتاحٌ جديد يُنسى إضافته يبقى ظاهرًا فيُكتشف،
+    ومفتاحُ جهازٍ يُمسح خطأً (السمة، إعداد الربط) عطلٌ صامت يحيّر صاحبه.
+  */
+  PERSONAL: ['profile', 'progress', 'entitlements', 'campus', 'my_subjects',
+             'is_admin_check', 'exam_dates', 'after_login', 'ad_days', 'explore_last'],
+  clearPersonal(){
+    Store.PERSONAL.forEach(k => Store.remove(k));
+    return true;
   }
 };
 
@@ -2040,8 +2057,28 @@ const Api = {
   fetchFn(){ return Api._fetch || (typeof fetch !== 'undefined' ? fetch.bind(window) : null); },
 
   session(){ return QBANK.store.get(Api.SESSION_KEY, null); },
+  /* مفتاح صاحب البيانات المخزّنة — لا رمزٌ ولا سرّ، معرّفٌ للمقارنة وحده */
+  UID_KEY: 'last_uid',
   saveSession(s){
-    if (!s) return QBANK.store.remove(Api.SESSION_KEY);
+    if (!s) {
+      /* خروجٌ أو رمزٌ ميت: لا نترك أثر صاحبه لمن يأتي بعده */
+      QBANK.store.clearPersonal();
+      QBANK.store.remove(Api.UID_KEY);
+      return QBANK.store.remove(Api.SESSION_KEY);
+    }
+    /*
+      ★ الحارس الحقيقي هنا لا في زرّ الخروج.
+      الخروجُ طريقٌ واحد من طرقٍ كثيرة لتبدّل الهوية: رمزٌ انتهت صلاحيته،
+      دخولٌ برابط بريد، حسابٌ ثانٍ على المتصفح نفسه، تطبيقٌ أُعيد فتحه بعد
+      شهر. فنقيس عند كل حفظِ جلسةٍ: من كان هنا؟ ومن جاء الآن؟
+    */
+    const uid = (s.user && s.user.id) || null;
+    const was = QBANK.store.get(Api.UID_KEY, null);
+    /* `was` فارغةً لا تعني تبدّلًا: قد يكون زائرًا ذاكر مجانًا ثم سجّل،
+       ومسحُ تقدّمه عقوبةٌ على أنه سجّل. التبدّل يكون بين معلومَين. */
+    if (uid && was && was !== uid) QBANK.store.clearPersonal();
+    if (uid) QBANK.store.set(Api.UID_KEY, uid);
+
     // نحفظ وقت الانتهاء المطلق كي نعرف متى نجدّد دون الرجوع للخادم
     s.expires_abs = Date.now() + (s.expires_in ? s.expires_in * 1000 : 3600 * 1000);
     QBANK.store.set(Api.SESSION_KEY, s);
@@ -2171,6 +2208,13 @@ const Api = {
       return r;
     },
     async signOut(){
+      /*
+        الكنس قبل النداء لا بعده: لو انقطعت الشبكة عند الخادم بقيت بيانات
+        الخارج على الجهاز رغم أنه ضغط «خروج». نيّته صريحة، فتُنفَّذ محليًا
+        على كل حال، والخادم يلحق.
+      */
+      QBANK.store.clearPersonal();
+      QBANK.store.remove(Api.UID_KEY);
       await Api.raw('/auth/v1/logout', { method:'POST' });
       Api.saveSession(null);
     },
@@ -3216,7 +3260,17 @@ async function uploadAvatar(file){
 function accountBody(){
   const u = QBANK.api.user();
   if (!u) return el('div');
-  const prof = QBANK.store.get('profile', { name:'', avatar: AVATARS[0], phone:'', bio:'', avatar_url:'' });
+  /*
+    ★ الطبقة الأخيرة: الملف المخزّن يقول لمن هو.
+    الكنس عند تبدّل الهوية يكفي نظريًا، لكن نسخةً قديمة من التطبيق قد تكون
+    كتبت ملفًا بلا هوية، أو يفتح التطبيقُ هذه الشاشةَ قبل أن تُحفظ الجلسة.
+    فنسأل الملف نفسه: أأنت لصاحب هذه الجلسة؟ ومن لا يجيب لا يُعرض.
+  */
+  const EMPTY = { name:'', avatar: AVATARS[0], phone:'', bio:'', avatar_url:'' };
+  const cached = QBANK.store.get('profile', null);
+  const prof = (cached && cached.uid === u.id) ? cached
+             : Object.assign({ uid: u.id }, EMPTY);
+  prof.uid = u.id;   // كل حفظٍ بعد اليوم يخرج موسومًا بصاحبه
 
   /* ═══ بطل الملف: الصورة والاسم والبريد في صدر الصفحة ═══ */
   const avImg = el('img', { class:'pf-hero__img', alt:'صورتك الشخصية', hidden: prof.avatar_url ? null : true });
@@ -3692,9 +3746,16 @@ const Admin = {
     return { questions: w.raw.length, batches: Admin.chunk(w.raw, Admin.BATCH).length };
   },
 
-  async wizardIngest(w, filename, base64){
+  /*
+    forceAi: «أعد القراءة بالذكاء» — طريقُ نجاةٍ بيد الرافع نفسه.
+    الخادم يقرّر وحده في الحالة العادية، لكن قراره تقديرٌ قد يخطئ: ملفٌ
+    تلتقط منه القواعدُ عشرين سؤالًا من ثمانين تبدو «سليمة» فلا يُستدعى
+    الذكاء. فمن رأى العدد أقلّ مما يعرف عن ملفه، له أن يأمر بالقراءة ثانية.
+  */
+  async wizardIngest(w, filename, base64, forceAi){
     const r = await Admin.server('/api/ingest', { filename, content_base64: base64,
-      subject_name: w.subjectName || '', sanctity_mode: w.mode || 'strict' });
+      subject_name: w.subjectName || '', sanctity_mode: w.mode || 'strict',
+      force_ai: forceAi === true });
     if (!r.ok) { w.error = (r.data && r.data.error) || 'تعذّر الاتصال بالخادم'; return w; }
 
     /*
@@ -3706,13 +3767,18 @@ const Admin = {
     */
     const got = Array.isArray(r.data.questions) ? r.data.questions : [];
     if (!got.length) {
-      w.error = 'لم نتعرّف على سؤال واحد في هذا الملف. تأكد أن كل سؤال يبدأ برقم، ' +
-                'وأن خياراته في أسطر تبدأ بـ A) أو أ) — وانظر «قالب بنك الأسئلة» أسفل الصفحة.';
+      w.error = 'لم نتعرّف على سؤال واحد في هذا الملف — وقد جرّبنا القواعد والذكاء معًا. ' +
+                'الأرجح أن الأسئلة صورٌ ممسوحة ضوئيًا لا نصّ؛ صدّرها نصًّا وأعد الرفع، ' +
+                'وانظر «قالب بنك الأسئلة» أسفل الصفحة.';
       w.raw = []; w.total = 0;
       return w;
     }
 
     w.filename = filename; w.raw = got; w.total = r.data.total;
+    // كيف قُرئ؟ وكم سؤالًا لم نجد نصّه حرفًا بحرف؟ — يُعرضان للرافع لا يُخبآن
+    w.readBy = r.data.read_by || 'rules';
+    w.unverified = r.data.unverified || 0;
+    w.fileB64 = base64;          // نحتفظ به لإعادة القراءة بلا رفعٍ ثانٍ
     w.subjectName = w.subjectName || r.data.subject_name || '';
     w.slug = r.data.slug || '';
     w.step = 2; w.error = '';
@@ -3748,9 +3814,19 @@ const Admin = {
     return w;
   },
 
-  /* كم كوينًا يلزم لإثراء هذا الملف */
+  /*
+    كم كوينًا يلزم لإثراء هذا الملف.
+    ★ `costPerQ || 1` كان يبتلع الصفر: الصفر قيمةٌ كاذبة في جافاسكربت،
+    فمنصةٌ قرّرت أن تجعل الإثراء مجانيًا كانت تُحاسِب بكوين للسؤال رغمًا
+    عنها. الصفر هنا قرارٌ لا نقصان بيانات، فنميّزه صراحةً.
+  */
+  costPerQ(credits){
+    const c = credits && credits.cost_per_q;
+    return (typeof c === 'number' && c >= 0) ? c : 1;
+  },
   creditsNeeded(w, costPerQ){
-    return Math.max(0, (w.raw.length - w.done)) * Math.max(0, costPerQ || 1);
+    const c = (typeof costPerQ === 'number' && costPerQ >= 0) ? costPerQ : 1;
+    return Math.max(0, (w.raw.length - w.done)) * c;
   },
 
   async wizardEnrich(w, onProgress){
@@ -3766,9 +3842,17 @@ const Admin = {
         الحسم قبل النداء لا بعده. لو حسمنا بعده لكان كل انقطاع إثراءً مجانيًا،
         ولو تعطّل الخادم بعد الحسم رددنا الرصيد في السطر التالي.
       */
-      const need = batches[i].length * (w.costPerQ || 1);
-      const pay = await QBANK.api.rpc('spend_credits',
-        { n: need, p_reason: 'إثراء ' + batches[i].length + ' سؤالًا', p_draft: w.draftId });
+      const cpq = (typeof w.costPerQ === 'number' && w.costPerQ >= 0) ? w.costPerQ : 1;
+      const need = batches[i].length * cpq;
+      /*
+        ★ حين يكون الإثراء مجانيًا لا نمرّ بالمحفظة أصلًا.
+        نداءُ حسمٍ بصفرٍ نجاحُه محقّق، لكنه رحلةُ شبكةٍ لكل دفعة، وأسوأ منها
+        أنه يجعل عطلًا في المحفظة يوقف إثراءً لا علاقة له بها.
+      */
+      const pay = need > 0
+        ? await QBANK.api.rpc('spend_credits',
+            { n: need, p_reason: 'إثراء ' + batches[i].length + ' سؤالًا', p_draft: w.draftId })
+        : { ok:true, data:{ ok:true, spent:0 } };
       if (!pay.ok || !pay.data || !pay.data.ok) {
         const d = (pay.data) || {};
         w.error = d.reason === 'insufficient'
@@ -3780,8 +3864,9 @@ const Admin = {
 
       const r = await Admin.server('/api/ai', { questions: batches[i], sanctity_mode: w.mode || 'strict' });
       if (!r.ok) {
-        // الطالب لا يدفع ثمن عطل عندنا
-        await QBANK.api.rpc('refund_credits', { n: need, p_reason: 'تعذّرت الدفعة', p_draft: w.draftId });
+        // الطالب لا يدفع ثمن عطل عندنا — ومن لم يدفع شيئًا لا يُردّ له شيء
+        if (need > 0)
+          await QBANK.api.rpc('refund_credits', { n: need, p_reason: 'تعذّرت الدفعة', p_draft: w.draftId });
         w.error = (r.data && r.data.error) || 'انقطعت الدفعة ' + (i + 1) + ' — رُدّ رصيدها';
         return w;
       }
@@ -4329,9 +4414,11 @@ function stepRead(box, rerender){
   const drop = el('div', { class:'drop', tabindex:'0', role:'button', 'aria-label':'اختر ملف أسئلة' }, [
     el('span', { class:'empty__ico', 'aria-hidden':'true', text:'⇪' }),
     el('p', { class:'empty__title', text:'أسقط ملف الأسئلة هنا أو اضغط للاختيار' }),
-    el('p', { class:'empty__text', text:'PDF أو DOCX أو TXT — حتى ١٥ ميغابايت. يفهم شكلين: خيارات A-D، وقوائم سؤال-ثم-إجابة.' })
+    el('p', { class:'empty__text', text:'PDF أو Word أو PowerPoint أو نص — حتى ١٥ ميغابايت. ' +
+      'ارفع ملفك كما هو: إن لم تفهمه القواعد قرأه الذكاء، مهما كان ترقيمه أو ترتيبه.' })
   ]);
-  const fileIn = el('input', { type:'file', accept:'.pdf,.docx,.txt', style:'display:none', 'aria-hidden':'true' });
+  const fileIn = el('input', { type:'file', style:'display:none', 'aria-hidden':'true',
+    accept:'.pdf,.docx,.pptx,.txt,.text,.md,.csv,.tsv,.rtf,.html,.htm' });
   const msg = el('p', { class:'field__hint', role:'status' });
 
   async function handle(file){
@@ -4380,6 +4467,35 @@ function stepEnrich(box, rerender){
   });
 
   /*
+    ★ كيف قُرئ ملفك — يُقال لا يُخبأ.
+    الرافع يعرف ملفه أكثر منا: هو وحده يستطيع أن يقول «فيه ثمانون سؤالًا
+    لا عشرون». فنُريه العدد ومصدره ونضع بيده زرًّا يأمر بإعادة القراءة
+    بالذكاء. الشفافية هنا ليست أدبًا فقط — هي آليةُ تصحيحٍ لا نملك غيرها.
+  */
+  const N = QBANK.views.arNum;   // يُستعمل من هنا فصاعدًا — قبل استعماله لا بعده
+  const readLine = el('p', { class:'field__hint', text:
+    (wizard.readBy === 'ai' ? '🧠 قرأ الذكاءُ ملفك واستخرج ' : '⚡ قُرئ ملفك بالقواعد واستُخرج ')
+    + N(wizard.total) + ' سؤالًا.'
+    + (wizard.unverified ? ' ومنها ' + N(wizard.unverified) +
+        ' لم نجد نصّها حرفًا بحرف في الملف — راجعها في الخطوة التالية.' : '') });
+  box.appendChild(readLine);
+
+  if (wizard.fileB64){
+    const again = el('button', { class:'btn btn--sm btn--ghost', type:'button',
+      text: wizard.readBy === 'ai' ? '⟳ أعد القراءة بالذكاء' : '🧠 العدد أقل مما تتوقع؟ اقرأه بالذكاء' });
+    again.addEventListener('click', async () => {
+      again.setAttribute('aria-disabled','true'); again.textContent = '… يقرأ الذكاء ملفك';
+      const w2 = await QBANK.admin.wizardIngest(wizard, wizard.filename, wizard.fileB64, true);
+      wizard = w2;
+      /* الإثراء يبدأ من الصفر بعد قراءة جديدة: الأسئلة تغيّرت، وعدّادٌ
+         قديم على أسئلة جديدة يعني تخطّي أسئلة لم تُقرأ قط. */
+      wizard.done = 0; wizard.enriched = [];
+      rerender();
+    });
+    box.appendChild(el('p', { class:'stack', style:'margin-bottom:12px' }, [again]));
+  }
+
+  /*
     مساران، والفرق بينهما معروض لا مخبوء.
     الطالب لا يعرف ما «الإثراء» حتى يرى ماذا ينقصه بدونه — فنقوله بالأسماء.
   */
@@ -4389,13 +4505,13 @@ function stepEnrich(box, rerender){
 
   const paths = el('div', { class:'paths', role:'radiogroup', 'aria-label':'طريقة المعالجة' });
   const creditBox = el('div', { class:'costbox', hidden:true });
-  const N = QBANK.views.arNum;
 
   function paint(credits){
-    const cost = QBANK.admin.creditsNeeded(wizard, (credits && credits.cost_per_q) || 1);
+    const cpq = QBANK.admin.costPerQ(credits);
+    const cost = QBANK.admin.creditsNeeded(wizard, cpq);
     const bal = (credits && credits.balance) || 0;
-    const enough = bal >= cost;
-    wizard.costPerQ = (credits && credits.cost_per_q) || 1;
+    const enough = bal >= cost;          // وصفرٌ ≤ أي رصيد، فالمجاني كافٍ دائمًا
+    wizard.costPerQ = cpq;
 
     /*
       ★ الافتراض الطموح يجب ألا يورّط الطالب.
@@ -4417,7 +4533,10 @@ function stepEnrich(box, rerender){
         كان يضع «بلا إثراء» أولًا ومختارًا، فيمرّ عليه الطالب بضغطة فيخرج
         ببنك فقير ثم يظنّ المنصة فقيرة. الافتراض يجب أن يكون أفضل مخرَج.
       */
-      { id:true, t:'المادة الكاملة — كطريقة AMSU', price: N(cost) + ' كوين',
+      /* ★ الثمن يُقال بلسانه: «مجانًا» لا «٠ كوين». صفرٌ مكتوبٌ بجانب كلمة
+         كوين يقرؤه الطالب سعرًا لم يُحسب بعد، فيتردّد أمام ما هو مبذول له. */
+      { id:true, t:'المادة الكاملة — كطريقة AMSU',
+        price: cost > 0 ? N(cost) + ' كوين' : 'مجانًا',
         d:'شرح عربي وإنجليزي لكل سؤال، وترجمته، وبطاقة حفظ منحوتة، وتصنيف بالمحاور، ثم «عن المادة» و«طريقة الحفظ» و«الأخطاء الشائعة».',
         miss: noAnswer ? 'ويستنتج الذكاء إجابات ' + N(noAnswer) + ' سؤالًا لم تُعلَن في ملفك'
                        : 'وكل أسئلتك فيها إجاباتها أصلًا — فلن يُغيّر الذكاء إجابة واحدة' },
@@ -4449,7 +4568,8 @@ function stepEnrich(box, rerender){
 
     /* ★ صندوق الرصيد يظهر أيضًا حين يُحجب المدفوع لنقص الرصيد:
        الحجب بلا رقمٍ يشرحه لغزٌ، ومع «ينقصك كذا» يصير دعوةً للشحن. */
-    const showCost = wizard.enrich || (known && !enough);
+    // لا محفظة حيث لا ثمن: صندوق الرصيد يختفي كليًّا حين يكون الإثراء مجانيًا
+    const showCost = cost > 0 && (wizard.enrich || (known && !enough));
     creditBox.hidden = !showCost;
     creditBox.innerHTML = '';
     if (showCost){
@@ -4463,7 +4583,7 @@ function stepEnrich(box, rerender){
         creditBox.appendChild(el('a', { class:'btn btn--sm', href:'#/account', text:'اشحن رصيدك' }));
     }
     go.textContent = wizard.done ? 'أكمل من حيث توقفت (' + wizard.done + ')'
-                    : (wizard.enrich ? 'أثرِ وانشر' : 'انشر بلا إثراء');
+                    : (wizard.enrich ? 'ولّد المادة وانشر' : 'انشر بلا إثراء');
     go.setAttribute('aria-disabled', (wizard.enrich && !enough) ? 'true' : 'false');
   }
 
