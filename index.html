@@ -1187,6 +1187,28 @@ img,svg{ max-width:100%; height:auto; }
 /* ===== 60-admin.css ===== */
 /* لوحة تحكم المشرف — كثافة معلومات عالية بلا فوضى بصرية */
 
+/* ═══ عالم المشرف المستقل ═══
+   على مسارات ‎#/admin يختفي غلاف الطالب: الشريط السفلي بروابطه التي كانت
+   تعيد المشرف لواجهة الطالب بلمسة سهو. التذييل يبقى — قاعدة مشروع ثابتة. */
+.is-admin .tabbar{ display:none; }
+.is-admin .main{ padding-bottom:var(--s8); }
+
+/* شريط اللوحة: هوية المنطقة ومخرجها الوحيد الصريح */
+.ad-shell{
+  display:flex; align-items:center; gap:var(--s3);
+  padding:var(--s3) var(--s4); margin-bottom:var(--s4);
+  background:var(--surface); border:1px solid var(--line);
+  border-inline-start:4px solid var(--acc);
+  border-radius:var(--r2); box-shadow:var(--sh1);
+}
+.ad-shell__mark{ font-size:1.5rem; line-height:1; }
+.ad-shell__x{ display:flex; flex-direction:column; line-height:1.3; min-width:0; }
+.ad-shell__t{ font-family:var(--font-display); letter-spacing:-.01em; }
+.ad-shell__s{
+  font-size:.75rem; color:var(--text-3); direction:ltr; text-align:end;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:52vw;
+}
+
 /* ===== شبكة المؤشرات ===== */
 .ad-kpis{ display:grid; gap:var(--s3); grid-template-columns:repeat(2,1fr); }
 @media (min-width:700px){ .ad-kpis{ grid-template-columns:repeat(3,1fr); } }
@@ -2498,6 +2520,11 @@ const Router = {
     if (view) main.appendChild(view);
 
     document.title = (r.def && r.def.title ? r.def.title + ' · ' : '') + 'مراجعة';
+    /* ★ منطقة المشرف عالمها مستقل: صنف على الجسد يخفي غلاف الطالب
+       (الشريط السفلي وروابطه) عبر CSS — فلا زرّ يعيد المشرف لواجهة الطالب سهوًا */
+    try {
+      document.body.classList.toggle('is-admin', r.path.indexOf('#/admin') === 0);
+    } catch(e){}
     Router.paintNav(r.path);
     // نُعيد التركيز إلى المحتوى كي يعرف قارئ الشاشة أن الصفحة تبدّلت
     if (Router.booted) { try { main.focus(); } catch(e){} }
@@ -2878,6 +2905,7 @@ function loginCard(opts){
     if (r.ok) {
       msg.textContent = 'تم! افتح بريدك: اضغط رابط الدخول، أو اكتب الرمز هنا.';
       QBANK.toast('أُرسل بريد الدخول');
+      rememberAfter();                  // رابط البريد يعود للأصل — الوجهة تنتظره هنا
       otpBox.hidden = false;            // ★ داخل التطبيق المغلّف الرمز هو الطريق
       otp.focus();
     }
@@ -2927,10 +2955,14 @@ function loginCard(opts){
     آبل مطفأ لا محذوف: يشترط حساب Apple Developer المدفوع، والزر الظاهر
     المعطوب أسوأ من الغائب. يوم يُفعَّل يُعاد aBtn إلى القائمة أدناه.
   */
+  /* ★ الوجهة تُحفظ قبل مغادرة الصفحة: جوجل والرابط البريدي يعودان إلى
+     أصل الموقع (الهاش يحمله رمز الجلسة)، فمن أين نعرف أن القاصد كان
+     اللوحة؟ من هذا المفتاح — يقرؤه الإقلاع بعد التقاط الجلسة ثم يمحوه. */
+  const rememberAfter = () => { if (opts.after) QBANK.store.set('after_login', opts.after); };
   const gBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب جوجل' });
   const aBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب آبل' });
-  gBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('google'); if (u) location.href = u; else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
-  aBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('apple');  if (u) location.href = u; else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
+  gBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('google'); if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
+  aBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('apple');  if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
   void aBtn;   // يبقى جاهزًا ليوم حساب المطوّر
 
   return el('div', { class:'card stack' }, [
@@ -2963,8 +2995,10 @@ const ViewLogin = {
 const ViewAdminLogin = {
   title:'دخول المشرف',
   view(){
+    /* ★ after:'#/admin' — علي دخل من بوابة المشرف فهبط على واجهة الطالب.
+       من قصد اللوحة يعود إلى اللوحة، بأي طريق دخل: رمزًا أو رابطًا أو جوجل. */
     return page('دخول المشرف', 'واجهة منفصلة، والتحقق من الصلاحية في قاعدة البيانات عبر is_admin() لا في المتصفح.', [
-      loginCard({ emailId:'adminEmail', label:'بريد المشرف' })
+      loginCard({ emailId:'adminEmail', label:'بريد المشرف', after:'#/admin' })
     ]);
   }
 };
@@ -3212,12 +3246,15 @@ QBANK.views.ViewBoard = ViewBoard;
 const Admin = {
   /* هل الجلسة الحالية لمشرف؟ نسأل قاعدة البيانات مرة ونخزّن الجواب للجلسة */
   async check(){
-    if (!QBANK.api.user()) return false;
+    /* ★ نقرأ المستخدم مرة واحدة: النداء غير متزامن، والجلسة قد تُمحى
+       أثناءه (خروج، انتهاء صلاحية) — فقراءة ثانية بعد await تنفجر على null */
+    const u0 = QBANK.api.user();
+    if (!u0) return false;
     const cached = QBANK.store.get('is_admin_check', null);
-    if (cached && cached.uid === QBANK.api.user().id) return cached.ok;
+    if (cached && cached.uid === u0.id) return cached.ok;
     const r = await QBANK.api.myProfile();
     const ok = !!(r.ok && r.data && r.data.is_admin);
-    QBANK.store.set('is_admin_check', { uid: QBANK.api.user().id, ok });
+    QBANK.store.set('is_admin_check', { uid: u0.id, ok });
     return ok;
   },
 
@@ -3574,6 +3611,17 @@ function adminContentTab(box){
           { method:'PATCH', body: JSON.stringify({ free: !sub.free }) });
         QBANK.router.render('#/admin/content');
       });
+      /* ★ صلاحية جديدة: إعادة توليد التحليل الشامل لأي مادة بضغطة —
+         بعد تصحيح أسئلة أو ضم مادة قديمة، بدل انتظار قادح البُطلان */
+      const anaBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'⟳ حلّل' });
+      anaBtn.addEventListener('click', async () => {
+        if (!QBANK.analysis) return QBANK.toast('التحليل غير محمّل');
+        anaBtn.setAttribute('aria-disabled','true'); anaBtn.textContent = '… يحلَّل';
+        const r = await QBANK.analysis.generate(sub.id, 'ar');
+        anaBtn.removeAttribute('aria-disabled'); anaBtn.textContent = '⟳ حلّل';
+        QBANK.toast(r && r.ok ? 'اكتمل التحليل: ' + ((r.data && r.data.topics) || []).length + ' محاور'
+                              : 'تعذّر التحليل — ' + ((r && r.data && r.data.error) || 'حاول ثانية'));
+      });
       subTable.appendChild(el('div', { class:'ad-row', style:'cursor:default;flex-wrap:wrap' }, [
         el('span', { text: sub.icon || '▤' }),
         el('span', { class:'ad-row__main' }, [
@@ -3587,7 +3635,7 @@ function adminContentTab(box){
         el('span', { class:'ad-sub', style:'flex:1 0 100%' }, [
           el('label', { class:'ad-inline' }, [
             el('span', { class:'ad-inline__l', text:'موعد الاختبار' }), dateIn ]),
-          freeBtn
+          freeBtn, anaBtn
         ])
       ]));
     });
@@ -3663,6 +3711,24 @@ const AdminView = {
     if (!u && route.rest[0] !== 'settings') return QBANK.views.ViewAdminLogin.view();
 
     const active = ADMIN_TABS.some(t => t.id === route.rest[0]) ? route.rest[0] : ADMIN_TABS[0].id;
+
+    /*
+      ★ شريط اللوحة — رأس عالم المشرف المستقل.
+      غلاف الطالب مخفيّ هنا (is-admin على الجسد)، فهذا الشريط هو التنقّل
+      كله: هوية اللوحة، وكل التبويبات، ومخرج واحد صريح «افتح المنصة»
+      يفتح واجهة الطالب في تبويب جديد — فلا يفقد المشرف مكانه أبدًا.
+    */
+    const head = el('div', { class:'ad-shell' }, [
+      el('span', { class:'ad-shell__mark', 'aria-hidden':'true', text:'⛨' }),
+      el('div', { class:'ad-shell__x' }, [
+        el('strong', { class:'ad-shell__t', text:'لوحة المشرف' }),
+        el('span', { class:'ad-shell__s', text: (u && u.email) || '' })
+      ]),
+      el('span', { class:'spacer' }),
+      el('a', { class:'btn btn--ghost btn--sm', href:'#/', target:'_blank', rel:'noopener',
+        text:'افتح المنصة ↗' })
+    ]);
+
     const tabs = el('div', { class:'tabs', role:'tablist' },
       ADMIN_TABS.map(t => el('button', {
         class:'tabs__btn', type:'button', role:'tab', 'data-tab':t.id,
@@ -3673,7 +3739,28 @@ const AdminView = {
     });
     const body = el('div', { class:'stack', id:'adminBody' });
     ADMIN_TABS.filter(t => t.id === active)[0].fill(body);
-    return QBANK.views.page('لوحة التحكم', 'كل ما يظهر للطالب يمرّ من هنا أولًا.', [tabs, body]);
+
+    /*
+      ★ حارس الصلاحية — يظهر لا يصمت.
+      RLS تحمي البيانات فعلًا، لكن طالبًا فتح ‎#/admin كان يرى هيكل لوحةٍ
+      فارغة «معطوبة» في ظنّه. نسأل القاعدة، فإن لم يكن مشرفًا استبدلنا
+      اللوحة برسالة تسمّي الحال وبابًا يعيده لعالمه.
+    */
+    /* الطرد عند جوابٍ صريح فقط (is_admin === false): فشلُ الجلب أو انقطاعه
+       لا يطرد — RLS تحمي البيانات أصلًا، وطردُ مشرفٍ لعطل شبكة عابر أسوأ
+       من ترك هيكلٍ فارغ لطالبٍ فضولي لحظة. */
+    if (u) QBANK.api.myProfile().then(r => {
+      const notAdmin = r && r.ok && r.data && r.data.is_admin === false;
+      if (!notAdmin || !body.isConnected) return;
+      const page0 = body.closest('.page');
+      if (!page0) return;
+      page0.innerHTML = '';
+      page0.appendChild(QBANK.views.empty('⛨', 'هذه اللوحة للمشرف',
+        'حسابك مسجَّل لكنه بلا صلاحية إشراف. إن كنت المشرف فادخل بالبريد الصحيح.',
+        el('a', { class:'btn', href:'#/', text:'العودة إلى المنصة' })));
+    });
+
+    return QBANK.views.page('لوحة التحكم', 'كل ما يظهر للطالب يمرّ من هنا أولًا.', [head, tabs, body]);
   }
 };
 
@@ -5641,8 +5728,13 @@ function boot(){
 
   // رموز الدخول تعود من Supabase في هاش الصفحة — نلتقطها قبل أن يفسّرها الموجّه كمسار
   if (QBANK.api.auth.captureFromHash(location.hash)) {
-    try { history.replaceState(null, '', location.pathname + location.search + '#/'); }
-    catch(e) { location.hash = '#/'; }
+    /* ★ الوجهة المحفوظة قبل المغادرة تفوز على الرئيسية: من دخل من بوابة
+       المشرف يعود إلى لوحته لا إلى واجهة الطالب. تُقرأ مرة ثم تُمحى. */
+    const after = QBANK.store.get('after_login', '#/');
+    QBANK.store.remove('after_login');
+    const dest = /^#\//.test(after) ? after : '#/';
+    try { history.replaceState(null, '', location.pathname + location.search + dest); }
+    catch(e) { location.hash = dest; }
     QBANK.toast('تم تسجيل الدخول');
   }
 
