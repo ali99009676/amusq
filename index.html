@@ -1911,6 +1911,24 @@ a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
 .ad-feed__meta{ display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; }
 .ad-feed__dev, .ad-feed__flag{ font-size:1.05rem; line-height:1; }
 
+/* ═══ الرمز ومن فعّله ═══
+   ★ الحسابات تُزاح إلى الداخل وتُربط بخطٍّ رفيع: الإزاحة وحدها تُقرأ
+   «تابعٌ لما فوقه»، فلا يحتاج المشرف عنوانًا يقول ذلك. وحجمٌ أصغر لأنها
+   تفصيلٌ يُقرأ عند الحاجة لا عند كل مرور. */
+.codeblk{ display:block; }
+.codeuse{
+  display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap;
+  padding:6px var(--s3) 6px calc(var(--s3) + 14px);
+  margin-inline-start:var(--s3);
+  border-inline-start:2px solid var(--line);
+  font-size:.78rem; color:var(--text-2);
+}
+.codeuse__i{ color:var(--text-3); }
+.codeuse__n{ font-weight:700; color:var(--text); }
+.codeuse__e{ color:var(--text-2); direction:ltr; unicode-bidi:isolate;
+             overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.codeuse__d{ margin-inline-start:auto; color:var(--text-3); white-space:nowrap; }
+
 
 /* ===== 70-polish.css ===== */
 /*
@@ -12410,6 +12428,9 @@ function adminCodesCard(){
     msg.className = 'field__hint is-ok';
     msg.textContent = 'وُلّدت ' + QBANK.views.arNum((d.codes || []).length) + ' رمزًا · دفعة ' + d.batch;
     paintCodes(d.codes || []);
+    /* القائمة والموجز يتبعان التوليد فورًا — لا يُطلب من المشرف تحديث الصفحة
+       ليرى ما ولّده قبل ثانية */
+    paintSummary(); draw();
   });
 
   /*
@@ -12452,57 +12473,143 @@ function adminCodesCard(){
   box.appendChild(out);
 
   /* ═══ الأكواد القائمة ═══ */
-  const listBox = el('div', { class:'stack' });
-  box.appendChild(el('h3', { style:'margin:8px 0 0', text:'الأكواد الأخيرة' }));
-  box.appendChild(listBox);
-  listBox.appendChild(el('p', { class:'field__hint', style:'margin:0', text:'جارٍ التحميل…' }));
+  /*
+    ★ ثلاثة أسئلة يسألها المشرف، لا سؤال واحد:
+    «كم رمزًا بقي عندي أبيعه؟» و«هذا الرمز — هل فُعِّل؟» و«من فعّله؟».
+    قائمةٌ واحدة بلا مرشّح تُجيب عن الثالث بعد بحثٍ بالعين في ستين صفًّا،
+    ولا تُجيب عن الأول أبدًا. فصار لها موجزٌ فوقها، ومرشّحاتٌ تفصل غير
+    المستعمل عن المُفعَّل، وكلُّ رمزٍ مُفعَّل يحمل تحته حسابَ من فعّله.
+  */
+  box.appendChild(el('h3', { style:'margin:8px 0 0', text:'الأكواد' }));
 
-  QBANK.api.rpc('admin_codes', { p_limit: 60 }).then(r => {
-    if (!listBox.isConnected) return;
-    listBox.innerHTML = '';
-    /* ★ «لا أكواد بعد» و«تعذّر الجلب» حالتان لا حالة واحدة.
-       قائمةٌ فارغة تقول «كل شيء سليم ولم تولّد بعد»، ونداءٌ سقط يقول
-       «شيءٌ مكسور» — وعرضُ الأولى مكان الثانية يُخفي العطل تمامًا. */
-    if (!r.ok || !Array.isArray(r.data)){
-      listBox.appendChild(el('p', { class:'field__hint is-bad', style:'margin:0',
-        text: Codes.failText(r) }));
-      return;
-    }
-    const rows = r.data;
-    if (!rows.length){
-      listBox.appendChild(el('p', { class:'field__hint', style:'margin:0', text:'لا أكواد بعد.' }));
-      return;
-    }
-    rows.forEach(c => {
-      const spent = c.used_count >= c.max_uses;
-      const off = !c.active || spent;
-      const row = el('div', { class:'payrow' }, [
-        el('span', { class:'payrow__t num', text: Codes.pretty(c.code) }),
-        el('span', { class:'badge', text: c.kind === 'semester' ? 'الفصل' : (c.subject || 'مادة') }),
-        el('span', { class:'badge num' + (spent ? ' badge--warn' : ''),
-          text: QBANK.views.arNum(c.used_count) + '/' + QBANK.views.arNum(c.max_uses) }),
-        el('span', { class:'badge ' + (off ? 'badge--bad' : 'badge--ok'),
-          text: off ? (spent ? 'مستهلَك' : 'موقوف') : 'فعّال' })
-      ]);
-      if (!spent){
-        const t = el('button', { class:'btn btn--ghost btn--sm', type:'button',
-          text: c.active ? 'أوقف' : 'فعّل',
-          'aria-label': (c.active ? 'أوقف الرمز ' : 'فعّل الرمز ') + Codes.pretty(c.code) });
-        t.addEventListener('click', async () => {
-          t.disabled = true;
-          const rr = await QBANK.api.rpc('admin_set_code', { p_id: c.id, p_active: !c.active });
-          t.disabled = false;
-          if (rr.ok && rr.data && rr.data.ok){
-            c.active = !c.active;
-            t.textContent = c.active ? 'أوقف' : 'فعّل';
-            QBANK.toast(c.active ? 'صار فعّالًا' : 'أُوقف');
-          } else QBANK.toast('تعذّر التعديل');
-        });
-        row.appendChild(t);
-      }
-      listBox.appendChild(row);
+  const sum = el('p', { class:'field__hint', style:'margin:0', role:'status' });
+  const listBox = el('div', { class:'stack' });
+  let state = '';
+
+  const chips = el('div', { class:'ex-chips', role:'group', 'aria-label':'تصفية الأكواد' });
+  [['','الكل'],['unused','لم يُستعمل'],['used','مُفعَّل'],['off','موقوف']].forEach(t => {
+    const b = el('button', { class:'chip' + (t[0] === state ? ' is-on' : ''), type:'button',
+      'data-s': t[0], text: t[1] });
+    b.addEventListener('click', () => {
+      state = t[0];
+      chips.querySelectorAll('.chip').forEach(x =>
+        x.classList.toggle('is-on', x.getAttribute('data-s') === state));
+      draw();
     });
+    chips.appendChild(b);
   });
+
+  box.appendChild(sum);
+  box.appendChild(chips);
+  box.appendChild(listBox);
+
+  /*
+    الموجز مرة واحدة عند الفتح، ويُعاد بعد كل توليد — لا مع كل مرشّح.
+
+    ★ ولا حارس isConnected هنا ولا في القائمة.
+    البطاقة تُبنى ثم تُدرَج في تبويبها، فقد تكون منفصلةً عن المستند لحظةَ
+    النداء وتُدرَج بعده بأجزاء من الثانية. وحارسٌ يمنع الكتابة على عقدةٍ
+    منفصلة كان سيُفرغ الشاشة نهائيًا في ذلك الترتيب — ورأيتُه فارغًا فعلًا.
+    والكتابة على عقدةٍ منفصلة لا تضرّ أصلًا؛ الذي يضرّ هو ردٌّ متأخّر يدهس
+    ردًّا أحدث، وذاك يمنعه العدّاد أدناه لا الاتصال بالمستند.
+  */
+  function paintSummary(){
+    QBANK.api.rpc('admin_codes_summary').then(r => {
+      const d = (r.ok && r.data && !r.data.error) ? r.data : null;
+      if (!d) { sum.textContent = ''; return; }
+      const n = QBANK.views.arNum;
+      sum.textContent = 'الجملة ' + n(d.total) + ' · لم يُستعمل ' + n(d.unused) +
+                        ' · مُفعَّل ' + n(d.used) + ' · موقوف ' + n(d.off) +
+                        ' · مرات التفعيل ' + n(d.redeemed);
+    });
+  }
+  paintSummary();
+
+  function when(iso){
+    try { return new Date(iso).toLocaleDateString('ar-SA-u-nu-latn'); }
+    catch(e){ return ''; }
+  }
+
+  /* ★ عدّاد الطلبات: ضغطتان سريعتان على مرشّحين يعودان بأي ترتيب، والأبطأ
+     يدهس الأسرع فيرى المشرف نتيجة مرشّحٍ لم يعد مختارًا. الأحدث وحده يرسم. */
+  let seq = 0;
+  function draw(){
+    const mine = ++seq;
+    listBox.innerHTML = '';
+    listBox.appendChild(el('p', { class:'field__hint', style:'margin:0', text:'جارٍ التحميل…' }));
+    QBANK.api.rpc('admin_codes', { p_limit: 200, p_state: state }).then(r => {
+      if (mine !== seq) return;
+      listBox.innerHTML = '';
+      /* ★ «لا أكواد بعد» و«تعذّر الجلب» حالتان لا حالة واحدة.
+         قائمةٌ فارغة تقول «كل شيء سليم ولم تولّد بعد»، ونداءٌ سقط يقول
+         «شيءٌ مكسور» — وعرضُ الأولى مكان الثانية يُخفي العطل تمامًا. */
+      if (!r.ok || !Array.isArray(r.data)){
+        listBox.appendChild(el('p', { class:'field__hint is-bad', style:'margin:0',
+          text: Codes.failText(r) }));
+        return;
+      }
+      const rows = r.data;
+      if (!rows.length){
+        listBox.appendChild(el('p', { class:'field__hint', style:'margin:0', text:
+          state === 'unused' ? 'لا رمز غير مستعمل — ولّد دفعة جديدة.'
+          : state === 'used' ? 'لم يُفعَّل رمزٌ بعد.'
+          : state === 'off'  ? 'لا رمز موقوف.'
+          : 'لا أكواد بعد.' }));
+        return;
+      }
+
+      rows.forEach(c => {
+        const uses = Array.isArray(c.uses) ? c.uses : [];
+        const spent = c.used_count >= c.max_uses;
+        const off = !c.active || spent;
+        const row = el('div', { class:'payrow' }, [
+          el('span', { class:'payrow__t num', text: Codes.pretty(c.code) }),
+          el('span', { class:'badge', text: c.kind === 'semester' ? 'الفصل' : (c.subject || 'مادة') }),
+          el('span', { class:'badge num' + (spent ? ' badge--warn' : ''),
+            text: QBANK.views.arNum(c.used_count) + '/' + QBANK.views.arNum(c.max_uses) }),
+          el('span', { class:'badge ' + (off ? 'badge--bad' : 'badge--ok'),
+            text: off ? (spent ? 'مستهلَك' : 'موقوف') : (uses.length ? 'مُفعَّل' : 'جاهز') })
+        ]);
+        if (!spent){
+          const t = el('button', { class:'btn btn--ghost btn--sm', type:'button',
+            text: c.active ? 'أوقف' : 'فعّل',
+            'aria-label': (c.active ? 'أوقف الرمز ' : 'فعّل الرمز ') + Codes.pretty(c.code) });
+          t.addEventListener('click', async () => {
+            t.disabled = true;
+            const rr = await QBANK.api.rpc('admin_set_code', { p_id: c.id, p_active: !c.active });
+            t.disabled = false;
+            if (rr.ok && rr.data && rr.data.ok){
+              c.active = !c.active;
+              t.textContent = c.active ? 'أوقف' : 'فعّل';
+              QBANK.toast(c.active ? 'صار فعّالًا' : 'أُوقف');
+              paintSummary();
+            } else QBANK.toast('تعذّر التعديل');
+          });
+          row.appendChild(t);
+        }
+
+        const wrap = el('div', { class:'codeblk' }, [row]);
+
+        /*
+          ★ الحسابات تحت رمزها لا في جدولٍ منفصل.
+          سؤال المشرف دائمًا «هذا الرمز — من أخذه؟»، وجدولٌ ثانٍ يجعل
+          الجواب عمليةَ مطابقةٍ بين قائمتين. والبريد ظاهر لأنه هو ما
+          يبحث به الطالب عن نفسه حين يقول «فعّلتُه ولم يُفتح».
+        */
+        uses.forEach(u => {
+          wrap.appendChild(el('div', { class:'codeuse' }, [
+            el('span', { class:'codeuse__i', 'aria-hidden':'true', text:'↳' }),
+            el('span', { class:'codeuse__n', text: u.name || 'بلا اسم' }),
+            el('span', { class:'codeuse__e num', text: u.email || '' }),
+            el('span', { class:'codeuse__d num', text: when(u.used_at) })
+          ]));
+        });
+
+        listBox.appendChild(wrap);
+      });
+    });
+  }
+  draw();
 
   return box;
 }
