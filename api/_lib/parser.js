@@ -5,14 +5,44 @@
     أ) أسئلة بخيارات A) B) C) D) وقد يأتي معها ANSWER: B
     ب) قوائم «سؤال ثم إجابته» مرقّمة بلا خيارات إطلاقًا
   قاعدة القداسة تبدأ هنا: النصوص تُقتطع كما هي — قصّ أطراف بيضاء فقط، لا تنظيف داخلي.
+
+  ═══ ولماذا وُسِّع؟ ═══
+  كان يقرأ اللاتينية وحدها: أرقامًا ١٢٣ لاتينية وخيارات A) B) وكلمة ANSWER.
+  وملفات الطلاب العرب مكتوبةٌ بالعربية: «١- ما هو…» و«أ) الكبد» و«الإجابة: ب».
+  فكان يعود بصفر أسئلة من ملفٍ سليم تمامًا. وبقاء هذا معلّقًا على الذكاء
+  وحده خطأ: الذكاء له حصّة تنفد، والقواعد مجانيةٌ لا تنفد أبدًا — فالملف
+  المرتّب يجب أن يُقرأ ولو انقطع الإنترنت عن كل مزوّدي العالم.
 */
 
-// بداية سؤال جديد: رقم متبوع بنقطة/قوس، أو Q مع رقم
-const Q_START = /^\s*(?:Q\s*\.?\s*)?(\d{1,3})\s*[).\-:]\s+/i;
-// بداية خيار: حرف A-E متبوعًا بقوس أو نقطة
-const OPT_START = /^\s*([A-Ea-e])\s*[).]\s+/;
-// سطر إجابة معلنة: ANSWER: B أو Ans- C أو Answer C
-const ANS_LINE = /^\s*(?:ANSWER|ANS|KEY|الاجابة|الإجابة)\s*[:\-.]?\s*([A-Ea-e])\b/i;
+/* الأرقام العربية الهندية تُقرأ أرقامًا: «١٢» رقمٌ لا زخرفة */
+const AR_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+function toLatinDigits(s){
+  return String(s || '').replace(/[٠-٩]/g, d => String(AR_DIGITS.indexOf(d)));
+}
+
+/* بداية سؤال: رقم (لاتيني أو عربي) متبوع بنقطة/قوس/شرطة، وقد يسبقه Q أو «س» أو «السؤال» */
+const Q_START = /^\s*(?:Q|س|السؤال|سؤال)?\s*\.?\s*([\d٠-٩]{1,3})\s*[).\-:]\s+/i;
+
+/* بداية خيار: حرف لاتيني A-E أو حرف عربي (أ ب ج د هـ) متبوعًا بقوس أو نقطة أو شرطة */
+const OPT_START = /^\s*(هـ|[A-Ea-e]|[أابجده])\s*[).\-]\s+/;
+
+/* سطر إجابة معلنة — بالعربية أو الإنجليزية، بحرفٍ لاتيني أو عربي */
+const ANS_LINE =
+  /^\s*(?:ANSWER|ANS|KEY|CORRECT|الاجابة|الإجابة|الجواب|الحل|الصحيح)\s*(?:الصحيحة?|الصحيح)?\s*(?:هي|هو)?\s*[:\-.]?\s*(هـ|[A-Ea-e]|[أابجده])(?=\s|$|[).,،])/i;
+
+/* علامة «هذا هو الصحيح» بجانب الخيار — نجمة أو صحّ، شائعة في ملفات Word */
+const STAR = /\s*[*★✓✔√]\s*$/;
+
+/*
+  ترتيب الحرف: لاتينيًّا A=0، وعربيًّا أ=0 ب=1 ج=2 د=3 هـ=4.
+  الألف بهمزةٍ وبدونها سواء — الطالب لا يفرّق بينهما وهو يكتب.
+*/
+const AR_LETTERS = { 'أ':0, 'ا':0, 'ب':1, 'ج':2, 'د':3, 'ه':4, 'هـ':4 };
+function letterIndex(ch){
+  const c = String(ch || '').trim();
+  if (Object.prototype.hasOwnProperty.call(AR_LETTERS, c)) return AR_LETTERS[c];
+  return 'ABCDE'.indexOf(c.toUpperCase());
+}
 
 function splitBlocks(text){
   // نقسم النص إلى كتل، كل كتلة سؤال برقمه — الحدود هي أسطر تبدأ برقم سؤال
@@ -21,9 +51,14 @@ function splitBlocks(text){
   let cur = null;
   lines.forEach(line => {
     const m = line.match(Q_START);
-    if (m) {
+    /*
+      ★ رقمُ سؤالٍ لا رقمُ خيار.
+      «أ) الكبد» ليست بداية سؤال، لكن «1) الكبد» في ملفٍ خياراته مرقّمة قد
+      تبدو كذلك. نفصل بأن بداية السؤال تُفحص بعد استبعاد شكل الخيار.
+    */
+    if (m && !OPT_START.test(line)) {
       if (cur) blocks.push(cur);
-      cur = { num: parseInt(m[1], 10), lines: [line.replace(Q_START, '')] };
+      cur = { num: parseInt(toLatinDigits(m[1]), 10), lines: [line.replace(Q_START, '')] };
     } else if (cur) {
       cur.lines.push(line);
     }
@@ -32,22 +67,25 @@ function splitBlocks(text){
   return blocks;
 }
 
-function letterIndex(ch){ return 'ABCDE'.indexOf(String(ch || '').toUpperCase()); }
-
 function parseBlock(block){
   const qLines = [];      // أسطر نص السؤال
   const options = [];     // الخيارات كما وصلت
   let answerLetter = null;
+  let starred = -1;       // موضع الخيار المعلَّم بنجمة
   let answerText = null;  // للشكل «سؤال ثم إجابة»
   let mode = 'q';         // q ← نقرأ السؤال، ثم opts أو answer
 
   block.lines.forEach(line => {
     const ansM = line.match(ANS_LINE);
-    if (ansM) { answerLetter = ansM[1].toUpperCase(); return; }
+    if (ansM) { answerLetter = ansM[1]; return; }
     const optM = line.match(OPT_START);
     if (optM) {
       mode = 'opts';
-      options.push({ letter: optM[1].toUpperCase(), text: line.replace(OPT_START, '').replace(/\s+$/,'') });
+      let text = line.replace(OPT_START, '').replace(/\s+$/,'');
+      /* النجمة علامةُ تصحيحٍ لا من كلام الخيار — كحرف «A)» تمامًا، تُقشَّر
+         ويُحفظ معناها. وإبقاؤها في النص يُري الطالبَ الإجابةَ قبل أن يجيب. */
+      if (STAR.test(text)) { starred = options.length; text = text.replace(STAR, ''); }
+      options.push({ letter: optM[1], text: text });
       return;
     }
     if (mode === 'opts' && options.length) {
@@ -63,10 +101,12 @@ function parseBlock(block){
 
   if (options.length >= 2) {
     // الشكل أ: سؤال بخيارات — الترتيب كما وصل، حرف الإجابة يُحوَّل لموضع رقمي
+    const byLetter = answerLetter !== null ? letterIndex(answerLetter) : -1;
+    const answer = byLetter >= 0 ? byLetter : (starred >= 0 ? starred : null);
     return {
       q: qText,
       options: options.map(o => o.text),
-      answer: answerLetter !== null ? letterIndex(answerLetter) : null,
+      answer: answer,
       answer_letter: answerLetter,
       has_options: true
     };
@@ -98,4 +138,5 @@ function parse(text){
   return out;
 }
 
-module.exports = { parse, splitBlocks, parseBlock, letterIndex, Q_START, OPT_START, ANS_LINE };
+module.exports = { parse, splitBlocks, parseBlock, letterIndex, toLatinDigits,
+                   Q_START, OPT_START, ANS_LINE, STAR };

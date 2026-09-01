@@ -52,9 +52,11 @@ module.exports = async function handler(req, res){
     let questions = parse(text);
     let readBy = 'rules';
 
+    let aiErr = null;
     const wantAi = force_ai === true || !rulesLookSound(questions);
     if (wantAi && pickProvider() !== 'none') {
       const r = await aiRead(text, callAI);
+      aiErr = r.error || null;
       /*
         ★ الأكثر يفوز — لا «الذكاء دائمًا».
         القواعد أحيانًا تقرأ ملفًا مرتّبًا أنظفَ من الذكاء، فلو أزحناها
@@ -67,10 +69,20 @@ module.exports = async function handler(req, res){
       }
     }
 
+    /*
+      ★ العطل عندنا يُقال إنه عندنا.
+      إن عجزت القواعد ثم عجز الذكاء لعطلٍ فيه — لا لعيبٍ في الملف — فإلقاء
+      اللوم على ملف الطالب كذبٌ يجعله يعيد تنسيق ملفٍ سليم مرارًا بلا فائدة.
+    */
+    if (!questions.length && aiErr)
+      return res.status(aiErr.status || 503).json({
+        error: aiErr.message, kind: aiErr.kind || 'other' });
+
     if (!questions.length)
       return res.status(422).json({ error:
         'لم نتعرّف على سؤال واحد في هذا الملف. تأكد أن الأسئلة نصٌّ لا صور، ' +
-        'وأن كل سؤال يليه خياراته — وانظر «قالب بنك الأسئلة» أسفل الصفحة.' });
+        'وأن كل سؤال يليه خياراته — وانظر «قالب بنك الأسئلة» أسفل الصفحة.',
+        kind:'file' });
 
     // اسم المادة من الطالب إن أعطاه، وإلا من اسم الملف بلا امتداده
     const name = String(subject_name || '').trim() || filename.replace(/\.[^.]+$/, '');

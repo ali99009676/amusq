@@ -133,6 +133,7 @@ async function aiRead(text, callAI, opts){
   const parts = chunkText(src);
   const seen = Object.create(null);
   const out = [];
+  let lastErr = null;
 
   for (let i = 0; i < parts.length; i++) {
     let r;
@@ -142,7 +143,13 @@ async function aiRead(text, callAI, opts){
       /*
         دفعةٌ تسقط لا تُسقط الملف كله. ملفٌ من عشرين دفعة تعطّلت واحدة منه
         يعطي الطالب تسعة أعشار مادته — وهذا أنفع له بكثير من صفحة خطأ.
+
+        ★ لكنّا نحتفظ بالعطل. كان يُبتلع كليًّا، فإذا سقطت كل الدفعات عاد
+        القارئ بصفر أسئلة صامتًا، فيُقال للطالب «لم نتعرّف على سؤال واحد
+        في ملفك» — وملفُه سليم، والعطل عندنا: نفدت حصّة الذكاء. اتهامُ
+        البريء أسوأ من الاعتراف بالعجز.
       */
+      lastErr = e;
       continue;
     }
     const items = Array.isArray(r && r.items) ? r.items : [];
@@ -158,7 +165,7 @@ async function aiRead(text, callAI, opts){
 
   // إعادة الترقيم بعد إزالة المكرر كي يوافق الرقمُ الترتيبَ الحقيقي
   out.forEach((q, i) => { q.num = i + 1; });
-  return { questions: out, chunks: parts.length };
+  return { questions: out, chunks: parts.length, error: out.length ? null : lastErr };
 }
 
 module.exports = { aiRead, chunkText, shape, norm, verbatimIn, SYS, CHUNK };
