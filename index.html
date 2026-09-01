@@ -4408,10 +4408,23 @@ const Admin = {
     const body = {
       created_by: u.id || null,
       sanctity_mode: w.mode === 'enhanced' ? 'enhanced' : 'strict',
-      slug: w.slug || null,
       status: 'published',
       course_code: w.courseCode || ''
     };
+    /*
+      ★ الحقل الفارغ يُحذف ولا يُرسل صفرًا.
+      كان يُرسل `slug: w.slug || null` دائمًا. والقاعدة تولّد الرابط عند
+      الإنشاء، فيأتي هذا التحديث بعده بثانية ويكتب null فوقه فيمحوه —
+      وتصير المادة «غير متاحة» وهي منشورة سليمة.
+
+      ومتى يكون فارغًا؟ حين تُستأنف مسوّدة: الاستئناف يجلب الأسئلة ولا
+      يجلب الرابط، فيبدأ المعالج بحقلٍ خالٍ. فالملفات الكبيرة — التي
+      تُحفظ مسوّداتها وتُستأنف — كانت أكثرها عرضةً لهذا.
+
+      والقاعدة العامة: PATCH جزئيٌّ يرسل ما يعرفه فقط. وإرسال null معناه
+      «امحُ ما هناك»، وهذا ليس ما نقصد حين لا نعرف.
+    */
+    if (w.slug) body.slug = w.slug;
     // الجامعة والكلية تُنشآن في الخادم إن لم تكونا موجودتين — والتطبيع يمنع التكرار
     if (w.country && w.university){
       const r = await QBANK.api.rpc('ensure_university', { p_country: w.country, p_name: w.university });
@@ -5581,6 +5594,11 @@ const ViewUpload = {
         if (r.ok && r.data && r.data[0]) {
           const d = r.data[0];
           wizard.filename = d.source_name; wizard.enriched = d.payload || [];
+          /* ★ الاسم والرابط يُستعادان مع الأسئلة.
+             كان الاستئناف يجلب الأسئلة وحدها، فيعود المشرف إلى معالجٍ
+             بلا اسم مادة ولا رابط — ثم يُطلب منه الاسم من جديد، ويُمحى
+             الرابط الذي ولّدته القاعدة عند النشر. */
+          wizard.subjectName = wizard.subjectName || d.name || '';
           wizard.total = d.total; wizard.done = d.done;
           wizard.step = d.done >= d.total ? 3 : 2;
           QBANK.router.render(location.hash);
