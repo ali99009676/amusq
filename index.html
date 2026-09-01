@@ -422,6 +422,34 @@ img,svg{ max-width:100%; height:auto; }
   @keyframes skelPulse{ 0%,100%{ opacity:.55 } 50%{ opacity:1 } }
 }
 
+/* ═══ بطاقة الحساب في الترويسة ═══ */
+/*
+  تحلّ محلّ زرّ «دخول» بعد الدخول. الوجه أولًا ثم الاسم، وعلى الشاشات
+  الضيّقة يبقى الوجه وحده — فمساحة الترويسة على الجوال أضيق من أن
+  تُنفَق على اسمٍ يعرفه صاحبه.
+*/
+.authchip{
+  display:inline-flex; align-items:center; gap:var(--s2);
+  padding:4px 10px 4px 4px; border-radius:999px;
+  background:var(--surface); border:1px solid var(--line-2);
+  color:var(--text); text-decoration:none; box-shadow:var(--sh1);
+  transition:transform .16s var(--ease), border-color .16s;
+}
+.authchip:hover{ transform:translateY(-1px); border-color:var(--acc); }
+.authchip__img, .authchip__ico{
+  width:28px; height:28px; border-radius:50%; flex:0 0 auto;
+  object-fit:cover; display:grid; place-items:center;
+  background:var(--acc-soft); font-size:.95rem; line-height:1;
+}
+.authchip__n{
+  font-size:.85rem; font-weight:600; max-width:9ch;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+@media (max-width:480px){
+  .authchip{ padding:4px; }
+  .authchip__n{ display:none; }
+}
+
 
 /* ===== 40-screens.css ===== */
 /* تنسيقات الشاشات المركّبة: اللوحة، معالج الرفع، المادة، الاختبار — كلها من المتغيّرات */
@@ -840,15 +868,29 @@ img,svg{ max-width:100%; height:auto; }
     color-mix(in srgb, var(--acc) 14%, var(--surface)),
     color-mix(in srgb, var(--acc) 4%, var(--surface)));
 }
-.pf-hero__avwrap{ position:relative; flex:0 0 auto; }
-.pf-hero__img, .pf-hero__emoji{
-  width:88px; height:88px; border-radius:50%;
-  border:3px solid var(--acc); box-shadow:var(--sh2);
-  display:grid; place-items:center; object-fit:cover;
-  background:var(--acc-soft); font-size:2.6rem; line-height:1;
+.pf-hero__avwrap{ position:relative; flex:0 0 auto;
+  /* الصورة والرمز مختلفا الحجم، فنُثبّت المساحة كي لا يقفز البطل بينهما */
+  width:104px; height:104px; display:grid; place-items:center; }
+/*
+  ★ الصورة والرمز ليسا سواءً، وكانا بحجمٍ واحد.
+  صورةُ الطالب هويّته: يرفعها ليُعرَف بها، فتستحق المساحة كاملة وإطارًا
+  يلفتها. والرمز بديلٌ مؤقّت لمن لم يرفع بعد — وحين يُعرض بالحجم نفسه
+  يبدو اختيارًا نهائيًا لا دعوةً للرفع، فيستقرّ عليه الطالب ويبقى بلا وجه.
+  الحجم هنا رسالة: الكبير مطلوب، والصغير مؤقّت.
+*/
+.pf-hero__img{
+  width:104px; height:104px; border-radius:50%; object-fit:cover;
+  border:3px solid var(--acc); box-shadow:var(--sh2); background:var(--acc-soft);
+}
+.pf-hero__emoji{
+  width:64px; height:64px; border-radius:50%;
+  display:grid; place-items:center; line-height:1; font-size:1.7rem;
+  /* إطارٌ متقطّع: لغةُ «مكانٌ ينتظر أن يُملأ» في كل واجهة */
+  border:2px dashed color-mix(in srgb, var(--acc) 55%, transparent);
+  background:var(--acc-soft); color:var(--text-2);
 }
 .pf-hero__cam{
-  position:absolute; inset-inline-end:-4px; bottom:-4px;
+  position:absolute; inset-inline-end:0; bottom:0;
   width:34px; height:34px; border-radius:50%; cursor:pointer;
   background:var(--acc); color:var(--on-acc); border:2px solid var(--surface);
   display:grid; place-items:center; font-size:.95rem; box-shadow:var(--sh1);
@@ -992,6 +1034,24 @@ img,svg{ max-width:100%; height:auto; }
 @media (max-width:720px){
   .sub-hero .inner{ flex-wrap:wrap; }
   .hero-exam{ margin-inline-start:0; width:100%; justify-content:center; margin-top:.9rem; }
+}
+
+
+/* ═══ اختيار الرمز البديل — رقاقات صغيرة لا صور ═══ */
+/*
+  كانت أزرار الاختيار بمقاس أزرار الواجهة نفسها (٤٢ بكسل مربّعة)، فتبدو
+  صفًّا من «الصور» يزاحم الصورة الحقيقية. صغّرناها ودوّرناها كي تُقرأ
+  رموزًا تُنتقى، والدائرة تربطها بصريًّا بموضع عرضها في البطل.
+*/
+.avpick{ display:flex; flex-wrap:wrap; gap:var(--s2); }
+.avpick .iconbtn{
+  width:38px; height:38px; border-radius:50%; box-shadow:none;
+  background:var(--surface-2);
+}
+.avpick .iconbtn__ico{ font-size:1.15rem; }
+.avpick .iconbtn[aria-checked="true"]{
+  border-color:var(--acc); background:var(--acc-soft);
+  box-shadow:0 0 0 2px color-mix(in srgb, var(--acc) 35%, transparent);
 }
 
 
@@ -1835,7 +1895,8 @@ body{ -webkit-tap-highlight-color:transparent; }
       <button class="iconbtn" id="themeBtn" type="button" aria-label="تبديل الوضع الليلي" title="الوضع الليلي">
         <span class="iconbtn__ico" aria-hidden="true" data-theme-icon>☾</span>
       </button>
-      <a class="btn btn--sm" href="#/login" data-nav="#/login">دخول</a>
+      <!-- يُستبدل بعد الدخول ببطاقة الحساب (انظر QBANK.authChip) -->
+      <span id="authSlot"><a class="btn btn--sm" href="#/login" data-nav="#/login">دخول</a></span>
     </div>
   </div>
 </header>
@@ -2665,6 +2726,10 @@ const Router = {
       document.body.classList.toggle('is-admin', r.path.indexOf('#/admin') === 0);
     } catch(e){}
     Router.paintNav(r.path);
+    /* ★ الترويسة تتبع الجلسة لا تجمد عليها.
+       كان زرّ «دخول» مكتوبًا في هيكل الصفحة ولا يمسّه أحد، فيبقى معروضًا
+       على من دخل فعلًا — يظنّ أن دخوله لم يُقبل فيعيده مرة بعد مرة. */
+    if (QBANK.authChip) QBANK.authChip();
     // نُعيد التركيز إلى المحتوى كي يعرف قارئ الشاشة أن الصفحة تبدّلت
     if (Router.booted) { try { main.focus(); } catch(e){} }
     Router.booted = true;
@@ -3308,7 +3373,7 @@ function accountBody(){
   const bioInput = el('textarea', { class:'input', rows:'3',
     placeholder:'نبذة قصيرة: تخصصك، دفعتك، ما تراجعه هذه الأيام…' });
   bioInput.value = prof.bio || '';
-  const avatarRow = el('div', { class:'row', role:'radiogroup', 'aria-label':'الصورة الرمزية البديلة' },
+  const avatarRow = el('div', { class:'row avpick', role:'radiogroup', 'aria-label':'الصورة الرمزية البديلة' },
     AVATARS.map(a => {
       const b = el('button', { class:'iconbtn', type:'button', role:'radio',
         'aria-checked': a === (prof.avatar || AVATARS[0]) ? 'true' : 'false', 'aria-label':'صورة ' + a }, [
@@ -3409,7 +3474,7 @@ function accountBody(){
         el('span', { class:'field__label', text:'نبذة عني' }), bioInput
       ]),
       el('div', { class:'field', style:'margin:0' }, [
-        el('span', { class:'field__label', text:'صورة رمزية بديلة — تظهر إن لم ترفع صورة' }), avatarRow
+        el('span', { class:'field__label', text:'رمز مؤقّت — يظهر حتى ترفع صورتك' }), avatarRow
       ]),
       saveBtn
     ]),
@@ -3623,6 +3688,58 @@ QBANK.views.ViewAccount = ViewAccount;
 QBANK.views.ACC_TABS = ACC_TABS;
 QBANK.views.uploadAvatar = uploadAvatar;
 QBANK.views.AVATARS = AVATARS;
+
+/* ═══════════════════════════════════════════════════════════════
+   بطاقة الحساب في الترويسة — الشريط يعرف من أنت
+   ═══════════════════════════════════════════════════════════════
+   ★ العطل الذي كانت تُخفيه بساطته: زرّ «دخول» كان نصًّا ثابتًا في
+   هيكل الصفحة، لا يمرّ عليه كود بعد أول رسم. فالطالب يدخل بنجاح ثم
+   يرى الزرّ نفسه في مكانه، فيظنّ أن دخوله لم يُقبل — يعيد الكرّة،
+   ويطلب رابطًا ثالثًا، ثم يقتنع أن المنصة معطوبة وينصرف.
+
+   والبديل ليس إخفاء الزرّ: مكانه في الترويسة أثمن من أن يُترك فارغًا.
+   وجهُك واسمُك هناك يقولان «أنت داخل» بلا كلمة، ويختصران طريق العودة
+   إلى حسابك من كل شاشة.
+*/
+function authChip(){
+  const slot = document.getElementById('authSlot');
+  if (!slot) return;
+  const u = QBANK.api.user();
+
+  if (!u) {
+    // خارج الجلسة: زرّ الدخول كما كان — ولا نعيد بناءه إن كان قائمًا
+    if (slot.querySelector('[data-nav="#/login"]')) return;
+    slot.innerHTML = '';
+    slot.appendChild(el('a', { class:'btn btn--sm', href:'#/login',
+                               'data-nav':'#/login', text:'دخول' }));
+    return;
+  }
+
+  /* داخل الجلسة: الصورة ثم الاسم. والملف المخزّن يُقرأ بشرط أن يكون
+     لصاحب هذه الجلسة (انظر حارس الهوية في accountBody) — فلا تظهر
+     صورة من خرج قبل قليل على من دخل بعده. */
+  const cached = QBANK.store.get('profile', null);
+  const prof = (cached && cached.uid === u.id) ? cached : {};
+  const name = (prof.name || '').trim() || (u.email || '').split('@')[0] || 'حسابي';
+
+  // لا نعيد الرسم بلا تغيير: كل رسمٍ للترويسة يومض ويُربك قارئ الشاشة
+  const sig = u.id + '|' + (prof.avatar_url || '') + '|' + (prof.avatar || '') + '|' + name;
+  if (slot.dataset.sig === sig) return;
+  slot.dataset.sig = sig;
+
+  const face = prof.avatar_url
+    ? el('img', { class:'authchip__img', src: prof.avatar_url, alt:'' })
+    : el('span', { class:'authchip__ico', 'aria-hidden':'true',
+                   text: prof.avatar || '◍' });
+
+  slot.innerHTML = '';
+  slot.appendChild(el('a', { class:'authchip', href:'#/account', 'data-nav':'#/account',
+                             'aria-label':'حسابي — ' + name }, [
+    face,
+    el('span', { class:'authchip__n', text: name })
+  ]));
+}
+QBANK.authChip = authChip;
 
 
 /* ===== 32-board.js ===== */
