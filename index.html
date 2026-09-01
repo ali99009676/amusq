@@ -4537,7 +4537,9 @@ function adminContentTab(box){
   listBox.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
 
   Promise.all([
-    QBANK.api.rest('subjects?select=id,name,color,icon,q_count,published,free,ord,exam_date&order=ord'),
+    /* ★ السعر في الجلب: بلا العمود يبدأ كل حقلٍ في القائمة بصفرٍ كاذب،
+       فيحفظه المشرف بلا قصدٍ ويُمحى سعرُ مادةٍ كان صحيحًا. */
+    QBANK.api.rest('subjects?select=id,name,color,icon,q_count,published,free,price,ord,exam_date&order=ord'),
     // قوائم المسوّدات بلا payload — الحمولة كبيرة ولا تلزم القائمة
     QBANK.api.rest('drafts?select=id,name,status,total,done,updated_at&order=updated_at.desc')
   ]).then(([subs, drs]) => {
@@ -4587,10 +4589,33 @@ function adminContentTab(box){
       const freeBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button',
         text: sub.free ? '★ مجانية' : 'اجعلها مجانية' });
       freeBtn.addEventListener('click', async () => {
-        await QBANK.api.rest('subjects?id=eq.' + sub.id,
-          { method:'PATCH', body: JSON.stringify({ free: !sub.free }) });
+        // الوسم يجرّ السعر: مجانيةٌ بسعرٍ تناقضٌ يراه الطالب في مكانين
+        const goFree = !sub.free;
+        await QBANK.api.rest('subjects?id=eq.' + sub.id, { method:'PATCH',
+          body: JSON.stringify({ free: goFree,
+            price: goFree ? 0 : (Number(sub.price) > 0 ? sub.price : 29) }) });
         QBANK.router.render('#/admin/content');
       });
+
+      /*
+        ★ السعر في القائمة لا في المحرّر وحده.
+        التسعير عملٌ يُقارَن: المشرف يمرّ على عشرين مادة فيرفع هذه ويخفض
+        تلك. وفتحُ محرّرٍ كامل لكل واحدة ثم العودة يجعل المقارنة مستحيلة.
+      */
+      const priceIn = el('input', { class:'input num', type:'number', min:'0', max:'999',
+        inputmode:'numeric', style:'width:86px', value: String(sub.price == null ? 0 : sub.price),
+        'aria-label':'سعر «' + sub.name + '» بالريال' });
+      priceIn.addEventListener('change', async () => {
+        const price = Math.max(0, Math.min(999, parseInt(priceIn.value || '0', 10) || 0));
+        priceIn.value = String(price);
+        const r = await QBANK.api.rest('subjects?id=eq.' + sub.id, { method:'PATCH',
+          body: JSON.stringify({ price: price, free: price === 0 }) });
+        QBANK.toast(r.ok ? (price ? 'السعر ' + QBANK.views.arNum(price) + ' ريالًا'
+                                  : 'صارت مجانية') : 'تعذّر الحفظ');
+        if (r.ok) QBANK.router.render('#/admin/content');
+      });
+      const priceWrap = el('label', { class:'ad-inline' }, [
+        el('span', { class:'ad-inline__l', text:'السعر ﷼' }), priceIn ]);
       /* ★ صلاحية جديدة: إعادة توليد التحليل الشامل لأي مادة بضغطة —
          بعد تصحيح أسئلة أو ضم مادة قديمة، بدل انتظار قادح البُطلان */
       const anaBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'⟳ حلّل' });
@@ -4615,7 +4640,7 @@ function adminContentTab(box){
         el('span', { class:'ad-sub', style:'flex:1 0 100%' }, [
           el('label', { class:'ad-inline' }, [
             el('span', { class:'ad-inline__l', text:'موعد الاختبار' }), dateIn ]),
-          freeBtn, anaBtn
+          priceWrap, freeBtn, anaBtn
         ])
       ]));
     });
@@ -7523,11 +7548,41 @@ function subjIdentity(sub, refresh){
       return b;
     }));
 
+  /*
+    ★ السعر — حقلٌ كان ناقصًا تمامًا.
+    العمود في القاعدة منذ البداية، والبوابةُ تقرؤه وتعرضه للطالب، ولا شاشة
+    واحدة في المنصة تضبطه. فكل مادة مدفوعة كانت تأخذ سعرها من قيمةٍ كُتبت
+    عند الاستيراد ولا سبيل إلى تغييرها إلا بـSQL. ميزةٌ نصفُها مبنيّ: تعمل
+    آليّتها ولا يملك أحدٌ مفتاحها.
+
+    والصفر يعني «مجانية» — فالسعر والمجانية وجهان لرقمٍ واحد، ولا نجعلهما
+    إعدادين متناقضين يسأل المشرف أيهما يغلب.
+  */
+  const priceIn = el('input', { class:'input num', type:'number', min:'0', max:'999', step:'1',
+    inputmode:'numeric', value: String(sub.price == null ? 0 : sub.price),
+    'aria-label':'سعر المادة بالريال' });
+  const priceHint = el('p', { class:'field__hint', style:'margin:4px 0 0' });
+  const paintPrice = () => {
+    const v = parseInt(priceIn.value || '0', 10) || 0;
+    priceHint.textContent = v > 0
+      ? 'يدفع الطالب ' + QBANK.views.arNum(v) + ' ريالًا لفتحها.'
+      : 'صفر = مجانية للجميع.';
+  };
+  priceIn.addEventListener('input', paintPrice);
+  paintPrice();
+
   const save = el('button', { class:'btn', type:'button', text:'احفظ الهوية' });
   save.addEventListener('click', async () => {
+    /* السعر يُقصّ إلى نطاقٍ معقول قبل الحفظ: حقلُ رقمٍ في متصفح يقبل
+       أي شيء، والقيمة السالبة أو الخيالية تُفسد البوابة لا الحقل. */
+    const price = Math.max(0, Math.min(999, parseInt(priceIn.value || '0', 10) || 0));
+    priceIn.value = String(price); paintPrice();
     const r = await SubjEditor.patchSubject(sub.id, {
       name: nameIn.value.trim() || sub.name, descr: descrIn.value, color, icon,
-      ord: parseInt(ordIn.value || '0', 10), exam_date: dateIn.value || null
+      ord: parseInt(ordIn.value || '0', 10), exam_date: dateIn.value || null,
+      price: price,
+      /* والمجانية تتبع السعر لا تناقضه: صفرٌ يعني مجانية، وأكثرُ منه مدفوعة */
+      free: price === 0
     });
     QBANK.toast(r.ok ? 'حُفظت هوية المادة' : 'تعذّر الحفظ');
     if (r.ok && refresh) refresh();
@@ -7540,10 +7595,19 @@ function subjIdentity(sub, refresh){
     QBANK.toast(r.ok ? (sub.published ? 'أُخفيت المادة' : 'نُشرت المادة') : 'تعذّر التعديل');
     if (r.ok && refresh) refresh();
   });
+  /* ★ الزرّ يضبط الرقم لا وسمًا بجانبه: كانا إعدادين مستقلّين، فمادةٌ
+     «مجانية» بسعر ٢٩ تخرج لصاحبها بلا أن يعرف أيّهما يغلب. */
   const free = el('button', { class:'btn btn--sm btn--ghost', type:'button',
     text: sub.free ? '★ مجانية للتجربة' : 'اجعلها مجانية' });
   free.addEventListener('click', async () => {
-    const r = await SubjEditor.patchSubject(sub.id, { free: !sub.free });
+    /* والوسم يجرّ السعر معه: مجانيةٌ بسعر ٢٩ تناقضٌ يراه الطالب في مكانين
+       مختلفين. ورفعُ المجانية يعيد السعر الافتراضي لا يتركه صفرًا. */
+    const goFree = !sub.free;
+    const r = await SubjEditor.patchSubject(sub.id, {
+      free: goFree,
+      price: goFree ? 0 : (Number(sub.price) > 0 ? sub.price : 29)
+    });
+    QBANK.toast(r.ok ? (goFree ? 'صارت مجانية' : 'صارت مدفوعة') : 'تعذّر التعديل');
     if (r.ok && refresh) refresh();
   });
 
@@ -7585,7 +7649,9 @@ function subjIdentity(sub, refresh){
       el('label', { class:'field', style:'margin:0;grid-column:1/-1' }, [ el('span', { class:'field__label', text:'الوصف — يظهر للطالب على البطاقة' }), descrIn ]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'اللون' }), swatches ]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الأيقونة' }), icons ]),
-      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترتيب' }), ordIn ])
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترتيب' }), ordIn ]),
+      el('label', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'السعر بالريال' }), priceIn, priceHint ])
     ]),
     el('div', { class:'ad-bar', style:'margin:16px 0 0' }, [ save, pub, free, verify ]),
     /* بابٌ من المادة إلى بلاغاتها: المشرف الذي يفتحها ليوثّقها يرى أولًا ما عليها */
