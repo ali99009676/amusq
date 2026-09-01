@@ -350,6 +350,9 @@ img,svg{ max-width:100%; height:auto; }
 .input:focus{ outline:none; border-color:var(--acc); box-shadow:var(--ring); }
 .input::placeholder{ color:var(--text-3); }
 .field__hint{ font-size:.82rem; color:var(--text-3); margin-top:var(--s1); }
+/* التلميح حين يصير حكمًا: نجاحًا أو رفضًا — باللون والنص معًا لا باللون وحده */
+.field__hint.is-bad{ color:var(--bad); font-weight:700; }
+.field__hint.is-ok{ color:var(--ok); font-weight:700; }
 
 /* شارة AMSU: حبّة بلون المحور الناعم */
 .badge{
@@ -858,6 +861,62 @@ img,svg{ max-width:100%; height:auto; }
 .pf-hero__bio{ margin:.35em 0 0; font-size:.9rem; color:var(--text-2); line-height:1.8; }
 @media (max-width:480px){ .pf-hero{ flex-direction:column; text-align:center; }
   .pf-hero__x{ align-items:center; } }
+
+/* ═══ المجتمع: وجوه الطلاب وسمعتهم ═══ */
+.peer-face{
+  width:40px; height:40px; border-radius:50%; flex:0 0 auto; object-fit:cover;
+  background:var(--acc-soft); border:2px solid var(--line-2);
+  display:grid; place-items:center; font-size:1.3rem; line-height:1;
+}
+.peer-face--sm{ width:30px; height:30px; font-size:1rem; border-width:1px; }
+.peer-face--lg{ width:88px; height:88px; font-size:2.6rem; border:3px solid var(--acc); box-shadow:var(--sh2); }
+
+.peer-stars{ display:inline-flex; align-items:center; gap:.4em; }
+.peer-stars__s{ color:var(--star); letter-spacing:.06em; }
+.peer-stars__n{ font-size:.78rem; color:var(--text-3); }
+
+/* أرقام العطاء: ثلاث خانات متساوية تُقرأ بلمحة */
+.peer-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:var(--s3); }
+.peer-stat{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r2);
+  padding:var(--s4) var(--s3); text-align:center; box-shadow:var(--sh1);
+  display:flex; flex-direction:column; gap:2px;
+}
+.peer-stat b{ font-family:var(--font-num); font-size:1.5rem; font-weight:800; color:var(--acc); }
+:root[data-theme="light"] .peer-stat b{ color:var(--acc-d); }
+.peer-stat span{ font-size:.78rem; color:var(--text-3); }
+
+/* رأي زميل */
+.peer-op{ padding:var(--s4); }
+.peer-op__n{ font-weight:700; color:var(--text); }
+.peer-op__n:hover{ color:var(--acc); }
+
+/* سطر «رفعها فلان» فوق المادة */
+.peer-by{
+  display:flex; align-items:center; gap:var(--s3);
+  padding:var(--s3) var(--s4); margin-bottom:var(--s4);
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:var(--r2); box-shadow:var(--sh1); color:inherit;
+  transition:box-shadow var(--t) var(--ease), transform var(--t) var(--ease);
+}
+.peer-by:hover{ box-shadow:var(--sh2); transform:translateY(-1px); text-decoration:none; }
+.peer-by__x{ display:flex; flex-direction:column; line-height:1.35; }
+.peer-by__l{ font-size:.72rem; color:var(--text-3); }
+.peer-by__n{ font-weight:800; font-family:var(--font-display); }
+.peer-by__go{ margin-inline-start:auto; color:var(--acc); font-weight:800; }
+
+/* صف مادة مرفوعة في لوحة الطالب */
+.up-row{
+  display:flex; align-items:center; gap:var(--s3);
+  padding:var(--s3) var(--s4); border:1px solid var(--line); border-radius:var(--r2);
+  background:var(--surface-2); color:inherit;
+  transition:border-color var(--t) var(--ease);
+}
+.up-row:hover{ border-color:var(--acc); text-decoration:none; }
+.up-row__ico{ font-size:1.4rem; line-height:1; }
+.up-row__x{ display:flex; flex-direction:column; min-width:0; flex:1; }
+.up-row__t{ font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.up-row__s{ font-size:.78rem; color:var(--text-3); }
 
 /* إيميل الطالب في بطاقات المشرف — سطر لاتيني قابل للنسخ */
 .stu__mail{
@@ -2861,6 +2920,28 @@ const ViewHome = {
     */
     body.push(campusBand());
 
+    /*
+      ★ تذكير الجوال — إلزامٌ يُذكَّر به لا يُحاصَر.
+      الحقل مطلوب في الملف، لكن من سجّل قبل اليوم لن يفتح ملفه من تلقائه.
+      شريط واحد يظهر لمن جواله فارغ ويختفي أبدًا بعد الحفظ — ولا يحجب
+      المذاكرة: الطالب جاء ليراجع، ونحن نطلب لا نبتزّ.
+    */
+    const phoneNudge = el('div');
+    body.push(phoneNudge);
+    QBANK.api.myProfile().then(r => {
+      if (!phoneNudge.isConnected) return;
+      const p = (r.ok && r.data) ? r.data : null;
+      if (!p || String(p.phone || '').replace(/\D/g,'').length >= 9) return;
+      phoneNudge.appendChild(el('a', { class:'campus-band campus-band--ask', href:'#/login' }, [
+        el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'☎' }),
+        el('span', { class:'campus-band__x' }, [
+          el('span', { class:'campus-band__t', text:'أكمل ملفك: رقم جوالك' }),
+          el('span', { class:'campus-band__d', text:'حقل مطلوب في ملفك — دقيقة واحدة ويختفي هذا التنبيه.' })
+        ]),
+        el('span', { class:'campus-band__go', 'aria-hidden':'true', text:'←' })
+      ]));
+    });
+
     // دعوة الرفع: الطالب لا يبحث عن ميزة لا يعرف بوجودها
     body.push(el('a', { class:'upsell', href:'#/upload' }, [
       el('span', { class:'upsell__ico', 'aria-hidden':'true', text:'⇪' }),
@@ -3087,7 +3168,7 @@ const ViewNotFound = {
   }
 };
 
-QBANK.views = { ViewHome, campusBand, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects, optLetter, arNum };
+QBANK.views = { ViewHome, campusBand, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects, optLetter, arNum, subjectCard };
 
 
 /* ===== 31-account.js ===== */
@@ -3187,8 +3268,23 @@ function accountBody(){
     })
   );
 
+  /*
+    ★ الجوال إلزامي — قرار علي.
+    التحقق هنا مرن عمدًا: نقبل ٩ أرقام فأكثر بعد تجريد الرموز والمسافات،
+    فتمرّ ‎+966‎ و‎05‎ وأرقام خارج السعودية معًا. التشدّد في صيغة واحدة
+    يطرد طالبًا رقمه صحيح، وهذا أسوأ من فراغ الحقل.
+  */
+  const phoneMsg = el('span', { class:'field__hint', role:'status' });
   const saveBtn = el('button', { class:'btn btn--block', type:'button', text:'احفظ ملفي' });
   saveBtn.addEventListener('click', async () => {
+    const digits = (phoneInput.value || '').replace(/\D/g, '');
+    if (digits.length < 9){
+      phoneMsg.textContent = 'رقم الجوال مطلوب — اكتبه كاملًا (مثل ٠٥xxxxxxxx).';
+      phoneMsg.className = 'field__hint is-bad';
+      phoneInput.focus();
+      return;
+    }
+    phoneMsg.textContent = ''; phoneMsg.className = 'field__hint';
     const picked = avatarRow.querySelector('[aria-checked="true"] .iconbtn__ico');
     const data = { name: nameInput.value.trim(), avatar: picked ? picked.textContent : AVATARS[0],
                    phone: phoneInput.value.trim(), bio: bioInput.value.trim() };
@@ -3199,43 +3295,6 @@ function accountBody(){
     if (n) n.textContent = data.name || 'طالب مراجعة';
     if (b) b.textContent = data.bio || '';
     QBANK.toast(r.ok ? 'حُفظ ملفك' : 'حُفظ في جهازك، وسيتزامن عند الاتصال');
-  });
-
-  // تقدّمي في كل مادة — من الحزمة المحلية، فيعمل بلا إنترنت
-  const pack = QBANK.data.pack();
-  const progList = el('div', { class:'stack' },
-    (pack.subjects || []).map(s => {
-      const pct = QBANK.progress.pctDone(s.id, s.q_count);
-      return el('div', { class:'row' }, [
-        el('span', { text: (s.icon || '▤') + ' ' + s.name }),
-        el('span', { class:'spacer' }),
-        el('span', { class:'badge num', text: pct + '٪' })
-      ]);
-    })
-  );
-
-  const syncBtn = el('button', { class:'btn btn--soft btn--block', type:'button', text:'زامن الآن' });
-  syncBtn.addEventListener('click', async () => {
-    const r = await QBANK.progress.pull();
-    QBANK.toast(r.ok ? 'تمت المزامنة والدمج' : 'تعذّرت المزامنة — لا اتصال');
-  });
-
-  const outBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'تسجيل الخروج' });
-  outBtn.addEventListener('click', async () => {
-    await QBANK.api.auth.signOut();
-    QBANK.toast('خرجت من حسابك — تقدّمك باقٍ في جهازك');
-    QBANK.router.go('#/');
-  });
-
-  // الحذف النهائي: تأكيد بكتابة كلمة صريحة — خطوة لا تُتراجَع
-  const delBtn = el('button', { class:'btn btn--ghost btn--block', type:'button',
-    style:'color:var(--bad);border-color:var(--bad)', text:'احذف حسابي نهائيًا' });
-  delBtn.addEventListener('click', async () => {
-    const word = (typeof prompt === 'function') ? prompt('سيُحذف حسابك وكل بياناتك نهائيًا ولا رجوع. اكتب «حذف» للتأكيد:') : null;
-    if (word !== 'حذف') { QBANK.toast('أُلغي الحذف'); return; }
-    const r = await QBANK.api.auth.deleteMe();
-    if (r.ok) { await QBANK.data.clearAll(); QBANK.toast('حُذف حسابك وكل بياناته'); QBANK.router.go('#/'); }
-    else QBANK.toast('تعذّر الحذف — تحقق من الاتصال');
   });
 
   /* الخادم هو الحقيقة: جهاز جديد يفتح الملف فيجد اسمه وصورته ونبذته
@@ -3290,7 +3349,7 @@ function accountBody(){
         el('span', { class:'field__label', text:'الاسم' }), nameInput
       ]),
       el('label', { class:'field', style:'margin:0' }, [
-        el('span', { class:'field__label', text:'رقم الجوال' }), phoneInput
+        el('span', { class:'field__label', text:'رقم الجوال *' }), phoneInput, phoneMsg
       ]),
       el('label', { class:'field', style:'margin:0' }, [
         el('span', { class:'field__label', text:'نبذة عني' }), bioInput
@@ -3300,10 +3359,48 @@ function accountBody(){
       ]),
       saveBtn
     ]),
-    el('div', { class:'card' }, [ el('h2', { text:'تقدّمي' }), progList ]),
-    ratesBox,
-    el('div', { class:'card stack' }, [ syncBtn, outBtn, el('hr', { class:'divider', style:'margin:0' }), delBtn ])
+    ratesBox
   ]);
+}
+
+/* ★ التقدّم والخطر بطاقتان مستقلتان: التبويبات توزّعهما، والدالة القديمة
+   تبقى للفحوص والشاشات التي تستدعيها كما هي */
+function accountProgressCard(){
+  const pack = QBANK.data.pack();
+  const list = el('div', { class:'stack' }, (pack.subjects || []).map(s => {
+    const pct = QBANK.progress.pctDone(s.id, s.q_count);
+    return el('div', { class:'row' }, [
+      el('span', { text: (s.icon || '▤') + ' ' + s.name }),
+      el('span', { class:'spacer' }),
+      el('span', { class:'badge num', text: pct + '٪' })
+    ]);
+  }));
+  return el('div', { class:'card' }, [ el('h2', { text:'تقدّمي' }), list ]);
+}
+
+function accountDangerCard(){
+  const syncBtn = el('button', { class:'btn btn--soft btn--block', type:'button', text:'زامن الآن' });
+  syncBtn.addEventListener('click', async () => {
+    const r = await QBANK.progress.pull();
+    QBANK.toast(r.ok ? 'تمت المزامنة والدمج' : 'تعذّرت المزامنة — لا اتصال');
+  });
+  const outBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'تسجيل الخروج' });
+  outBtn.addEventListener('click', async () => {
+    await QBANK.api.auth.signOut();
+    QBANK.toast('خرجت من حسابك — تقدّمك باقٍ في جهازك');
+    QBANK.router.go('#/');
+  });
+  const delBtn = el('button', { class:'btn btn--ghost btn--block', type:'button',
+    style:'color:var(--bad);border-color:var(--bad)', text:'احذف حسابي نهائيًا' });
+  delBtn.addEventListener('click', async () => {
+    const word = (typeof prompt === 'function') ? prompt('سيُحذف حسابك وكل بياناتك نهائيًا ولا رجوع. اكتب «حذف» للتأكيد:') : null;
+    if (word !== 'حذف') { QBANK.toast('أُلغي الحذف'); return; }
+    const r = await QBANK.api.auth.deleteMe();
+    if (r.ok) { await QBANK.data.clearAll(); QBANK.toast('حُذف حسابك وكل بياناته'); QBANK.router.go('#/'); }
+    else QBANK.toast('تعذّر الحذف — تحقق من الاتصال');
+  });
+  return el('div', { class:'card stack' }, [
+    syncBtn, outBtn, el('hr', { class:'divider', style:'margin:0' }), delBtn ]);
 }
 
 
@@ -3337,22 +3434,140 @@ function campusCard(){
   return box;
 }
 
+/*
+  ═══ موادي المرفوعة ═══
+  الطالب الذي رفع بنكًا يريد أن يعرف مصيره: أنُشر؟ كم اشترك فيه؟ كيف قُيّم؟
+  هذه البطاقة تجيب الثلاثة، ومنها يقفز إلى صفحة مادته أو إلى ملفه العام.
+*/
+function myUploadsCard(){
+  const u = QBANK.api.user();
+  const box = el('div', { class:'card stack' }, [ el('h2', { style:'margin:0', text:'موادي المرفوعة' }),
+    el('p', { class:'field__hint', style:'margin:0', text:'جارٍ الجلب…' }) ]);
+  if (!u) return box;
+  QBANK.api.rest('subjects?created_by=eq.' + u.id +
+    '&select=id,name,icon,color,q_count,published,status,price,free,rating_avg,rating_n&order=created_at.desc')
+    .then(r => {
+      if (!box.isConnected) return;
+      box.innerHTML = ''; box.appendChild(el('h2', { style:'margin:0', text:'موادي المرفوعة' }));
+      const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+      if (!rows.length){
+        box.appendChild(el('p', { class:'field__hint', style:'margin:0',
+          text:'لم ترفع مادة بعد — بنك أسئلتك ينفع دفعتك كلها، ويكسبك كوينز وسمعة.' }));
+        box.appendChild(el('a', { class:'btn btn--soft btn--block', href:'#/upload', text:'⇪ ارفع مادتك الأولى' }));
+        return;
+      }
+      rows.forEach(s => {
+        const st = s.published ? el('span', { class:'badge badge--ok', text:'منشورة' })
+                 : el('span', { class:'badge badge--warn', text:'قيد المراجعة' });
+        box.appendChild(el('a', { class:'up-row', href:'#/subject/' + s.id }, [
+          el('span', { class:'up-row__ico', 'aria-hidden':'true', text: s.icon || '▤' }),
+          el('span', { class:'up-row__x' }, [
+            el('span', { class:'up-row__t', text: s.name }),
+            el('span', { class:'up-row__s num', text:
+              QBANK.views.arNum(s.q_count || 0) + ' سؤالًا' +
+              (Number(s.rating_n) ? ' · ★ ' + Number(s.rating_avg).toFixed(1) +
+                ' (' + QBANK.views.arNum(s.rating_n) + ')' : ' · بلا تقييم بعد') })
+          ]),
+          st
+        ]));
+      });
+      box.appendChild(el('a', { class:'btn btn--ghost btn--block', href:'#/upload', text:'+ ارفع مادة أخرى' }));
+    });
+  return box;
+}
+
+/* ═══ نشاطي بالأرقام — لمحة تُقرأ في ثانية ═══ */
+function myStatsCard(){
+  const pack = QBANK.data.pack();
+  const subs = pack.subjects || [];
+  const mine = QBANK.views.mySubjects();
+  let done = 0, total = 0;
+  subs.forEach(s => {
+    if (mine.indexOf(s.id) === -1) return;
+    const pct = QBANK.progress.pctDone(s.id, s.q_count);
+    done += Math.round((s.q_count || 0) * pct / 100); total += (s.q_count || 0);
+  });
+  const pct = total ? Math.round(done * 100 / total) : 0;
+  return el('div', { class:'peer-stats' }, [
+    el('div', { class:'peer-stat' }, [
+      el('b', { class:'num', text: QBANK.views.arNum(mine.length) }), el('span', { text:'مادة عندي' }) ]),
+    el('div', { class:'peer-stat' }, [
+      el('b', { class:'num', text: QBANK.views.arNum(done) }), el('span', { text:'سؤالًا راجعته' }) ]),
+    el('div', { class:'peer-stat' }, [
+      el('b', { class:'num', text: QBANK.views.arNum(pct) + '٪' }), el('span', { text:'من موادي' }) ])
+  ]);
+}
+
+/*
+  لوحة الطالب بتبويبات: الملف · موادي · نشاطي · الحساب.
+  السبب: الصفحة صارت طويلة (ملف، جامعة، محفظة، مواد، تقييمات، خطر الحذف)
+  والتمرير الطويل يدفن ما يهم. والتبويب في الهاش فيبقى بعد التحديث.
+*/
+const ACC_TABS = [
+  { id:'profile', label:'ملفي' },
+  { id:'uploads', label:'موادي' },
+  { id:'activity', label:'نشاطي' },
+  { id:'account', label:'الحساب' }
+];
+
 const ViewAccount = {
   title:'حسابي',
-  view(){
-    if (!QBANK.api.user()) return QBANK.views.ViewLogin.view();
-    // المحفظة تُبنى في 47-wallet.js — تُلحق هنا حين تكون محمّلة
-    const wallet = (QBANK.wallet && QBANK.wallet.body) ? QBANK.wallet.body() : null;
-    const links  = (QBANK.wallet && QBANK.wallet.links) ? QBANK.wallet.links() : null;
-    // بطاقة «جامعتي» تُبنى في 51-campus.js
-    const campus = campusCard();
-    return QBANK.views.page('حسابي', null, [ accountBody(), campus, wallet, links ]);
+  view(route){
+    const u = QBANK.api.user();
+    if (!u) return QBANK.views.ViewLogin.view();
+    const active = (route && ACC_TABS.some(t => t.id === route.rest[0])) ? route.rest[0] : 'profile';
+
+    const tabs = el('div', { class:'tabs', role:'tablist' }, ACC_TABS.map(t =>
+      el('button', { class:'tabs__btn', type:'button', role:'tab', 'data-tab':t.id,
+        'aria-selected': t.id === active ? 'true' : 'false', text:t.label })));
+    tabs.addEventListener('click', e => {
+      const b = e.target.closest('[data-tab]');
+      if (b) QBANK.router.go('#/account/' + b.getAttribute('data-tab'));
+    });
+
+    /* رابط الملف العام: الطالب يشارك ملفه كما يشارك مادته */
+    const shareBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'⎘ انسخ رابط ملفي' });
+    shareBtn.addEventListener('click', () => {
+      try{
+        navigator.clipboard.writeText(location.origin + location.pathname + '#/p/' + u.id);
+        QBANK.toast('نُسخ رابط ملفك العام');
+      }catch(e){ QBANK.toast('تعذّر النسخ'); }
+    });
+    const openMine = el('a', { class:'btn btn--sm btn--soft', href:'#/p/' + u.id, text:'👁 ملفي كما يراه زملائي' });
+
+    const body = el('div', { class:'stack' });
+    if (active === 'profile'){
+      body.appendChild(accountBody());
+      body.appendChild(campusCard());
+    } else if (active === 'uploads'){
+      body.appendChild(myUploadsCard());
+      const wallet = (QBANK.wallet && QBANK.wallet.body) ? QBANK.wallet.body() : null;
+      if (wallet) body.appendChild(wallet);
+    } else if (active === 'activity'){
+      body.appendChild(myStatsCard());
+      body.appendChild(QBANK.views.accountProgressCard());
+      const links = (QBANK.wallet && QBANK.wallet.links) ? QBANK.wallet.links() : null;
+      if (links) body.appendChild(links);
+    } else {
+      body.appendChild(QBANK.views.accountDangerCard());
+    }
+
+    return QBANK.views.page('حسابي', null, [
+      el('div', { class:'ad-bar', style:'margin-bottom:8px' }, [ openMine, shareBtn ]),
+      tabs, body
+    ]);
   }
 };
 
 QBANK.views.accountBody = accountBody;
+QBANK.views.accountProgressCard = accountProgressCard;
+QBANK.views.accountDangerCard = accountDangerCard;
+QBANK.views.myUploadsCard = myUploadsCard;
+QBANK.views.myStatsCard = myStatsCard;
 QBANK.views.campusCard = campusCard;
 QBANK.views.ViewAccount = ViewAccount;
+QBANK.views.ACC_TABS = ACC_TABS;
+QBANK.views.uploadAvatar = uploadAvatar;
 QBANK.views.AVATARS = AVATARS;
 
 
@@ -4931,6 +5146,8 @@ const ViewSubject = {
 
     return el('div', { class:'page page--subject' }, [
       hero,
+      /* ★ «رفعها فلان» — المحتوى من الطلاب، فليُعرف صاحبه ويُقيَّم */
+      QBANK.views.uploaderLine ? QBANK.views.uploaderLine(sid) : null,
       trialSlot,
       /* عدّاد كل طالبٍ لموعده هو — الشُّعب تختلف، وموعدك لا يخص زميلك */
       QBANK.examDate ? QBANK.examDate.band(sid) : null,
@@ -5879,7 +6096,10 @@ function registerRoutes(){
     .add('#/exam',         V.ViewExam)
     .add('#/challenge',    V.ViewChallenge)
     .add('#/pay',          V.ViewPayReturn)   // عودة الطالب من البوابة: #/pay/<payment_id>
-    .add('#/board',        V.ViewBoard);
+    .add('#/board',        V.ViewBoard)
+    /* ★ ‎#/p‎ لا ‎#/u‎: الأخير محجوز لقسم الجامعة، وتسجيله مرتين يجعل
+       الموجّه يبتلع أحدهما بصمت — فيفتح رابط الطالب قسم جامعة عشوائيًا */
+    .add('#/p',            V.ViewPeer);      // الملف العام لأي طالب: #/p/<id>
   QBANK.router.notFound = V.ViewNotFound;
 }
 
@@ -9557,6 +9777,219 @@ QBANK.analysis = Analysis;
 QBANK.examDate = ExamDate;
 QBANK.views.analysisHtml = analysisHtml;
 QBANK.views.topicsCard = topicsCard;
+
+
+/* ===== 58-peer.js ===== */
+/*
+  الملف العام وتقييم الزملاء.
+
+  لماذا يُقيَّم الطالب أصلًا؟ لأن المحتوى هنا من الطلاب، وبنكٌ نافع يستحق
+  أن يُعرف صاحبه. السمعة تجعل الرفع الجيد مربحًا اجتماعيًا لا ماليًا فقط.
+  وحُصر التقييم في من رفع مادة (شرطٌ في القاعدة) كي يبقى عن العطاء لا عن
+  الأشخاص — فلا يصير ساحة تصفية حسابات.
+*/
+const Peer = {
+  profile(id){ return QBANK.api.rpc('public_profile', { p_user: id }); },
+  rate(id, stars, note){
+    return QBANK.api.rpc('rate_student', { p_target:id, p_stars:stars, p_note: note || '' });
+  },
+  uploader(subjectId){ return QBANK.api.rpc('uploader_of', { p_subject: subjectId }); },
+  href(id){ return '#/p/' + id; },   // ‎#/u‎ لقسم الجامعة — لا تصادم
+
+  /* نجوم مقروءة: اللون والشكل معًا، ومكتوبة للقارئ الآلي */
+  stars(avg, n){
+    const a = Number(avg) || 0, full = Math.round(a);
+    return el('span', { class:'peer-stars', 'aria-label': a ? a + ' من ٥ من ' + (n||0) + ' تقييم' : 'بلا تقييم' }, [
+      el('span', { class:'peer-stars__s', 'aria-hidden':'true', text:'★'.repeat(full) + '☆'.repeat(5 - full) }),
+      el('span', { class:'peer-stars__n num', text: n ? (a.toFixed(1) + ' · ' + QBANK.views.arNum(n)) : 'جديد' })
+    ]);
+  },
+
+  /* صورة الطالب: المرفوعة إن وُجدت، وإلا الرمزية — دالة واحدة لكل المنصة */
+  face(p, cls){
+    if (p && p.avatar_url)
+      return el('img', { class:'peer-face ' + (cls || ''), src: p.avatar_url, alt: p.name || 'طالب' });
+    return el('span', { class:'peer-face peer-face--emo ' + (cls || ''), 'aria-hidden':'true',
+      text: (p && p.avatar) || '◍' });
+  }
+};
+
+/* ═══ ودجت التقييم ═══ */
+function peerRateCard(p, onDone){
+  const me = QBANK.api.user();
+  if (!me) return el('div', { class:'card' }, [
+    el('p', { class:'page__sub', text:'سجّل دخولك لتقييم زملائك.' }),
+    el('a', { class:'btn btn--soft btn--block', href:'#/login', text:'دخول' })
+  ]);
+  if (me.id === p.id) return null;                       // لا يقيّم نفسه
+  if (!Number(p.uploads)) return el('div', { class:'card' }, [
+    el('p', { class:'field__hint', style:'margin:0',
+      text:'يُقيَّم الطالب بعد أن يرفع مادة — التقييم هنا عن العطاء لا عن الأشخاص.' })
+  ]);
+
+  const mine = p.mine || {};
+  let picked = Number(mine.stars) || 0;
+  const msg = el('p', { class:'field__hint', role:'status', style:'margin:8px 0 0' });
+  const row = el('div', { class:'rate__stars', role:'radiogroup', 'aria-label':'قيّم هذا الطالب' });
+  const btns = [];
+  const paint = () => btns.forEach((b, i) => {
+    b.textContent = i < picked ? '★' : '☆';
+    b.classList.toggle('is-on', i < picked);
+    b.setAttribute('aria-checked', (i + 1) === picked ? 'true' : 'false');
+  });
+  for (let i = 1; i <= 5; i++){
+    const b = el('button', { class:'rate__star', type:'button', role:'radio',
+      'aria-checked':'false', 'aria-label': i + ' من ٥', text:'☆' });
+    b.addEventListener('click', () => { picked = i; paint(); });
+    btns.push(b); row.appendChild(b);
+  }
+  paint();
+
+  const note = el('textarea', { class:'input', rows:'2',
+    placeholder:'كلمة عن بنوكه: هل نفعتك؟ (اختياري)' });
+  note.value = mine.note || '';
+
+  const send = el('button', { class:'btn btn--block', type:'button',
+    text: mine.stars ? 'حدّث تقييمي' : 'أرسل التقييم' });
+  send.addEventListener('click', async () => {
+    if (!picked){ msg.className = 'field__hint is-bad'; msg.textContent = 'اختر عدد النجوم أولًا.'; return; }
+    send.setAttribute('aria-disabled','true'); send.textContent = 'جارٍ…';
+    const r = await Peer.rate(p.id, picked, note.value.trim());
+    send.removeAttribute('aria-disabled'); send.textContent = 'حدّث تقييمي';
+    const ok = r.ok && r.data && r.data.ok;
+    if (!ok){
+      const why = (r.data && r.data.reason) || '';
+      msg.className = 'field__hint is-bad';
+      msg.textContent = why === 'no_uploads' ? 'يُقيَّم الطالب بعد أن يرفع مادة.'
+                      : why === 'self' ? 'لا تقيّم نفسك.'
+                      : 'تعذّر الإرسال — تحقق من الاتصال.';
+      return;
+    }
+    msg.className = 'field__hint is-ok';
+    msg.textContent = 'شكرًا — متوسطه الآن ' + Number(r.data.avg).toFixed(1);
+    QBANK.toast('سُجّل تقييمك');
+    if (onDone) onDone();
+  });
+
+  return el('div', { class:'card stack' }, [
+    el('h2', { style:'margin:0', text: mine.stars ? 'تقييمك له' : 'قيّم هذا الطالب' }),
+    el('p', { class:'field__hint', style:'margin:0',
+      text:'تقييمك يساعد الطلاب على معرفة البنوك النافعة وأصحابها.' }),
+    row, note, send, msg
+  ]);
+}
+
+/* ═══ الشاشة العامة ═══ */
+const ViewPeer = {
+  title:'ملف الطالب',
+  view(route){
+    const id = route.rest[0];
+    if (!id) return QBANK.views.ViewNotFound.view();
+
+    const box = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
+    function load(){
+      Peer.profile(id).then(r => {
+        if (!box.isConnected) return;
+        const p = (r.ok && r.data && !r.data.error) ? r.data : null;
+        box.innerHTML = '';
+        if (!p){
+          box.appendChild(QBANK.views.empty('؟', 'لم نجد هذا الطالب',
+            'ربما حُذف حسابه، أو الرابط غير صحيح.',
+            el('a', { class:'btn', href:'#/', text:'الرئيسية' })));
+          return;
+        }
+
+        /* البطل: وجهه واسمه وسمعته وعطاؤه */
+        const me = QBANK.api.user();
+        const isMe = me && me.id === p.id;
+        box.appendChild(el('div', { class:'card pf-hero' }, [
+          el('div', { class:'pf-hero__avwrap' }, [ Peer.face(p, 'peer-face--lg') ]),
+          el('div', { class:'pf-hero__x' }, [
+            el('strong', { class:'pf-hero__n', text: p.name || 'طالب مراجعة' }),
+            el('span', { class:'pf-hero__mail', text:
+              [p.university, p.college].filter(Boolean).join(' · ') || 'بلا جامعة محدّدة' }),
+            Peer.stars(p.rating_avg, p.rating_n),
+            p.bio ? el('p', { class:'pf-hero__bio', text: p.bio }) : null,
+            isMe ? el('a', { class:'btn btn--sm btn--soft', href:'#/login', style:'margin-top:8px',
+              text:'هذا ملفك — حرّره' }) : null
+          ])
+        ]));
+
+        /* عطاؤه بالأرقام */
+        box.appendChild(el('div', { class:'peer-stats' }, [
+          el('div', { class:'peer-stat' }, [
+            el('b', { class:'num', text: QBANK.views.arNum(p.uploads || 0) }),
+            el('span', { text:'مادة مرفوعة' }) ]),
+          el('div', { class:'peer-stat' }, [
+            el('b', { class:'num', text: QBANK.views.arNum(p.questions || 0) }),
+            el('span', { text:'سؤالًا أهداه' }) ]),
+          el('div', { class:'peer-stat' }, [
+            el('b', { class:'num', text: Number(p.rating_avg) ? Number(p.rating_avg).toFixed(1) : '—' }),
+            el('span', { text: p.rating_n ? 'من ' + QBANK.views.arNum(p.rating_n) + ' تقييم' : 'بلا تقييم بعد' }) ])
+        ]));
+
+        /* مواده: بطاقات حقيقية تُفتح */
+        const subs = p.subjects || [];
+        box.appendChild(el('h2', { style:'margin:8px 0 0',
+          text: subs.length ? 'مواده المرفوعة' : 'لم يرفع مادة بعد' }));
+        if (subs.length){
+          box.appendChild(el('div', { class:'grid' }, subs.map(s =>
+            QBANK.views.subjectCard(Object.assign({ topics:[], exam_date:null }, s)))));
+        } else {
+          box.appendChild(el('p', { class:'field__hint',
+            text:'حين يرفع بنك أسئلة يظهر هنا لكل زملائه.' }));
+        }
+
+        /* آراء زملائه */
+        const rates = p.ratings || [];
+        if (rates.length){
+          box.appendChild(el('h2', { style:'margin:8px 0 0', text:'آراء الزملاء' }));
+          box.appendChild(el('div', { class:'stack' }, rates.map(x =>
+            el('div', { class:'card peer-op' }, [
+              el('div', { class:'row' }, [
+                Peer.face({ avatar: x.by_avatar, avatar_url: x.by_avatar_url, name: x.by }, 'peer-face--sm'),
+                x.by_id ? el('a', { class:'peer-op__n', href: Peer.href(x.by_id), text: x.by || 'طالب' })
+                        : el('span', { class:'peer-op__n', text: x.by || 'طالب' }),
+                el('span', { class:'spacer' }),
+                el('span', { class:'badge badge--warn', 'aria-label': x.stars + ' من ٥',
+                  text: '★'.repeat(x.stars) + '☆'.repeat(5 - x.stars) })
+              ]),
+              x.note ? el('p', { style:'margin:6px 0 0', text: x.note }) : null
+            ]))));
+        }
+
+        const card = peerRateCard(p, load);
+        if (card) box.appendChild(card);
+      });
+    }
+    load();
+    return QBANK.views.page('ملف الطالب', null, [box]);
+  }
+};
+
+/* ═══ سطر «رفعها فلان» — يُلحق بصفحة المادة ═══ */
+function uploaderLine(subjectId){
+  const wrap = el('div');
+  Peer.uploader(subjectId).then(r => {
+    const p = (r.ok && r.data && r.data.id) ? r.data : null;
+    if (!p || !wrap.isConnected) return;
+    wrap.appendChild(el('a', { class:'peer-by', href: Peer.href(p.id) }, [
+      Peer.face(p, 'peer-face--sm'),
+      el('span', { class:'peer-by__x' }, [
+        el('span', { class:'peer-by__l', text:'رفعها' }),
+        el('span', { class:'peer-by__n', text: p.name || 'طالب' })
+      ]),
+      Peer.stars(p.rating_avg, p.rating_n),
+      el('span', { class:'peer-by__go', 'aria-hidden':'true', text:'←' })
+    ]));
+  });
+  return wrap;
+}
+
+QBANK.peer = Peer;
+QBANK.views.ViewPeer = ViewPeer;
+QBANK.views.peerRateCard = peerRateCard;
+QBANK.views.uploaderLine = uploaderLine;
 
 })();
 
