@@ -263,7 +263,7 @@ img,svg{ max-width:100%; height:auto; }
   height:calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
   padding-bottom:env(safe-area-inset-bottom, 0px);
   display:flex; align-items:stretch;
-  background:color-mix(in srgb, var(--surface) 88%, transparent);
+  background:color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter:saturate(180%) blur(18px);
   -webkit-backdrop-filter:saturate(180%) blur(18px);
   border-top:1px solid color-mix(in srgb, var(--line) 70%, transparent);
@@ -282,6 +282,8 @@ img,svg{ max-width:100%; height:auto; }
   min-width:0;                       /* يمنع تمدّد النص فيكسر الشريط على ٣٦٠ بكسل */
   -webkit-tap-highlight-color:transparent;
 }
+/* الأيقونة أغمق من كلمتها درجةً: العين تمسك الشكل قبل النص، فيقود الشكلُ */
+.tabbar__item .tabbar__box{ color:var(--text-2); }
 .tabbar__item:hover{ text-decoration:none; color:var(--text-2); }
 
 /* غلاف الأيقونة: هو ما تُرسم عليه حبّة التمييز */
@@ -291,12 +293,23 @@ img,svg{ max-width:100%; height:auto; }
   transition:background .2s var(--ease), color .2s var(--ease),
              transform .2s cubic-bezier(.34,1.4,.64,1);
 }
-.tabbar__box svg{ display:block; }
+.tabbar__box svg{ display:block; width:22px; height:22px; }
 
-/* الصفحة الحالية: حبّة بلون التمييز، وخطٌّ أثقل قليلًا، ونصٌّ أوضح */
-.tabbar__item[aria-current="page"]{ color:var(--acc); }
+/*
+  الصفحة الحالية: حبّة ذهبية، وخطٌّ أثقل قليلًا، ونصٌّ أوضح.
+
+  ★ ولمَ الذهب لا --acc؟ لسببين:
+  الأول أن --acc محايدٌ رماديّ في العموم (وهذه فكرة AMSU: الحياد في
+  الهيكل واللون للمادة)، فالتمييز به يعطي حبّةً رمادية على سطحٍ رمادي —
+  تُقرأ «معطّلة» لا «مختارة»، ولا هوية فيها.
+  والثاني أن كل مادة تلوّن --acc بلونها، فلو تبعه الشريطُ لتبدّل لونه مع
+  كل مادة يفتحها الطالب — وثبات الإطار هو ما يجعله إطارًا.
+  والذهب لون الهوية الثابت: يقول «أنت هنا» ويقول «هذه مراجعة» معًا.
+*/
+.tabbar__item[aria-current="page"]{ color:var(--gold); }
 .tabbar__item[aria-current="page"] .tabbar__box{
-  background:color-mix(in srgb, var(--acc) 16%, transparent);
+  color:var(--gold);
+  background:color-mix(in srgb, var(--gold) 18%, transparent);
   transform:translateY(-1px);
 }
 .tabbar__item[aria-current="page"] .tabbar__box svg path{ stroke-width:2; }
@@ -328,11 +341,39 @@ img,svg{ max-width:100%; height:auto; }
 @media (min-width:640px){ .grid--2{ grid-template-columns:repeat(2,1fr); } }
 @media (min-width:900px){ .grid--3{ grid-template-columns:repeat(3,1fr); } }
 
-/* على الشاشات الكبيرة يختفي الشريط السفلي وتظهر روابط أعلى */
+/*
+  ═══ سطح المكتب ═══
+  ★ عطلٌ صامت عاش طويلًا: كان الشريط السفلي يُخفى على الشاشات العريضة،
+  والتعليق يَعِد بـ«روابط أعلى» — روابط لم تُكتب قط. فمن فتح المنصة على
+  حاسوبه وجد نفسه بلا تنقّلٍ إطلاقًا: لا استكشاف ولا رفع ولا حساب، ولا
+  طريق إلى شيء إلا بالعودة إلى الرئيسية وتخمين الروابط.
+  فبُنيت الروابط أخيرًا، وصارت الترويسة تحمل ما يحمله الشريط.
+*/
+.topnav{ display:none; }
 @media (min-width:820px){
   .tabbar{ display:none; }
   .main{ padding-bottom:var(--s8); }
   .footer{ padding-bottom:var(--s5); }
+
+  .topnav{ display:flex; align-items:center; gap:var(--s1); margin-inline-end:auto;
+           padding-inline-start:var(--s5); }
+  .topnav__item{
+    display:inline-flex; align-items:center; gap:7px;
+    padding:8px 12px; border-radius:10px; text-decoration:none;
+    color:var(--text-2); font-size:.88rem; font-weight:600;
+    transition:background .16s var(--ease), color .16s var(--ease);
+  }
+  .topnav__item:hover{ background:var(--surface-2); color:var(--text); text-decoration:none; }
+  .topnav__item[aria-current="page"]{
+    color:var(--gold);
+    background:color-mix(in srgb, var(--gold) 14%, transparent);
+  }
+  .topnav__item svg{ display:block; opacity:.9; }
+}
+/* بين ٨٢٠ و٩٦٠ تضيق الترويسة: تبقى الأيقونات وتُطوى الكلمات */
+@media (min-width:820px) and (max-width:960px){
+  .topnav__item{ padding:8px; }
+  .topnav__lbl{ display:none; }
 }
 
 
@@ -1995,6 +2036,8 @@ body{ -webkit-tap-highlight-color:transparent; }
         <span class="brand__sub">بنك الأسئلة</span>
       </span>
     </a>
+    <!-- تنقّل سطح المكتب: يُملأ من buildTabbar ولا يظهر دون ٨٢٠ بكسل -->
+    <nav class="topnav" id="topnav" aria-label="التنقّل"></nav>
     <div class="topbar__actions">
       <button class="iconbtn" id="themeBtn" type="button" aria-label="تبديل الوضع الليلي" title="الوضع الليلي">
         <span class="iconbtn__ico" aria-hidden="true" data-theme-icon>☾</span>
@@ -6812,7 +6855,7 @@ function icon(d){
   const NS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('width', '22'); svg.setAttribute('height', '22');
+  svg.setAttribute('width', '20'); svg.setAttribute('height', '20');
   svg.setAttribute('fill', 'none');
   svg.setAttribute('aria-hidden', 'true');
   const path = document.createElementNS(NS, 'path');
@@ -6846,6 +6889,22 @@ const NAV = [
 ];
 
 function buildTabbar(){
+  /*
+    ★ الشريط السفلي وتنقّل الترويسة يُبنيان من قائمةٍ واحدة.
+    قائمتان تتباعدان: يُضاف تبويب إلى إحداهما ويُنسى في الأخرى، فيختلف
+    ما يراه الطالب على جوّاله عمّا يراه على حاسوبه. مصدرٌ واحد لا مصدران.
+  */
+  const top = document.getElementById('topnav');
+  if (top) {
+    top.innerHTML = '';
+    NAV.forEach(item => {
+      const a = QBANK.dom.el('a', { class:'topnav__item', href:item.path, 'data-nav':item.path });
+      a.appendChild(icon(ICONS[item.ico] || ICONS.home));
+      a.appendChild(QBANK.dom.el('span', { class:'topnav__lbl', text:item.label }));
+      top.appendChild(a);
+    });
+  }
+
   const bar = document.getElementById('tabbar');
   if (!bar) return;
   bar.innerHTML = '';
