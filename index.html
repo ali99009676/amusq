@@ -3667,8 +3667,10 @@ const Admin = {
   },
   newWizard(){
     // strict افتراضًا: قاعدة القداسة هي الأصل، والتحسين اختيار صريح من الرافع
-    // enrich=false افتراضًا: المسار المجاني هو الأصل، والإثراء اختيار واعٍ يُدفع ثمنه
-    const w = { step:1, filename:'', subjectName:'', slug:'', mode:'strict', enrich:false,
+    /* ★ enrich=true افتراضًا: المادة الكاملة هي ما يريده الطالب فعلًا —
+       رفع ليذاكر لا ليخزّن نصًّا. ومن أراد المجاني يختاره بضغطة واحدة،
+       والافتراض يجب أن يكون أفضل مخرَج لا أرخصه. */
+    const w = { step:1, filename:'', subjectName:'', slug:'', mode:'strict', enrich:true,
                 country:'', university:'', college:'', courseCode:'',
                 raw:[], enriched:[], draftId:null, done:0, total:0, error:'' };
     /*
@@ -4395,19 +4397,37 @@ function stepEnrich(box, rerender){
     const enough = bal >= cost;
     wizard.costPerQ = (credits && credits.cost_per_q) || 1;
 
+    /*
+      ★ الافتراض الطموح يجب ألا يورّط الطالب.
+      صار المسار الكامل هو المختار ابتداءً، فمن لا يكفيه رصيده كان يجد
+      نفسه على مسارٍ محجوب وزرَّ «أثرِ وانشر» معطّلًا بلا سبب ظاهر — طريق
+      مسدود عند أول خطوة. فنعيده إلى المجاني تلقائيًا، إلا أن يكون اختار
+      المدفوع بيده: اختياره الصريح لا يُلغى، إنما يُصحَّح الافتراضُ وحده.
+    */
+    /* ورسمة ما قبل وصول الرصيد لا تحكم: رصيدها صفرٌ بحكم الجهل لا بحكم الواقع،
+       فلو ارتددنا عندها لبقي الطالب على المجاني حتى لو كان رصيده وافرًا. */
+    const known = !!credits;
+    if (known && !enough && wizard.enrich && !wizard.pathChosen) wizard.enrich = false;
+
     paths.innerHTML = '';
     [
-      { id:false, t:'انشر بلا إثراء', price:'مجانًا',
-        d:'أسئلتك وخياراتها كما وصلت، جاهزة للمراجعة والاختبار حالًا.',
-        miss: 'بلا شرح لكل إجابة، ولا ترجمة، ولا بطاقات حفظ'
-              + (noAnswer ? '. و' + N(noAnswer) + ' سؤالًا بلا إجابة معلنة في ملفك ستحتاج ضبطها بيدك' : '') },
-      { id:true, t:'انشر مع الإثراء', price: N(cost) + ' كوين',
-        d:'شرح لكل إجابة، وترجمة عربية، وبطاقة حفظ، وتصنيف بالمحاور.',
+      /*
+        ★ المسار الكامل أولًا وهو المختار افتراضًا.
+        الطالب لا يرفع ليحصل على نصٍّ خام — يرفع ليذاكر. والترتيب القديم
+        كان يضع «بلا إثراء» أولًا ومختارًا، فيمرّ عليه الطالب بضغطة فيخرج
+        ببنك فقير ثم يظنّ المنصة فقيرة. الافتراض يجب أن يكون أفضل مخرَج.
+      */
+      { id:true, t:'المادة الكاملة — كطريقة AMSU', price: N(cost) + ' كوين',
+        d:'شرح عربي وإنجليزي لكل سؤال، وترجمته، وبطاقة حفظ منحوتة، وتصنيف بالمحاور، ثم «عن المادة» و«طريقة الحفظ» و«الأخطاء الشائعة».',
         miss: noAnswer ? 'ويستنتج الذكاء إجابات ' + N(noAnswer) + ' سؤالًا لم تُعلَن في ملفك'
-                       : 'وكل أسئلتك فيها إجاباتها أصلًا — فلن يُغيّر الذكاء إجابة واحدة' }
+                       : 'وكل أسئلتك فيها إجاباتها أصلًا — فلن يُغيّر الذكاء إجابة واحدة' },
+      { id:false, t:'الأسئلة وحدها', price:'مجانًا',
+        d:'أسئلتك وخياراتها كما وصلت، جاهزة للاختبار حالًا.',
+        miss: 'بلا شرح ولا ترجمة ولا بطاقات حفظ — ويمكنك إثراؤها لاحقًا'
+              + (noAnswer ? '. و' + N(noAnswer) + ' سؤالًا بلا إجابة معلنة ستضبطها بيدك' : '') }
     ].forEach(o => {
       const on = wizard.enrich === o.id;
-      const blocked = o.id && !enough;
+      const blocked = o.id && known && !enough;   // لا نحجب بناءً على جهلٍ بالرصيد
       const b = el('button', { class:'path' + (on ? ' is-on' : '') + (blocked ? ' is-blocked' : ''),
         type:'button', role:'radio', 'data-path': String(o.id),
         'aria-checked': on ? 'true' : 'false' }, [
@@ -4421,14 +4441,18 @@ function stepEnrich(box, rerender){
       b.addEventListener('click', () => {
         if (blocked) return;
         wizard.enrich = o.id;
+        wizard.pathChosen = true;   // اختيار بيده — لا يعيده الافتراض بعد اليوم
         paint(credits);
       });
       paths.appendChild(b);
     });
 
-    creditBox.hidden = !wizard.enrich;
+    /* ★ صندوق الرصيد يظهر أيضًا حين يُحجب المدفوع لنقص الرصيد:
+       الحجب بلا رقمٍ يشرحه لغزٌ، ومع «ينقصك كذا» يصير دعوةً للشحن. */
+    const showCost = wizard.enrich || (known && !enough);
+    creditBox.hidden = !showCost;
     creditBox.innerHTML = '';
-    if (wizard.enrich){
+    if (showCost){
       creditBox.appendChild(el('span', { class:'costbox__l', text:'رصيدك' }));
       creditBox.appendChild(el('span', { class:'costbox__n num',
         text: N(bal) + ' كوين' + (enough ? '' : ' — لا يكفي') }));
