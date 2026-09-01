@@ -12237,6 +12237,33 @@ const Codes = {
   },
   why(reason){ return Codes.WHY[reason] || 'تعذّر تفعيل الرمز. حاول مرة أخرى.'; },
 
+  /*
+    ★ «تعذّر التوليد» ليست رسالة، بل صمتٌ بصيغة جملة.
+    كتبتُها أول مرة فسقطت الدالة في القاعدة لسببٍ محدّد — امتدادٌ خارج
+    مسار البحث — ولم يصل من ذلك السبب حرفٌ واحد إلى الشاشة. فأمضى المشرف
+    وقته يعيد تنفيذ ملف SQL نجح تنفيذه أصلًا. وحين يكون العطل في القاعدة
+    فالقاعدة قالت سببه بنصّه، وإخفاؤه اختيارُنا نحن لا نقصُ معلومة.
+
+    فنُفرّق: سببٌ نعرفه له نصٌّ عربي، ونداءٌ سقط يُظهر ما قالته القاعدة،
+    ودالةٌ مفقودة تُقال باسمها لأن علاجها معروف: نفّذ ملف CODES.sql.
+  */
+  ADMIN_WHY: {
+    forbidden:  'هذه اللوحة للمشرف وحده — تأكّد أن حسابك مشرف.',
+    no_subject: 'اختر المادة أولًا.',
+    not_found:  'المادة المختارة لم تعد موجودة — حدّث الصفحة.'
+  },
+  failText(r){
+    const d = r && r.data;
+    if (d && d.reason && Codes.ADMIN_WHY[d.reason]) return Codes.ADMIN_WHY[d.reason];
+    if (r && r.offline) return 'لا اتصال بالخادم.';
+    const m = String((d && (d.message || d.hint)) || '');
+    /* PGRST202 = الدالة غير موجودة في ذاكرة المخطط */
+    if ((d && d.code === 'PGRST202') || /does not exist|Could not find the function/i.test(m))
+      return 'دالة الأكواد غير موجودة في القاعدة — نفّذ ملف db/CODES.sql في محرّر Supabase.';
+    if (m) return 'القاعدة ردّت: ' + m;
+    return 'تعذّر التوليد' + (r && r.status ? ' (' + r.status + ')' : '') + '.';
+  },
+
   /* رقم التواصل وسطر طريقة الدفع — يكتبهما المشرف في الإعدادات */
   support(){
     const s = (QBANK.data.pack().settings) || {};
@@ -12305,8 +12332,10 @@ function redeemBox(onDone){
         QBANK.gate.refresh().then(() => { if (onDone) onDone(d); });
         return;
       }
+      /* رفضٌ مفهوم من القاعدة له نصّه، وسقوطُ النداء نفسِه شيء آخر —
+         والخلط بينهما يجعل الطالب يعيد رمزًا سليمًا على خادمٍ صامت. */
       msg.className = 'field__hint is-bad';
-      msg.textContent = Codes.why(d && d.reason);
+      msg.textContent = (d && d.reason) ? Codes.why(d.reason) : Codes.failText(r);
     });
   };
   go.addEventListener('click', run);
@@ -12373,7 +12402,11 @@ function adminCodesCard(){
     });
     make.disabled = false;
     const d = (r.ok && r.data) ? r.data : null;
-    if (!d || !d.ok){ msg.className = 'field__hint is-bad'; msg.textContent = 'تعذّر التوليد.'; return; }
+    if (!d || !d.ok){
+      msg.className = 'field__hint is-bad';
+      msg.textContent = Codes.failText(r);
+      return;
+    }
     msg.className = 'field__hint is-ok';
     msg.textContent = 'وُلّدت ' + QBANK.views.arNum((d.codes || []).length) + ' رمزًا · دفعة ' + d.batch;
     paintCodes(d.codes || []);
@@ -12427,7 +12460,15 @@ function adminCodesCard(){
   QBANK.api.rpc('admin_codes', { p_limit: 60 }).then(r => {
     if (!listBox.isConnected) return;
     listBox.innerHTML = '';
-    const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+    /* ★ «لا أكواد بعد» و«تعذّر الجلب» حالتان لا حالة واحدة.
+       قائمةٌ فارغة تقول «كل شيء سليم ولم تولّد بعد»، ونداءٌ سقط يقول
+       «شيءٌ مكسور» — وعرضُ الأولى مكان الثانية يُخفي العطل تمامًا. */
+    if (!r.ok || !Array.isArray(r.data)){
+      listBox.appendChild(el('p', { class:'field__hint is-bad', style:'margin:0',
+        text: Codes.failText(r) }));
+      return;
+    }
+    const rows = r.data;
     if (!rows.length){
       listBox.appendChild(el('p', { class:'field__hint', style:'margin:0', text:'لا أكواد بعد.' }));
       return;
