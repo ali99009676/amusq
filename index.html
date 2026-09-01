@@ -830,6 +830,42 @@ img,svg{ max-width:100%; height:auto; }
 .analysis tbody tr:nth-child(even){ background:var(--surface-2); }
 .analysis section + section{ margin-top:1.6em; }
 
+/* ═══ بطل الملف الشخصي — وجه الطالب في المنصة ═══ */
+.pf-hero{
+  display:flex; align-items:center; gap:var(--s5);
+  background:linear-gradient(135deg,
+    color-mix(in srgb, var(--acc) 14%, var(--surface)),
+    color-mix(in srgb, var(--acc) 4%, var(--surface)));
+}
+.pf-hero__avwrap{ position:relative; flex:0 0 auto; }
+.pf-hero__img, .pf-hero__emoji{
+  width:88px; height:88px; border-radius:50%;
+  border:3px solid var(--acc); box-shadow:var(--sh2);
+  display:grid; place-items:center; object-fit:cover;
+  background:var(--acc-soft); font-size:2.6rem; line-height:1;
+}
+.pf-hero__cam{
+  position:absolute; inset-inline-end:-4px; bottom:-4px;
+  width:34px; height:34px; border-radius:50%; cursor:pointer;
+  background:var(--acc); color:var(--on-acc); border:2px solid var(--surface);
+  display:grid; place-items:center; font-size:.95rem; box-shadow:var(--sh1);
+  transition:transform .16s var(--ease);
+}
+.pf-hero__cam:hover{ transform:scale(1.1); }
+.pf-hero__x{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.pf-hero__n{ font-family:var(--font-display); font-size:1.2rem; letter-spacing:-.02em; }
+.pf-hero__mail{ font-size:.8rem; color:var(--text-3); }
+.pf-hero__bio{ margin:.35em 0 0; font-size:.9rem; color:var(--text-2); line-height:1.8; }
+@media (max-width:480px){ .pf-hero{ flex-direction:column; text-align:center; }
+  .pf-hero__x{ align-items:center; } }
+
+/* إيميل الطالب في بطاقات المشرف — سطر لاتيني قابل للنسخ */
+.stu__mail{
+  font-size:.78rem; color:var(--acc-d); user-select:all;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:60vw;
+}
+:root[data-theme="dark"] .stu__mail{ color:var(--acc); }
+
 /* عدّاد الاختبار — كل طالب وموعده */
 .exambar{ margin:0; }
 .exambar__t{
@@ -3061,13 +3097,83 @@ QBANK.views = { ViewHome, campusBand, ViewLogin, ViewAdminLogin, ViewSettings, V
 */
 const AVATARS = ['🧑‍⚕️','👩‍⚕️','🩺','🚑','💉','🧠','🫀','🦴','🔬','📚'];
 
+/*
+  ★ رفع الصورة الشخصية إلى مخزن Supabase.
+  تُصغَّر في المتصفح إلى ٢٥٦ بكسل قبل الرفع: صورة جوال خام ٥ ميغابايت
+  تصير ~٣٠ كيلوبايت — أرحم ببيانات الطالب وأسرع ظهورًا في كل مكان.
+*/
+async function uploadAvatar(file){
+  const u = QBANK.api.user();
+  const c = QBANK.config.get();
+  const s = QBANK.api.session();
+  if (!u || !c || !s) return { ok:false };
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i); i.onerror = rej;
+    i.src = URL.createObjectURL(file);
+  });
+  const size = 256;
+  const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
+  const g = cv.getContext('2d');
+  // قصّ مربع من المنتصف — الوجه غالبًا في الوسط، والمربع هو شكل الصورة في كل مكان
+  const m = Math.min(img.width, img.height);
+  g.drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, size, size);
+  const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', .85));
+  const path = u.id + '/avatar.jpg';
+  const f = QBANK.api.fetchFn();
+  const res = await f(c.url + '/storage/v1/object/avatars/' + path, {
+    method:'POST',
+    headers:{ 'Authorization':'Bearer ' + s.access_token, 'apikey': c.anonKey,
+              'Content-Type':'image/jpeg', 'x-upsert':'true' },
+    body: blob
+  });
+  if (!res.ok) return { ok:false };
+  // ?v= يكسر كاش المتصفح — الرابط ثابت والصورة تتبدل
+  return { ok:true, url: c.url + '/storage/v1/object/public/avatars/' + path + '?v=' + Date.now() };
+}
+
 function accountBody(){
   const u = QBANK.api.user();
   if (!u) return el('div');
-  const prof = QBANK.store.get('profile', { name:'', avatar: AVATARS[0] });
+  const prof = QBANK.store.get('profile', { name:'', avatar: AVATARS[0], phone:'', bio:'', avatar_url:'' });
+
+  /* ═══ بطل الملف: الصورة والاسم والبريد في صدر الصفحة ═══ */
+  const avImg = el('img', { class:'pf-hero__img', alt:'صورتك الشخصية', hidden: prof.avatar_url ? null : true });
+  if (prof.avatar_url) avImg.src = prof.avatar_url;
+  const avEmoji = el('span', { class:'pf-hero__emoji', 'aria-hidden':'true',
+    text: prof.avatar || AVATARS[0], hidden: prof.avatar_url ? true : null });
+  const file = el('input', { type:'file', accept:'image/*', hidden:true, 'aria-label':'ارفع صورة شخصية' });
+  const camBtn = el('button', { class:'pf-hero__cam', type:'button', 'aria-label':'غيّر صورتك', text:'📷' });
+  camBtn.addEventListener('click', () => file.click());
+  file.addEventListener('change', async () => {
+    if (!file.files || !file.files[0]) return;
+    camBtn.textContent = '…';
+    const r = await uploadAvatar(file.files[0]);
+    camBtn.textContent = '📷';
+    if (!r.ok) return QBANK.toast('تعذّر رفع الصورة — تحقق من الاتصال');
+    prof.avatar_url = r.url;
+    avImg.src = r.url; avImg.hidden = false; avEmoji.hidden = true;
+    QBANK.store.set('profile', prof);
+    await QBANK.api.saveProfile({ avatar_url: r.url });
+    QBANK.toast('صورتك الجديدة في كل مكان الآن');
+  });
+
+  const hero = el('div', { class:'card pf-hero' }, [
+    el('div', { class:'pf-hero__avwrap' }, [avImg, avEmoji, camBtn, file]),
+    el('div', { class:'pf-hero__x' }, [
+      el('strong', { class:'pf-hero__n', id:'pfName', text: prof.name || 'طالب مراجعة' }),
+      el('span', { class:'pf-hero__mail ltr', text: u.email || '' }),
+      el('p', { class:'pf-hero__bio', id:'pfBio', text: prof.bio || '' })
+    ])
+  ]);
 
   const nameInput = el('input', { class:'input', id:'accName', value: prof.name || '', placeholder:'اسمك الظاهر في المنصة' });
-  const avatarRow = el('div', { class:'row', role:'radiogroup', 'aria-label':'الصورة الرمزية' },
+  const phoneInput = el('input', { class:'input ltr', type:'tel', inputmode:'tel', dir:'ltr',
+    value: prof.phone || '', placeholder:'05xxxxxxxx' });
+  const bioInput = el('textarea', { class:'input', rows:'3',
+    placeholder:'نبذة قصيرة: تخصصك، دفعتك، ما تراجعه هذه الأيام…' });
+  bioInput.value = prof.bio || '';
+  const avatarRow = el('div', { class:'row', role:'radiogroup', 'aria-label':'الصورة الرمزية البديلة' },
     AVATARS.map(a => {
       const b = el('button', { class:'iconbtn', type:'button', role:'radio',
         'aria-checked': a === (prof.avatar || AVATARS[0]) ? 'true' : 'false', 'aria-label':'صورة ' + a }, [
@@ -3081,12 +3187,17 @@ function accountBody(){
     })
   );
 
-  const saveBtn = el('button', { class:'btn btn--block', type:'button', text:'احفظ' });
+  const saveBtn = el('button', { class:'btn btn--block', type:'button', text:'احفظ ملفي' });
   saveBtn.addEventListener('click', async () => {
     const picked = avatarRow.querySelector('[aria-checked="true"] .iconbtn__ico');
-    const data = { name: nameInput.value.trim(), avatar: picked ? picked.textContent : AVATARS[0] };
-    QBANK.store.set('profile', data);
+    const data = { name: nameInput.value.trim(), avatar: picked ? picked.textContent : AVATARS[0],
+                   phone: phoneInput.value.trim(), bio: bioInput.value.trim() };
+    Object.assign(prof, data);
+    QBANK.store.set('profile', prof);
     const r = await QBANK.api.saveProfile(data);
+    const n = hero.querySelector('#pfName'), b = hero.querySelector('#pfBio');
+    if (n) n.textContent = data.name || 'طالب مراجعة';
+    if (b) b.textContent = data.bio || '';
     QBANK.toast(r.ok ? 'حُفظ ملفك' : 'حُفظ في جهازك، وسيتزامن عند الاتصال');
   });
 
@@ -3127,18 +3238,70 @@ function accountBody(){
     else QBANK.toast('تعذّر الحذف — تحقق من الاتصال');
   });
 
+  /* الخادم هو الحقيقة: جهاز جديد يفتح الملف فيجد اسمه وصورته ونبذته
+     كما تركها على جهازه الأول — لا نموذجًا فارغًا يظن أنها ضاعت */
+  QBANK.api.myProfile().then(r => {
+    if (!r.ok || !r.data || !hero.isConnected) return;
+    const d = r.data;
+    if (d.name && !nameInput.value) nameInput.value = d.name;
+    if (d.phone && !phoneInput.value) phoneInput.value = d.phone;
+    if (d.bio && !bioInput.value) bioInput.value = d.bio;
+    if (d.avatar_url && !prof.avatar_url){
+      prof.avatar_url = d.avatar_url;
+      avImg.src = d.avatar_url; avImg.hidden = false; avEmoji.hidden = true;
+    }
+    const n = hero.querySelector('#pfName'), b = hero.querySelector('#pfBio');
+    if (n && d.name) n.textContent = d.name;
+    if (b && d.bio) b.textContent = d.bio;
+    Object.assign(prof, { name: d.name || prof.name, phone: d.phone || prof.phone,
+                          bio: d.bio || prof.bio });
+    QBANK.store.set('profile', prof);
+  });
+
+  /* ═══ تقييماتي — رأي الطالب المعلن جزء من هويته ═══ */
+  const ratesBox = el('div', { class:'card' }, [ el('h2', { text:'تقييماتي' }),
+    el('p', { class:'field__hint', text:'جارٍ الجلب…' }) ]);
+  QBANK.api.rest('subject_ratings?user_id=eq.' + u.id + '&select=subject_id,stars,note').then(r => {
+    if (!ratesBox.isConnected) return;
+    ratesBox.innerHTML = ''; ratesBox.appendChild(el('h2', { text:'تقييماتي' }));
+    const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+    if (!rows.length){
+      ratesBox.appendChild(el('p', { class:'field__hint',
+        text:'لم تقيّم مادة بعد — تقييمك يرفع البنوك النافعة لزملائك.' }));
+      return;
+    }
+    const byId = {}; (QBANK.data.pack().subjects || []).forEach(s => byId[s.id] = s);
+    rows.forEach(x => {
+      const s = byId[x.subject_id];
+      ratesBox.appendChild(el('div', { class:'row' }, [
+        el('span', { text: (s ? (s.icon || '▤') + ' ' + s.name : 'مادة') }),
+        el('span', { class:'spacer' }),
+        el('span', { class:'badge badge--warn', 'aria-label': x.stars + ' من ٥',
+          text: '★'.repeat(x.stars) + '☆'.repeat(5 - x.stars) })
+      ]));
+      if (x.note) ratesBox.appendChild(el('p', { class:'field__hint', style:'margin:2px 0 8px', text:'«' + x.note + '»' }));
+    });
+  });
+
   return el('div', { class:'stack' }, [
+    hero,
     el('div', { class:'card stack' }, [
-      el('p', { class:'page__sub num', text: u.email || '' }),
       el('label', { class:'field', style:'margin:0' }, [
         el('span', { class:'field__label', text:'الاسم' }), nameInput
       ]),
+      el('label', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'رقم الجوال — يظهر للمشرف فقط، لدعمك عند الحاجة' }), phoneInput
+      ]),
+      el('label', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'نبذة عني' }), bioInput
+      ]),
       el('div', { class:'field', style:'margin:0' }, [
-        el('span', { class:'field__label', text:'الصورة الرمزية' }), avatarRow
+        el('span', { class:'field__label', text:'صورة رمزية بديلة — تظهر إن لم ترفع صورة' }), avatarRow
       ]),
       saveBtn
     ]),
     el('div', { class:'card' }, [ el('h2', { text:'تقدّمي' }), progList ]),
+    ratesBox,
     el('div', { class:'card stack' }, [ syncBtn, outBtn, el('hr', { class:'divider', style:'margin:0' }), delBtn ])
   ]);
 }
@@ -6006,12 +6169,12 @@ QBANK.views.ADMIN_TABS.unshift({ id:'dash', label:'اللوحة', fill: adminDas
 
 /* ===== 43-admin-subject.js ===== */
 /*
-  محرر المادة — كل ما يخصّ مادة واحدة في شاشة واحدة: هويتها، محاورها، وأسئلتها.
+  محرر المادة — كل ما يخصّ مادة واحدة في شاشة واحدة: هويتها، محاورها،
+  محتواها التحليلي، وأسئلتها.
 
-  قرار جوهري: نصّ السؤال وخياراته لا يُعدَّلان هنا ولا في أي مكان (قاعدة القداسة).
-  ما يملك المشرف تعديله هو ما أضفناه نحن حول النص: موضع الإجابة، المحور، الشرح،
-  الترجمة، بطاقة الحفظ، علامة الأهمية، والترتيب. الخطأ في نصّ الدكتور يُصلَح
-  برفع الملف من جديد لا بالكتابة فوقه.
+  قاعدة القداسة تخصّ الآلة: لا يجوز لنموذجٍ أو خط معالجة أن يغيّر حرفًا من
+  نص الدكتور. أما المشرف البشري فمالك القرار — يحرّر النص والخيارات بوعي،
+  خلف بابٍ صريح يذكّره أن ما يكتبه يصبح هو «الأصل» الذي يذاكر منه الجميع.
 */
 const SUBJ_COLORS = ['subject-1','subject-2','subject-3','subject-4','subject-5','subject-6'];
 const SUBJ_ICONS  = ['▤','☤','✚','♥','◈','⚕','☣','◐','⌁','⚗'];
@@ -6025,6 +6188,17 @@ const SubjEditor = {
   },
   delQuestion(id){
     return QBANK.api.rest('questions?id=eq.' + id, { method:'DELETE' });
+  },
+  /* ★ سؤال جديد يدويًا: المشرف مؤلّف أيضًا لا ناقلًا فقط.
+     يُوسم أنه من تأليف المنصة (derived=false، بلا وسم قداسة) وq_count
+     يتزامن بقادح القاعدة فلا نلمسه. */
+  addQuestion(subjectId, ord){
+    return QBANK.api.rest('questions', { method:'POST', body: JSON.stringify({
+      subject_id: subjectId, ord: ord,
+      q: 'سؤال جديد — حرّر نصّه', options: ['الخيار الأول','الخيار الثاني','الخيار الثالث','الخيار الرابع'],
+      answer: 0, derived: false, important: false,
+      expl_ar:'', expl_en:'', translation:'', mnemonic:{}, topic:''
+    }) });
   },
   /* تصفية محلية: البحث في مادة واحدة لا يستحق ذهابًا إلى الخادم مع كل حرف */
   filter(list, q, topic, only){
@@ -6273,11 +6447,20 @@ function qCard(q, sub, refresh){
 
     const save = el('button', { class:'btn btn--sm', type:'button', text:'احفظ' });
     save.addEventListener('click', async () => {
-      const r = await SubjEditor.patchQuestion(q.id, {
+      const patch = {
         topic: topicSel.value, expl_ar: ar.value, expl_en: en.value, translation: tr.value,
         mnemonic: { cue: cue.value, key: key.value, link: link.value, strike: m.strike || '' },
         ord: parseInt(ordQ.value || String(q.ord), 10)
-      });
+      };
+      /* النص والخيارات يُرفقان فقط إن فُتح بابهما — الإغلاق يعني «لم أقصد» */
+      if (textDetails.open){
+        const newOpts = optInputs.map(i2 => i2.value);
+        if (!String(qTxt.value).trim()) return QBANK.toast('السؤال بلا نص لا يُحفظ');
+        if (newOpts.some(o => !String(o).trim())) return QBANK.toast('خيار فارغ — املأه أو احذفه');
+        patch.q = qTxt.value; patch.options = newOpts;
+        patch.answer = Math.min(q.answer, newOpts.length - 1);
+      }
+      const r = await SubjEditor.patchQuestion(q.id, patch);
       QBANK.toast(r.ok ? 'حُفظ السؤال' : 'تعذّر الحفظ');
       if (r.ok && refresh) refresh();
     });
@@ -6292,7 +6475,45 @@ function qCard(q, sub, refresh){
       if (r.ok){ if (refresh) refresh(); else box.remove(); }
     });
 
+    /*
+      ★ تحرير النص والخيارات — باب التأليف الواعي.
+      خلف مطوية صريحة لا حقلًا مكشوفًا: تعديل نص الدكتور قرارٌ يُتّخذ لا
+      حركةُ سهو. ما يُحفظ هنا يصبح الأصل الذي يذاكر منه كل طالب.
+    */
+    const qTxt = el('textarea', { class:'input ltr', rows:'3' }); qTxt.value = q.q || '';
+    const optWrap = el('div', { class:'stack', style:'gap:6px' });
+    const optInputs = [];
+    const drawOpts = () => {
+      optWrap.innerHTML = ''; optInputs.length = 0;
+      (q.options || []).forEach((o, i) => {
+        const inp = el('input', { class:'input ltr', value: o, 'aria-label':'الخيار ' + (i + 1) });
+        optInputs.push(inp);
+        const rm = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'✕', 'aria-label':'احذف الخيار ' + (i + 1) });
+        rm.addEventListener('click', () => {
+          if ((q.options || []).length <= 2) return QBANK.toast('سؤال بلا خيارين ليس سؤالًا');
+          q.options.splice(i, 1);
+          if (q.answer >= q.options.length) q.answer = 0;
+          drawOpts();
+        });
+        optWrap.appendChild(el('div', { class:'row', style:'flex-wrap:nowrap' }, [
+          el('span', { class:'badge' + (i === q.answer ? ' badge--ok' : ''), text: QBANK.views.optLetter(i) }), inp, rm ]));
+      });
+      const addOpt = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'+ خيار' });
+      addOpt.addEventListener('click', () => { q.options.push(''); drawOpts(); });
+      optWrap.appendChild(addOpt);
+    };
+    const textDetails = el('details', { class:'fold' }, [
+      el('summary', { text:'تحرير النص والخيارات — ما تحفظه يصبح الأصل' }),
+      el('div', { class:'stack', style:'margin-top:8px' }, [
+        el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'نص السؤال' }), qTxt ]),
+        el('span', { class:'field__label', text:'الخيارات (احذف وأضف كما تشاء — الإجابة تُختار من العرض أعلاه)' }),
+        optWrap
+      ])
+    ]);
+    textDetails.addEventListener('toggle', () => { if (textDetails.open) drawOpts(); });
+
     panel = el('div', { class:'ad-edit ad-edit--2', style:'margin-top:12px' }, [
+      el('div', { style:'grid-column:1/-1' }, [textDetails]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'المحور' }), topicSel ]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترتيب' }), ordQ ]),
       el('label', { class:'field', style:'margin:0;grid-column:1/-1' }, [ el('span', { class:'field__label', text:'الشرح بالعربية' }), ar ]),
@@ -6341,14 +6562,85 @@ function subjQuestions(sub, questions, refresh){
     x.addEventListener('input', () => { shown = 40; draw(); }));
   draw();
 
+  /* ★ التأليف اليدوي: سؤال جديد من الصفر يظهر أول القائمة جاهزًا للتحرير */
+  const addBtn = el('button', { class:'btn btn--sm', type:'button', text:'+ أضف سؤالًا' });
+  addBtn.addEventListener('click', async () => {
+    const maxOrd = questions.reduce((n, x) => Math.max(n, x.ord || 0), -1);
+    const r = await SubjEditor.addQuestion(sub.id, maxOrd + 1);
+    QBANK.toast(r.ok ? 'أُضيف — حرّر نصّه الآن' : 'تعذّرت الإضافة');
+    if (r.ok && refresh) refresh();
+  });
+
   return el('div', { class:'ad-panel' }, [
     el('div', { class:'ad-panel__h' }, [
-      el('h2', { class:'ad-panel__t', text:'الأسئلة' }), count
+      el('h2', { class:'ad-panel__t', text:'الأسئلة' }), count, el('span', { class:'spacer' }), addBtn
     ]),
     el('p', { class:'page__sub', style:'margin-top:0',
-      text:'نصّ السؤال وخياراته لا يُعدَّلان — يُصحَّح الخطأ برفع الملف من جديد. اضغط خيارًا لتجعله الإجابة الصحيحة.' }),
+      text:'اضغط خيارًا لتجعله الإجابة الصحيحة. تحرير النص نفسه خلف «حرّر» — بوعي: ما تحفظه يصبح الأصل.' }),
     el('div', { class:'ad-bar' }, [ search, topicSel, onlySel ]),
     list
+  ]);
+}
+
+/* ===== محرر المحتوى التحليلي — تأليف يدوي فوق ما ولّده الذكاء ===== */
+function subjContent(sub, refresh){
+  const mk = (label, val, rows) => {
+    const t = el('textarea', { class:'input ltr', rows: String(rows || 6), dir:'rtl',
+      style:'direction:rtl;text-align:right;font-family:var(--font-num);font-size:.85rem' });
+    t.value = val || '';
+    return { t, box: el('label', { class:'field', style:'margin:0' }, [
+      el('span', { class:'field__label', text: label }), t ]) };
+  };
+  const ov  = mk('عن المادة (HTML: p, strong, h3, table…)', sub.overview, 7);
+  const mem = mk('طريقة الحفظ', sub.memorize, 10);
+  const mis = mk('الأخطاء الشائعة', sub.mistakes, 7);
+
+  const prev = el('div', { class:'card', hidden:true });
+  const prevBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'عاين' });
+  prevBtn.addEventListener('click', () => {
+    prev.hidden = !prev.hidden;
+    if (!prev.hidden){
+      prev.innerHTML = '';
+      /* المعاينة بنفس معقّم العرض — ما يمرّ هنا هو ما يصل الطالب حرفيًا */
+      prev.appendChild(QBANK.views.analysisHtml(ov.t.value));
+      prev.appendChild(QBANK.views.analysisHtml(mem.t.value));
+      prev.appendChild(QBANK.views.analysisHtml(mis.t.value));
+    }
+  });
+
+  const save = el('button', { class:'btn btn--sm', type:'button', text:'احفظ المحتوى' });
+  save.addEventListener('click', async () => {
+    /*
+      ★ analyzed_at تُختم مع الحفظ اليدوي — وإلا بقيت المادة «باطلة»
+      فأعاد التوليد التلقائي الكتابة فوق تأليف علي أول ما تُفتح صفحتها.
+      الختم يقول للقادح: هذا المحتوى مقصود، لا تلمسه حتى تتغير الأسئلة.
+    */
+    const r = await SubjEditor.patchSubject(sub.id, {
+      overview: ov.t.value, memorize: mem.t.value, mistakes: mis.t.value,
+      analyzed_at: new Date().toISOString()
+    });
+    QBANK.toast(r.ok ? 'حُفظ المحتوى — وهو الآن ما يراه الطالب' : 'تعذّر الحفظ');
+    if (r.ok && refresh) refresh();
+  });
+
+  const regen = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'⟳ ولّده بالذكاء من جديد' });
+  regen.addEventListener('click', async () => {
+    if (!QBANK.analysis) return;
+    regen.setAttribute('aria-disabled','true'); regen.textContent = '… يولَّد';
+    const r = await QBANK.analysis.generate(sub.id, sub.analysis_lang || 'ar');
+    regen.removeAttribute('aria-disabled'); regen.textContent = '⟳ ولّده بالذكاء من جديد';
+    QBANK.toast(r && r.ok ? 'اكتمل التوليد' : 'تعذّر التوليد');
+    if (r && r.ok && refresh) refresh();
+  });
+
+  return el('div', { class:'ad-panel' }, [
+    el('div', { class:'ad-panel__h' }, [
+      el('h2', { class:'ad-panel__t', text:'المحتوى التحليلي' }),
+      el('span', { class:'ad-panel__s', text:'ما يظهر في «نظرة عامة» و«طريقة الحفظ» و«الأخطاء الشائعة»' })
+    ]),
+    el('div', { class:'stack' }, [ ov.box, mem.box, mis.box,
+      el('div', { class:'ad-bar', style:'margin:0' }, [ save, prevBtn, el('span', { class:'spacer' }), regen ]),
+      prev ])
   ]);
 }
 
@@ -6375,6 +6667,7 @@ const AdminSubjectView = {
         }
         const questions = (qr.ok && Array.isArray(qr.data)) ? qr.data : [];
         body.appendChild(subjIdentity(sub, load));
+        body.appendChild(subjContent(sub, load));
         body.appendChild(subjTopics(sub, questions, load));
         body.appendChild(subjQuestions(sub, questions, load));
       });
@@ -8551,7 +8844,10 @@ function proDashTab(box){
   let days = 30;
   const head = el('div', { class:'ad-bar' });
   const body = el('div', { class:'stack' });
-  box.appendChild(head); box.appendChild(body);
+  const onlineBox = el('div', {});
+  /* المتصلون فوق كل شيء: أول ما يريد المشرف معرفته «من هنا الآن؟» —
+     وخارج body كي لا يمحوه تبديل المدى الزمني */
+  box.appendChild(head); box.appendChild(onlineBox); box.appendChild(body);
 
   [7, 30, 90].forEach(d => {
     const b = el('button', { class:'chip' + (d === days ? ' is-on' : ''), type:'button',
@@ -8566,6 +8862,37 @@ function proDashTab(box){
   });
 
   const legacy = el('div', { class:'ad-legacy' });
+
+  /*
+    ★ المتصلون الآن — بالاسم والإيميل وآخر نبضة.
+    «الآن» = نبضة جهاز خلال ربع الساعة الأخيرة، والقائمة تتجدد كل دقيقة
+    ما دامت اللوحة مفتوحة. الإيميل من دالة لا تجيب إلا مشرفًا.
+  */
+  function drawOnline(){
+    QBANK.api.rpc('admin_online', {}).then(r => {
+      if (!onlineBox.isConnected) return;
+      onlineBox.innerHTML = '';
+      const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+      const list = rows.length
+        ? el('div', { class:'ad-feed' }, rows.map(u => el('div', { class:'ad-feed__i' }, [
+            el('span', { class:'ad-feed__av', text: u.avatar || '👤' }),
+            el('span', { class:'ad-feed__x' }, [
+              el('span', { class:'ad-row__t', text: u.name || 'بلا اسم' }),
+              el('span', { class:'stu__mail ltr', text: u.email || '' })
+            ]),
+            el('span', { class:'badge badge--ok', text:'متصل' }),
+            el('span', { class:'ad-feed__t', text: QBANK.admin.charts.ago(u.last_seen) })
+          ])))
+        : QBANK.views.empty('◌', 'لا أحد متصل الآن', 'تُحسب النبضات خلال آخر ١٥ دقيقة.');
+      onlineBox.appendChild(QBANK.admin.dashParts.dashPanel(
+        'المتصلون الآن', rows.length ? rows.length + ' متصل' : null, list));
+    });
+  }
+  drawOnline();
+  const onlineTimer = setInterval(() => {
+    if (!onlineBox.isConnected) return clearInterval(onlineTimer);   // غادر المشرف — لا نبض في الخلفية
+    drawOnline();
+  }, 60000);
 
   function load(){
     body.innerHTML = '';
@@ -8952,11 +9279,14 @@ function proStudentsTab(box){
       el('span', { class:'stu__av', 'aria-hidden':'true', text: r.avatar || '◍' }),
       el('div', { class:'stu__x' }, [
         el('span', { class:'stu__n', text: (r.name || 'بلا اسم') + (r.is_admin ? ' · مشرف' : '') }),
+        /* ★ الإيميل سطرٌ بذاته قابل للتحديد والنسخ — هو مفتاح التواصل والدعم */
+        r.email ? el('span', { class:'stu__mail ltr', text: r.email }) : null,
         el('span', { class:'stu__s', text: [
           r.university || 'بلا جامعة',
           Pro.n(r.attempts) + ' اختبار',
-          Pro.n(r.uploaded) + ' مادة مرفوعة'
-        ].join(' · ') })
+          Pro.n(r.uploaded) + ' مادة مرفوعة',
+          r.phone ? r.phone : null
+        ].filter(Boolean).join(' · ') })
       ]),
       el('span', { class:'badge num', text: Pro.n(r.coins) + ' كوين' }),
       Number(r.paid) > 0 ? el('span', { class:'badge badge--ok num', text: Pro.money(r.paid) }) : null
