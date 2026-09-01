@@ -1254,6 +1254,10 @@ a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
 .earnvow__i{ color:var(--gold); font-size:1.1rem; line-height:1.4; }
 .earnvow__t{ margin:0; font-weight:700; }
 
+/* السعر في بطاقة القفل — يُقرأ ولو اختفى زرّ الشراء */
+.paywall__price{ margin:2px 0 10px; font-size:1.05rem; font-weight:800; color:var(--acc); }
+.paywall__note{ white-space:pre-line; text-align:start; }
+
 
 /* ===== 50-landing.css ===== */
 /*
@@ -2988,9 +2992,20 @@ const Gate = {
     const kids = [
       el('span', { class:'empty__ico', 'aria-hidden':'true', text:'🔒' }),
       el('p', { class:'empty__title', text:'«' + sub.name + '» مادة مدفوعة' }),
-      el('p', { class:'empty__text', text:'اشترِ المادة وحدها أو حزمة الفصل كاملة — صالحة حتى نهاية الفصل، بلا اشتراك شهري.' }),
-      Gate.buyButton(sub)
+      el('p', { class:'empty__text', text:'اشترِ المادة وحدها أو حزمة الفصل كاملة — صالحة حتى نهاية الفصل، بلا اشتراك شهري.' })
     ];
+
+    /*
+      ★ السعر سطرٌ قائم بذاته لا نصٌّ داخل زرّ.
+      كان مكتوبًا في زرّ الشراء وحده — وذلك الزرّ يُخفي نفسه حين تكون
+      بوابة الدفع غير مفعَّلة. فيبقى الطالب أمام بطاقةٍ تقول «مادة مدفوعة»
+      ولا تقول بكم، ثم يُطلب منه أن يُحوّل مبلغًا لا يعرفه.
+    */
+    const priceTxt = QBANK.codes ? QBANK.codes.priceText(sub) : '';
+    if (priceTxt)
+      kids.push(el('p', { class:'paywall__price num', text:'سعرها ' + priceTxt }));
+
+    kids.push(Gate.buyButton(sub));
 
     const C = QBANK.codes;
     if (C){
@@ -3001,7 +3016,9 @@ const Gate = {
       if (!C.isApp() && s.wa)
         kids.push(el('a', { class:'btn btn--ghost btn--block', target:'_blank',
           rel:'noopener', href: C.askUrl(sub), text:'اطلب رمزًا من المشرف' }));
-      if (s.note) kids.push(el('p', { class:'field__hint', text: s.note }));
+      /* النصّ بعد إبدال النائبات — {السعر} و{المادة} تصيران قيمتيهما */
+      const note = C.note(sub);
+      if (note) kids.push(el('p', { class:'field__hint paywall__note', text: note }));
     }
 
     kids.push(el('p', { class:'field__hint', text:'لديك حساب اشترى من قبل؟ سجّل دخولك وسيُفتح المحتوى تلقائيًا.' }));
@@ -8157,8 +8174,12 @@ const SET = {
       بعينها في الكود تعني تعديل الكود كلما تغيّر حسابٌ بنكي — وتعني أن
       الطالب يقرأ تعليمات لا تنطبق على أحد.
     */
-    { id:'pay', title:'الشراء والتفعيل', sub:'ما يقرؤه الطالب في بطاقة المادة المدفوعة', fields:[
-      { k:'pay_note', t:'area', label:'طريقة الدفع — سطر يظهر تحت زر الطلب' }
+    { id:'pay', title:'الشراء والتفعيل',
+      sub:'ما يراه الطالب حين يفتح مادة مدفوعة لا يملكها. اكتب {السعر} و{المادة} حيث تريد، وتُبدَّلان بقيمتَي المادة التي يفتحها.',
+      fields:[
+      { k:'pay_note', t:'area',
+        label:'كيف يدفع لك الطالب؟ — يظهر له في بطاقة المادة المقفلة',
+        ph:'حوّل {السعر} على حساب الراجحي SA00 0000 0000 0000 0000، أو STC Pay على 0500000000، وأرسل الإيصال على واتساب مع اسم المادة «{المادة}» ويصلك رمز التفعيل.' }
     ]},
     /*
       ★ «من سعر البيع» و«صافي الربح» مكتوبتان في التسميتين لا في وثيقة.
@@ -8204,7 +8225,13 @@ function setField(f, value, onChange){
     return b;
   }
   let inp;
-  if (f.t === 'area'){ inp = el('textarea', { class:'input', rows:'2', 'data-k':f.k }); inp.value = value || ''; }
+  if (f.t === 'area'){
+    // ★ المثال داخل الحقل لا في وثيقة جانبية: حقلٌ فارغ اسمه «كيف يدفع لك
+    //   الطالب؟» يترك المشرف يخمّن الصيغة والنائبات معًا.
+    inp = el('textarea', { class:'input', rows: f.ph ? '4' : '2', 'data-k':f.k,
+      placeholder: f.ph || null });
+    inp.value = value || '';
+  }
   else if (f.t === 'num'){
     inp = el('input', { class:'input', type:'number', 'data-k':f.k,
       min:String(f.min), max:String(f.max), value: String(value == null ? f.min : value) });
@@ -12341,6 +12368,30 @@ const Codes = {
     const s = (QBANK.data.pack().settings) || {};
     return { wa: String(s.whatsapp || '').replace(/[^0-9]/g, ''),
              note: String(s.pay_note || '') };
+  },
+
+  /* السعر كما يُقرأ: «٢٩ ريال» لا «29» */
+  priceText(sub){
+    const p = Number(sub && sub.price) || 0;
+    if (p <= 0) return '';
+    return QBANK.pay ? QBANK.pay.money(p * 100, 'SAR')
+                     : QBANK.views.arNum(p) + ' ريال';
+  },
+
+  /*
+    ★ نصٌّ واحد في الإعدادات، وأسعارٌ مختلفة لكل مادة.
+    لو كتب المشرف «حوّل ٢٩ ريالًا» لقرأها طالبُ مادةٍ ثمنها خمسون، فحوّل
+    تسعةً وعشرين وانتظر رمزًا لن يأتي — ثم اتّهم المنصة لا النص. فالنائبات
+    تجعل النصّ الواحد يصحّ في كل مادة: {السعر} و{المادة} تُبدَّلان لحظة العرض.
+  */
+  note(sub){
+    const raw = Codes.support().note;
+    if (!raw) return '';
+    return raw
+      .replace(/\{\s*السعر\s*\}/g, Codes.priceText(sub) || 'المبلغ المطلوب')
+      .replace(/\{\s*المادة\s*\}/g, (sub && sub.name) || 'المادة')
+      .replace(/\{\s*price\s*\}/gi, Codes.priceText(sub) || 'المبلغ المطلوب')
+      .replace(/\{\s*subject\s*\}/gi, (sub && sub.name) || 'المادة');
   },
 
   /*
