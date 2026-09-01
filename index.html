@@ -1992,6 +1992,27 @@ const Api = {
       return c.url + '/auth/v1/authorize?provider=' + provider + '&redirect_to=' + encodeURIComponent(back);
     },
     // عند العودة من رابط سحري أو OAuth تصل الرموز في هاش الصفحة
+    /*
+      ★ التحقق برمز مكتوب — طريق الدخول داخل التطبيق المغلّف.
+      رابط البريد يفتح في متصفح الجهاز الافتراضي لا داخل التطبيق، فتُحفظ
+      الجلسة هناك ويبقى التطبيق زائرًا. الرمز يُكتب حيث يقف الطالب،
+      فتولد الجلسة في المكان الصحيح — تطبيقًا كان أو متصفحًا.
+    */
+    async verifyOtp(email, token){
+      const r = await Api.raw('/auth/v1/verify', {
+        method:'POST',
+        body: JSON.stringify({ type:'email', email, token: String(token || '').trim() })
+      });
+      if (r.ok && r.data && r.data.access_token){
+        Api.saveSession({
+          access_token: r.data.access_token,
+          refresh_token: r.data.refresh_token || '',
+          expires_in: r.data.expires_in || 3600,
+          user: r.data.user || Api.auth.decodeUser(r.data.access_token)
+        });
+      }
+      return r;
+    },
     captureFromHash(hash){
       const h = String(hash || '');
       if (h.indexOf('access_token=') === -1) return false;
@@ -2854,12 +2875,48 @@ function loginCard(opts){
     btn.setAttribute('aria-disabled','true'); btn.textContent = 'جارٍ الإرسال…';
     const r = await QBANK.api.auth.magic(val);
     btn.removeAttribute('aria-disabled'); btn.textContent = 'أرسل رابط الدخول';
-    if (r.ok) { msg.textContent = 'تم! افتح بريدك واضغط رابط الدخول.'; QBANK.toast('أُرسل رابط الدخول'); }
+    if (r.ok) {
+      msg.textContent = 'تم! افتح بريدك: اضغط رابط الدخول، أو اكتب الرمز هنا.';
+      QBANK.toast('أُرسل بريد الدخول');
+      otpBox.hidden = false;            // ★ داخل التطبيق المغلّف الرمز هو الطريق
+      otp.focus();
+    }
     else if (r.offline) msg.textContent = 'لا اتصال بالإنترنت — الدخول يحتاج اتصالًا مرة واحدة فقط.';
     else msg.textContent = 'تعذّر الإرسال. تحقق من البريد وحاول ثانية.';
   }
   btn.addEventListener('click', send);
   email.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+
+  /*
+    ★ الدخول بالرمز — للتطبيق المثبّت خاصة.
+    رابط البريد يفتح في متصفح الجوال لا داخل التطبيق فيبقى التطبيق زائرًا،
+    أما الرمز فيُكتب هنا فتولد الجلسة هنا. الحقل يظهر بعد الإرسال فقط —
+    لا معنى لرمز قبل أن يوجد بريد يحمله.
+  */
+  const otp = el('input', { class:'input', type:'text', inputmode:'numeric',
+    autocomplete:'one-time-code', maxlength:'6', placeholder:'••••••',
+    'aria-label':'رمز الدخول من البريد', dir:'ltr',
+    style:'text-align:center; letter-spacing:.45em; font-weight:800; font-size:1.15rem' });
+  const otpBtn = el('button', { class:'btn btn--block', type:'button', text:'ادخل بالرمز' });
+  const otpBox = el('div', { class:'stack', hidden:true }, [
+    el('span', { class:'field__hint', text:'وصلك في نفس الرسالة رمز من ٦ أرقام — اكتبه هنا وادخل مباشرة:' }),
+    otp, otpBtn
+  ]);
+  async function verify(){
+    const code = (otp.value || '').replace(/\D/g, '');
+    if (code.length < 6) { msg.textContent = 'الرمز ٦ أرقام — انسخه من رسالة البريد.'; otp.focus(); return; }
+    otpBtn.setAttribute('aria-disabled','true'); otpBtn.textContent = 'جارٍ التحقق…';
+    const r = await QBANK.api.auth.verifyOtp((email.value || '').trim(), code);
+    otpBtn.removeAttribute('aria-disabled'); otpBtn.textContent = 'ادخل بالرمز';
+    if (r.ok && QBANK.api.user()){
+      QBANK.toast('تم الدخول');
+      QBANK.data.refreshPack().finally(() => QBANK.router.go(opts.after || '#/'));
+    } else {
+      msg.textContent = 'الرمز غير صحيح أو انتهت مدته — أرسل بريدًا جديدًا وحاول خلال دقائق.';
+    }
+  }
+  otpBtn.addEventListener('click', verify);
+  otp.addEventListener('keydown', e => { if (e.key === 'Enter') verify(); });
 
   const gBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب جوجل' });
   const aBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب آبل' });
@@ -2872,7 +2929,7 @@ function loginCard(opts){
       email,
       el('span', { class:'field__hint', text:'يصلك رابط دخول بلا كلمة مرور.' })
     ]),
-    btn, msg,
+    btn, msg, otpBox,
     el('hr', { class:'divider', style:'margin:0' }),
     gBtn, aBtn
   ]);
