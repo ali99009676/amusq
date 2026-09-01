@@ -3011,14 +3011,29 @@ const Gate = {
     if (C){
       kids.push(QBANK.views.redeemBox(onOpen || Gate.reopen));
       const s = C.support();
-      /* الطلب المباشر: في المتصفح فقط، وبشرط أن يكون المشرف كتب رقمه —
-         زرٌّ يفتح واتساب بلا رقم يفتح لا شيء. */
-      if (!C.isApp() && s.wa)
-        kids.push(el('a', { class:'btn btn--ghost btn--block', target:'_blank',
-          rel:'noopener', href: C.askUrl(sub), text:'اطلب رمزًا من المشرف' }));
-      /* النصّ بعد إبدال النائبات — {السعر} و{المادة} تصيران قيمتيهما */
+      /* النصّ بعد إبدال النائبات — {السعر} و{المادة} تصيران قيمتيهما.
+         ★ وقبل الأزرار لا بعدها: تعليماتُ الدفع تُقرأ ثم يُنقر، وترتيبٌ
+         يعكسهما يجعل الطالب يفتح واتساب ثم يعود ليقرأ. */
       const note = C.note(sub);
       if (note) kids.push(el('p', { class:'field__hint paywall__note', text: note }));
+
+      /*
+        ★ زرّان لا زرّ: «كيف أدفع؟» و«حوّلتُ، افتحها لي» حالتان مختلفتان.
+        ودمجُهما في واحد يجعل المشرف يقرأ رسالةً لا يدري من أيّهما هي،
+        فيسأل «هل حوّلتَ؟» — سؤالٌ كان يجب ألّا يُسأل. ورسالةُ ما بعد
+        التحويل هي الأولى بالبروز، لأن صاحبها دفع فعلًا.
+        وكلاهما في المتصفح فقط وبشرط رقمٍ مكتوب: زرٌّ يفتح واتساب بلا
+        رقم يفتح لا شيء.
+      */
+      if (!C.isApp() && s.wa){
+        kids.push(el('a', { class:'btn btn--block', target:'_blank',
+          rel:'noopener', href: C.paidUrl(sub),
+          text:'حوّلتُ — أرسل الإيصال للمشرف' }));
+        kids.push(el('p', { class:'field__hint', style:'margin:2px 0 0', text:
+          'تُفتح محادثة واتساب برسالة جاهزة فيها المادة والمبلغ وحسابك — أرفق صورة الإيصال وأرسلها.' }));
+        kids.push(el('a', { class:'btn btn--ghost btn--block', target:'_blank',
+          rel:'noopener', href: C.askUrl(sub), text:'عندي سؤال قبل التحويل' }));
+      }
     }
 
     kids.push(el('p', { class:'field__hint', text:'لديك حساب اشترى من قبل؟ سجّل دخولك وسيُفتح المحتوى تلقائيًا.' }));
@@ -8507,9 +8522,12 @@ const Trial = {
     if (C){
       kids.push(QBANK.views.redeemBox(QBANK.gate.reopen));
       const s = C.support();
-      if (!C.isApp() && s.wa)
+      if (!C.isApp() && s.wa){
+        kids.push(el('a', { class:'btn btn--block', target:'_blank',
+          rel:'noopener', href: C.paidUrl(sub), text:'حوّلتُ — أرسل الإيصال للمشرف' }));
         kids.push(el('a', { class:'btn btn--ghost btn--block', target:'_blank',
-          rel:'noopener', href: C.askUrl(sub), text:'اطلب رمزًا من المشرف' }));
+          rel:'noopener', href: C.askUrl(sub), text:'عندي سؤال قبل التحويل' }));
+      }
     }
     return el('div', { class:'card', style:'text-align:center' }, kids);
   }
@@ -12401,18 +12419,67 @@ const Codes = {
   */
   isApp(){ return !!(typeof window !== 'undefined' && window.QBANK_NATIVE_APP); },
 
-  /* رسالة الطلب: تحمل ما يحتاجه المشرف ليُصدر الرمز بلا محادثة ذهاب وإياب */
-  askText(sub){
+  /*
+    ★ رقمٌ مرجعي قصير من معرّف الحساب.
+    المشرف يستقبل الرسالة على واتساب، ثم عليه أن يجد صاحبها في لوحته.
+    والبريد يكفي غالبًا، لكن الطالب قد يكتبه بحرفٍ ناقص، وقد يراسله من
+    رقمٍ لا يعرفه. وستّة محارف من معرّفه لا تُخطئ ولا تكشف شيئًا.
+  */
+  ref6(){
     const u = QBANK.api.user();
-    const price = Number(sub && sub.price) > 0 ? ' (' + sub.price + ' ريال)' : '';
-    return 'السلام عليكم، أريد تفعيل مادة «' + (sub ? sub.name : '') + '»' + price +
-           '.\nحسابي: ' + ((u && u.email) || 'ـ');
+    return u && u.id ? String(u.id).replace(/-/g, '').slice(0, 6).toUpperCase() : '';
   },
-  askUrl(sub){
+
+  /* اسم الطالب من ملفه المخزّن — والبريد حين لا اسم له */
+  who(){
+    const u = QBANK.api.user() || {};
+    const p = QBANK.store.get('profile', null) || {};
+    const name = String(p.name || '').trim();
+    const lines = [];
+    if (name) lines.push('الاسم: ' + name);
+    if (u.email) lines.push('الحساب: ' + u.email);
+    const r = Codes.ref6();
+    if (r) lines.push('الرقم المرجعي: ' + r);
+    return lines.join('\n');
+  },
+
+  /*
+    رسالتان لا واحدة، لأن الحالتين مختلفتان:
+
+    السؤال قبل الدفع: «كيف أدفع؟» — يريد الأرقام.
+    والإبلاغ بعده: «حوّلتُ، هذا إيصالي» — يريد أن يُفتح له.
+
+    ودمجُهما في زرٍّ واحد يجعل المشرف يقرأ رسالةً لا يعرف من أي الحالتين
+    هي، فيسأل «هل حوّلتَ؟» — وهو سؤالٌ كان يجب ألّا يُسأل.
+  */
+  askText(sub){
+    const price = Codes.priceText(sub);
+    return 'السلام عليكم، أريد تفعيل مادة «' + ((sub && sub.name) || '') + '»' +
+           (price ? ' (' + price + ')' : '') + '.\n' + Codes.who();
+  },
+
+  /*
+    ★ الرسالة تحمل المبلغ والمادة والحساب — الثلاثة التي بلا واحدةٍ منها
+    لا يستطيع المشرف أن يُصدر رمزًا.
+
+    وتقول «سأرفق الإيصال» لا «أرفقتُه»: واتساب لا يقبل صورةً مع نصٍّ
+    مُهيّأ من رابط، فالإرفاق فعلُ الطالب بعد أن تُفتح المحادثة. ووعدٌ في
+    الرسالة بشيءٍ لم يحدث يجعل المشرف ينتظر صورةً لن تصل.
+  */
+  paidText(sub){
+    const price = Codes.priceText(sub);
+    return 'السلام عليكم، حوّلتُ ' + (price || 'المبلغ') +
+           ' لفتح مادة «' + ((sub && sub.name) || '') + '».\n' +
+           Codes.who() + '\nوسأرفق صورة الإيصال هنا.';
+  },
+
+  waUrl(text){
     const wa = Codes.support().wa;
     if (!wa) return '';
-    return 'https://wa.me/' + wa + '?text=' + encodeURIComponent(Codes.askText(sub));
-  }
+    return 'https://wa.me/' + wa + '?text=' + encodeURIComponent(text);
+  },
+  askUrl(sub){ return Codes.waUrl(Codes.askText(sub)); },
+  paidUrl(sub){ return Codes.waUrl(Codes.paidText(sub)); }
 };
 QBANK.codes = Codes;
 
