@@ -131,7 +131,9 @@ module.exports = async function handler(req, res){
                                  provider: aiOut._provider || null,
                                  usage: aiOut._usage || null, questions: enforced });
   } catch(e){
-    return res.status(500).json({ error: e.message });
+    /* ★ ٥٠٠ لكل شيء تكذب على المنادي: نفادُ حصّةٍ ليس عطلًا في خادمنا،
+       والواجهة تحتاج أن تفرّق كي تعرض المخرج المناسب لا «حاول ثانية». */
+    return res.status(e.status || 500).json({ error: e.message, kind: e.kind || 'other' });
   }
 };
 module.exports.callClaude = callClaude;

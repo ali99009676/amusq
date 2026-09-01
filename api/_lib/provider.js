@@ -92,6 +92,57 @@ function parseObject(text){
   return out;
 }
 
+/*
+  ═══ تصنيف الأعطال وترجمتها ═══
+  ★ ما كان يظهر للطالب: «Gemini 429: { "error": { "code": 429, "message":
+  "You exceeded your current quota…"» — سطران من JSON إنجليزي في وجه طالبٍ
+  رفع ملفه ليذاكر. لا يفهم منه شيئًا، ولا يعرف أيعيد المحاولة بعد دقيقة أم
+  بعد يوم أم أن العطل عنده. الرسالة جزءٌ من المنتج لا حاشيةٌ للمطوّر.
+
+  والتصنيف ليس للعرض وحده: عليه يقوم قرار «أأنتظر وأعيد؟ أم أنتقل لمزوّدٍ
+  آخر؟ أم أتوقف فورًا؟».
+*/
+function classify(status, body){
+  const t = String(body || '');
+  if (status === 429) {
+    /* Google تفصل حصّة الدقيقة عن حصّة اليوم في quotaId — والفرق حاسم:
+       حصّة دقيقةٍ تُنتظر ثوانيَ، وحصّة يومٍ انتظارُها إلى الغد. */
+    const perDay = /PerDay|per day|daily/i.test(t);
+    return { kind: perDay ? 'quota_day' : 'quota_minute', retryable: !perDay };
+  }
+  if (status === 401 || status === 403) return { kind:'auth', retryable:false };
+  if (status === 500 || status === 502 || status === 503 || status === 504)
+    return { kind:'overloaded', retryable:true };
+  return { kind:'other', retryable:false };
+}
+
+/* كم ثانيةً تطلب Google أن ننتظر؟ ترسلها في details[].retryDelay = "27s" */
+function retryAfter(body){
+  const m = String(body || '').match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/);
+  return m ? Math.ceil(parseFloat(m[1])) : null;
+}
+
+const HUMAN = {
+  quota_day: 'بلغ الذكاء حصّته اليومية عند المزوّد. المحفوظ لا يضيع — ' +
+             'أكمل غدًا من حيث توقفت، أو انشر مادتك الآن بلا إثراء وأثرِها لاحقًا.',
+  quota_minute: 'ازدحمت طلبات الذكاء هذه اللحظة. انتظر دقيقة ثم اضغط «أعد المحاولة» — ' +
+                'ما أُنجز محفوظ ولن يُعاد.',
+  overloaded: 'خادم الذكاء مشغول الآن. أعد المحاولة بعد قليل — المحفوظ لا يضيع.',
+  auth: 'مفتاح الذكاء مرفوض أو منتهٍ — أبلغ مشرف المنصة. يمكنك النشر بلا إثراء الآن.'
+};
+
+/* خطأٌ يحمل تصنيفه معه، كي يقرأه المنادي ويقرّر */
+function aiError(status, body, provider){
+  const c = classify(status, body);
+  const e = new Error(HUMAN[c.kind] ||
+    ('تعذّر الاتصال بالذكاء (' + provider + ' ' + status + '). أعد المحاولة — المحفوظ لا يضيع.'));
+  e.kind = c.kind; e.retryable = c.retryable; e.status = status;
+  e.retryAfter = retryAfter(body);
+  return e;
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
 /* ═══ Anthropic ═══ */
 async function callAnthropic(system, user, model, opts){
   opts = opts || {};
@@ -110,7 +161,7 @@ async function callAnthropic(system, user, model, opts){
       messages: [{ role:'user', content: user }]
     })
   });
-  if (!res.ok) throw new Error('ردّ Anthropic ' + res.status + ': ' + (await res.text()).slice(0, 300));
+  if (!res.ok) throw aiError(res.status, await res.text(), 'Anthropic');
   const data = await res.json();
   const text = (data.content && data.content[0] && data.content[0].text) || '[]';
   return { items: opts.expectObject ? parseObject(text) : parseArray(text),
@@ -160,7 +211,22 @@ async function callGemini(system, user, model, retried, opts){
     if (res.status === 400 && !opts._noThink)
       return callGemini(system, user, model, retried,
                         Object.assign({}, opts, { _noThink: true }));
-    throw new Error('ردّ Gemini ' + res.status + ': ' + body.slice(0, 300));
+
+    /*
+      ★ ازدحام الدقيقة يُنتظر لا يُبلَّغ.
+      Google تقول بنفسها كم ننتظر (retryDelay)، فانتظارٌ قصيرٌ مرة واحدة
+      يُنقذ الدفعة بلا أن يعلم الطالب أن شيئًا حدث. والسقف ٢٥ ثانية: أطولُ
+      منها يقترب من مهلة الخادم، فيصير الانتظار عطلًا آخر لا علاجًا.
+      وحصّة اليوم لا تُنتظر إطلاقًا — انتظارها إلى الغد لا إلى ثوانٍ.
+    */
+    const cls = classify(res.status, body);
+    if (cls.kind === 'quota_minute' && !opts._waited) {
+      const wait = Math.min(retryAfter(body) || 12, 25);
+      await sleep(wait * 1000);
+      return callGemini(system, user, model, retried,
+                        Object.assign({}, opts, { _waited: true }));
+    }
+    throw aiError(res.status, body, 'Gemini');
   }
   const data = await res.json();
   const cand = (data.candidates && data.candidates[0]) || null;
@@ -196,13 +262,35 @@ async function callAI(system, user, opts){
   if (provider === 'none')
     throw new Error('لا مفتاح ذكاء مضبوط — أضف GEMINI_API_KEY أو ANTHROPIC_API_KEY ' +
                     'في متغيّرات بيئة Vercel، أو ارفع بلا إثراء');
-  const model = modelFor(provider);
-  const r = provider === 'gemini'
-    ? await callGemini(system, user, model, false, opts)
-    : await callAnthropic(system, user, model, opts);
-  // ما أجاب فعلًا يفوز على ما طلبناه — وإلا كذب سجلّ المشرف بعد أي بديل
-  return { items: r.items, usage: r.usage, model: r.model || model, provider };
+  const run = async (prov) => {
+    const model = modelFor(prov);
+    const r = prov === 'gemini'
+      ? await callGemini(system, user, model, false, opts)
+      : await callAnthropic(system, user, model, opts);
+    // ما أجاب فعلًا يفوز على ما طلبناه — وإلا كذب سجلّ المشرف بعد أي بديل
+    return { items: r.items, usage: r.usage, model: r.model || model, provider: prov };
+  };
+
+  try { return await run(provider); }
+  catch(e){
+    /*
+      ★ هنا يُصرف ثمنُ المحوّل.
+      كُتب هذا الملف لأن «منصةً تعرف مزوّدًا واحدًا يملك ذلك المزوّد خنقَها»،
+      ثم كان الخنقُ يقع فعلًا فنكتفي بإبلاغ الطالب. فإن نفدت حصّة الأول أو
+      ازدحم خادمه، وكان مفتاح الثاني موجودًا، جرّبناه — مرةً واحدة، فمزوّدان
+      يتعثّران معًا عطلٌ حقيقي لا يُداوى بمحاولة ثالثة.
+    */
+    const other = provider === 'gemini' ? 'anthropic' : 'gemini';
+    const otherKey = other === 'gemini' ? process.env.GEMINI_API_KEY : process.env.ANTHROPIC_API_KEY;
+    const worthSwitching = e && (e.kind === 'quota_day' || e.kind === 'quota_minute' ||
+                                 e.kind === 'overloaded' || e.kind === 'auth');
+    if (otherKey && worthSwitching) {
+      try { return await run(other); }
+      catch(e2){ throw e; }   // نُبلغ بعطل الأول: هو المزوّد الذي اختاره المشرف
+    }
+    throw e;
+  }
 }
 
 module.exports = { callAI, pickProvider, modelFor, parseArray, parseObject,
-                   suggestedModel, DEFAULT_MODEL };
+                   suggestedModel, DEFAULT_MODEL, classify, retryAfter, aiError, HUMAN };

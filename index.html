@@ -3868,6 +3868,9 @@ const Admin = {
         if (need > 0)
           await QBANK.api.rpc('refund_credits', { n: need, p_reason: 'تعذّرت الدفعة', p_draft: w.draftId });
         w.error = (r.data && r.data.error) || 'انقطعت الدفعة ' + (i + 1) + ' — رُدّ رصيدها';
+        /* نوع العطل يرافق نصّه: على أساسه تقرّر الشاشة أتعرض «أعد المحاولة»
+           وحدها أم تفتح للطالب باب النشر بلا إثراء. */
+        w.errorKind = (r.data && r.data.kind) || 'other';
         return w;
       }
       w.enriched = w.enriched.concat(r.data.questions);
@@ -4462,7 +4465,31 @@ function stepEnrich(box, rerender){
       bar.setAttribute('aria-valuenow', String(done));
       bar.firstChild.style.width = (done / total * 100) + '%';
     });
-    if (wizard.error) { msg.textContent = '⚠ ' + wizard.error + ' — المحفوظ لا يضيع، أعد المحاولة.'; go.removeAttribute('aria-disabled'); go.textContent = 'أعد المحاولة'; return; }
+    if (wizard.error) {
+      msg.textContent = '⚠ ' + wizard.error;
+      go.removeAttribute('aria-disabled'); go.textContent = 'أعد المحاولة';
+      /*
+        ★ بابٌ لا جدار.
+        حين ينفد ما عند المزوّد لا حيلة للطالب في «أعد المحاولة» — وقد رفع
+        ملفه قبل اختباره بساعات. فنعرض عليه ما نملكه فعلًا: أسئلته كما هي،
+        منشورةً الآن، وله أن يثريها متى عاد الذكاء. مادةٌ ناقصة الليلةَ خيرٌ
+        من مادةٍ كاملة بعد الاختبار.
+      */
+      const quota = wizard.errorKind === 'quota_day' || wizard.errorKind === 'quota_minute' ||
+                    wizard.errorKind === 'overloaded';
+      if (quota && !box.querySelector('.js-plainout')) {
+        const out = el('button', { class:'btn btn--soft btn--block js-plainout', type:'button',
+          text:'انشر أسئلتك الآن بلا إثراء' });
+        out.addEventListener('click', () => {
+          wizard.enrich = false; wizard.error = ''; wizard.errorKind = '';
+          wizard = QBANK.admin.plainEnrich(wizard);
+          QBANK.admin.saveDraft(wizard);
+          rerender();
+        });
+        msg.parentNode.insertBefore(out, msg.nextSibling);
+      }
+      return;
+    }
     rerender();
   });
 
