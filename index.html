@@ -450,6 +450,31 @@ img,svg{ max-width:100%; height:auto; }
   .authchip__n{ display:none; }
 }
 
+/* ═══ شريط التقدّم أثناء عمل الذكاء ═══ */
+/*
+  خطوط مائلة تتحرّك فوق الجزء المكتمل. الشريط الجامد دقيقتين يُقرأ عطلًا،
+  والحركة وحدها تفرّق بين «يعمل» و«علّق» — ولا كلمة تُغني عنها.
+*/
+.meter--busy .meter__fill{
+  /* اللون من الرمز لا من قيمة صريحة: --on-acc هو ما يُقرأ فوق لون التمييز
+     في السمتين معًا، فالخطوط تبقى مرئية ليلًا ونهارًا بلا استثناء */
+  background-image:linear-gradient(115deg,
+    color-mix(in srgb, var(--on-acc) 22%, transparent) 25%, transparent 25%,
+    transparent 50%, color-mix(in srgb, var(--on-acc) 22%, transparent) 50%,
+    color-mix(in srgb, var(--on-acc) 22%, transparent) 75%, transparent 75%);
+  background-size:28px 28px;
+  animation:meterFlow 1s linear infinite;
+}
+@keyframes meterFlow{ from{ background-position:0 0; } to{ background-position:28px 0; } }
+/* من طلب تقليل الحركة يرى نبضة هادئة بدل الجريان */
+@media (prefers-reduced-motion: reduce){
+  .meter--busy .meter__fill{ animation:none; opacity:.85; }
+}
+
+/* ═══ صفّ النشر: زرّ النظام ثم واتساب ═══ */
+.sharerow{ gap:var(--s2); flex-wrap:wrap; }
+.sharerow > *{ flex:1 1 auto; min-width:120px; text-align:center; }
+
 
 /* ===== 40-screens.css ===== */
 /* تنسيقات الشاشات المركّبة: اللوحة، معالج الرفع، المادة، الاختبار — كلها من المتغيّرات */
@@ -3797,13 +3822,13 @@ const ViewAccount = {
       if (b) QBANK.router.go('#/account/' + b.getAttribute('data-tab'));
     });
 
-    /* رابط الملف العام: الطالب يشارك ملفه كما يشارك مادته */
-    const shareBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'⎘ انسخ رابط ملفي' });
-    shareBtn.addEventListener('click', () => {
-      try{
-        navigator.clipboard.writeText(location.origin + location.pathname + '#/p/' + u.id);
-        QBANK.toast('نُسخ رابط ملفك العام');
-      }catch(e){ QBANK.toast('تعذّر النسخ'); }
+    /* رابط الملف العام: الطالب ينشر ملفه كما ينشر مادته — بضغطة لا بثلاث */
+    const shareBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'⤴ انشر ملفي' });
+    shareBtn.addEventListener('click', async () => {
+      const r = await QBANK.share.sharePlain(QBANK.share.profileUrl(u.id),
+        'ملفي على مراجعة', 'هذا ملفي على منصة مراجعة — بنوك أسئلتي وتقييمات زملائي');
+      if (r.ok && r.via === 'copy') QBANK.toast('نُسخ رابط ملفك العام');
+      else if (!r.ok && !r.cancelled) QBANK.toast('تعذّرت المشاركة');
     });
     const openMine = el('a', { class:'btn btn--sm btn--soft', href:'#/p/' + u.id, text:'👁 ملفي كما يراه زملائي' });
 
@@ -4112,6 +4137,10 @@ const Admin = {
     for (let i = 0; i < batches.length; i++) {
       // لا إعادة معالجة لما اكتمل — الاستئناف يبدأ من حيث توقّف
       if (w.done >= (i + 1) * Admin.BATCH) continue;
+      /* ★ نُعلن بدء الدفعة لا نهايتها وحدها: بين النهايتين دقائق يظنّها
+         الطالب تعليقًا، فيُغلق الصفحة على عملٍ يجري فعلًا. */
+      if (onProgress) onProgress(w.done, w.total, { batch: i + 1,
+                                                    batches: batches.length, running: true });
 
       /*
         الحسم قبل النداء لا بعده. لو حسمنا بعده لكان كل انقطاع إثراءً مجانيًا،
@@ -4148,11 +4177,21 @@ const Admin = {
         w.errorKind = (r.data && r.data.kind) || 'other';
         return w;
       }
-      w.enriched = w.enriched.concat(r.data.questions);
-      w.done = Math.min(w.enriched.length, w.total);
+      /*
+        ★ الكتابة بموضعها لا بالإلحاق.
+        كان `concat` يُلحق نتيجة كل دفعة بآخر ما عنده، فإن أُعيد التشغيل
+        بعد انقطاع (أو أعاد الرافع القراءة) تضاعفت الأسئلة: ملفٌ من ٦٥
+        سؤالًا خرج بـ٢٥٩ — نُسخًا مكرّرة يظنّها الطالب مادته. والموضع
+        يجعل إعادة التشغيل تكتب فوق نفسها لا بجانبها.
+      */
+      const at = i * Admin.BATCH;
+      const got = r.data.questions || [];
+      for (let k = 0; k < got.length; k++) w.enriched[at + k] = got[k];
+      w.done = Math.min(w.enriched.filter(Boolean).length, w.total);
       if (r.data.usage) w.usage = r.data.usage;
       await Admin.saveDraft(w);
-      if (onProgress) onProgress(w.done, w.total);
+      if (onProgress) onProgress(w.done, w.total, { batch: i + 1,
+                                                    batches: batches.length, running: false });
     }
     if (w.done >= w.total) { w.step = 3; w.error = ''; }
     return w;
@@ -4214,6 +4253,19 @@ const Admin = {
     نداء منفصل عن approve_draft عمدًا كي لا نغيّر توقيع دالة معتمدة تعمل،
     وفشله لا يُبطل مادة أُنشئت — يبقى المشرف قادرًا على ضبط الباقي بيده.
   */
+  /*
+    ★ الرابط يُقرأ من الخادم لا يُخمَّن.
+    كنّا نبني رابط المشاركة من `w.slug` الذي حسبه ‎/api/ingest‎ في المتصفح،
+    ثم نفترض أنه كُتب في الصف. وحين تفشل كتابته (صلاحية، أو تصادم اسم)
+    يبقى الصفّ بلا slug فيفتح الرابطُ «المادة غير متاحة» — وهي متاحة،
+    والرافع هو من أنشأها قبل ثانية. أسوأ لحظة تكذب فيها المنصة على صاحبها.
+  */
+  async realSlug(subjectId){
+    if (!subjectId) return null;
+    const r = await QBANK.api.rest('subjects?id=eq.' + subjectId + '&select=slug');
+    return (r.ok && r.data && r.data[0] && r.data[0].slug) || null;
+  },
+
   async stamp(subjectId, w){
     if (!subjectId) return { ok:false };
     const u = QBANK.api.user() || {};
@@ -4753,18 +4805,43 @@ function stepEnrich(box, rerender){
     'aria-valuemax': String(wizard.total), 'aria-valuenow': String(wizard.done) }, [
     el('div', { class:'meter__fill', style:'width:' + (wizard.total ? wizard.done / wizard.total * 100 : 0) + '%' })
   ]);
-  const label = el('p', { class:'page__sub num', text: wizard.done + ' من ' + wizard.total });
+  const label = el('p', { class:'page__sub num',
+    text: wizard.done + ' من ' + wizard.total + ' · ' +
+          (wizard.total ? Math.round(wizard.done / wizard.total * 100) : 0) + '٪' });
+  /* سطرٌ ثانٍ يقول ماذا يجري الآن — الرقم الثابت وحده يُقرأ تعليقًا */
+  const sub = el('p', { class:'field__hint', role:'status', text:'' });
   const msg = el('p', { class:'field__hint', role:'status' });
   const go = el('button', { class:'btn btn--block', type:'button',
     text: wizard.done ? 'أكمل من حيث توقفت (' + wizard.done + ')' : 'شغّل الذكاء الآن' });
 
   go.addEventListener('click', async () => {
     go.setAttribute('aria-disabled','true'); go.textContent = 'جارٍ المعالجة…';
-    wizard = await QBANK.admin.wizardEnrich(wizard, (done, total) => {
-      label.textContent = done + ' من ' + total;
+    const t0 = Date.now();
+    wizard = await QBANK.admin.wizardEnrich(wizard, (done, total, st) => {
+      const pct = total ? Math.round(done / total * 100) : 0;
+      label.textContent = done + ' من ' + total + ' · ' + pct + '٪';
       bar.setAttribute('aria-valuenow', String(done));
-      bar.firstChild.style.width = (done / total * 100) + '%';
+      bar.firstChild.style.width = pct + '%';
+      /*
+        ★ الحركة أثناء الدفعة لا بين الدفعتين.
+        الدفعة أربعون سؤالًا تستغرق دقيقة أو دقيقتين، والشريط يقفز عند
+        نهايتها فقط — فيرى الطالب شريطًا جامدًا ورقمًا لا يتحرّك دقيقتين،
+        ويستنتج أن التطبيق علّق فيُغلقه. الخطوط المتحرّكة تقول «يعمل».
+      */
+      if (!st) return;
+      bar.classList.toggle('meter--busy', !!st.running);
+      if (st.running) {
+        const mins = Math.max(1, Math.round((st.batches - st.batch + 1) * 1.2));
+        sub.textContent = 'يعالج الذكاء الدفعة ' + st.batch + ' من ' + st.batches +
+                          ' — يتبقّى ~' + mins + ' دقيقة. يمكنك إغلاق الصفحة، ' +
+                          'وما اكتمل محفوظ ويُستأنف من حيث توقّف.';
+      } else {
+        const sec = Math.round((Date.now() - t0) / 1000);
+        sub.textContent = 'اكتملت الدفعة ' + st.batch + ' من ' + st.batches +
+                          ' (' + sec + ' ثانية حتى الآن).';
+      }
     });
+    bar.classList.remove('meter--busy');
     if (wizard.error) {
       msg.textContent = '⚠ ' + wizard.error;
       go.removeAttribute('aria-disabled'); go.textContent = 'أعد المحاولة';
@@ -4806,17 +4883,38 @@ function stepEnrich(box, rerender){
     + (wizard.unverified ? ' ومنها ' + N(wizard.unverified) +
         ' لم نجد نصّها حرفًا بحرف في الملف — راجعها في الخطوة التالية.' : '') });
   box.appendChild(readLine);
+  box.appendChild(sub);
 
   if (wizard.fileB64){
     const again = el('button', { class:'btn btn--sm btn--ghost', type:'button',
       text: wizard.readBy === 'ai' ? '⟳ أعد القراءة بالذكاء' : '🧠 العدد أقل مما تتوقع؟ اقرأه بالذكاء' });
     again.addEventListener('click', async () => {
+      const before = wizard.total;
       again.setAttribute('aria-disabled','true'); again.textContent = '… يقرأ الذكاء ملفك';
       const w2 = await QBANK.admin.wizardIngest(wizard, wizard.filename, wizard.fileB64, true);
+      again.removeAttribute('aria-disabled');
+      /*
+        ★ لا شيء أسوأ من زرٍّ لا يقول ماذا فعل.
+        ثلاث نتائج ممكنة، وكانت كلها تبدو واحدة: لا شيء. فإن عجز الذكاء
+        قلنا لماذا، وإن لم يجد أكثر قلنا إن القواعد كانت أوفى، وإن وجد
+        أكثر ظهر العدد الجديد وحده — والسكوت لا يُشرح شيئًا منها.
+      */
+      if (w2.error) {
+        again.textContent = '🧠 أعد القراءة بالذكاء';
+        sub.textContent = '⚠ ' + w2.error;
+        return;
+      }
+      if (w2.total <= before) {
+        again.textContent = '🧠 أعد القراءة بالذكاء';
+        sub.textContent = 'قرأه الذكاء فلم يجد أكثر من ' + N(before) +
+                          ' سؤالًا — قراءة القواعد كانت أوفى، وأبقيناها.';
+        return;
+      }
       wizard = w2;
       /* الإثراء يبدأ من الصفر بعد قراءة جديدة: الأسئلة تغيّرت، وعدّادٌ
          قديم على أسئلة جديدة يعني تخطّي أسئلة لم تُقرأ قط. */
       wizard.done = 0; wizard.enriched = [];
+      QBANK.toast('قرأ الذكاء ' + N(w2.total) + ' سؤالًا');
       rerender();
     });
     box.appendChild(el('p', { class:'stack', style:'margin-bottom:12px' }, [again]));
@@ -5052,10 +5150,12 @@ function stepPublish(box){
     */
     if (publish) { try { await QBANK.data.refreshPack(); } catch(e){ /* الشاشة تُجدّد لاحقًا */ } }
     QBANK.toast(publish ? 'نُشرت المادة' : 'حُفظت مخفية');
-    if (publish && newId && w.slug){
+    if (publish && newId){
       // رابط المشاركة يظهر فورًا: هذه هي اللحظة التي يشارك فيها الطالب مادته
+      // ★ والمعرّف من الخادم لا من تخميننا — وإن غاب فُتحت المادة بمعرّفها
+      const realSlug = await QBANK.admin.realSlug(newId);
       wizard = null;
-      return void showShare(box, w.slug, w.subjectName, newId, w.analysisLang || 'ar');
+      return void showShare(box, realSlug || w.slug, w.subjectName, newId, w.analysisLang || 'ar');
     }
     wizard = null;
     QBANK.router.go(QBANK.store.get('is_admin_check', {}).ok ? '#/admin/content' : '#/account');
@@ -5582,12 +5682,22 @@ const ViewSubject = {
 
     const printBtn = el('button', { class:'copybtn', type:'button', text:'🖨 طباعة / PDF' });
     printBtn.addEventListener('click', () => QBANK.views.openPrintDialog(sub));
-    const shareBtn = el('button', { class:'copybtn', type:'button', text:'⎘ نسخ الرابط' });
-    shareBtn.addEventListener('click', () => {
-      try{
-        navigator.clipboard.writeText(location.origin + location.pathname + '#/subject/' + sid);
-        QBANK.toast('نُسخ رابط المادة');
-      }catch(e){ QBANK.toast('تعذّر النسخ'); }
+    /*
+      ★ «انشر» لا «انسخ».
+      النسخ يطلب من الطالب ثلاث خطوات: ينسخ، ويفتح واتساب، ويلصق — ويسقط
+      بعضهم في كل واحدة. ونافذة النظام تفعلها بضغطة وتعرض تطبيقاته كلها.
+      والرابط يحمل معرّف الرافع (ref) فتُنسب إليه الإحالة كما كان.
+    */
+    const shareBtn = el('button', { class:'copybtn', type:'button', text:'⤴ انشر المادة' });
+    shareBtn.addEventListener('click', async () => {
+      const me = QBANK.api.user();
+      const url = (sub.slug && QBANK.share)
+        ? QBANK.share.shareUrl(sub.slug, me && me.id)
+        : QBANK.share.absUrl('#/subject/' + sid);
+      const r = await QBANK.share.sharePlain(url, sub.name,
+        'بنك أسئلة «' + sub.name + '» على مراجعة');
+      if (r.ok && r.via === 'copy') QBANK.toast('نُسخ رابط المادة');
+      else if (!r.ok && !r.cancelled) QBANK.toast('تعذّرت المشاركة');
     });
 
     /*
@@ -7846,7 +7956,90 @@ const ViewShare = {
   }
 };
 
-QBANK.share = { shareUrl, copyRow };
+/* ═══════════════════════════════════════════════════════════════════
+   زرّ نشرٍ واحد لكل شيء
+   ═══════════════════════════════════════════════════════════════════
+   كان النشر مقصورًا على المادة، وبصيغةٍ واحدة: حقلٌ ونسخ. وهذا يفترض أن
+   الطالب سينسخ ثم يفتح واتساب ثم يلصق — ثلاث خطوات يسقط في كل واحدة منها
+   بعضُهم. ونافذة النظام تفعلها بضغطة واحدة وتعرض عليه تطبيقاته كلها.
+
+   ولأن كل شيء في المنصة يستحق أن يُرسَل — مادة، ملف طالب، جامعة، تحدٍّ —
+   جعلناه مكوّنًا واحدًا يقبل أي رابط. الميزة التي تُبنى مرةً وتُستعمل في
+   عشرة مواضع خيرٌ من عشر نسخ تتباعد مع الوقت.
+*/
+
+/* رابطٌ مطلق لأي مسار داخلي: الروابط النسبية لا تُرسَل */
+function absUrl(hash){
+  let base = 'https://amsuq.alsoqoor.com/';
+  try {
+    if (typeof location !== 'undefined' && location.protocol.indexOf('http') === 0)
+      base = location.origin + location.pathname;
+  } catch(e){ /* مستند مفكَّك */ }
+  return base + String(hash || '#/').replace(/^#?\/?/, '#/');
+}
+
+/* روابط الأشياء التي تُنشَر — في موضع واحد كي لا تتفرّق صيغها */
+function profileUrl(userId){ return absUrl('#/p/' + userId); }
+function universityUrl(uniId){ return absUrl('#/u/' + uniId); }
+
+/*
+  المشاركة نفسها. نافذة النظام أولًا لأنها الأقصر وتعرض تطبيقاته كلها،
+  ثم الحافظة. ولا نَعِد بما لا نملك: navigator.share غائب على أغلب
+  متصفحات سطح المكتب، فنسأل عنه ولا نفترضه.
+*/
+async function sharePlain(url, title, text){
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: title || 'مراجعة', text: text || '', url: url });
+      return { ok:true, via:'share' };
+    }
+  } catch(e){ return { ok:false, cancelled:true }; }
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(url);
+      return { ok:true, via:'copy' };
+    }
+  } catch(e){}
+  return { ok:false };
+}
+
+/*
+  زرّ النشر. opts: { url, title, text, label, block }
+  والواتساب بجانبه دائمًا: هو حيث تعيش مجموعات الدفعة فعلًا، ولا يُعتمد
+  فيه على دعم المتصفح لشيء — رابط ويب صريح يعمل في كل مكان.
+*/
+function shareButton(opts){
+  const o = opts || {};
+  const url = o.url || absUrl('#/');
+  const label = o.label || '⤴ انشر الرابط';
+
+  const b = el('button', { class:'btn btn--soft btn--sm' + (o.block ? ' btn--block' : ''),
+                           type:'button', text: label });
+  b.addEventListener('click', async () => {
+    const r = await sharePlain(url, o.title, o.text);
+    if (r.ok && r.via === 'copy') QBANK.toast('نُسخ الرابط — الصقه حيث شئت');
+    else if (!r.ok && !r.cancelled) QBANK.toast('انسخ الرابط من الحقل أدناه');
+  });
+
+  const wa = el('a', { class:'btn btn--ghost btn--sm' + (o.block ? ' btn--block' : ''),
+    href: 'https://wa.me/?text=' + encodeURIComponent((o.text ? o.text + ' — ' : '') + url),
+    target:'_blank', rel:'noopener noreferrer', text:'واتساب' });
+
+  return el('div', { class:'row sharerow' }, [ b, wa ]);
+}
+
+/* الصندوق الكامل: الزرّان ثم الرابط للنسخ اليدوي — لمن يريد أن يراه */
+function shareBox(opts){
+  const o = opts || {};
+  return el('div', { class:'stack' }, [
+    o.title ? el('p', { class:'field__label', text: o.title }) : null,
+    shareButton(o),
+    copyRow(o.url)
+  ]);
+}
+
+QBANK.share = { shareUrl, copyRow, absUrl, profileUrl, universityUrl,
+                sharePlain, shareButton, shareBox };
 QBANK.views.ViewShare = ViewShare;
 
 
@@ -10426,8 +10619,18 @@ const ViewPeer = {
               [p.university, p.college].filter(Boolean).join(' · ') || 'بلا جامعة محدّدة' }),
             Peer.stars(p.rating_avg, p.rating_n),
             p.bio ? el('p', { class:'pf-hero__bio', text: p.bio }) : null,
-            isMe ? el('a', { class:'btn btn--sm btn--soft', href:'#/login', style:'margin-top:8px',
-              text:'هذا ملفك — حرّره' }) : null
+            isMe ? el('a', { class:'btn btn--sm btn--soft', href:'#/account/profile',
+              style:'margin-top:8px', text:'هذا ملفك — حرّره' }) : null,
+            /* ★ ملفٌ لا يُرسَل لا يُرى. سمعةُ الرافع تُبنى بمن يفتح ملفه،
+               ولا أحد يفتحه ما لم يصل إليه رابطٌ من صاحبه أو من زميل. */
+            QBANK.share ? el('div', { style:'margin-top:10px' }, [
+              QBANK.share.shareButton({
+                url: QBANK.share.profileUrl(p.id),
+                title: (p.name || 'طالب') + ' على مراجعة',
+                text: isMe ? 'هذا ملفي على منصة مراجعة'
+                           : 'شوف ملف ' + (p.name || 'هذا الطالب') + ' على مراجعة',
+                label: isMe ? '⤴ انشر ملفك' : '⤴ انشر الملف' })
+            ]) : null
           ])
         ]));
 
