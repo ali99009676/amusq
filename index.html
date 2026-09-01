@@ -89,7 +89,7 @@ try{
 
   --wrap: 1080px;
   --topbar-h: 60px;
-  --tabbar-h: 62px;
+  --tabbar-h: 64px;
 
   --t-fast: 140ms;
   --t: 240ms;
@@ -252,24 +252,66 @@ img,svg{ max-width:100%; height:auto; }
   padding-bottom:calc(var(--tabbar-h) + var(--s8));
 }
 
+/*
+  ═══ الشريط السفلي ═══
+  أكثر عنصرٍ يراه الطالب في المنصة، فيُعامَل معاملة الواجهة لا الحاشية:
+  زجاجٌ يُظهر ما تحته بلا أن يُقرأ، وحدٌّ شعري لا خطّ سميك، وحبّةُ تمييز
+  خلف أيقونة الصفحة الحالية وحدها — التمييز الذي يبتلع الكلمة يُثقل.
+*/
 .tabbar{
   position:fixed; inset-inline:0; bottom:0; z-index:20;
   height:calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
   padding-bottom:env(safe-area-inset-bottom, 0px);
   display:flex; align-items:stretch;
-  background:color-mix(in srgb, var(--surface) 94%, transparent);
-  backdrop-filter:saturate(180%) blur(12px);
-  border-top:1px solid var(--line);
+  background:color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter:saturate(180%) blur(18px);
+  -webkit-backdrop-filter:saturate(180%) blur(18px);
+  border-top:1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  /* ظلٌّ للأعلى يفصل الشريط عن المحتوى حين يمرّ تحته */
+  box-shadow:0 -1px 20px color-mix(in srgb, #000 8%, transparent);
 }
+/* من لا يدعم الزجاج يحصل على سطحٍ صلب لا على شفافيةٍ تُخفي النص تحته */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
+  .tabbar{ background:var(--surface); }
+}
+
 .tabbar__item{
-  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
-  color:var(--text-3); font-size:.72rem; font-weight:600; padding:var(--s1);
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  color:var(--text-3); font-size:.7rem; font-weight:600;
+  padding:6px var(--s1) 8px;
   min-width:0;                       /* يمنع تمدّد النص فيكسر الشريط على ٣٦٠ بكسل */
+  -webkit-tap-highlight-color:transparent;
 }
 .tabbar__item:hover{ text-decoration:none; color:var(--text-2); }
-.tabbar__item[aria-current="page"]{ color:var(--brand); }
-.tabbar__ico{ font-size:1.15rem; line-height:1; }
-.tabbar__lbl{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+
+/* غلاف الأيقونة: هو ما تُرسم عليه حبّة التمييز */
+.tabbar__box{
+  display:grid; place-items:center;
+  width:46px; height:30px; border-radius:999px;
+  transition:background .2s var(--ease), color .2s var(--ease),
+             transform .2s cubic-bezier(.34,1.4,.64,1);
+}
+.tabbar__box svg{ display:block; }
+
+/* الصفحة الحالية: حبّة بلون التمييز، وخطٌّ أثقل قليلًا، ونصٌّ أوضح */
+.tabbar__item[aria-current="page"]{ color:var(--acc); }
+.tabbar__item[aria-current="page"] .tabbar__box{
+  background:color-mix(in srgb, var(--acc) 16%, transparent);
+  transform:translateY(-1px);
+}
+.tabbar__item[aria-current="page"] .tabbar__box svg path{ stroke-width:2; }
+.tabbar__item[aria-current="page"] .tabbar__lbl{ font-weight:800; }
+
+/* اللمس يستجيب فورًا: التأخير في ردّ الفعل يُقرأ بطئًا في التطبيق كله */
+.tabbar__item:active .tabbar__box{ transform:scale(.9); }
+
+.tabbar__lbl{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+  letter-spacing:-.01em; }
+
+@media (prefers-reduced-motion: reduce){
+  .tabbar__box{ transition:none; }
+  .tabbar__item:active .tabbar__box{ transform:none; }
+}
 
 .footer{
   flex:0 0 auto;
@@ -6740,14 +6782,59 @@ QBANK.views.lpParts = { lpTryQuestion, lpMemoCard, LP_TIPS, LP_FAQ };
   الإقلاع: تسجيل المسارات، بناء شريط التبويب، تشغيل المظهر والموجّه.
   ترتيب مقصود: المظهر أولًا كي لا يرى المستخدم وميض الأبيض قبل الوضع الليلي.
 */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  الشريط السفلي — واجهة المنصة الدائمة
+  ═══════════════════════════════════════════════════════════════════
+  ★ رموزٌ مرسومة لا محارف نصية.
+  كانت الأيقونات محارف يونيكود (▤ ⌕ ↻ ⇪ ◍) — وهي أسرع ما يُكتب وأسوأ ما
+  يُرى: كل نظام يرسمها بخطّه، فتختلف أوزانها وأحجامها على أندرويد وآيفون
+  وويندوز، ويسقط بعضها إلى مربّع فارغ حين لا يجد الجهازُ محرفًا لها.
+  وشريطٌ سفليّ هو أكثر ما يراه الطالب في المنصة — يستحق رسمًا متسقًا.
+
+  والرسم مضمّن لا من مكتبة: خمسة رموز لا تستحق ملفًا خارجيًا يُحمَّل،
+  وتضمينها يبقيها تعمل بلا إنترنت كبقية التطبيق.
+*/
+const ICONS = {
+  /* الرئيسية: بيت — أوضح رمز في الواجهات كلها، ولا يحتاج تعلّمًا */
+  home: 'M3 10.4 12 3l9 7.4M5.6 9v10.5c0 .6.4 1 1 1h4v-6h2.8v6h4c.6 0 1-.4 1-1V9',
+  /* استكشف: عدسة */
+  search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20.5 20.5 16 16',
+  /* راجع: سهم دائري — الاسترجاع بعد حين */
+  repeat: 'M20 12a8 8 0 1 1-2.6-5.9M20 3.5V8h-4.5',
+  /* ارفع: سهم يصعد من قاعدة */
+  upload: 'M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 16v2.5c0 .8.7 1.5 1.5 1.5h13c.8 0 1.5-.7 1.5-1.5V16',
+  /* حسابي: كتف ورأس */
+  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4.5 20.5c.9-3.6 3.9-5.5 7.5-5.5s6.6 1.9 7.5 5.5'
+};
+
+function icon(d){
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '22'); svg.setAttribute('height', '22');
+  svg.setAttribute('fill', 'none');
+  svg.setAttribute('aria-hidden', 'true');
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('d', d);
+  path.setAttribute('stroke', 'currentColor');
+  path.setAttribute('stroke-width', '1.7');
+  path.setAttribute('stroke-linecap', 'round');
+  path.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(path);
+  return svg;
+}
+
 const NAV = [
-  { path:'#/',         label:'الرئيسية',  ico:'▤' },
+  { path:'#/',         label:'الرئيسية',  ico:'home' },
   // «ارفع مادة» في الشريط لا مدفونة في صفحة الحساب: ميزة لا يراها الطالب ميزة لا وجود لها
-  { path:'#/explore',  label:'استكشف',    ico:'⌕' },
+  { path:'#/explore',  label:'استكشف',    ico:'search' },
   /* ★ «راجع» في الشريط السفلي: هي الشاشة التي يُفترض أن يفتحها الطالب
      كل يوم، ولا معنى لميزةٍ تعتمد على العادة إن كانت مدفونة في قائمة. */
-  { path:'#/review',   label:'راجع',      ico:'↻' },
-  { path:'#/upload',   label:'ارفع مادة', ico:'⇪' },
+  { path:'#/review',   label:'راجع',      ico:'repeat' },
+  /* «ارفع مادة» لا «ارفع»: الفعل وحده مبهم — ارفع ماذا؟ والكلمتان تسعان
+     على شاشة ٣٦٠ بكسل، فلا داعي لاختصارٍ يشتري مساحةً بثمن الوضوح. */
+  { path:'#/upload',   label:'ارفع مادة', ico:'upload' },
   /*
     ★ خمسة لا ستة.
     الشريط السفلي على الجوال يتّسع لخمسة قبل أن تضيق مساحة اللمس ويصير
@@ -6755,7 +6842,7 @@ const NAV = [
     محسومة: المراجعة تُفتح كل يوم، والإعدادات مرةً في العمر. وانتقلت إلى
     «حسابي» حيث يبحث عنها الناس أصلًا.
   */
-  { path:'#/account',  label:'حسابي',     ico:'◍' }
+  { path:'#/account',  label:'حسابي',     ico:'user' }
 ];
 
 function buildTabbar(){
@@ -6763,8 +6850,14 @@ function buildTabbar(){
   if (!bar) return;
   bar.innerHTML = '';
   NAV.forEach(item => {
+    /*
+      الرمز داخل غلافٍ مستقل كي تُرسم عليه حبّةُ التمييز خلف الأيقونة
+      وحدها لا خلف النص — التمييز الذي يبتلع الكلمة يُثقل الشريط.
+    */
+    const box = QBANK.dom.el('span', { class:'tabbar__box', 'aria-hidden':'true' });
+    box.appendChild(icon(ICONS[item.ico] || ICONS.home));
     bar.appendChild(QBANK.dom.el('a', { class:'tabbar__item', href:item.path, 'data-nav':item.path }, [
-      QBANK.dom.el('span', { class:'tabbar__ico', 'aria-hidden':'true', text:item.ico }),
+      box,
       QBANK.dom.el('span', { class:'tabbar__lbl', text:item.label })
     ]));
   });
