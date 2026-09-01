@@ -1231,6 +1231,14 @@ a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
 }
 .mq__x:hover{ border-color:var(--bad); color:var(--bad); }
 
+/* ═══ صندوق رمز التفعيل ═══
+   ★ الحقل يكبر والزرّ لا: الرمز عشرة محارف يجب أن تُرى كاملة قبل الضغط،
+   و«فعّل» كلمة بعرض ثابت. صفّ مرن يعطي كلًّا منهما ما يحتاجه بلا تفافّ
+   على عرض ٣٦٠ بكسل. */
+.redeem{ display:flex; gap:var(--s2); align-items:stretch; }
+.redeem .input{ flex:1 1 auto; min-width:0; letter-spacing:.08em; text-transform:uppercase; }
+.redeem .btn{ flex:0 0 auto; }
+
 
 /* ===== 50-landing.css ===== */
 /*
@@ -2889,6 +2897,14 @@ const Gate = {
   },
   ref(){ return QBANK.store.get(Gate.REF_KEY, ''); },
 
+  /*
+    ★ إعادة رسم الشاشة بعد فتحٍ ناجح — لا يعرفها المنادي فنُوفّرها هنا.
+    الطالب يُفعّل رمزه فتصير المادة له، وتبقى بطاقة القفل أمامه لأن الشاشة
+    رُسمت قبل الفتح. فيظنّ التفعيل فشل ويُدخل رمزًا آخر ويُنفق اثنين مكان
+    واحد. الرسم الجديد هو ما يجعل النجاح مرئيًا.
+  */
+  reopen(){ try { QBANK.router.render(location.hash); } catch(e){} },
+
   // زر الشراء وحده — تُعيد استعماله بطاقة القفل وبطاقة انتهاء التجربة
   buyButton(sub){
     const isApp = !!(typeof window !== 'undefined' && window.QBANK_NATIVE_APP);
@@ -2910,15 +2926,38 @@ const Gate = {
           text:'لم يُحدَّد سعر هذه المادة بعد — تواصل مع مشرف المنصة.' });
   },
 
-  // بطاقة الشراء — تحترم قاعدة المتاجر: داخل التطبيق لا إحالة للموقع
-  paywallCard(sub){
-    return el('div', { class:'card', style:'text-align:center' }, [
+  /*
+    بطاقة الشراء — تحترم قاعدة المتاجر: داخل التطبيق لا إحالة للموقع.
+
+    ★ ولا تنتهي عند زرٍّ واحد.
+    كان فيها زرّ «اشترِ» وحده، وهو يقود إلى بوابة Tap التي لم تُفعَّل بعد —
+    فينتهي الطالب إلى «الدفع غير مفعَّل بعد على هذا الخادم» ولا يبقى أمامه
+    شيء يفعله. والبطاقة التي تعرض ثمنًا ولا تعرض طريقًا لدفعه بابٌ مرسوم
+    على جدار. فصار فيها ثلاثة طرق: البوابة إن عملت، ورمز تفعيل يُدخله من
+    اشترى بأي وسيلة أخرى، وطلبٌ مباشر لمن لا يملك رمزًا.
+  */
+  paywallCard(sub, onOpen){
+    const kids = [
       el('span', { class:'empty__ico', 'aria-hidden':'true', text:'🔒' }),
       el('p', { class:'empty__title', text:'«' + sub.name + '» مادة مدفوعة' }),
       el('p', { class:'empty__text', text:'اشترِ المادة وحدها أو حزمة الفصل كاملة — صالحة حتى نهاية الفصل، بلا اشتراك شهري.' }),
-      Gate.buyButton(sub),
-      el('p', { class:'field__hint', text:'لديك حساب اشترى من قبل؟ سجّل دخولك وسيُفتح المحتوى تلقائيًا.' })
-    ]);
+      Gate.buyButton(sub)
+    ];
+
+    const C = QBANK.codes;
+    if (C){
+      kids.push(QBANK.views.redeemBox(onOpen || Gate.reopen));
+      const s = C.support();
+      /* الطلب المباشر: في المتصفح فقط، وبشرط أن يكون المشرف كتب رقمه —
+         زرٌّ يفتح واتساب بلا رقم يفتح لا شيء. */
+      if (!C.isApp() && s.wa)
+        kids.push(el('a', { class:'btn btn--ghost btn--block', target:'_blank',
+          rel:'noopener', href: C.askUrl(sub), text:'اطلب رمزًا من المشرف' }));
+      if (s.note) kids.push(el('p', { class:'field__hint', text: s.note }));
+    }
+
+    kids.push(el('p', { class:'field__hint', text:'لديك حساب اشترى من قبل؟ سجّل دخولك وسيُفتح المحتوى تلقائيًا.' }));
+    return el('div', { class:'card', style:'text-align:center' }, kids);
   },
 
   /*
@@ -8055,6 +8094,15 @@ const SET = {
       { k:'trial_days',    t:'num',  label:'أيام التجربة المجانية', min:0, max:365 },
       { k:'maintenance',   t:'bool', label:'وضع الصيانة — يُوقف دخول الطلاب' },
       { k:'maint_msg',     t:'area', label:'رسالة الصيانة' }
+    ]},
+    /*
+      ★ طريقة الدفع نصٌّ يكتبه المشرف لا شيء نفترضه عنه.
+      كلٌّ يقبض بطريقته: تحويل، STC Pay، نقدًا في الكلية. وكتابةُ طريقةٍ
+      بعينها في الكود تعني تعديل الكود كلما تغيّر حسابٌ بنكي — وتعني أن
+      الطالب يقرأ تعليمات لا تنطبق على أحد.
+    */
+    { id:'pay', title:'الشراء والتفعيل', sub:'ما يقرؤه الطالب في بطاقة المادة المدفوعة', fields:[
+      { k:'pay_note', t:'area', label:'طريقة الدفع — سطر يظهر تحت زر الطلب' }
     ]}
   ],
 
@@ -8346,15 +8394,29 @@ const Trial = {
     return bar;
   },
 
-  /* شاشة انتهاء التجربة — تفتح الشراء لا تتركه في فراغ */
+  /*
+    شاشة انتهاء التجربة — تفتح الشراء لا تتركه في فراغ.
+    ★ وتحمل طرق الفتح نفسها التي تحملها بطاقة القفل. طالبٌ أنفق عشر دقائق
+    في المادة هو أقربُ الناس إلى الدفع، ولا يليق أن يكون طريقه أضيق من
+    طريق من لم يفتحها بعد.
+  */
   expiredCard(sub){
-    return el('div', { class:'card', style:'text-align:center' }, [
+    const kids = [
       el('span', { class:'empty__ico', 'aria-hidden':'true', text:'◷' }),
       el('p', { class:'empty__title', text:'انتهت تجربتك المجانية' }),
       el('p', { class:'empty__text',
         text:'استفدت من عشر دقائق كاملة في «' + sub.name + '». افتحها الآن حتى نهاية الفصل.' }),
       QBANK.gate.buyButton(sub)
-    ]);
+    ];
+    const C = QBANK.codes;
+    if (C){
+      kids.push(QBANK.views.redeemBox(QBANK.gate.reopen));
+      const s = C.support();
+      if (!C.isApp() && s.wa)
+        kids.push(el('a', { class:'btn btn--ghost btn--block', target:'_blank',
+          rel:'noopener', href: C.askUrl(sub), text:'اطلب رمزًا من المشرف' }));
+    }
+    return el('div', { class:'card', style:'text-align:center' }, kids);
   }
 };
 QBANK.trial = Trial;
@@ -8613,10 +8675,25 @@ function walletLinks(){
   ]);
 }
 
-/* المتجر والسجل يُبنيان في 55-pay.js — نُلحقهما هنا كي تبقى المحفظة مكانًا واحدًا */
+/*
+  المتجر والسجل يُبنيان في 55-pay.js — نُلحقهما هنا كي تبقى المحفظة مكانًا واحدًا.
+
+  ★ وصندوق الرمز معهما، لأن رمز الفصل لا مادة له.
+  رمزُ مادةٍ يُدخله الطالب في صفحتها، أما رمز «مواد الفصل كلها» فلا صفحة
+  واحدة يخصّها — ولو لم يكن له مكان هنا لبقي بيد صاحبه بلا باب يُدخله منه.
+*/
 function walletWithShop(){
+  const codeCard = QBANK.views.redeemBox
+    ? el('div', { class:'card stack' }, [
+        el('h2', { style:'margin:0', text:'تفعيل برمز' }),
+        el('p', { class:'field__hint', style:'margin:0', text:
+          'رمزُ مادةٍ أو رمزُ الفصل كامل — أدخله هنا وتُفتح لك فورًا.' }),
+        QBANK.views.redeemBox(() => QBANK.router.render(location.hash))
+      ])
+    : null;
   return el('div', { class:'stack' }, [
     walletBody(),
+    codeCard,
     QBANK.pay ? QBANK.pay.coinShop() : null,
     QBANK.pay ? QBANK.pay.historyCard() : null
   ]);
@@ -10086,6 +10163,19 @@ function buySubjectButton(sub){
     Pay.start({ kind:'subject', subject_id: sub.id }).then(r => {
       b.disabled = false;
       if (r.ok && r.data && r.data.url){ Pay.goTo(r.data.url); return; }
+      /*
+        ★ بوابة غير مفعَّلة ليست خطأً عابرًا يُعاد بعده المحاولة.
+        الخادم يردّ ٥٠٣ حين لا يكون TAP_SECRET_KEY مضبوطًا، وذلك حالٌ يدوم
+        أيامًا حتى يُفتح الحساب التجاري. فإبقاء الزرّ يدعو الطالب إلى ضغطةٍ
+        لن تنجح مهما كرّرها. نُخفيه ونُحيله إلى الطريق الذي يعمل اليوم.
+      */
+      if (r.status === 503){
+        Pay.gatewayOff = true;
+        b.hidden = true;
+        msg.className = 'field__hint';
+        msg.textContent = 'الدفع المباشر لم يُفتح بعد — فعّل المادة برمز، أو اطلبه من المشرف بالزر أدناه.';
+        return;
+      }
       msg.className = 'field__hint is-bad';
       msg.textContent = (r.data && r.data.error) || 'تعذّر فتح صفحة الدفع.';
     });
@@ -10487,6 +10577,14 @@ function proMoneyTab(box){
     chips.appendChild(b);
   });
   box.insertBefore(chips, body);
+
+  /*
+    ★ مولّد الأكواد فوق سجلّ الدفعات لا تحته.
+    السجلّ يقول ماذا حدث، والمولّد هو ما يجعل شيئًا يحدث. وحين لا تكون
+    بوابة الدفع مفعَّلة بعد فهو قناة البيع الوحيدة العاملة — ووضعُ القناة
+    العاملة أسفلَ صفحةٍ طويلة يجعلها كأنها غير موجودة.
+  */
+  if (QBANK.views.adminCodesCard) box.insertBefore(QBANK.views.adminCodesCard(), chips);
 
   function draw(){
     body.innerHTML = '';
@@ -12088,6 +12186,286 @@ const Presence = {
   stop(){ if (Presence._timer) { clearInterval(Presence._timer); Presence._timer = null; } }
 };
 QBANK.presence = Presence;
+
+
+/* ===== 64-codes.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  أكواد التفعيل — الطريق الثاني إلى المادة المدفوعة
+  ═══════════════════════════════════════════════════════════════════
+  كان زرّ «اشترِ المادة» ينتهي إلى /api/pay، و/api/pay يشترط بوابة Tap
+  لم تُفعَّل بعد. فالضغطة الوحيدة التي تفصل الطالب عن الدفع كانت تنتهي
+  برسالة «الدفع غير مفعَّل بعد على هذا الخادم» — وهي رسالةُ عطلٍ في وجه
+  من قرّر أن يشتري.
+
+  الآن للطالب طريقان دائمًا: رمزٌ يُدخله فتُفتح المادة في ثانية، وطريقُ
+  طلبٍ واضح إن لم يكن عنده رمز. والبوابة حين تجهز تُضاف فوقهما ولا تُلغيهما.
+*/
+
+const Codes = {
+  /* ما يصل من الطالب: لصقٌ فيه مسافات، أو شرطات، أو حروف صغيرة. كلّها
+     الرمز نفسه — والتطبيع هنا وفي القاعدة معًا، لأن أحدهما قد يُتجاوَز. */
+  norm(s){ return String(s || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase(); },
+
+  /* عرضٌ بأربعات: العين تقرأ AB12-CD34-EF ولا تقرأ AB12CD34EF */
+  pretty(s){
+    const n = Codes.norm(s);
+    return n ? (n.match(/.{1,4}/g) || [n]).join('-') : '';
+  },
+
+  MIN: 6,
+  looksLike(s){ return Codes.norm(s).length >= Codes.MIN; },
+
+  redeem(code){ return QBANK.api.rpc('redeem_code', { p_code: Codes.norm(code) }); },
+
+  /*
+    ★ لكل رفضٍ نصُّه.
+    «رمز غير صحيح» جوابٌ واحد لسبع حالات، ويجعل الطالب يعيد المحاولة على
+    رمزٍ استُهلك، أو يشكو من رمزٍ سبق أن استعمله هو. والنص الذي يقول
+    «ماذا حدث وماذا تفعل الآن» يوفّر رسالةً إلى المشرف.
+  */
+  WHY: {
+    auth:                'سجّل دخولك أولًا ثم فعّل الرمز.',
+    not_found:           'لا يوجد رمز بهذا الشكل — تأكّد من الحروف والأرقام.',
+    disabled:            'أُوقف هذا الرمز. تواصل مع من أعطاك إياه.',
+    expired:             'انتهت صلاحية هذا الرمز.',
+    used_up:             'استُهلك هذا الرمز بالكامل.',
+    already_used_by_you: 'فعّلتَ هذا الرمز من قبل — المادة عندك بالفعل.',
+    already_owned:       'هذه المادة مفتوحة لك أصلًا، فلا تُنفق الرمز عليها.',
+    already_free:        'صارت هذه المادة مجانية للجميع — لا تحتاج رمزًا.',
+    subject_gone:        'المادة المرتبطة بهذا الرمز لم تعد موجودة.'
+  },
+  why(reason){ return Codes.WHY[reason] || 'تعذّر تفعيل الرمز. حاول مرة أخرى.'; },
+
+  /* رقم التواصل وسطر طريقة الدفع — يكتبهما المشرف في الإعدادات */
+  support(){
+    const s = (QBANK.data.pack().settings) || {};
+    return { wa: String(s.whatsapp || '').replace(/[^0-9]/g, ''),
+             note: String(s.pay_note || '') };
+  },
+
+  /*
+    ★ داخل التطبيق لا رابط خارجي إطلاقًا.
+    قاعدة متجر آبل تمنع إحالة المستخدم إلى قناة دفع خارجية، ومخالفتها
+    تُرفض بها النسخة كلها. فالزرّ يختفي في التطبيق ويبقى في المتصفح.
+  */
+  isApp(){ return !!(typeof window !== 'undefined' && window.QBANK_NATIVE_APP); },
+
+  /* رسالة الطلب: تحمل ما يحتاجه المشرف ليُصدر الرمز بلا محادثة ذهاب وإياب */
+  askText(sub){
+    const u = QBANK.api.user();
+    const price = Number(sub && sub.price) > 0 ? ' (' + sub.price + ' ريال)' : '';
+    return 'السلام عليكم، أريد تفعيل مادة «' + (sub ? sub.name : '') + '»' + price +
+           '.\nحسابي: ' + ((u && u.email) || 'ـ');
+  },
+  askUrl(sub){
+    const wa = Codes.support().wa;
+    if (!wa) return '';
+    return 'https://wa.me/' + wa + '?text=' + encodeURIComponent(Codes.askText(sub));
+  }
+};
+QBANK.codes = Codes;
+
+/* ═══════════════ صندوق التفعيل للطالب ═══════════════ */
+/* لا يأخذ مادة: الرمز يقول بنفسه ماذا يفتح، والصندوق واحد في صفحة المادة
+   وفي المحفظة — وصندوقان بسلوكين هما موضعان للعطل لا موضع واحد. */
+function redeemBox(onDone){
+  const box = el('div', { class:'stack', style:'margin-top:12px' });
+  const msg = el('p', { class:'field__hint', role:'status', style:'margin:0' });
+
+  const inp = el('input', { class:'input num', type:'text', autocomplete:'off',
+    spellcheck:'false', maxlength:'24', placeholder:'ABCD-EFGH-JK',
+    'aria-label':'رمز التفعيل' });
+
+  /* التجميل أثناء الكتابة، مع إبقاء المؤشر في آخر النص — إعادةُ المؤشر
+     إلى الأول عند كل حرف تجعل الحقل غير قابل للكتابة عمليًا */
+  inp.addEventListener('input', () => {
+    const atEnd = inp.selectionStart === inp.value.length;
+    inp.value = Codes.pretty(inp.value).slice(0, 24);
+    if (atEnd) { try { inp.setSelectionRange(inp.value.length, inp.value.length); } catch(e){} }
+    go.setAttribute('aria-disabled', Codes.looksLike(inp.value) ? 'false' : 'true');
+  });
+
+  const go = el('button', { class:'btn btn--soft', type:'button', text:'فعّل' });
+  go.setAttribute('aria-disabled', 'true');
+
+  const run = () => {
+    if (!Codes.looksLike(inp.value)) return;
+    go.disabled = true; msg.className = 'field__hint'; msg.textContent = 'جارٍ التحقق…';
+    Codes.redeem(inp.value).then(r => {
+      go.disabled = false;
+      const d = (r.ok && r.data) ? r.data : null;
+      if (d && d.ok){
+        msg.className = 'field__hint is-ok';
+        msg.textContent = d.kind === 'semester'
+          ? 'فُتحت مواد الفصل كلها.' : 'فُتحت «' + (d.subject || 'المادة') + '».';
+        inp.value = '';
+        /* الاستحقاق الجديد لا يظهر حتى تُحدَّث نسخة الجهاز — وبلا ذلك
+           يبقى القفل على الشاشة بعد تفعيلٍ نجح، فيظنّه الطالب فشلًا. */
+        QBANK.gate.refresh().then(() => { if (onDone) onDone(d); });
+        return;
+      }
+      msg.className = 'field__hint is-bad';
+      msg.textContent = Codes.why(d && d.reason);
+    });
+  };
+  go.addEventListener('click', run);
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); run(); } });
+
+  box.appendChild(el('span', { class:'field__label', text:'عندك رمز تفعيل؟' }));
+  box.appendChild(el('div', { class:'redeem' }, [inp, go]));
+  box.appendChild(msg);
+  return box;
+}
+QBANK.views.redeemBox = redeemBox;
+
+/* ═══════════════ لوحة المشرف: توليد الأكواد ═══════════════ */
+function adminCodesCard(){
+  const box = el('div', { class:'card stack' });
+  box.appendChild(el('h2', { style:'margin:0', text:'أكواد التفعيل' }));
+  box.appendChild(el('p', { class:'field__hint', style:'margin:0', text:
+    'رمزٌ يفتح مادة أو مواد الفصل كلها. تبيعه بالطريقة التي تقبضها فعلًا، ' +
+    'ويُدخله الطالب في صفحة المادة فتُفتح فورًا — بلا بوابة دفع.' }));
+
+  const kindSel = el('select', { class:'input', 'aria-label':'نوع الرمز' }, [
+    el('option', { value:'subject',  text:'مادة واحدة' }),
+    el('option', { value:'semester', text:'مواد الفصل كلها' })
+  ]);
+  const subSel = el('select', { class:'input', 'aria-label':'المادة' });
+  const countIn = el('input', { class:'input num', type:'number', min:'1', max:'200',
+    value:'10', inputmode:'numeric', 'aria-label':'عدد الأكواد' });
+  const daysIn = el('input', { class:'input num', type:'number', min:'1', max:'3650',
+    value:'180', inputmode:'numeric', 'aria-label':'مدة الفتح بالأيام' });
+  const usesIn = el('input', { class:'input num', type:'number', min:'1', max:'5000',
+    value:'1', inputmode:'numeric', 'aria-label':'كم طالبًا يستعمل الرمز الواحد' });
+  const noteIn = el('input', { class:'input', type:'text', maxlength:'120',
+    placeholder:'مثال: دفعة ٢٠٤٦ — تحويل بنكي', 'aria-label':'ملاحظة الدفعة' });
+
+  const subs = (QBANK.data.pack().subjects || []).filter(s => !s.free);
+  if (!subs.length) subSel.appendChild(el('option', { value:'', text:'لا مواد مدفوعة' }));
+  subs.forEach(s => subSel.appendChild(el('option', { value:s.id, text:s.name })));
+
+  const subWrap = el('label', { class:'field' }, [
+    el('span', { class:'field__label', text:'المادة' }), subSel ]);
+  const paintKind = () => { subWrap.hidden = kindSel.value === 'semester'; };
+  kindSel.addEventListener('change', paintKind); paintKind();
+
+  const out = el('div', { class:'stack' });
+  const msg = el('p', { class:'field__hint', role:'status', style:'margin:0' });
+
+  const make = el('button', { class:'btn btn--block', type:'button', text:'ولّد الأكواد' });
+  make.addEventListener('click', async () => {
+    const kind = kindSel.value;
+    if (kind === 'subject' && !subSel.value){
+      msg.className = 'field__hint is-bad';
+      msg.textContent = 'لا توجد مادة مدفوعة — ضع سعرًا لمادة أولًا.';
+      return;
+    }
+    make.disabled = true; msg.className = 'field__hint'; msg.textContent = 'جارٍ التوليد…';
+    const r = await QBANK.api.rpc('admin_make_codes', {
+      p_kind: kind,
+      p_subject: kind === 'subject' ? subSel.value : null,
+      p_count: Math.max(1, Math.min(200, parseInt(countIn.value || '1', 10) || 1)),
+      p_days: Math.max(1, Math.min(3650, parseInt(daysIn.value || '180', 10) || 180)),
+      p_max_uses: Math.max(1, Math.min(5000, parseInt(usesIn.value || '1', 10) || 1)),
+      p_note: noteIn.value || '',
+      p_valid_days: 0
+    });
+    make.disabled = false;
+    const d = (r.ok && r.data) ? r.data : null;
+    if (!d || !d.ok){ msg.className = 'field__hint is-bad'; msg.textContent = 'تعذّر التوليد.'; return; }
+    msg.className = 'field__hint is-ok';
+    msg.textContent = 'وُلّدت ' + QBANK.views.arNum((d.codes || []).length) + ' رمزًا · دفعة ' + d.batch;
+    paintCodes(d.codes || []);
+  });
+
+  /*
+    ★ الأكواد تُعرض للنسخ دفعةً واحدة.
+    نسخُ عشرين رمزًا واحدًا واحدًا من جدولٍ عملٌ يُخطئ فيه الإنسان، والخطأ
+    هنا يعني رمزًا أُرسل لطالبٍ ولا يعمل. فسطرٌ لكل رمز في مربّع واحد،
+    وزرٌّ ينسخها كلها.
+  */
+  function paintCodes(list){
+    out.innerHTML = '';
+    if (!list.length) return;
+    const text = list.map(Codes.pretty).join('\n');
+    const ta = el('textarea', { class:'input num', rows: String(Math.min(12, list.length)),
+      readonly:'readonly', 'aria-label':'الأكواد المولّدة' });
+    ta.value = text;
+    const copy = el('button', { class:'btn btn--soft btn--sm', type:'button', text:'انسخ الكل' });
+    copy.addEventListener('click', () => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText)
+          navigator.clipboard.writeText(text).then(() => QBANK.toast('نُسخت'));
+        else { ta.select(); document.execCommand('copy'); QBANK.toast('نُسخت'); }
+      } catch(e){ QBANK.toast('انسخها يدويًا'); }
+    });
+    out.appendChild(ta);
+    out.appendChild(copy);
+  }
+
+  const grid = el('div', { class:'ad-grid2' }, [
+    el('label', { class:'field' }, [ el('span', { class:'field__label', text:'النوع' }), kindSel ]),
+    subWrap,
+    el('label', { class:'field' }, [ el('span', { class:'field__label', text:'كم رمزًا' }), countIn ]),
+    el('label', { class:'field' }, [ el('span', { class:'field__label', text:'مدة الفتح (يوم)' }), daysIn ]),
+    el('label', { class:'field' }, [ el('span', { class:'field__label', text:'استخدامات الرمز الواحد' }), usesIn ]),
+    el('label', { class:'field' }, [ el('span', { class:'field__label', text:'ملاحظة' }), noteIn ])
+  ]);
+
+  box.appendChild(grid);
+  box.appendChild(make);
+  box.appendChild(msg);
+  box.appendChild(out);
+
+  /* ═══ الأكواد القائمة ═══ */
+  const listBox = el('div', { class:'stack' });
+  box.appendChild(el('h3', { style:'margin:8px 0 0', text:'الأكواد الأخيرة' }));
+  box.appendChild(listBox);
+  listBox.appendChild(el('p', { class:'field__hint', style:'margin:0', text:'جارٍ التحميل…' }));
+
+  QBANK.api.rpc('admin_codes', { p_limit: 60 }).then(r => {
+    if (!listBox.isConnected) return;
+    listBox.innerHTML = '';
+    const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+    if (!rows.length){
+      listBox.appendChild(el('p', { class:'field__hint', style:'margin:0', text:'لا أكواد بعد.' }));
+      return;
+    }
+    rows.forEach(c => {
+      const spent = c.used_count >= c.max_uses;
+      const off = !c.active || spent;
+      const row = el('div', { class:'payrow' }, [
+        el('span', { class:'payrow__t num', text: Codes.pretty(c.code) }),
+        el('span', { class:'badge', text: c.kind === 'semester' ? 'الفصل' : (c.subject || 'مادة') }),
+        el('span', { class:'badge num' + (spent ? ' badge--warn' : ''),
+          text: QBANK.views.arNum(c.used_count) + '/' + QBANK.views.arNum(c.max_uses) }),
+        el('span', { class:'badge ' + (off ? 'badge--bad' : 'badge--ok'),
+          text: off ? (spent ? 'مستهلَك' : 'موقوف') : 'فعّال' })
+      ]);
+      if (!spent){
+        const t = el('button', { class:'btn btn--ghost btn--sm', type:'button',
+          text: c.active ? 'أوقف' : 'فعّل',
+          'aria-label': (c.active ? 'أوقف الرمز ' : 'فعّل الرمز ') + Codes.pretty(c.code) });
+        t.addEventListener('click', async () => {
+          t.disabled = true;
+          const rr = await QBANK.api.rpc('admin_set_code', { p_id: c.id, p_active: !c.active });
+          t.disabled = false;
+          if (rr.ok && rr.data && rr.data.ok){
+            c.active = !c.active;
+            t.textContent = c.active ? 'أوقف' : 'فعّل';
+            QBANK.toast(c.active ? 'صار فعّالًا' : 'أُوقف');
+          } else QBANK.toast('تعذّر التعديل');
+        });
+        row.appendChild(t);
+      }
+      listBox.appendChild(row);
+    });
+  });
+
+  return box;
+}
+QBANK.views.adminCodesCard = adminCodesCard;
 
 })();
 
