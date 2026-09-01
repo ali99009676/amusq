@@ -154,8 +154,10 @@ async function callGemini(system, user, model, retried, opts){
     // ★ تقاعُد النموذج: نأخذ البديل من نصّ الرفض ونعيد مرة واحدة
     const alt = res.status === 404 && !retried ? suggestedModel(body) : null;
     if (alt) return callGemini(system, user, alt, true, opts);
-    // نموذجٌ لا يعرف حقل التفكير؟ نعيد بدونه مرة واحدة
-    if (res.status === 400 && /thinking/i.test(body) && !opts._noThink)
+    /* نموذجٌ يرفض حقل التفكير؟ نعيد بدونه مرة واحدة.
+       الشرط أي ٤٠٠ لا كلمة «thinking»: Google تردّ أحيانًا بـ
+       INVALID_ARGUMENT عارية بلا ذكر الحقل المرفوض — رأيناها حيًّا. */
+    if (res.status === 400 && !opts._noThink)
       return callGemini(system, user, model, retried,
                         Object.assign({}, opts, { _noThink: true }));
     throw new Error('ردّ Gemini ' + res.status + ': ' + body.slice(0, 300));
