@@ -4,7 +4,7 @@
   المنصة ملف واحد، فالتخزين بسيط: نسخة من الصفحة تُقدَّم عند انقطاع الشبكة.
   لا يُسجَّل إلا على https — فتح file:// لا يمر من هنا أصلًا.
 */
-const CACHE = 'qbank-v2';   /* رُفعت مع تغيير الهوية: يجبر المتصفح على جلب البناء الجديد لا الصفحة القديمة */
+const CACHE = 'qbank-v3';   /* ★ v3: جوّال علي بقي على نسخة قديمة رغم رفع الجديدة — الرقم الجديد يمحو كل كاش سابق */
 const ASSETS = ['./', './index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', e => {
@@ -22,9 +22,17 @@ self.addEventListener('fetch', e => {
   // نداءات Supabase وواجهة الخادم تمر للشبكة دائمًا — البيانات الحية لا تُخبَّأ هنا
   if (url.pathname.indexOf('/api/') === 0 || url.hostname.indexOf('supabase') !== -1) return;
   if (e.request.method !== 'GET') return;
-  // الصفحة: الشبكة أولًا (تحديثات فورية) والكاش عند الانقطاع
+  /*
+    ★ التنقلات تتجاوز كاش HTTP نفسه (cache:'no-cache' = تحقّق من الخادم دائمًا).
+    الدرس من جوّال علي: «الشبكة أولًا» وحدها قد تُجيب من كاش المتصفح القديم،
+    فيعلق الجهاز على نسخة شهرها الماضي وهو «متصل». التحقق الشرطي رخيص
+    (٣٠٤ بلا جسد) والعالق على نسخة قديمة غالٍ.
+  */
+  const req = e.request.mode === 'navigate'
+    ? new Request(e.request, { cache: 'no-cache' })
+    : e.request;
   e.respondWith(
-    fetch(e.request)
+    fetch(req)
       .then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));
