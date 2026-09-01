@@ -2,11 +2,12 @@
   "name": "qbank",
   "version": "0.1.0",
   "private": true,
-  "description": "منصة AMUSQ — مراجعة تفاعلية لطلاب التخصصات الصحية",
+  "description": "مراجعة — بنك الأسئلة · بنوك أسئلة لكل التخصصات يرفعها طلاب الجامعات العربية",
   "author": "علي الصقور",
   "type": "commonjs",
+  "_ملاحظة_مهمة": "لا يوجد سكربت اسمه build عمدًا. حين لا يجد Vercel buildCommand في vercel.json فإنه يسقط تلقائيًا إلى scripts.build هنا وينفّذه — فيعيد بناء index.html من src داخل خادمه ويدهس الملف المبنيّ والمفحوص الذي رفعناه. حدث هذا فعلًا: رفعنا index.html صحيحًا فبنى Vercel غيره من src قديم وقدّمه. الاسم site يفعل الشيء نفسه محليًا بلا أن يلتقطه Vercel.",
   "scripts": {
-        "site": "node src/build.js",
+    "site": "node src/build.js",
     "test": "node src/tests.js",
     "check": "node src/build.js && node src/tests.js"
   },
