@@ -2882,6 +2882,10 @@ function loginCard(opts){
       otp.focus();
     }
     else if (r.offline) msg.textContent = 'لا اتصال بالإنترنت — الدخول يحتاج اتصالًا مرة واحدة فقط.';
+    /* ★ ٤٢٩ يُسمّى باسمه: «تعذّر الإرسال» العامة أوهمت أن المنصة معطوبة،
+       والحقيقة أن حصة البريد نفدت مؤقتًا — والفرق يغيّر تصرف الطالب كليًا */
+    else if (r.status === 429) msg.textContent =
+      'طلبت الدخول مرات كثيرة خلال ساعة — انتظر قليلًا ثم حاول، أو ادخل بحساب جوجل الآن.';
     else msg.textContent = 'تعذّر الإرسال. تحقق من البريد وحاول ثانية.';
   }
   btn.addEventListener('click', send);
@@ -2918,20 +2922,26 @@ function loginCard(opts){
   otpBtn.addEventListener('click', verify);
   otp.addEventListener('keydown', e => { if (e.key === 'Enter') verify(); });
 
+  /*
+    ★ جوجل مفعّل (OAuth «In production» منذ ٢٠٢٦/٩) — زرّه ظاهر.
+    آبل مطفأ لا محذوف: يشترط حساب Apple Developer المدفوع، والزر الظاهر
+    المعطوب أسوأ من الغائب. يوم يُفعَّل يُعاد aBtn إلى القائمة أدناه.
+  */
   const gBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب جوجل' });
   const aBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب آبل' });
   gBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('google'); if (u) location.href = u; else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
   aBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('apple');  if (u) location.href = u; else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
+  void aBtn;   // يبقى جاهزًا ليوم حساب المطوّر
 
   return el('div', { class:'card stack' }, [
     el('label', { class:'field', style:'margin:0' }, [
       el('span', { class:'field__label', text: opts.label }),
       email,
-      el('span', { class:'field__hint', text:'يصلك رابط دخول بلا كلمة مرور.' })
+      el('span', { class:'field__hint', text:'يصلك رابط دخول ورمز — بلا كلمة مرور.' })
     ]),
     btn, msg, otpBox,
     el('hr', { class:'divider', style:'margin:0' }),
-    gBtn, aBtn
+    gBtn
   ]);
 }
 
