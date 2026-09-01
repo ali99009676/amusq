@@ -1054,6 +1054,43 @@ img,svg{ max-width:100%; height:auto; }
   box-shadow:0 0 0 2px color-mix(in srgb, var(--acc) 35%, transparent);
 }
 
+/* ═══ بطاقة «راجع اليوم» ═══ */
+/*
+  في صدر الرئيسية، ولها لون التمييز لأنها الفعل المقصود لا خيارًا بين خيارات.
+  وحين تنتهي مراجعة اليوم تنقلب هادئة: الإنجاز يُعلَن ولا يصرخ.
+*/
+.revcard{
+  display:flex; align-items:center; gap:var(--s4); text-decoration:none;
+  border:1px solid color-mix(in srgb, var(--acc) 45%, var(--line-2));
+  background:linear-gradient(135deg,
+    color-mix(in srgb, var(--acc) 16%, var(--surface)),
+    color-mix(in srgb, var(--acc) 5%, var(--surface)));
+  transition:transform .16s var(--ease), box-shadow .16s;
+}
+a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
+.revcard__ico{
+  flex:0 0 auto; width:48px; height:48px; border-radius:14px;
+  display:grid; place-items:center; font-size:1.5rem; line-height:1;
+  background:var(--acc); color:var(--on-acc);
+}
+.revcard__x{ flex:1 1 auto; min-width:0; }
+.revcard__t{ margin:0; font-weight:800; font-size:1.02rem; color:var(--text); }
+.revcard__s{ margin:.2em 0 0; font-size:.85rem; color:var(--text-2); }
+.revcard__go{ flex:0 0 auto; color:var(--acc); font-size:1.2rem; }
+.revcard--done{
+  border-color:var(--line-2); background:var(--surface);
+}
+.revcard--done .revcard__ico{ background:var(--acc-soft); color:var(--acc); }
+
+/* ═══ «اشرح لي أكثر» ═══ */
+.explain{ display:flex; flex-direction:column; gap:var(--s2); align-items:flex-start; }
+.explain__why{
+  margin:0; padding:var(--s3) var(--s4); border-radius:var(--r2);
+  background:var(--acc-soft); color:var(--text);
+  border-inline-start:3px solid var(--acc);
+  font-size:.92rem; line-height:1.9;
+}
+
 
 /* ===== 50-landing.css ===== */
 /*
@@ -2479,13 +2516,100 @@ const Progress = {
 
   forSubject(sid){
     const p = Progress.all();
-    return p[sid] || { seen:{}, wrong:{}, star:{}, exams:0, best:0 };
+    return p[sid] || { seen:{}, wrong:{}, star:{}, srs:{}, exams:0, best:0 };
   },
   _update(sid, fn){
     const p = Progress.all();
-    const s = p[sid] || { seen:{}, wrong:{}, star:{}, exams:0, best:0 };
+    const s = p[sid] || { seen:{}, wrong:{}, star:{}, srs:{}, exams:0, best:0 };
     fn(s); p[sid] = s; Progress.save(p);
     return s;
+  },
+
+  /* ═══════════════════════════════════════════════════════════
+     التكرار المتباعد
+     ═══════════════════════════════════════════════════════════
+     المذاكرة بالإعادة الفورية وهمُ إتقان: تقرأ الشرح فتشعر أنك حفظت،
+     ثم يذوب بعد يومين. الذي يثبّت المعلومة هو استرجاعُها بعد أن تكاد
+     تنساها — والفارق بين الطريقتين ليس تحسينًا هامشيًا بل أضعافًا.
+
+     ولمَ سُلَّمٌ ثابت لا SM-2؟ لأن SM-2 يقوم على تقدير الطالب لصعوبة
+     تذكّره من ستّ درجات، ونحن لا نملك إلا نعم/لا. سُلَّمٌ صادق بمدخلٍ
+     ثنائي خيرٌ من خوارزمية دقيقة تُغذَّى بتخمين.
+
+     الفترات: يوم ← ٣ ← ٧ ← ١٦ ← ٣٥ ← ٦٠. والخطأ يُعيده إلى يومٍ واحد
+     مهما بلغ — فالنسيان لا يُجامَل، لكن عدّاد التعثّر يُحفظ لأن سؤالًا
+     تعثّر فيه خمس مرات يستحق عنايةً غير الذي تعثّر مرة.
+  */
+  LADDER: [1, 3, 7, 16, 35, 60],
+
+  /* رقم اليوم منذ ١٩٧٠ بالتوقيت المحلي: صحيحٌ صغير يُقارَن ويُجمع بلا
+     مناطق زمنية ولا ساعات — والمراجعة تُقاس بالأيام لا بالثواني. */
+  today(now){
+    const d = now ? new Date(now) : new Date();
+    return Math.floor((d - d.getTimezoneOffset() * 60000) / 86400000);
+  },
+
+  /* الفترة التالية: نصعد درجةً عند الإصابة، ونهبط إلى القاع عند الخطأ */
+  nextInterval(cur, ok){
+    const L = Progress.LADDER;
+    if (!ok) return L[0];
+    const i = L.indexOf(cur);
+    if (i === -1) return L[0];                 // فترة غير معروفة: نبدأ من أول السلّم
+    return L[Math.min(i + 1, L.length - 1)];
+  },
+
+  /* تسجيل مراجعة سؤال. ok=true أصاب، false أخطأ. */
+  review(sid, qid, ok, now){
+    const t = Progress.today(now);
+    return Progress._update(sid, s => {
+      s.srs = s.srs || {};
+      const prev = s.srs[qid] || { i: 0, e: 0 };
+      const iv = Progress.nextInterval(prev.i, ok);
+      s.srs[qid] = {
+        i: iv,                                  // الفترة الحالية بالأيام
+        d: t + iv,                              // موعد المراجعة القادمة
+        e: (prev.e || 0) + (ok ? 0 : 1),        // كم مرة تعثّر فيه
+        t: t                                    // آخر مراجعة — عليه يقوم الدمج
+      };
+    });
+  },
+
+  /* المستحقّ اليوم في مادة: معرّفات الأسئلة التي حان موعدها */
+  dueIn(sid, now){
+    const t = Progress.today(now);
+    const srs = (Progress.forSubject(sid).srs) || {};
+    return Object.keys(srs).filter(qid => (srs[qid].d || 0) <= t);
+  },
+
+  /* المستحقّ في كل المواد — ترتيبها بالأكثر تعثّرًا أولًا:
+     ما تعثّرت فيه مرارًا هو ما يُسقطك في الاختبار. */
+  dueAll(now){
+    const t = Progress.today(now);
+    const p = Progress.all();
+    const out = [];
+    Object.keys(p).forEach(sid => {
+      const srs = (p[sid] && p[sid].srs) || {};
+      Object.keys(srs).forEach(qid => {
+        if ((srs[qid].d || 0) <= t) out.push({ sid, qid, e: srs[qid].e || 0, d: srs[qid].d || 0 });
+      });
+    });
+    out.sort((a, b) => (b.e - a.e) || (a.d - b.d));
+    return out;
+  },
+
+  /* أقرب موعدٍ قادم — لمن أنهى مراجعة اليوم: «عد بعد يومين» خيرٌ من فراغ */
+  nextDue(now){
+    const t = Progress.today(now);
+    const p = Progress.all();
+    let best = null;
+    Object.keys(p).forEach(sid => {
+      const srs = (p[sid] && p[sid].srs) || {};
+      Object.keys(srs).forEach(qid => {
+        const d = srs[qid].d || 0;
+        if (d > t && (best === null || d < best)) best = d;
+      });
+    });
+    return best === null ? null : best - t;      // بعد كم يوم
   },
 
   markSeen(sid, qid){ return Progress._update(sid, s => { s.seen[qid] = 1; }); },
@@ -2510,8 +2634,8 @@ const Progress = {
     const out = {};
     const sids = new Set(Object.keys(local || {}).concat(Object.keys(remote || {})));
     sids.forEach(sid => {
-      const a = (local  || {})[sid] || { seen:{}, wrong:{}, star:{}, exams:0, best:0 };
-      const b = (remote || {})[sid] || { seen:{}, wrong:{}, star:{}, exams:0, best:0 };
+      const a = (local  || {})[sid] || { seen:{}, wrong:{}, star:{}, srs:{}, exams:0, best:0 };
+      const b = (remote || {})[sid] || { seen:{}, wrong:{}, star:{}, srs:{}, exams:0, best:0 };
       out[sid] = {
         seen:  Object.assign({}, b.seen,  a.seen),
         star:  Object.assign({}, b.star,  a.star),
@@ -2522,7 +2646,20 @@ const Progress = {
           return w;
         })(),
         exams: (a.exams || 0) + (b.exams || 0),
-        best:  Math.max(a.best || 0, b.best || 0)
+        best:  Math.max(a.best || 0, b.best || 0),
+        /*
+          ★ جدول المراجعة: الأحدث مراجعةً يفوز — لا الأطول فترةً.
+          لو أخذنا الأطول لضاع تعثّرٌ حدث على الجهاز الآخر: الخطأ يُنزل
+          الفترة إلى يوم، فيبدو «أقلّ تقدّمًا» وهو الحقيقة الأحدث.
+        */
+        srs: (function(){
+          const m = Object.assign({}, b.srs || {});
+          Object.keys(a.srs || {}).forEach(qid => {
+            const x = a.srs[qid], y = m[qid];
+            if (!y || (x.t || 0) >= (y.t || 0)) m[qid] = x;
+          });
+          return m;
+        })()
       };
     });
     return out;
@@ -3030,6 +3167,18 @@ const ViewHome = {
     body.push(campusBand());
 
     /*
+      ★ «راجع اليوم» أعلى الرئيسية.
+      كل ما تحتها يفترض أن الطالب يعرف من أين يبدأ، وهو لا يعرف — فيؤجّل.
+      رقمٌ واحد وزرٌّ واحد يُنهيان التردّد، ويُعطيان المنصة سببًا للفتح كل
+      صباح لا عند الاختبار وحده. ومن لم يبدأ بعد لا يرى شيئًا: بطاقةٌ
+      فارغة تعليمٌ ناقص، وغيابُها أصدق.
+    */
+    if (QBANK.views.reviewCard) {
+      const rc = QBANK.views.reviewCard();
+      if (rc) body.push(rc);
+    }
+
+    /*
       ★ تذكير الجوال — إلزامٌ يُذكَّر به لا يُحاصَر.
       الحقل مطلوب في الملف، لكن من سجّل قبل اليوم لن يفتح ملفه من تلقائه.
       شريط واحد يظهر لمن جواله فارغ ويختفي أبدًا بعد الحفظ — ولا يحجب
@@ -3503,6 +3652,10 @@ function accountDangerCard(){
     const r = await QBANK.progress.pull();
     QBANK.toast(r.ok ? 'تمت المزامنة والدمج' : 'تعذّرت المزامنة — لا اتصال');
   });
+  /* ★ الإعدادات هنا بعد أن خرجت من الشريط السفلي — لا تُترك بلا باب.
+     ميزةٌ لا يُوصل إليها ميزةٌ محذوفة، مهما بقي مسارها مسجَّلًا. */
+  const setLink = el('a', { class:'btn btn--soft btn--block', href:'#/settings',
+                            text:'⚙ الإعدادات والمظهر' });
   const outBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'تسجيل الخروج' });
   outBtn.addEventListener('click', async () => {
     await QBANK.api.auth.signOut();
@@ -3519,7 +3672,7 @@ function accountDangerCard(){
     else QBANK.toast('تعذّر الحذف — تحقق من الاتصال');
   });
   return el('div', { class:'card stack' }, [
-    syncBtn, outBtn, el('hr', { class:'divider', style:'margin:0' }), delBtn ]);
+    setLink, syncBtn, outBtn, el('hr', { class:'divider', style:'margin:0' }), delBtn ]);
 }
 
 
@@ -5525,6 +5678,16 @@ function finishExam(){
   st.exam.items.forEach((it, i) => {
     if (st.exam.answers[i] && st.exam.answers[i].correct) QBANK.progress.clearWrong(st.sub.id, it.id);
   });
+  /*
+    ★ كل سؤال أُجيب عنه يدخل جدول المراجعة.
+    هنا لا في لحظة الضغط: الطالب قد يرجع ويغيّر إجابته قبل التسليم،
+    والنتيجة النهائية هي الحكم. والذي لم يُجب عنه لا يُجدوَل — عدم
+    الإجابة ليس خطأً في الاسترجاع، هو نفاد وقت أو ملل.
+  */
+  st.exam.items.forEach((it, i) => {
+    const a = st.exam.answers[i];
+    if (a) QBANK.progress.review(st.sub.id, it.id, !!a.correct);
+  });
   if (QBANK.api.user()) QBANK.api.rest('attempts', { method:'POST', body: JSON.stringify({
     user_id: QBANK.api.user().id, subject_id: st.sub.id, scope:'all', topic:'',
     correct: st.result.correct, total: st.result.total, pct: st.result.pct,
@@ -5581,7 +5744,20 @@ function examRunner(){
     el('div', { class:'card stack q' }, [
       el('p', { class:'ltr q__text', text: item.q }), opts,
       (answered && exam.mode === 'instant' && item.expl_ar)
-        ? el('p', { class:'field__hint', text: item.expl_ar }) : null
+        ? el('p', { class:'field__hint', text: item.expl_ar }) : null,
+      /*
+        ★ الزرّان بعد الإجابة لا قبلها.
+        قبلها يكشفان أن للسؤال جوابًا يُشرح فيقلّان من جدّية المحاولة،
+        وبعدها يقعان في اللحظة التي يريد فيها الطالب أن يفهم فعلًا.
+        و«اشرح لي» يظهر للمخطئ وحده — من أصاب لا شيء يُشرح له.
+      */
+      (answered && exam.mode === 'instant' && QBANK.explain)
+        ? QBANK.explain.button(
+            { id:item.id, q:item.q, options:item.options, answer:item.correct, topic:item.topic },
+            answered.choice) : null,
+      (answered && QBANK.shareCard)
+        ? QBANK.shareCard.button({ id:item.id, q:item.q, options:item.options,
+                                   _sid: st.sub.id }) : null
     ]),
     nav
   ]);
@@ -6348,8 +6524,17 @@ const NAV = [
   { path:'#/',         label:'الرئيسية',  ico:'▤' },
   // «ارفع مادة» في الشريط لا مدفونة في صفحة الحساب: ميزة لا يراها الطالب ميزة لا وجود لها
   { path:'#/explore',  label:'استكشف',    ico:'⌕' },
+  /* ★ «راجع» في الشريط السفلي: هي الشاشة التي يُفترض أن يفتحها الطالب
+     كل يوم، ولا معنى لميزةٍ تعتمد على العادة إن كانت مدفونة في قائمة. */
+  { path:'#/review',   label:'راجع',      ico:'↻' },
   { path:'#/upload',   label:'ارفع مادة', ico:'⇪' },
-  { path:'#/settings', label:'الإعدادات', ico:'☰' },
+  /*
+    ★ خمسة لا ستة.
+    الشريط السفلي على الجوال يتّسع لخمسة قبل أن تضيق مساحة اللمس ويصير
+    الخطأ في الضغط قاعدة. فحين دخلت «راجع» خرجت «الإعدادات» — والمقارنة
+    محسومة: المراجعة تُفتح كل يوم، والإعدادات مرةً في العمر. وانتقلت إلى
+    «حسابي» حيث يبحث عنها الناس أصلًا.
+  */
   { path:'#/account',  label:'حسابي',     ico:'◍' }
 ];
 
@@ -6385,6 +6570,7 @@ function registerRoutes(){
     .add('#/challenge',    V.ViewChallenge)
     .add('#/pay',          V.ViewPayReturn)   // عودة الطالب من البوابة: #/pay/<payment_id>
     .add('#/board',        V.ViewBoard)
+    .add('#/review',       V.ViewReview)      // «راجع اليوم» — من كل المواد معًا
     /* ★ ‎#/p‎ لا ‎#/u‎: الأخير محجوز لقسم الجامعة، وتسجيله مرتين يجعل
        الموجّه يبتلع أحدهما بصمت — فيفتح رابط الطالب قسم جامعة عشوائيًا */
     .add('#/p',            V.ViewPeer);      // الملف العام لأي طالب: #/p/<id>
@@ -10281,6 +10467,482 @@ QBANK.peer = Peer;
 QBANK.views.ViewPeer = ViewPeer;
 QBANK.views.peerRateCard = peerRateCard;
 QBANK.views.uploaderLine = uploaderLine;
+
+
+/* ===== 59-review.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  «راجع اليوم» — الشاشة التي تعطي المنصةَ سببًا للفتح كل صباح
+  ═══════════════════════════════════════════════════════════════════
+  كل ما قبلها يفترض أن الطالب يعرف متى يذاكر وماذا: يفتح مادة، يختار
+  اختبارًا، يضبط عددًا. وهذا افتراضٌ خاطئ — الطالب يعرف أن عليه المذاكرة
+  ولا يعرف من أين يبدأ، فيؤجّل. هذه الشاشة تُجيب عن السؤال نيابةً عنه:
+  «راجع اليوم: ٢٣ سؤالًا» — رقمٌ واحد، وزرٌّ واحد، وينتهي التردّد.
+
+  والمستحقّ يُجمع من كل المواد لا من مادة: النسيان لا يحترم حدود المقرّرات.
+*/
+
+const Review = {
+  /*
+    بناء جلسة المراجعة: نجمع المستحقّ، ثم نجلب أسئلته من مواده.
+    الجلب متوازٍ لا متسلسل — عشر مواد بالتسلسل تعني عشر رحلات متتابعة
+    يراها الطالب انتظارًا، وبالتوازي رحلةً واحدة بعرضٍ أوسع.
+  */
+  async session(limit, now){
+    const due = QBANK.progress.dueAll(now);
+    if (!due.length) return { items: [], subjects: [], total: 0 };
+
+    const cap = limit || 40;
+    const take = due.slice(0, cap);
+    const bySub = {};
+    take.forEach(d => { (bySub[d.sid] = bySub[d.sid] || []).push(d.qid); });
+
+    const sids = Object.keys(bySub);
+    const packs = await Promise.all(sids.map(sid => QBANK.data.subjectQuestions(sid)));
+
+    const items = [];
+    const subjects = [];
+    const all = QBANK.data.pack().subjects || [];
+    sids.forEach((sid, i) => {
+      const qs = (packs[i] && packs[i].data) || [];
+      const want = {};
+      bySub[sid].forEach(q => { want[q] = 1; });
+      const found = qs.filter(q => want[q.id]);
+      if (!found.length) return;
+      const meta = all.filter(x => x.id === sid)[0];
+      subjects.push({ id: sid, name: (meta && meta.name) || 'مادة', n: found.length });
+      found.forEach(q => items.push(Object.assign({ _sid: sid }, q)));
+    });
+    return { items, subjects, total: due.length };
+  },
+
+  /*
+    ★ المراجعة تُسجَّل سؤالًا سؤالًا لا في آخر الجلسة.
+    جلسة المراجعة تُقطع كثيرًا — محاضرة تبدأ، مكالمة، بطارية تنفد. ولو
+    انتظرنا النهاية لضاع عمل عشر دقائق وعاد السؤال نفسه غدًا كأن شيئًا
+    لم يكن. الاختبار الكامل غير ذلك: له نهاية معلنة ونتيجة تُحسب.
+  */
+  answer(sid, qid, ok){
+    QBANK.progress.review(sid, qid, ok);
+    if (ok) QBANK.progress.clearWrong(sid, qid); else QBANK.progress.markWrong(sid, qid);
+    QBANK.progress.markSeen(sid, qid);
+  }
+};
+QBANK.review = Review;
+
+/* ═══ بطاقة الرئيسية: الرقم الذي يُعيد الطالب كل يوم ═══ */
+function reviewCard(){
+  const due = QBANK.progress.dueAll();
+  const N = QBANK.views.arNum;
+
+  if (!due.length) {
+    const after = QBANK.progress.nextDue();
+    /* لا مستحقّ: لا نُخفي البطاقة بل نقول متى يعود. الفراغ يُقرأ عطلًا،
+       و«عد بعد يومين» يُقرأ نظامًا يعمل لأجله في غيابه. */
+    if (after === null) return null;      // لم يذاكر شيئًا بعد — لا معنى للبطاقة
+    return el('div', { class:'card revcard revcard--done' }, [
+      el('span', { class:'revcard__ico', 'aria-hidden':'true', text:'✓' }),
+      el('div', { class:'revcard__x' }, [
+        el('p', { class:'revcard__t', text:'أنهيتَ مراجعة اليوم' }),
+        el('p', { class:'revcard__s', text: after === 1
+          ? 'المراجعة القادمة غدًا.'
+          : 'المراجعة القادمة بعد ' + N(after) + ' أيام.' })
+      ])
+    ]);
+  }
+
+  return el('a', { class:'card revcard', href:'#/review' }, [
+    el('span', { class:'revcard__ico', 'aria-hidden':'true', text:'↻' }),
+    el('div', { class:'revcard__x' }, [
+      el('p', { class:'revcard__t', text:'راجع اليوم: ' + N(due.length) + ' سؤالًا' }),
+      el('p', { class:'revcard__s', text:'أسئلة حان موعد استرجاعها — قبل أن تنساها.' })
+    ]),
+    el('span', { class:'revcard__go', 'aria-hidden':'true', text:'←' })
+  ]);
+}
+
+/* ═══ الشاشة ═══ */
+let revState = null;   // { items, i, done, right }
+
+function revRunner(rerender){
+  const st = revState;
+  const item = st.items[st.i];
+
+  if (!item) {
+    /* النهاية: نقول ما أُنجز ومتى يعود. ولا نعرض «أعد» — إعادة ما
+       راجعتَه الآن تُفسد التباعد نفسه، وهو كل الفكرة. */
+    const N = QBANK.views.arNum;
+    const after = QBANK.progress.nextDue();
+    return el('div', { class:'card stack', style:'text-align:center' }, [
+      el('span', { class:'empty__ico', 'aria-hidden':'true', text:'✓' }),
+      el('p', { class:'empty__title', text:'اكتملت مراجعة اليوم' }),
+      el('p', { class:'empty__text', text:
+        'راجعتَ ' + N(st.done) + ' سؤالًا، أصبتَ ' + N(st.right) + '.' +
+        (after !== null ? ' والقادمة بعد ' + N(after) + (after === 1 ? ' يوم.' : ' أيام.') : '') }),
+      el('a', { class:'btn btn--block', href:'#/', text:'الرئيسية' })
+    ]);
+  }
+
+  const answered = st.answers[st.i];
+  const opts = el('div', { class:'stack q__opts' }, (item.options || []).map((opt, oi) => {
+    let cls = 'opt', mark = '';
+    if (answered !== undefined && answered !== null) {
+      if (oi === item.answer) { cls += ' is-answer'; mark = '✓'; }
+      else if (oi === answered) { cls += ' is-wrong'; mark = '✗'; }
+    }
+    const b = el('button', { class:cls, type:'button',
+      disabled: (answered !== undefined && answered !== null) ? true : null }, [
+      el('span', { class:'opt__l', 'aria-hidden':'true', text: QBANK.views.optLetter(oi) }),
+      el('span', { class:'ltr', text: opt }),
+      el('span', { class:'opt__mark', 'aria-hidden':'true', text: mark })
+    ]);
+    b.addEventListener('click', () => {
+      if (st.answers[st.i] !== null && st.answers[st.i] !== undefined) return;
+      const ok = oi === item.answer;
+      st.answers[st.i] = oi;
+      st.done += 1; if (ok) st.right += 1;
+      QBANK.review.answer(item._sid, item.id, ok);
+      rerender();
+    });
+    return b;
+  }));
+
+  const next = el('button', { class:'btn btn--block', type:'button', text:'التالي ←' });
+  next.addEventListener('click', () => { st.i += 1; rerender(); });
+
+  const N = QBANK.views.arNum;
+  return el('div', { class:'stack' }, [
+    el('div', { class:'row' }, [
+      el('span', { class:'badge num', text: N(st.i + 1) + ' / ' + N(st.items.length) }),
+      el('span', { class:'spacer' }),
+      el('span', { class:'badge badge--ok num', text:'✓ ' + N(st.right) })
+    ]),
+    el('div', { class:'card stack q' }, [
+      el('p', { class:'ltr q__text', text: item.q }),
+      opts,
+      (answered !== undefined && answered !== null && item.expl_ar)
+        ? el('p', { class:'field__hint', text: item.expl_ar }) : null,
+      (answered !== undefined && answered !== null && QBANK.explain)
+        ? QBANK.explain.button(item, answered) : null,
+      (answered !== undefined && answered !== null && QBANK.shareCard)
+        ? QBANK.shareCard.button(item) : null
+    ]),
+    (answered !== undefined && answered !== null) ? next : null
+  ]);
+}
+
+const ViewReview = {
+  title:'راجع اليوم',
+  view(){
+    const box = el('div', { class:'stack' });
+    const rerender = () => { box.innerHTML = ''; box.appendChild(revRunner(rerender)); };
+
+    if (revState && revState.items.length) {
+      rerender();
+      return QBANK.views.page('راجع اليوم', null, [box]);
+    }
+
+    const due = QBANK.progress.dueAll();
+    if (!due.length) {
+      const after = QBANK.progress.nextDue();
+      return QBANK.views.page('راجع اليوم', null, [
+        QBANK.views.empty('✓', 'لا مراجعة اليوم',
+          after === null
+            ? 'ابدأ اختبارًا في أي مادة، وسيبني لك النظام جدول مراجعتك تلقائيًا.'
+            : 'عد بعد ' + QBANK.views.arNum(after) + (after === 1 ? ' يوم.' : ' أيام.'))
+      ]);
+    }
+
+    box.appendChild(el('p', { class:'page__sub', text:'جارٍ تجهيز مراجعتك…' }));
+    QBANK.review.session(40).then(sess => {
+      if (!box.isConnected) return;
+      if (!sess.items.length) {
+        box.innerHTML = '';
+        box.appendChild(QBANK.views.empty('⇣', 'تعذّر جلب أسئلة المراجعة',
+          'افتح المواد مرة بإنترنت ثم عد — المستحقّ محفوظ ولا يضيع.'));
+        return;
+      }
+      revState = { items: sess.items, i: 0, done: 0, right: 0,
+                   answers: new Array(sess.items.length).fill(null) };
+      rerender();
+    });
+
+    return QBANK.views.page('راجع اليوم',
+      'أسئلة حان موعد استرجاعها — من كل موادك.', [box]);
+  },
+  _reset(){ revState = null; },
+  _get(){ return revState; }
+};
+QBANK.views.ViewReview = ViewReview;
+QBANK.views.reviewCard = reviewCard;
+
+
+/* ===== 60-sharecard.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  بطاقة السؤال كصورة — قناة النموّ الحقيقية
+  ═══════════════════════════════════════════════════════════════════
+  الطالب العربي لا ينشر روابط، ينشر صورًا: لقطة شاشة في مجموعة الدفعة،
+  صورة في ستوري سناب. وهو يفعل ذلك بأسئلتنا الآن بلقطة شاشة مشوّهة لا
+  اسم عليها ولا رابط — دعايةٌ نُهديها ونخسر نسبتها.
+
+  فنُعطيه ما يريد مصنوعًا: بطاقةٌ مربّعة بهويّتنا، فيها السؤال وخياراته
+  ورابط المنصة أسفلها. وكل سؤال صعب يُشارَك يصير دعوةً لزميل.
+
+  ═══ ولا تُكشف الإجابة ═══
+  عمدًا. البطاقة بلا إجابة تحدٍّ يُشارَك ويُناقَش، ومعها إجابةٍ تصير
+  معلومةً استُهلكت ولا سبب لفتح الرابط. الفضول هو ما يُعبر الرابط.
+
+  والرسم على canvas في المتصفح: بلا خادم، بلا مكتبة، ويعمل بلا إنترنت.
+*/
+
+const ShareCard = {
+  W: 1080, H: 1080,   // مربّع: الشكل الذي تقبله سناب وواتساب وإنستغرام معًا
+
+  /*
+    لفّ النص على الأسطر بالقياس لا بالتخمين.
+    القياس ضروري للعربية خاصة: عرض الحرف يختلف باختلاف موضعه في الكلمة،
+    فأي تقدير بعدد المحارف يقطع السطر في غير موضعه.
+  */
+  wrap(ctx, text, maxW, maxLines){
+    const words = String(text || '').split(/\s+/).filter(Boolean);
+    const lines = [];
+    let cur = '', cutOff = false;
+    for (let i = 0; i < words.length; i++) {
+      const test = cur ? cur + ' ' + words[i] : words[i];
+      if (ctx.measureText(test).width > maxW && cur) {
+        lines.push(cur); cur = words[i];
+        if (maxLines && lines.length >= maxLines) { cutOff = true; cur = ''; break; }
+      } else cur = test;
+    }
+    if (cur) lines.push(cur);
+    if (maxLines && lines.length > maxLines) { lines.length = maxLines; cutOff = true; }
+    /* ★ علامة القطع تُوضع كلما قُطع النص — لا حين يتجاوز العدّ وحده.
+       الخروج من الحلقة عند بلوغ السقف يترك العدد مساويًا للسقف تمامًا،
+       فيمرّ بلا علامة ويظنّ القارئ أن السؤال انتهى عند نصفه. */
+    if (cutOff && lines.length) lines[lines.length - 1] += ' …';
+    return lines;
+  },
+
+  /* عربيٌّ أم لاتيني؟ الاتجاه يُقرَّر من النص لا من لغة الواجهة */
+  isRtl(t){ return /[؀-ۿ]/.test(String(t || '')); },
+
+  /*
+    رسم البطاقة. الألوان مأخوذة من متغيّرات الهوية إن أمكن قراءتها،
+    وإلا سقطت إلى لوحة ليلية ثابتة — الصورة تُرسم مرة ولا تتبع سمة القارئ.
+  */
+  draw(cv, q, url){
+    const W = ShareCard.W, H = ShareCard.H;
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+
+    const BG = '#0e1117', CARD = '#151a22', LINE = '#232a35';
+    const TXT = '#e8ecf2', DIM = '#9aa6b6', ACC = '#c8a250';
+
+    ctx.fillStyle = BG; ctx.fillRect(0, 0, W, H);
+
+    // إطار داخلي: يجعل الصورة تُقرأ بطاقةً لا لقطة شاشة
+    ctx.fillStyle = CARD;
+    ctx.strokeStyle = LINE; ctx.lineWidth = 2;
+    const pad = 56, r = 40;
+    ShareCard.roundRect(ctx, pad, pad, W - pad * 2, H - pad * 2, r);
+    ctx.fill(); ctx.stroke();
+
+    const inner = pad + 56, maxW = W - inner * 2;
+    let y = inner + 40;
+
+    // ═══ الترويسة: الاسم ═══
+    ctx.textBaseline = 'alphabetic';
+    ctx.direction = 'rtl'; ctx.textAlign = 'right';
+    ctx.fillStyle = ACC; ctx.font = '700 42px "Noto Kufi Arabic", system-ui, sans-serif';
+    ctx.fillText('مراجعة', W - inner, y);
+    ctx.fillStyle = DIM; ctx.font = '400 26px "Noto Kufi Arabic", system-ui, sans-serif';
+    ctx.fillText('بنك الأسئلة', W - inner, y + 42);
+    y += 130;
+
+    // ═══ نص السؤال ═══
+    const qt = String(q.q || '');
+    const rtl = ShareCard.isRtl(qt);
+    ctx.direction = rtl ? 'rtl' : 'ltr';
+    ctx.textAlign = rtl ? 'right' : 'left';
+    ctx.fillStyle = TXT;
+    ctx.font = '600 44px "Noto Kufi Arabic", system-ui, sans-serif';
+    const qLines = ShareCard.wrap(ctx, qt, maxW, 6);
+    qLines.forEach(line => {
+      ctx.fillText(line, rtl ? W - inner : inner, y);
+      y += 62;
+    });
+    y += 26;
+
+    // ═══ الخيارات — بلا كشف الإجابة ═══
+    const letters = ['A', 'B', 'C', 'D', 'E'];
+    const opts = (q.options || []).slice(0, 5);
+    ctx.font = '400 34px "Noto Kufi Arabic", system-ui, sans-serif';
+    opts.forEach((o, i) => {
+      if (y > H - 240) return;                 // لا نطغى على التذييل
+      const ort = ShareCard.isRtl(o);
+      const boxY = y - 34;
+      ctx.fillStyle = '#1c232d';
+      ShareCard.roundRect(ctx, inner, boxY, maxW, 62, 16); ctx.fill();
+
+      ctx.direction = 'ltr'; ctx.textAlign = 'left';
+      ctx.fillStyle = ACC;
+      ctx.fillText(letters[i], inner + 22, y + 6);
+
+      ctx.direction = ort ? 'rtl' : 'ltr';
+      ctx.textAlign = ort ? 'right' : 'left';
+      ctx.fillStyle = TXT;
+      const line = ShareCard.wrap(ctx, o, maxW - 110, 1)[0] || '';
+      ctx.fillText(line, ort ? W - inner - 22 : inner + 76, y + 6);
+      y += 78;
+    });
+
+    // ═══ التذييل: الدعوة والرابط ═══
+    ctx.direction = 'rtl'; ctx.textAlign = 'center';
+    ctx.fillStyle = DIM; ctx.font = '400 28px "Noto Kufi Arabic", system-ui, sans-serif';
+    ctx.fillText('تعرف الإجابة؟ الشرح وبطاقة الحفظ على', W / 2, H - pad - 82);
+    ctx.fillStyle = ACC; ctx.font = '700 32px system-ui, sans-serif';
+    ctx.direction = 'ltr';
+    ctx.fillText(String(url || 'amsuq.alsoqoor.com').replace(/^https?:\/\//, '').replace(/\/$/, ''),
+                 W / 2, H - pad - 36);
+    return cv;
+  },
+
+  roundRect(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  },
+
+  /* الرابط الذي يُطبع: رابط المادة إن عرفناها، وإلا الرئيسية */
+  urlFor(q){
+    try {
+      const subs = (QBANK.data.pack().subjects) || [];
+      const sub = subs.filter(s => s.id === (q._sid || q.subject_id))[0];
+      const u = QBANK.api.user();
+      if (sub && sub.slug && QBANK.share) return QBANK.share.shareUrl(sub.slug, u && u.id);
+    } catch(e){}
+    return 'amsuq.alsoqoor.com';
+  },
+
+  async blob(q){
+    const cv = document.createElement('canvas');
+    ShareCard.draw(cv, q, ShareCard.urlFor(q));
+    return new Promise(res => {
+      if (!cv.toBlob) return res(null);        // بيئة فحص بلا canvas حقيقي
+      cv.toBlob(b => res(b), 'image/png');
+    });
+  },
+
+  /*
+    المشاركة: نافذة النظام إن وُجدت، وإلا تنزيل الملف.
+    ولا نعِد بما لا نملك: Web Share بالملفات غير مدعوم في كل متصفح،
+    فنسأله قبل أن نعرضه — canShare يقول الحقيقة، والافتراض يكذب.
+  */
+  async share(q){
+    const b = await ShareCard.blob(q);
+    if (!b) return { ok:false };
+    const file = (typeof File !== 'undefined')
+      ? new File([b], 'amsuq.png', { type:'image/png' }) : null;
+    if (file && navigator.share && navigator.canShare && navigator.canShare({ files:[file] })) {
+      try { await navigator.share({ files:[file] }); return { ok:true, via:'share' }; }
+      catch(e){ return { ok:false, cancelled:true }; }
+    }
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b);
+    a.download = 'amsuq-question.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    return { ok:true, via:'download' };
+  },
+
+  button(q){
+    const b = el('button', { class:'btn btn--ghost btn--sm', type:'button',
+      text:'⤴ شارك السؤال كصورة' });
+    b.addEventListener('click', async () => {
+      b.setAttribute('aria-disabled','true'); b.textContent = '… تُرسم البطاقة';
+      const r = await ShareCard.share(q);
+      b.removeAttribute('aria-disabled'); b.textContent = '⤴ شارك السؤال كصورة';
+      if (r.ok && r.via === 'download') QBANK.toast('حُفظت الصورة — أرسلها من معرض جهازك');
+      else if (!r.ok && !r.cancelled) QBANK.toast('تعذّر إنشاء الصورة');
+    });
+    return b;
+  }
+};
+QBANK.shareCard = ShareCard;
+
+
+/* ===== 61-explain.js ===== */
+/*
+  «اشرح لي أكثر» — واجهة سؤالِ الطالبِ عن خطئه هو.
+
+  الزرّ لا يظهر إلا بعد خطأ: من أصاب لا شيء يشرحه له، ووجود الزرّ عنده
+  إغراءٌ بإنفاق نداءٍ بلا فائدة.
+
+  والجواب يُحفظ في الجلسة بمفتاح (السؤال + اختياره): الطالب يرجع للسؤال
+  مرتين وثلاثًا في المراجعة، ولا معنى لأن ندفع في كل مرة ثمنَ جوابٍ
+  يملكه المتصفح أصلًا.
+*/
+const Explain = {
+  _cache: Object.create(null),
+
+  key(q, chosen){ return String(q.id || q.q).slice(0, 80) + '#' + chosen; },
+
+  async ask(q, chosen){
+    const k = Explain.key(q, chosen);
+    if (Explain._cache[k]) return { ok:true, why: Explain._cache[k], cached:true };
+
+    const base = QBANK.admin ? QBANK.admin.apiBase() : '';
+    const f = QBANK.api.fetchFn();
+    if (base === null || !f) return { ok:false, offline:true };
+    const s = QBANK.api.session();
+    if (!s) return { ok:false, needAuth:true };
+
+    try{
+      const res = await f(base + '/api/explain', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json',
+                  'Authorization':'Bearer ' + (s.access_token || '') },
+        body: JSON.stringify({ q: q.q, options: q.options, correct: q.answer,
+                               chosen: chosen, topic: q.topic || '' })
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data && data.why) { Explain._cache[k] = data.why; return { ok:true, why:data.why }; }
+      return { ok:false, status:res.status, error:(data && data.error) || 'تعذّر الشرح' };
+    } catch(e){ return { ok:false, offline:true }; }
+  },
+
+  /* الزرّ ومكان الجواب معًا: الجواب يظهر تحته لا في نافذة تقطع القراءة */
+  button(q, chosen){
+    if (typeof chosen !== 'number' || chosen === q.answer) return null;
+
+    const out = el('p', { class:'explain__why', hidden:true });
+    const b = el('button', { class:'btn btn--soft btn--sm', type:'button',
+      text:'؟ اشرح لي لماذا أخطأت' });
+
+    b.addEventListener('click', async () => {
+      b.setAttribute('aria-disabled','true'); b.textContent = '… يفكّر';
+      const r = await Explain.ask(q, chosen);
+      b.removeAttribute('aria-disabled');
+      if (r.ok) {
+        out.textContent = r.why; out.hidden = false; b.hidden = true;
+        return;
+      }
+      b.textContent = '؟ اشرح لي لماذا أخطأت';
+      QBANK.toast(r.needAuth ? 'سجّل دخولك ليشرح لك الذكاء خطأك'
+                : r.offline ? 'لا اتصال — الشرح يحتاج إنترنت'
+                : (r.error || 'تعذّر الشرح، أعد المحاولة'));
+    });
+
+    return el('div', { class:'explain' }, [ b, out ]);
+  },
+  _reset(){ Explain._cache = Object.create(null); }
+};
+QBANK.explain = Explain;
 
 })();
 
