@@ -4776,15 +4776,77 @@ function stepRead(box, rerender){
     accept:'.pdf,.docx,.pptx,.txt,.text,.md,.csv,.tsv,.rtf,.html,.htm' });
   const msg = el('p', { class:'field__hint', role:'status' });
 
+  /*
+    ═══ شريط القراءة ═══
+    ★ «جارٍ قراءة الملف…» سطرٌ جامد لا يقول شيئًا.
+    قراءة ملفٍ من ٦٠ صفحة قد تبلغ دقيقتين: يُقرأ من الجهاز، ثم يُرفع، ثم
+    يُستخرج نصّه، ثم يقرؤه الذكاء إن لزم. والطالب أمام سطرٍ لا يتحرّك
+    يستنتج العطل ويُغلق الصفحة على عملٍ يجري.
+
+    فأصبح: شريطٌ حقيقي لقراءة الجهاز (FileReader يعطي تقدّمًا فعليًا)، ثم
+    شريطٌ متحرّك للمراحل التي لا يُعرف طولها، مع عدّاد ثوانٍ يُثبت أن
+    شيئًا يجري، ونصٌّ يسمّي المرحلة الجارية بعينها.
+  */
+  const rdBar = el('div', { class:'meter', role:'progressbar',
+    'aria-valuemin':'0', 'aria-valuemax':'100', 'aria-valuenow':'0' },
+    [ el('div', { class:'meter__fill', style:'width:0%' }) ]);
+  const rdCard = el('div', { class:'card stack', hidden:true }, [
+    el('p', { class:'revcard__t', id:'rdT', text:'' }),
+    rdBar,
+    el('p', { class:'field__hint', id:'rdS', role:'status', text:'' })
+  ]);
+  const rdT = () => rdCard.querySelector('#rdT');
+  const rdS = () => rdCard.querySelector('#rdS');
+
+  function phase(title, note, pct){
+    rdCard.hidden = false;
+    rdT().textContent = title;
+    rdS().textContent = note || '';
+    if (typeof pct === 'number') {
+      rdBar.classList.remove('meter--busy');
+      rdBar.firstChild.style.width = pct + '%';
+      rdBar.setAttribute('aria-valuenow', String(Math.round(pct)));
+    } else {
+      // مرحلةٌ لا يُعرف طولها: الشريط يمتلئ ويتحرّك — الحركة تقول «يعمل»
+      rdBar.classList.add('meter--busy');
+      rdBar.firstChild.style.width = '100%';
+      rdBar.removeAttribute('aria-valuenow');
+    }
+  }
+
   async function handle(file){
     if (!file) return;
-    msg.textContent = 'جارٍ قراءة «' + file.name + '»…';
+    msg.textContent = '';
+    const kb = Math.round(file.size / 1024);
+    phase('يُقرأ «' + file.name + '» من جهازك', kb + ' ك.ب', 0);
+
     const b64 = await new Promise(resolve => {
       const rd = new FileReader();
+      // تقدّمٌ حقيقي لا مُتخيَّل: المتصفح يقوله لنا فنقوله للطالب
+      rd.onprogress = e => {
+        if (e.lengthComputable) phase('يُقرأ «' + file.name + '» من جهازك',
+          kb + ' ك.ب', Math.round(e.loaded / e.total * 100));
+      };
       rd.onload = () => resolve(String(rd.result).split(',')[1] || '');
+      rd.onerror = () => resolve('');
       rd.readAsDataURL(file);
     });
+    if (!b64) { rdCard.hidden = true; msg.textContent = '⚠ تعذّرت قراءة الملف من جهازك.'; return; }
+
+    // عدّاد الثواني: الرقم الذي يتقدّم يفرّق بين «بطيء» و«معطّل»
+    const t0 = Date.now();
+    let tick = setInterval(() => {
+      const s = Math.round((Date.now() - t0) / 1000);
+      phase('يُحلَّل ملفك على الخادم',
+        'استخراج النص ثم التعرّف على الأسئلة — ' + s + ' ثانية. ' +
+        'الملفات غير المرتّبة يقرؤها الذكاء وقد تأخذ دقيقة.');
+    }, 1000);
+    phase('يُرفع ملفك', 'ثم يُستخرج نصّه ويُقسَّم أسئلة.');
+
     wizard = await QBANK.admin.wizardIngest(wizard, file.name, b64);
+    clearInterval(tick);
+    rdCard.hidden = true;
+    rdBar.classList.remove('meter--busy');
     if (wizard.error) { msg.textContent = '⚠ ' + wizard.error; return; }
     rerender();
   }
@@ -4795,7 +4857,7 @@ function stepRead(box, rerender){
   drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('is-over'); handle(e.dataTransfer.files[0]); });
   fileIn.addEventListener('change', () => handle(fileIn.files[0]));
 
-  box.appendChild(drop); box.appendChild(fileIn); box.appendChild(msg);
+  box.appendChild(drop); box.appendChild(fileIn); box.appendChild(rdCard); box.appendChild(msg);
 }
 
 /* الخطوة ٢: التقدير ثم التشغيل بدفعات مع شريط «٨٠ من ٣٠٠» */
@@ -4890,8 +4952,17 @@ function stepEnrich(box, rerender){
       text: wizard.readBy === 'ai' ? '⟳ أعد القراءة بالذكاء' : '🧠 العدد أقل مما تتوقع؟ اقرأه بالذكاء' });
     again.addEventListener('click', async () => {
       const before = wizard.total;
-      again.setAttribute('aria-disabled','true'); again.textContent = '… يقرأ الذكاء ملفك';
+      again.setAttribute('aria-disabled','true');
+      /* عدّادٌ هنا أيضًا: قراءة الذكاء لملفٍ كبير دقيقة أو أكثر، والزرّ
+         الصامت طوالها يُقرأ زرًّا معطّلًا لا زرًّا يعمل. */
+      const t0 = Date.now();
+      const tick = setInterval(() => {
+        again.textContent = '… يقرأ الذكاء ملفك (' +
+          Math.round((Date.now() - t0) / 1000) + ' ثانية)';
+      }, 1000);
+      again.textContent = '… يقرأ الذكاء ملفك';
       const w2 = await QBANK.admin.wizardIngest(wizard, wizard.filename, wizard.fileB64, true);
+      clearInterval(tick);
       again.removeAttribute('aria-disabled');
       /*
         ★ لا شيء أسوأ من زرٍّ لا يقول ماذا فعل.
