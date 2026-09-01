@@ -4101,7 +4101,12 @@ const Admin = {
 
   async wizardEnrich(w, onProgress){
     // المسار المجاني لا يمرّ بالخادم إطلاقًا — لا تكلفة ولا انتظار
-    if (!w.enrich) { const r = Admin.plainEnrich(w); await Admin.saveDraft(r); return r; }
+    if (!w.enrich) {
+      const r = Admin.plainEnrich(w);
+      if (r.error) return r;
+      await Admin.saveDraft(r);
+      return r;
+    }
 
     const batches = Admin.chunk(w.raw, Admin.BATCH);
     for (let i = 0; i < batches.length; i++) {
@@ -4170,12 +4175,37 @@ const Admin = {
       headers: Object.assign(QBANK.api.headers(), { 'Prefer':'return=representation' }),
       body: JSON.stringify(body)
     });
-    if (r.ok && r.data && r.data[0]) w.draftId = r.data[0].id;
+    if (r.ok && r.data && r.data[0]) { w.draftId = r.data[0].id; w.draftError = ''; }
+    else {
+      /*
+        ★ فشل الحفظ يُسجَّل ولا يُبتلع.
+        كان يُهمَل تمامًا، فيمضي المعالج إلى «راجع» ثم «انشر» بمسوّدة لم
+        تُنشأ قط — والأسئلة كلها في المتصفح فتبدو الشاشة سليمة. ثم يضغط
+        الطالب «انشر» فيُقال له «المسوّدة غير موجودة»: جملة صادقة لا تدلّ
+        على السبب، بعد أن أنفق دقائق وانتظر الذكاء.
+      */
+      w.draftError = (r.data && (r.data.message || r.data.error)) ||
+                     (r.offline ? 'لا اتصال بالخادم' : 'تعذّر حفظ المسوّدة');
+    }
     return r;
   },
 
-  // الاعتماد: نداء واحد ذرّي في قاعدة البيانات — إما كل شيء أو لا شيء
-  approve(w, publish){
+  /*
+    الاعتماد: نداء واحد ذرّي في قاعدة البيانات — إما كل شيء أو لا شيء.
+
+    ★ ومحاولةُ إنقاذٍ قبله: إن لم تُحفظ المسوّدة (انقطاع، أو صلاحية كانت
+    ناقصة) فالأسئلة ما زالت في المتصفح كاملة، فنحاول حفظها الآن بدل أن
+    نردّ الطالب خائبًا. ما دام ما يلزم موجودًا فالفشل اختيارٌ لا قدر.
+  */
+  async approve(w, publish){
+    if (!w.draftId) {
+      await Admin.saveDraft(w);
+      if (!w.draftId) {
+        return { ok:false, data:{ message:
+          'تعذّر حفظ مادتك على الخادم' + (w.draftError ? ' — ' + w.draftError : '') +
+          '. تحقق من اتصالك وأعد المحاولة؛ أسئلتك لم تضِع.' } };
+      }
+    }
     return QBANK.api.rpc('approve_draft', { draft_id: w.draftId, publish });
   },
 
@@ -4996,7 +5026,16 @@ function stepPublish(box){
   const pub = el('button', { class:'btn btn--block', type:'button', text:'اعتمد وانشر للطلاب' });
   const hide = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'احفظ مخفية' });
   const msg = el('p', { class:'field__hint', role:'status' });
+  /*
+    ★ تحذيرٌ يسبق الضغط لا يتبعه.
+    إن كانت المسوّدة لم تُحفظ على الخادم، الطالبُ يستحق أن يعرف الآن —
+    قبل أن يضغط زرًّا سيفشل — وأن يعرف أن الأسئلة في متصفّحه لم تضِع.
+  */
+  if (wizard.draftError)
+    msg.textContent = '⚠ لم تُحفظ مادتك على الخادم بعد (' + wizard.draftError +
+                      '). أسئلتك محفوظة في هذا المتصفح، وسنحاول الحفظ مرة أخرى عند الضغط.';
   async function fire(publish){
+    msg.textContent = '… يُعتمد';
     const r = await QBANK.admin.approve(wizard, publish);
     if (!r.ok)
       return void (msg.textContent = '⚠ ' + ((r.data && r.data.message) || 'تعذّر الاعتماد — لم يتغير شيء في قاعدة البيانات.'));
