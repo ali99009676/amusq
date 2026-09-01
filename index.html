@@ -849,7 +849,8 @@ img,svg{ max-width:100%; height:auto; }
     color-mix(in srgb, var(--acc) 92%, black),
     color-mix(in srgb, var(--acc) 62%, rgb(17,17,17)));
   color:var(--on-acc);
-  padding:clamp(20px,4vw,34px) 0 clamp(22px,4vw,30px);
+  /* +14px فوق مقياس AMSU: رأسنا يلتصق بشريطٍ علويّ لاصق فتحتاج أزراره متنفَّسًا */
+  padding:calc(clamp(20px,4vw,34px) + 14px) 0 clamp(22px,4vw,30px);
   margin-bottom:var(--s4);
 }
 .sub-hero .herotop{ display:flex; align-items:center; justify-content:space-between; gap:.6rem; }
