@@ -557,6 +557,10 @@ img,svg{ max-width:100%; height:auto; }
 /* ═══ صفّ النشر: زرّ النظام ثم واتساب ═══ */
 .sharerow{ gap:var(--s2); flex-wrap:wrap; }
 .sharerow > *{ flex:1 1 auto; min-width:120px; text-align:center; }
+/* زرّ اللوحة بجانب بطاقة الحساب — للمشرف وحده */
+#authSlot{ display:inline-flex; align-items:center; gap:var(--s2); }
+.authchip__adm{ width:36px; height:36px; border-radius:10px; }
+.authchip__adm .iconbtn__ico{ font-size:1rem; }
 
 
 /* ===== 40-screens.css ===== */
@@ -1198,6 +1202,34 @@ a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
   border-inline-start:3px solid var(--acc);
   font-size:.92rem; line-height:1.9;
 }
+
+/* ═══ محرّر الأسئلة اليدوي ═══ */
+.mq{ border-inline-start:3px solid var(--line-2); }
+.mq__opts{ gap:var(--s2); }
+.mq__row{ display:flex; align-items:center; gap:var(--s2); }
+.mq__row .input{ flex:1 1 auto; min-width:0; }
+/*
+  حرفُ الخيار زرُّ التحديد نفسه: لا مربّع اختيارٍ منفصل بجانبه.
+  دمجُهما يوفّر عمودًا كاملًا على شاشة ضيّقة، ويجعل «الحرف» شيئًا
+  يُضغط لا زخرفةً تُقرأ.
+*/
+.mq__pick{
+  flex:0 0 auto; width:40px; height:40px; border-radius:12px; cursor:pointer;
+  display:grid; place-items:center; font-weight:800; font-size:.95rem;
+  background:var(--surface-2); border:1px solid var(--line-2); color:var(--text-2);
+  transition:background .16s var(--ease), color .16s var(--ease), border-color .16s;
+}
+.mq__pick:hover{ border-color:var(--gold); color:var(--text); }
+.mq__pick.is-on{
+  background:color-mix(in srgb, var(--gold) 20%, transparent);
+  border-color:var(--gold); color:var(--gold);
+}
+.mq__x{
+  flex:0 0 auto; width:34px; height:34px; border-radius:10px; cursor:pointer;
+  background:transparent; border:1px solid var(--line); color:var(--text-3);
+  font-size:1.1rem; line-height:1;
+}
+.mq__x:hover{ border-color:var(--bad); color:var(--bad); }
 
 
 /* ===== 50-landing.css ===== */
@@ -3986,7 +4018,10 @@ function authChip(){
   const name = (prof.name || '').trim() || (u.email || '').split('@')[0] || 'حسابي';
 
   // لا نعيد الرسم بلا تغيير: كل رسمٍ للترويسة يومض ويُربك قارئ الشاشة
-  const sig = u.id + '|' + (prof.avatar_url || '') + '|' + (prof.avatar || '') + '|' + name;
+  const admOk = (function(){ const a = QBANK.store.get('is_admin_check', null);
+                             return !!(a && a.uid === u.id && a.ok); })();
+  const sig = u.id + '|' + (prof.avatar_url || '') + '|' + (prof.avatar || '') + '|' + name +
+              '|' + (admOk ? 'a' : '');
   if (slot.dataset.sig === sig) return;
   slot.dataset.sig = sig;
 
@@ -3996,6 +4031,22 @@ function authChip(){
                    text: prof.avatar || '◍' });
 
   slot.innerHTML = '';
+
+  /*
+    ★ بابٌ دائم إلى اللوحة للمشرف.
+    اللوحة تُخفي شريط الطالب، فمتى خرج المشرف منها إلى أي شاشة طالب —
+    بزرٍّ، أو برابط مادة، أو بفضولٍ — فقد طريقَ العودة ولزمه أن يكتب
+    المسار بيده. زرٌّ صغير في الترويسة يحلّ هذا كله، ولا يراه الطالب.
+    والصلاحية من الذاكرة لا من نداءٍ جديد: الترويسة تُرسم مع كل شاشة.
+  */
+  const adm = QBANK.store.get('is_admin_check', null);
+  if (adm && adm.uid === u.id && adm.ok) {
+    slot.appendChild(el('a', { class:'iconbtn authchip__adm', href:'#/admin',
+      'aria-label':'لوحة التحكم', title:'لوحة التحكم' }, [
+      el('span', { class:'iconbtn__ico', 'aria-hidden':'true', text:'⚙' })
+    ]));
+  }
+
   slot.appendChild(el('a', { class:'authchip', href:'#/account', 'data-nav':'#/account',
                              'aria-label':'حسابي — ' + name }, [
     face,
@@ -4695,9 +4746,20 @@ function stepsBar(current){
 
 /* اسم المادة ونمط المعالجة — يُختاران قبل الرفع لأنهما يغيّران البرومبت نفسه */
 function subjectMeta(){
+  /*
+    ★ الاسم مطلوب — وكان يُشتقّ من اسم الملف عند غيابه.
+    فخرجت في المنصة موادُّ اسمها «Document1» و«نسخة نهائية 2» و«WhatsApp
+    Image». الطالب لا يبحث بهذه الأسماء ولا يفتحها، فتُدفن مادةٌ نافعة
+    بسبب حقلٍ تُرك فارغًا. والاسم هو أول ما يُرى وآخر ما يُتذكَّر.
+  */
   const nameIn = el('input', { class:'input', id:'subjName', value: wizard.subjectName || '',
+    required:'', 'aria-required':'true',
     placeholder:'مثال: فيزيولوجيا الجهاز التنفسي' });
-  nameIn.addEventListener('input', () => { wizard.subjectName = nameIn.value; });
+  const nameMsg = el('p', { class:'field__hint', role:'status' });
+  nameIn.addEventListener('input', () => {
+    wizard.subjectName = nameIn.value;
+    if (nameIn.value.trim()) nameMsg.textContent = '';
+  });
 
   const modes = [
     { id:'strict',   t:'التزم بالنص الحرفي',
@@ -4757,7 +4819,7 @@ function subjectMeta(){
 
   return el('div', { class:'card stack' }, [
     el('label', { class:'field', style:'margin:0' }, [
-      el('span', { class:'field__label', text:'اسم المادة' }), nameIn ]),
+      el('span', { class:'field__label', text:'اسم المادة *' }), nameIn, nameMsg ]),
     el('div', { class:'ad-edit ad-edit--2' }, [
       el('label', { class:'field', style:'margin:0' }, [
         el('span', { class:'field__label', text:'الدولة' }), countryIn ]),
@@ -4849,7 +4911,51 @@ function formatGuide(){
 
 /* الخطوة ١: سحب وإفلات أو اختيار ملف */
 function stepRead(box, rerender){
+  /*
+    الكتابة اليدوية شاشةٌ قائمة بذاتها لا حقلٌ في الأسفل: من اختارها
+    يريدها كاملة، ومزاحمتُها لمنطقة الرفع تُربك الاثنين.
+  */
+  if (wizard.manualMode) {
+    box.appendChild(subjectMeta());
+    box.appendChild(QBANK.views.manualComposer(
+      (raw, dropped) => {
+        if (!requireName()) return;
+        wizard.raw = raw; wizard.total = raw.length;
+        wizard.filename = 'كُتبت يدويًا';
+        wizard.slug = '';                 // الخادم يولّده من الاسم عند النشر
+        wizard.readBy = 'manual'; wizard.unverified = 0;
+        wizard.manualMode = false;
+        wizard.step = 2;
+        if (dropped) QBANK.toast('استُبعد ' + QBANK.views.arNum(dropped) +
+                                 ' سؤالًا ناقصًا — أكمله لاحقًا من المحرر');
+        QBANK.manual.clear();
+        rerender();
+      },
+      () => { wizard.manualMode = false; rerender(); }
+    ));
+    return;
+  }
+
   box.appendChild(subjectMeta());
+
+  /*
+    ★ الاسم يُطلب قبل الملف لا بعده.
+    من رفع ملفًا ثم قيل له «الاسم مطلوب» يشعر أنه أضاع دقيقة انتظارٍ
+    لسببٍ كان يمكن أن يُقال في أوله. والحقل فوق الصفحة أصلًا — فالطلب
+    قبل الرفع تذكيرٌ، وبعده عقوبة.
+  */
+  function requireName(){
+    const inp = box.querySelector('#subjName');
+    if (wizard.subjectName && wizard.subjectName.trim()) return true;
+    if (inp) {
+      const m = inp.parentNode.querySelector('.field__hint');
+      if (m) m.textContent = '⚠ اكتب اسم المادة أولًا — به يجدها زملاؤك.';
+      inp.focus();
+      try { inp.scrollIntoView({ block:'center', behavior:'smooth' }); } catch(e){}
+    }
+    return false;
+  }
+
   box.appendChild(formatGuide());
   const drop = el('div', { class:'drop', tabindex:'0', role:'button', 'aria-label':'اختر ملف أسئلة' }, [
     el('span', { class:'empty__ico', 'aria-hidden':'true', text:'⇪' }),
@@ -4935,14 +5041,34 @@ function stepRead(box, rerender){
     if (wizard.error) { msg.textContent = '⚠ ' + wizard.error; return; }
     rerender();
   }
-  drop.addEventListener('click', () => fileIn.click());
-  drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') fileIn.click(); });
+  drop.addEventListener('click', () => { if (requireName()) fileIn.click(); });
+  drop.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { if (requireName()) fileIn.click(); } });
   drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('is-over'); });
   drop.addEventListener('dragleave', () => drop.classList.remove('is-over'));
-  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('is-over'); handle(e.dataTransfer.files[0]); });
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('is-over');
+    if (requireName()) handle(e.dataTransfer.files[0]);
+  });
   fileIn.addEventListener('change', () => handle(fileIn.files[0]));
 
+  /*
+    ★ الطريق الثاني: من لا ملف عنده.
+    الرفع بملف يفترض أن للطالب ملفًا، وكثيرٌ منهم لا ملف عنده: أسئلةٌ
+    سمعها في المحاضرة أو صوّرها زميله. كان هؤلاء خارج المنصة كلها — لا
+    لأنهم بلا محتوى، بل لأننا طلبنا المحتوى بصيغةٍ واحدة.
+  */
+  const manualBtn = el('button', { class:'btn btn--ghost btn--block', type:'button',
+    text:'✎ أو اكتب الأسئلة بنفسك' });
+  manualBtn.addEventListener('click', () => {
+    if (!requireName()) return;
+    wizard.manualMode = true; rerender();
+  });
+
   box.appendChild(drop); box.appendChild(fileIn); box.appendChild(rdCard); box.appendChild(msg);
+  box.appendChild(el('p', { class:'field__hint', style:'text-align:center;margin:2px 0',
+                            text:'— أو —' }));
+  box.appendChild(manualBtn);
 }
 
 /* الخطوة ٢: التقدير ثم التشغيل بدفعات مع شريط «٨٠ من ٣٠٠» */
@@ -5277,6 +5403,15 @@ function stepPublish(box){
     langRow.appendChild(b);
   });
 
+  /* ومفتاحُه ظاهر: من رتّب أسئلته بقصدٍ (فصلًا فصلًا) له أن يُبقي ترتيبه */
+  const shufWrap = el('label', { class:'row', style:'gap:8px;cursor:pointer;align-items:center' });
+  const shufIn = el('input', { type:'checkbox' });
+  shufIn.checked = wizard.shuffleOnPublish !== false;
+  shufIn.addEventListener('change', () => { wizard.shuffleOnPublish = shufIn.checked; });
+  shufWrap.appendChild(shufIn);
+  shufWrap.appendChild(el('span', { class:'field__hint', style:'margin:0',
+    text:'اخلط ترتيب الأسئلة عند النشر — كي لا يحفظ الطالب التسلسل بدل المحتوى' }));
+
   const pub = el('button', { class:'btn btn--block', type:'button', text:'اعتمد وانشر للطلاب' });
   const hide = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'احفظ مخفية' });
   const msg = el('p', { class:'field__hint', role:'status' });
@@ -5289,6 +5424,26 @@ function stepPublish(box){
     msg.textContent = '⚠ لم تُحفظ مادتك على الخادم بعد (' + wizard.draftError +
                       '). أسئلتك محفوظة في هذا المتصفح، وسنحاول الحفظ مرة أخرى عند الضغط.';
   async function fire(publish){
+    /*
+      ★ الحارس الأخير للاسم.
+      حارس الخطوة الأولى يكفي للمسار المعتاد، لكن المسوّدة تُستأنف بعد
+      يوم، والحقل قد يُفرَّغ، والشاشة تُفتح بمسارها مباشرة. والاسم يُكتب
+      في القاعدة هنا — فهنا يجب أن يُتحقّق منه، لا حيث كُتب أول مرة.
+    */
+    if (!wizard.subjectName || !wizard.subjectName.trim()) {
+      msg.textContent = '⚠ اسم المادة مطلوب — ارجع إلى الخطوة الأولى واكتبه.';
+      return;
+    }
+    /*
+      ★ الخلط عند النشر.
+      الترتيب الذي كتب به الرافعُ أسئلته يحمل معلومةً لا يقصدها: أسئلة
+      المحاضرة الأولى أولًا، وما تذكّره أخيرًا في الآخر. فيحفظ الطالب
+      التسلسل بدل المحتوى، ويصير ترتيبُه هو ما يُختبر لا فهمُه. والخلط
+      مرةً عند النشر أصدق من خلطٍ في كل عرض: البنك ثابت، وترتيبه محايد.
+    */
+    if (wizard.shuffleOnPublish !== false && Array.isArray(wizard.enriched))
+      wizard.enriched = QBANK.manual.shuffle(wizard.enriched);
+
     msg.textContent = '… يُعتمد';
     const r = await QBANK.admin.approve(wizard, publish);
     if (!r.ok)
@@ -5350,7 +5505,7 @@ function stepPublish(box){
     el('p', { class:'page__sub num', text: wizard.total + ' سؤالًا جاهزًا' +
       (derived ? ' — منها ' + derived + ' بإجابة مستنتجة راجعتَها' : '') }),
     el('p', { class:'field__hint', text:'الاعتماد عملية ذرّية: إما تُنشأ المادة وكل أسئلتها أو لا يتغير شيء.' }),
-    langRow, pub, hide, msg
+    langRow, shufWrap, pub, hide, msg
   ]));
 }
 
@@ -5379,15 +5534,37 @@ function showShare(box, slug, name, newId, analysisLang){
       }
     });
 
+  /*
+    ★ الخروج يتبع الباب الذي دخلتَ منه.
+    كانت هذه الشاشة تعرض وجهتين للطالب وحده: صفحة المادة ومحفظته. فالمشرف
+    الذي اعتمد مادةً من لوحته يُقذف بها إلى واجهة الطالب — يعود الشريط
+    السفلي، وتضيع اللوحة، وعليه أن يكتب مسارها بيده ليعود إلى عمله.
+    ولوحةٌ تُخرج صاحبها منها كلما أنجز شيئًا ليست لوحة.
+  */
+  let inAdmin = false;
+  try { inAdmin = (QBANK.router.current || {}).path.indexOf('#/admin') === 0; } catch(e){}
+
+  const exits = inAdmin
+    ? [
+        el('a', { class:'btn btn--block', href:'#/admin/content', text:'⚙ عد إلى لوحة المحتوى' }),
+        newId ? el('a', { class:'btn btn--soft btn--block', href:'#/admin/subject/' + newId,
+                          text:'✎ حرّر المادة' }) : null,
+        el('a', { class:'btn btn--ghost btn--block', href:'#/admin/upload', text:'+ ارفع مادة أخرى' })
+      ]
+    : [
+        el('a', { class:'btn btn--block', href:'#s/' + slug, text:'افتح صفحة المادة' }),
+        el('a', { class:'btn btn--ghost btn--block', href:'#/account', text:'محفظتي' })
+      ];
+
   box.appendChild(el('div', { class:'card stack', style:'text-align:center' }, [
     el('span', { class:'empty__ico', 'aria-hidden':'true', text:'✓' }),
     el('p', { class:'empty__title', text:'نُشرت «' + (name || 'مادتك') + '»' }),
-    el('p', { class:'empty__text', text:'شاركها مع زملائك — كل شراء عبر رابطك يضيف كوينز لرصيدك.' }),
+    el('p', { class:'empty__text', text: inAdmin
+      ? 'المادة منشورة للطلاب. وهذا رابطها للمشاركة.'
+      : 'شاركها مع زملائك — كل شراء عبر رابطك يضيف كوينز لرصيدك.' }),
     aLine,
-    QBANK.share.copyRow(QBANK.share.shareUrl(slug, u.id)),
-    el('a', { class:'btn btn--block', href:'#s/' + slug, text:'افتح صفحة المادة' }),
-    el('a', { class:'btn btn--ghost btn--block', href:'#/account', text:'محفظتي' })
-  ]));
+    QBANK.share.copyRow(QBANK.share.shareUrl(slug, u.id))
+  ].concat(exits)));
 }
 
 const ViewUpload = {
@@ -11408,6 +11585,213 @@ const Explain = {
   _reset(){ Explain._cache = Object.create(null); }
 };
 QBANK.explain = Explain;
+
+
+/* ===== 62-manual.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  كتابة الأسئلة باليد — الطريق الثاني إلى المنصة
+  ═══════════════════════════════════════════════════════════════════
+  الرفع بملف يفترض أن للطالب ملفًا. وكثيرٌ منهم لا ملف عنده: أسئلةٌ سمعها
+  في المحاضرة، أو صوّرها زميله في مجموعة الواتساب، أو كتبها بيده في دفتره.
+  كان هؤلاء خارج المنصة كلها — لا لأنهم لا يملكون محتوى، بل لأننا طلبنا
+  المحتوى بصيغةٍ واحدة.
+
+  ═══ والحفظ التلقائي شرطٌ لا زينة ═══
+  كتابة عشرين سؤالًا بخياراتها عملُ نصف ساعة. وضياعُه بإغلاقٍ عارض أو
+  بطاريةٍ نفدت لا يُنسى ولا يُغتفر، ولا يعود صاحبه ليكتبها ثانية. فكل حرف
+  يُحفظ في الجهاز لحظةَ كتابته، ويُستعاد كما تُرك.
+*/
+
+const Manual = {
+  KEY: 'manual_draft',
+  MIN_OPTS: 2,
+  MAX_OPTS: 6,
+
+  blank(){ return { q:'', options:['', ''], answer:0 }; },
+
+  load(){
+    const d = QBANK.store.get(Manual.KEY, null);
+    if (d && Array.isArray(d.items) && d.items.length) return d;
+    return { name:'', items:[Manual.blank()] };
+  },
+  save(d){ QBANK.store.set(Manual.KEY, d); },
+  clear(){ QBANK.store.remove(Manual.KEY); },
+
+  /*
+    ما يصلح للنشر: سؤالٌ له نصّ وخياران فأكثر غيرُ فارغين وإجابةٌ محدَّدة.
+    والفلترة لا الرفض: من كتب تسعة أسئلة وترك العاشر نصفَ مكتوب لا يُمنع
+    من نشر التسعة — يُنشر ما تمّ ويُقال له كم استُبعد ولماذا.
+  */
+  valid(it){
+    if (!it || !String(it.q || '').trim()) return false;
+    const opts = (it.options || []).map(o => String(o || '').trim()).filter(Boolean);
+    if (opts.length < Manual.MIN_OPTS) return false;
+    const a = it.answer;
+    return typeof a === 'number' && a >= 0 && a < (it.options || []).length &&
+           !!String(it.options[a] || '').trim();
+  },
+
+  /* تحويل ما كُتب إلى شكل المقسّم نفسه — بقية المعالج لا تعرف المصدر */
+  toRaw(items){
+    return (items || []).filter(Manual.valid).map((it, i) => {
+      /* الخيارات الفارغة تُطرح، وموضع الإجابة يُعاد حسابه بعد الطرح —
+         وإلا أشار الرقمُ القديم إلى خيارٍ غير الذي اختاره الكاتب. */
+      const kept = [];
+      let answer = 0;
+      (it.options || []).forEach((o, oi) => {
+        const t = String(o || '').trim();
+        if (!t) return;
+        if (oi === it.answer) answer = kept.length;
+        kept.push(t);
+      });
+      return { num: i + 1, q: String(it.q).trim(), options: kept,
+               answer: answer, answer_letter: 'ABCDEF'[answer] || null,
+               has_options: true };
+    });
+  },
+
+  /*
+    ★ خلطٌ عادل (Fisher–Yates) لا `sort(() => Math.random() - .5)`.
+    الثاني شائعٌ ومغشوش: مقارنةٌ عشوائية تخرق شرط الترتيب الثابت، فتخرج
+    توزيعةٌ منحازة تُبقي أول العناصر قرب أولها. وهنا الانحياز يعني أن
+    ترتيب الكاتب يظل مقروءًا في نتيجته — وهذا نقيض المقصود.
+  */
+  shuffle(arr, rnd){
+    const a = (arr || []).slice();
+    const r = rnd || Math.random;
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(r() * (i + 1));
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+};
+QBANK.manual = Manual;
+
+/* ═══════════════ الشاشة ═══════════════ */
+function manualComposer(onDone, onCancel){
+  const st = Manual.load();
+  const box = el('div', { class:'stack' });
+  const list = el('div', { class:'stack' });
+  const msg = el('p', { class:'field__hint', role:'status' });
+
+  const persist = () => Manual.save(st);
+
+  function card(it, idx){
+    const c = el('div', { class:'card stack mq' });
+
+    const head = el('div', { class:'row' }, [
+      el('span', { class:'badge num', text:'سؤال ' + QBANK.views.arNum(idx + 1) }),
+      el('span', { class:'spacer' })
+    ]);
+    if (st.items.length > 1) {
+      const del = el('button', { class:'btn btn--ghost btn--sm', type:'button',
+        'aria-label':'احذف السؤال ' + (idx + 1), text:'حذف' });
+      del.addEventListener('click', () => {
+        st.items.splice(idx, 1); persist(); draw();
+      });
+      head.appendChild(del);
+    }
+
+    const qIn = el('textarea', { class:'input', rows:'2',
+      placeholder:'اكتب نصّ السؤال…', 'aria-label':'نص السؤال ' + (idx + 1) });
+    qIn.value = it.q || '';
+    qIn.addEventListener('input', () => { it.q = qIn.value; persist(); });
+
+    /*
+      الخيارات: كلٌّ سطرٌ فيه دائرةُ اختيار «هذه الصحيحة» ثم الحقل.
+      والدائرة قبل الحقل لا بعده: العين العربية تقرأ من اليمين، فالعلامة
+      أولًا تقول «هنا تُحدَّد الإجابة» قبل أن يُقرأ نصُّها.
+    */
+    const opts = el('div', { class:'stack mq__opts' });
+    (it.options || []).forEach((o, oi) => {
+      const pick = el('button', { class:'mq__pick' + (it.answer === oi ? ' is-on' : ''),
+        type:'button', role:'radio', 'aria-checked': it.answer === oi ? 'true' : 'false',
+        'aria-label':'اجعل الخيار ' + QBANK.views.optLetter(oi) + ' هو الصحيح',
+        text: QBANK.views.optLetter(oi) });
+      pick.addEventListener('click', () => { it.answer = oi; persist(); draw(); });
+
+      const inp = el('input', { class:'input', value:o || '',
+        placeholder:'الخيار ' + QBANK.views.optLetter(oi),
+        'aria-label':'نص الخيار ' + QBANK.views.optLetter(oi) });
+      inp.addEventListener('input', () => { it.options[oi] = inp.value; persist(); });
+
+      const row = el('div', { class:'mq__row' }, [pick, inp]);
+      if ((it.options || []).length > Manual.MIN_OPTS) {
+        const x = el('button', { class:'mq__x', type:'button',
+          'aria-label':'احذف الخيار ' + QBANK.views.optLetter(oi), text:'×' });
+        x.addEventListener('click', () => {
+          it.options.splice(oi, 1);
+          /* الإجابة تتبع خيارها: حذف خيارٍ قبلها يُنزل موضعها، وحذفها هي
+             يُبطل التحديد — ولا نترك مؤشّرًا يشير إلى خيارٍ آخر بصمت. */
+          if (it.answer === oi) it.answer = 0;
+          else if (it.answer > oi) it.answer -= 1;
+          persist(); draw();
+        });
+        row.appendChild(x);
+      }
+      opts.appendChild(row);
+    });
+
+    const addOpt = el('button', { class:'btn btn--ghost btn--sm', type:'button', text:'+ خيار' });
+    addOpt.setAttribute('aria-disabled', (it.options || []).length >= Manual.MAX_OPTS ? 'true' : 'false');
+    addOpt.addEventListener('click', () => {
+      if ((it.options || []).length >= Manual.MAX_OPTS) return;
+      it.options.push(''); persist(); draw();
+    });
+
+    c.appendChild(head);
+    c.appendChild(qIn);
+    c.appendChild(el('span', { class:'field__label', text:'الخيارات — اضغط الحرف لتحديد الصحيح' }));
+    c.appendChild(opts);
+    c.appendChild(addOpt);
+    return c;
+  }
+
+  function draw(){
+    list.innerHTML = '';
+    st.items.forEach((it, i) => list.appendChild(card(it, i)));
+    const ok = st.items.filter(Manual.valid).length;
+    msg.textContent = ok
+      ? 'جاهز للنشر: ' + QBANK.views.arNum(ok) + ' سؤالًا من ' +
+        QBANK.views.arNum(st.items.length) + '.'
+      : 'اكتب سؤالًا واحدًا على الأقل بخيارين وحدّد الصحيح.';
+    done.setAttribute('aria-disabled', ok ? 'false' : 'true');
+    done.textContent = ok ? 'تابع بـ ' + QBANK.views.arNum(ok) + ' سؤالًا' : 'تابع';
+  }
+
+  const addQ = el('button', { class:'btn btn--soft btn--block', type:'button', text:'+ أضف سؤالًا' });
+  addQ.addEventListener('click', () => {
+    st.items.push(Manual.blank()); persist(); draw();
+    // البؤرة إلى الجديد: من ضغط «أضف» يريد الكتابة الآن لا البحث عن الحقل
+    const cards = list.querySelectorAll('.mq textarea');
+    if (cards.length) cards[cards.length - 1].focus();
+  });
+
+  const done = el('button', { class:'btn btn--block', type:'button', text:'تابع' });
+  done.addEventListener('click', () => {
+    const raw = Manual.toRaw(st.items);
+    if (!raw.length) return;
+    const dropped = st.items.length - raw.length;
+    onDone(raw, dropped);
+  });
+
+  const back = el('button', { class:'btn btn--ghost btn--block', type:'button',
+    text:'رجوع إلى رفع ملف' });
+  back.addEventListener('click', () => onCancel());
+
+  box.appendChild(el('p', { class:'field__hint', text:
+    'اكتب أسئلتك هنا مباشرة — تُحفظ في جهازك أولًا بأول، فلو أُغلقت الصفحة عادت كما تركتها.' }));
+  box.appendChild(list);
+  box.appendChild(addQ);
+  box.appendChild(msg);
+  box.appendChild(done);
+  box.appendChild(back);
+  draw();
+  return box;
+}
+QBANK.views.manualComposer = manualComposer;
 
 })();
 
