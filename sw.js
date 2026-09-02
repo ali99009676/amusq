@@ -19,15 +19,8 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  // نداءات Supabase وواجهة الخادم تمر للشبكة دائمًا — البيانات الحية لا تُخبَّأ هنا
   if (url.pathname.indexOf('/api/') === 0 || url.hostname.indexOf('supabase') !== -1) return;
   if (e.request.method !== 'GET') return;
-  /*
-    ★ التنقلات تتجاوز كاش HTTP نفسه (cache:'no-cache' = تحقّق من الخادم دائمًا).
-    الدرس من جوّال علي: «الشبكة أولًا» وحدها قد تُجيب من كاش المتصفح القديم،
-    فيعلق الجهاز على نسخة شهرها الماضي وهو «متصل». التحقق الشرطي رخيص
-    (٣٠٤ بلا جسد) والعالق على نسخة قديمة غالٍ.
-  */
   const req = e.request.mode === 'navigate'
     ? new Request(e.request, { cache: 'no-cache' })
     : e.request;
@@ -40,4 +33,34 @@ self.addEventListener('fetch', e => {
       })
       .catch(() => caches.match(e.request).then(m => m || caches.match('./index.html')))
   );
+});
+
+/*
+  ═══ الإشعارات ═══
+  الخادم يُرسل {title, body, url} موقّعًا بـVAPID، والمتصفح يوقظ هذا
+  العامل ليعرضه — ولو كانت المنصة مغلقة.
+*/
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch(err){ d = { title: e.data ? e.data.text() : 'مراجعة' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'مراجعة', {
+    body: d.body || '',
+    icon: './icon-192.png',
+    badge: './icon-192.png',
+    dir: 'rtl',
+    lang: 'ar',
+    tag: 'amusq-daily',
+    data: { url: d.url || '#/' }
+  }));
+});
+
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  const target = (e.notification.data && e.notification.data.url) || '#/';
+  e.waitUntil(self.clients.matchAll({ type:'window', includeUncontrolled:true }).then(list => {
+    for (const c of list){
+      if ('focus' in c){ c.navigate ? c.navigate(target).catch(() => {}) : null; return c.focus(); }
+    }
+    return self.clients.openWindow(target);
+  }));
 });
