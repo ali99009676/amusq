@@ -1,8 +1,16 @@
 'use strict';
 /*
-  /api/ingest — الخطوة ١ «اقرأ الملف»: يستقبل الملف base64، يستخرج نصه، يقسّمه أسئلة.
-  للقراءة طريقان: القواعد (parser.js) أولًا لأنها أرخص، ثم الذكاء (reader.js) إن عجزت.
-  والصور وPDF الممسوح تُمرّر للنموذج كما هي — بابٌ كان مغلقًا.
+  /api/ingest — الخطوة ١ «اقرأ الملف»:
+  يستقبل الملف base64، يستخرج نصه، يقسّمه أسئلة، ويعيدها للمشرف كما هي.
+
+  ★ للقراءة طريقان لا طريق واحد:
+    ١) القواعد (parser.js): مجانية وفورية، لكنها تشترط انضباطًا في الشكل.
+    ٢) الذكاء (reader.js): يقرأ أي شكل كما يقرؤه إنسان.
+
+  والقواعد تُجرَّب أولًا دائمًا — لا لأنها أدقّ بل لأنها أرخص وأسرع، وملفٌ
+  مرتّب لا يستحق انتظار الذكاء. فإن عجزت أو جاءت بحصادٍ مشبوه، قرأ الذكاء.
+  كان الطالب قبل هذا يُردّ بـ«لم نتعرّف على سؤال واحد» وملفُه سليم — يخسر
+  المنصةَ عند أول احتكاك بها، وهي أسوأ لحظة يمكن أن تخسره فيها.
 */
 const { extract, imageMime } = require('./_lib/extract.js');
 const { parse } = require('./_lib/parser.js');
@@ -10,6 +18,12 @@ const { slugify } = require('./_lib/sanctity.js');
 const { aiRead, aiReadMedia } = require('./_lib/reader.js');
 const { callAI, pickProvider } = require('./_lib/provider.js');
 
+/*
+  متى نثق بالقواعد فلا نزعج الذكاء؟
+  حين تجد عددًا معتبرًا من الأسئلة وأغلبها بخيارات — وهذه بصمة الملف
+  المرتّب الذي كُتب أصلًا بالشكل الذي تفهمه. أما ثلاثة أسئلة من ملفٍ من
+  عشرين صفحة، أو أسئلةٌ كلُّها بلا خيارات، فحصادٌ يقول إن الشكل فاتها.
+*/
 function rulesLookSound(qs){
   if (qs.length < 3) return false;
   const withOpts = qs.filter(q => q.has_options).length;
@@ -21,6 +35,16 @@ module.exports = async function handler(req, res){
   try{
     const { filename, content_base64, subject_name, sanctity_mode, force_ai, images } = req.body || {};
 
+    /*
+      ═══ الصور: بابٌ كان مغلقًا ═══
+      ★ أكثر ما يملكه الطلاب لقطات شاشة وتصوير أوراق — وكان أول ما نردّه
+      بـ«صدّرها نصًّا». والنموذج يقرأ الصورة أصلًا؛ الناقص كان أن نمرّرها.
+
+      تصل الصور بإحدى صورتين: مصفوفة `images` (عدة لقطات لورقة واحدة —
+      وتُرسل معًا كي يُجمع سؤالٌ مقطوع بين لقطتين)، أو ملفٌ واحد بامتداد
+      صورة في content_base64. وملف PDF بلا نصٍّ مستخرَج هو مسحٌ ضوئي،
+      فيُرسل PDFًا كما هو — النموذج يقرؤه صفحةً صفحة.
+    */
     const media = [];
     if (Array.isArray(images)) images.forEach(im => {
       const mime = im && imageMime(im.filename || '');
@@ -51,6 +75,7 @@ module.exports = async function handler(req, res){
       ? (filename || (Array.isArray(images) && images[0] && images[0].filename) || 'صور')
       : filename;
 
+    /* ═══ مسار الوسائط: لا قواعد — الذكاء وحده يرى ═══ */
     if (media.length){
       if (pickProvider() === 'none')
         return res.status(503).json({ error:
@@ -69,11 +94,16 @@ module.exports = async function handler(req, res){
         total: r.questions.length,
         with_options: r.questions.filter(q => q.has_options).length,
         with_answers: r.questions.filter(q => q.answer !== null && q.answer !== undefined || q.answer_text).length,
+        /* ★ كلها «غير موثَّقة» بالمعنى الحرفي: لا نصَّ نقارن به. والرافع
+           يراها بعلامتها ويقرؤها بعينه — هذا هو التوثيق هنا. */
         unverified: r.questions.length,
         questions: r.questions
       });
     }
 
+    /*
+      نصٌّ فارغ من ملفٍ ليس PDF ولا صورة: DOCX فارغ أو نصٌّ أبيض
+    */
     if (!String(text || '').trim())
       return res.status(422).json({ error:
         'الملف لا يحتوي نصًّا يمكن قراءته. إن كانت الأسئلة صورًا فارفعها صورًا مباشرة — صرنا نقرؤها.' });
@@ -86,12 +116,23 @@ module.exports = async function handler(req, res){
     if (wantAi && pickProvider() !== 'none') {
       const r = await aiRead(text, callAI);
       aiErr = r.error || null;
+      /*
+        ★ الأكثر يفوز — لا «الذكاء دائمًا».
+        القواعد أحيانًا تقرأ ملفًا مرتّبًا أنظفَ من الذكاء، فلو أزحناها
+        بلا مقارنة لخسرنا حصادًا أفضل. والمقارنة بالعدد لأنها الوحيدة
+        الموضوعية هنا: سؤالٌ التُقط خيرٌ من سؤالٍ ضاع.
+      */
       if (r.questions.length > questions.length) {
         questions = r.questions;
         readBy = 'ai';
       }
     }
 
+    /*
+      ★ العطل عندنا يُقال إنه عندنا.
+      إن عجزت القواعد ثم عجز الذكاء لعطلٍ فيه — لا لعيبٍ في الملف — فإلقاء
+      اللوم على ملف الطالب كذبٌ يجعله يعيد تنسيق ملفٍ سليم مرارًا بلا فائدة.
+    */
     if (!questions.length && aiErr)
       return res.status(aiErr.status || 503).json({
         error: aiErr.message, kind: aiErr.kind || 'other' });
@@ -102,6 +143,7 @@ module.exports = async function handler(req, res){
         'وانظر «قالب بنك الأسئلة» أسفل الصفحة. وإن كانت الأسئلة صورًا فارفعها صورًا.',
         kind:'file' });
 
+    // اسم المادة من الطالب إن أعطاه، وإلا من اسم الملف بلا امتداده
     const name = String(subject_name || '').trim() || filename.replace(/\.[^.]+$/, '');
     return res.status(200).json({
       ok: true,
@@ -113,6 +155,7 @@ module.exports = async function handler(req, res){
       total: questions.length,
       with_options: questions.filter(q => q.has_options).length,
       with_answers: questions.filter(q => q.answer !== null && q.answer !== undefined || q.answer_text).length,
+      // كم سؤالًا لم نجد نصّه حرفًا بحرف في الملف — يراه الرافع ويراجعه
       unverified: questions.filter(q => q.unverified).length,
       questions
     });

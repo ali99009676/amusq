@@ -19,8 +19,15 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+  // نداءات Supabase وواجهة الخادم تمر للشبكة دائمًا — البيانات الحية لا تُخبَّأ هنا
   if (url.pathname.indexOf('/api/') === 0 || url.hostname.indexOf('supabase') !== -1) return;
   if (e.request.method !== 'GET') return;
+  /*
+    ★ التنقلات تتجاوز كاش HTTP نفسه (cache:'no-cache' = تحقّق من الخادم دائمًا).
+    الدرس من جوّال علي: «الشبكة أولًا» وحدها قد تُجيب من كاش المتصفح القديم،
+    فيعلق الجهاز على نسخة شهرها الماضي وهو «متصل». التحقق الشرطي رخيص
+    (٣٠٤ بلا جسد) والعالق على نسخة قديمة غالٍ.
+  */
   const req = e.request.mode === 'navigate'
     ? new Request(e.request, { cache: 'no-cache' })
     : e.request;
@@ -38,7 +45,8 @@ self.addEventListener('fetch', e => {
 /*
   ═══ الإشعارات ═══
   الخادم يُرسل {title, body, url} موقّعًا بـVAPID، والمتصفح يوقظ هذا
-  العامل ليعرضه — ولو كانت المنصة مغلقة.
+  العامل ليعرضه — ولو كانت المنصة مغلقة. والضغط عليه يفتح الصفحة المقصودة
+  في تبويبٍ قائم إن وُجد، لا في تبويبٍ جديد كل مرة.
 */
 self.addEventListener('push', e => {
   let d = {};
@@ -49,7 +57,7 @@ self.addEventListener('push', e => {
     badge: './icon-192.png',
     dir: 'rtl',
     lang: 'ar',
-    tag: 'amusq-daily',
+    tag: 'amusq-daily',          // إشعار اليوم يحلّ محلّ إشعار الأمس لا يتراكم فوقه
     data: { url: d.url || '#/' }
   }));
 });

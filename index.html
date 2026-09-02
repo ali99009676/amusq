@@ -562,6 +562,11 @@ img,svg{ max-width:100%; height:auto; }
 .authchip__adm{ width:36px; height:36px; border-radius:10px; }
 .authchip__adm .iconbtn__ico{ font-size:1rem; }
 
+/* ★ الشارة الذهبية: «جاء في اختبار سابق» — لون الهوية الثابت لا لون المادة،
+   لأنها الشيء الذي يدفع الطلاب لأجله تحديدًا ويجب أن يُلتقط في أي مادة. */
+.badge--gold{ background:color-mix(in srgb, var(--gold) 18%, var(--surface));
+  color:var(--gold); border-color:color-mix(in srgb, var(--gold) 45%, transparent); }
+
 
 /* ===== 40-screens.css ===== */
 /* تنسيقات الشاشات المركّبة: اللوحة، معالج الرفع، المادة، الاختبار — كلها من المتغيّرات */
@@ -1272,6 +1277,17 @@ a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
 .phverif__i{ color:var(--ok); font-weight:800; }
 .phverif__n{ font-weight:700; direction:ltr; unicode-bidi:isolate; }
 
+/* ═══ طلب الشراء: حال الانتظار ═══ */
+.orderwait{ display:flex; gap:var(--s3); align-items:flex-start; text-align:start;
+  border-color:color-mix(in srgb, var(--gold) 45%, var(--line)); }
+.orderwait__i{ color:var(--gold); font-size:1.3rem; line-height:1.3; }
+.orderwait__t{ margin:0; font-weight:800; }
+
+/* ═══ دعوة الإشعارات ═══ زرّان في طرف الشريط — «فعّل» و«لاحقًا» بلا إلحاح */
+.notify-band{ cursor:default; }
+.notify-band__b{ display:flex; gap:var(--s1); flex-shrink:0; align-items:center; }
+@media (max-width:480px){ .notify-band{ flex-wrap:wrap; } .notify-band__b{ width:100%; justify-content:flex-end; } }
+
 
 /* ===== 50-landing.css ===== */
 /*
@@ -1961,6 +1977,27 @@ a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
 .codeuse__e{ color:var(--text-2); direction:ltr; unicode-bidi:isolate;
              overflow:hidden; text-overflow:ellipsis; max-width:100%; }
 .codeuse__d{ margin-inline-start:auto; color:var(--text-3); white-space:nowrap; }
+
+/* ═══ صندوق الوارد ═══
+   ★ خمس خانات بعرضٍ واحد، والمُنتظَر منها يُلوَّن وحده: العين تقع على
+   الملوّن قبل أن تقرأ رقمًا. */
+.inbox{ margin-bottom:var(--s3); }
+.inbox__h{ display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s2); }
+.inbox__t{ font-weight:800; }
+.inbox__row{ display:grid; grid-template-columns:repeat(5,1fr); gap:var(--s2); }
+@media (max-width:520px){ .inbox__row{ grid-template-columns:repeat(3,1fr); } }
+.inbox__i{
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:var(--s2) var(--s1); border-radius:var(--r2);
+  background:var(--surface-2); border:1px solid var(--line);
+  color:var(--text-3); text-decoration:none; min-width:0;
+}
+.inbox__i.is-on{ color:var(--text); border-color:var(--gold);
+  background:color-mix(in srgb, var(--gold) 12%, var(--surface)); }
+.inbox__ic{ font-size:1.05rem; }
+.inbox__n{ font-size:1.25rem; font-weight:800; line-height:1; }
+.inbox__i.is-on .inbox__n{ color:var(--gold); }
+.inbox__l{ font-size:.68rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
 
 
 /* ===== 70-polish.css ===== */
@@ -3040,13 +3077,42 @@ const Gate = {
         رقم يفتح لا شيء.
       */
       if (!C.isApp() && s.wa){
-        kids.push(el('a', { class:'btn btn--block', target:'_blank',
-          rel:'noopener', href: C.paidUrl(sub),
-          text:'حوّلتُ — أرسل الإيصال للمشرف' }));
-        kids.push(el('p', { class:'field__hint', style:'margin:2px 0 0', text:
-          'تُفتح محادثة واتساب برسالة جاهزة فيها المادة والمبلغ وحسابك — أرفق صورة الإيصال وأرسلها.' }));
+        const O = QBANK.orders;
+        const pending = O ? O.pendingFor(sub.id) : null;
+
+        /*
+          ★ طلبٌ قائم يُعرض حالًا لا أزرارًا.
+          الطالب العائد من واتساب بعد ثوانٍ يجب أن يجد «قيد المراجعة» — لا
+          الزرّ نفسه فيظنّ أن شيئًا لم يُسجَّل ويضغطه ثانيةً ثم ثالثة.
+        */
+        if (pending) kids.push(O.waitingBand(sub, pending));
+
+        const paid = el('a', { class:'btn btn--block' + (pending ? ' btn--soft' : ''),
+          target:'_blank', rel:'noopener', href: C.paidUrl(sub),
+          text: pending ? 'أرسل الإيصال على واتساب' : 'حوّلتُ — أرسل الإيصال للمشرف' });
+        /*
+          ★ الطلب يُسجَّل في القاعدة لحظةَ الضغط، والرابط يمضي إلى واتساب
+          كما هو. لا ننتظر الرد — انتظاره يُوقف الانتقال ويكسره على بعض
+          الجوّالات (حاجب النوافذ). ولو سقط التسجيل بقي الإيصال وصل، وللمشرف
+          أن يفتح المادة يدويًا من ملف الطالب.
+        */
+        if (O && !pending) paid.addEventListener('click', () => {
+          O.create(sub.id).then(() => {
+            /* نُعيد الرسم بعد لحظة كي يجد الطالب الحال الجديدة حين يعود */
+            setTimeout(() => Gate.reopen(), 800);
+          });
+        });
+        kids.push(paid);
+        if (!pending)
+          kids.push(el('p', { class:'field__hint', style:'margin:2px 0 0', text:
+            'تُفتح محادثة واتساب برسالة جاهزة فيها المادة والمبلغ وحسابك — أرفق صورة الإيصال وأرسلها.' }));
         kids.push(el('a', { class:'btn btn--ghost btn--block', target:'_blank',
           rel:'noopener', href: C.askUrl(sub), text:'عندي سؤال قبل التحويل' }));
+
+        /* ونُصحّح من القاعدة: طلبٌ فُتح أو رُفض بينما الشاشة مفتوحة يُرى فورًا.
+           ★ والاستحقاقات تُجدَّد قبل الرسم: «فُتحت» بلا استحقاقٍ في الجهاز
+           تُعيد رسم القفل نفسه، فيقرأ الطالب «فُتحت لك» فوق بابٍ مغلق. */
+        if (O) O.refresh(() => Gate.refresh().then(() => Gate.reopen()));
       }
     }
 
@@ -3204,6 +3270,7 @@ const Exam = {
     let pool = questions.slice();
     if (opts.scope === 'topic' && opts.topic) pool = pool.filter(q => q.topic === opts.topic);
     if (opts.scope === 'important') pool = pool.filter(q => q.important);
+    if (opts.scope === 'exam_tag')  pool = pool.filter(q => q.exam_tag);
     if (opts.scope === 'wrong') pool = pool.filter(q => (opts.wrongMap || {})[q.id]);
 
     const wrongMap = opts.wrongMap || {};
@@ -3485,6 +3552,10 @@ const ViewHome = {
         el('span', { class:'campus-band__go', 'aria-hidden':'true', text:'←' })
       ]));
     });
+
+    /* ★ دعوة الإشعارات — حين يكون لها سبب (مستحقّ اليوم أو اختبار قريب)،
+       وبزرٍّ يضغطه هو لا بنافذةٍ تقفز فتُرفض بلا قراءة. */
+    if (QBANK.views.notifyBanner){ const nb = QBANK.views.notifyBanner(); if (nb) body.push(nb); }
 
     // دعوة الرفع: الطالب لا يبحث عن ميزة لا يعرف بوجودها
     body.push(el('a', { class:'upsell', href:'#/upload' }, [
@@ -4285,6 +4356,18 @@ const Admin = {
     } catch(e){ return { ok:false, offline:true, err:e.message }; }
   },
 
+  /* GET إلى الخادم — للمفتاح العام ونحوه مما لا جسم له */
+  async serverGet(path){
+    const base = Admin.apiBase();
+    const f = QBANK.api.fetchFn();
+    if (base === null || !f) return { ok:false, offline:true };
+    try{
+      const res = await f(base + path, { method:'GET' });
+      const data = await res.json().catch(() => null);
+      return { ok: res.ok, status: res.status, data };
+    } catch(e){ return { ok:false, offline:true, err:e.message }; }
+  },
+
   /* ===== معالج الرفع — أربع خطوات، حالته قابلة للفحص بمعزل عن الواجهة ===== */
   // ٤٠ لا ٢٥: تعليمات النظام تُرسل مرة لكل دفعة، فالدفعة الأكبر توزّع كلفتها
   // على أسئلة أكثر. والسقف يبقى دون مهلة الخادم ويسمح باستئناف الرفع.
@@ -4327,6 +4410,34 @@ const Admin = {
     تلتقط منه القواعدُ عشرين سؤالًا من ثمانين تبدو «سليمة» فلا يُستدعى
     الذكاء. فمن رأى العدد أقلّ مما يعرف عن ملفه، له أن يأمر بالقراءة ثانية.
   */
+  /*
+    الصور: تُرسل مصفوفةً في طلبٍ واحد — لا صورةً صورة. ورقةٌ صُوِّرت على
+    ثلاث لقطات قد يقع سؤالٌ على حدّ اثنتين، والنموذج الذي يراهما معًا
+    يقرؤه كاملًا. والنتيجة بشكل المعالج نفسه فلا يعرف ما بعده المصدر.
+  */
+  async wizardIngestImages(w, images){
+    const r = await Admin.server('/api/ingest', { images,
+      subject_name: w.subjectName || '', sanctity_mode: w.mode || 'strict' });
+    if (!r.ok) { w.error = (r.data && r.data.error) || 'تعذّر الاتصال بالخادم'; return w; }
+    const got = Array.isArray(r.data.questions) ? r.data.questions : [];
+    if (!got.length) {
+      w.error = 'لم نقرأ سؤالًا واحدًا من الصور. تأكّد أنها واضحة ومضاءة وغير مقلوبة، ' +
+                'أو صوّرها أقرب — وجرّب صورةً واحدة أولًا.';
+      w.raw = []; w.total = 0;
+      return w;
+    }
+    w.filename = (images[0] && images[0].filename) || 'صور';
+    w.raw = got; w.total = r.data.total;
+    w.readBy = 'ai';
+    w.fromImages = r.data.from_images || images.length;
+    w.unverified = r.data.unverified || 0;
+    w.fileB64 = null;           // لا «أعد القراءة» — الصور لا تُعاد قراءتها بالقواعد
+    w.subjectName = w.subjectName || r.data.subject_name || '';
+    w.slug = w.slug || r.data.slug || '';
+    w.step = 2;
+    return w;
+  },
+
   async wizardIngest(w, filename, base64, forceAi){
     const r = await Admin.server('/api/ingest', { filename, content_base64: base64,
       subject_name: w.subjectName || '', sanctity_mode: w.mode || 'strict',
@@ -5142,11 +5253,13 @@ function stepRead(box, rerender){
   const drop = el('div', { class:'drop', tabindex:'0', role:'button', 'aria-label':'اختر ملف أسئلة' }, [
     el('span', { class:'empty__ico', 'aria-hidden':'true', text:'⇪' }),
     el('p', { class:'empty__title', text:'أسقط ملف الأسئلة هنا أو اضغط للاختيار' }),
-    el('p', { class:'empty__text', text:'PDF أو Word أو PowerPoint أو نص — حتى ١٥ ميغابايت. ' +
-      'ارفع ملفك كما هو: إن لم تفهمه القواعد قرأه الذكاء، مهما كان ترقيمه أو ترتيبه.' })
+    /* ★ الصور مذكورةٌ أولَ السطر لا آخره: هي أكثر ما يملكه الطلاب، وكانت
+       أول ما نردّه — والطالب الذي رُدّ مرةً لا يقرأ التذييل ليعرف أن الباب فُتح. */
+    el('p', { class:'empty__text', text:'صور (لقطات شاشة أو تصوير ورقة — اختر عدّة صور معًا)، ' +
+      'أو PDF أو Word أو PowerPoint أو نص. ارفعه كما هو: يقرؤه الذكاء مهما كان شكله.' })
   ]);
-  const fileIn = el('input', { type:'file', style:'display:none', 'aria-hidden':'true',
-    accept:'.pdf,.docx,.pptx,.txt,.text,.md,.csv,.tsv,.rtf,.html,.htm' });
+  const fileIn = el('input', { type:'file', style:'display:none', 'aria-hidden':'true', multiple:true,
+    accept:'.pdf,.docx,.pptx,.txt,.text,.md,.csv,.tsv,.rtf,.html,.htm,.png,.jpg,.jpeg,.webp,.gif,.heic,image/*' });
   const msg = el('p', { class:'field__hint', role:'status' });
 
   /*
@@ -5185,6 +5298,76 @@ function stepRead(box, rerender){
       rdBar.firstChild.style.width = '100%';
       rdBar.removeAttribute('aria-valuenow');
     }
+  }
+
+  const IMG_RE = /\.(png|jpe?g|webp|gif|heic|heif)$/i;
+  const isImg = f => f && (IMG_RE.test(f.name) || /^image\//.test(f.type || ''));
+
+  /*
+    ★ الصورة تُصغَّر في الجهاز قبل الرفع.
+    صورة الجوّال ٤–٦ ميغابايت، وثلاثٌ منها تفوق ما يقبله الخادم في طلبٍ
+    واحد. والنموذج لا يحتاج أكثر من ~١٦٠٠ بكسل عرضًا ليقرأ سطرًا مطبوعًا.
+    فنرسم الصورة على لوحةٍ بهذا العرض ونُصدّرها JPEG — فتنزل إلى بضع مئات
+    من الكيلوبايتات بلا أن يضيع حرف. وإن فشل الرسم (صيغة لا يفهمها
+    المتصفح مثل HEIC على غير آبل) أرسلناها كما هي وتركنا الحكم للخادم.
+  */
+  function shrinkImage(file){
+    return new Promise(resolve => {
+      const fallback = () => {
+        const rd = new FileReader();
+        rd.onload = () => resolve({ name: file.name, b64: String(rd.result).split(',')[1] || '' });
+        rd.onerror = () => resolve({ name: file.name, b64: '' });
+        rd.readAsDataURL(file);
+      };
+      try {
+        const url = URL.createObjectURL(file);
+        const im = new Image();
+        im.onload = () => {
+          try {
+            const MAX = 1600;
+            const k = Math.min(1, MAX / Math.max(im.naturalWidth, im.naturalHeight));
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(im.naturalWidth * k));
+            c.height = Math.max(1, Math.round(im.naturalHeight * k));
+            c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+            const out = c.toDataURL('image/jpeg', 0.82);
+            URL.revokeObjectURL(url);
+            resolve({ name: file.name.replace(/\.[^.]+$/, '') + '.jpg', b64: out.split(',')[1] || '' });
+          } catch(e){ URL.revokeObjectURL(url); fallback(); }
+        };
+        im.onerror = () => { URL.revokeObjectURL(url); fallback(); };
+        im.src = url;
+      } catch(e){ fallback(); }
+    });
+  }
+
+  async function handleImages(files){
+    msg.textContent = '';
+    const list = Array.prototype.slice.call(files).filter(isImg).slice(0, 20);
+    if (!list.length) return;
+    const imgs = [];
+    for (let i = 0; i < list.length; i++){
+      phase('تُجهَّز الصور من جهازك', 'الصورة ' + QBANK.views.arNum(i + 1) + ' من ' +
+        QBANK.views.arNum(list.length), Math.round(i / list.length * 100));
+      const r = await shrinkImage(list[i]);
+      if (r.b64) imgs.push({ filename: r.name, content_base64: r.b64 });
+    }
+    if (!imgs.length){ rdCard.hidden = true; msg.textContent = '⚠ تعذّرت قراءة الصور من جهازك.'; return; }
+
+    const t0 = Date.now();
+    const tick = setInterval(() => {
+      const sec = Math.round((Date.now() - t0) / 1000);
+      phase('يقرأ الذكاءُ الصور', QBANK.views.arNum(imgs.length) + ' صورة — ' + sec +
+        ' ثانية. القراءة من الصور أبطأ من النص وقد تأخذ دقيقة.');
+    }, 1000);
+    phase('تُرفع الصور', 'ثم يقرؤها الذكاء ويستخرج الأسئلة.');
+
+    wizard = await QBANK.admin.wizardIngestImages(wizard, imgs);
+    clearInterval(tick);
+    rdCard.hidden = true;
+    rdBar.classList.remove('meter--busy');
+    if (wizard.error) { msg.textContent = '⚠ ' + wizard.error; return; }
+    rerender();
   }
 
   async function handle(file){
@@ -5228,11 +5411,15 @@ function stepRead(box, rerender){
     if (e.key === 'Enter' || e.key === ' ') { if (requireName()) fileIn.click(); } });
   drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('is-over'); });
   drop.addEventListener('dragleave', () => drop.classList.remove('is-over'));
+  const route = files => {
+    if (!files || !files.length) return;
+    if (isImg(files[0])) handleImages(files); else handle(files[0]);
+  };
   drop.addEventListener('drop', e => {
     e.preventDefault(); drop.classList.remove('is-over');
-    if (requireName()) handle(e.dataTransfer.files[0]);
+    if (requireName()) route(e.dataTransfer.files);
   });
-  fileIn.addEventListener('change', () => handle(fileIn.files[0]));
+  fileIn.addEventListener('change', () => route(fileIn.files));
 
   /*
     ★ الطريق الثاني: من لا ملف عنده.
@@ -5333,10 +5520,16 @@ function stepEnrich(box, rerender){
   */
   const N = QBANK.views.arNum;   // يُستعمل من هنا فصاعدًا — قبل استعماله لا بعده
   const readLine = el('p', { class:'field__hint', text:
-    (wizard.readBy === 'ai' ? '🧠 قرأ الذكاءُ ملفك واستخرج ' : '⚡ قُرئ ملفك بالقواعد واستُخرج ')
-    + N(wizard.total) + ' سؤالًا.'
-    + (wizard.unverified ? ' ومنها ' + N(wizard.unverified) +
-        ' لم نجد نصّها حرفًا بحرف في الملف — راجعها في الخطوة التالية.' : '') });
+    wizard.fromImages
+      /* ★ من صورة: لا مصدرَ نصّي نقارن به، فالمراجعة بالعين هي التوثيق —
+         ويُقال ذلك صراحةً لا بلغة «لم نجد نصّها» التي تصف ملفًا نصّيًا */
+      ? '📷 قرأ الذكاءُ ' + N(wizard.fromImages) + (wizard.fromImages > 1 ? ' صور' : ' صورة') +
+        ' واستخرج ' + N(wizard.total) + ' سؤالًا. النسخ من الصور قد يُخطئ في حرفٍ أو رقم — ' +
+        'راجع كل سؤال في الخطوة التالية قبل النشر.'
+      : (wizard.readBy === 'ai' ? '🧠 قرأ الذكاءُ ملفك واستخرج ' : '⚡ قُرئ ملفك بالقواعد واستُخرج ')
+        + N(wizard.total) + ' سؤالًا.'
+        + (wizard.unverified ? ' ومنها ' + N(wizard.unverified) +
+            ' لم نجد نصّها حرفًا بحرف في الملف — راجعها في الخطوة التالية.' : '') });
   box.appendChild(readLine);
   box.appendChild(sub);
 
@@ -5865,7 +6058,9 @@ function bankRow(sub, q, prog){
       //   وزرٌّ بعيد عن موضع المشكلة لا يُضغط
       QBANK.trust ? QBANK.trust.reportButton(sub.id, q.id) : null,
       prog.wrong[q.id] ? el('span', { class:'badge badge--bad num', text:'أخطأت ×' + prog.wrong[q.id] }) : null,
-      q.important ? el('span', { class:'badge badge--warn', text:'مهم' }) : null
+      q.important ? el('span', { class:'badge badge--warn', text:'مهم' }) : null,
+      /* ★ الشارة التي يدفع الطلاب لأجلها: سؤالٌ جاء فعلًا في اختبار */
+      q.exam_tag ? el('span', { class:'badge badge--gold', text:'جاء في ' + q.exam_tag }) : null
     ]),
     opts, el('div', { class:'row' }, [transBtn]), trans
   ]);
@@ -6291,6 +6486,9 @@ function examSetup(sub, questions){
   const scopeSel = el('select', { class:'input', id:'exScope', 'aria-label':'نطاق الاختبار' }, [
     el('option', { value:'all', text:'كل الأسئلة (' + questions.length + ')' }),
     el('option', { value:'important', text:'الأسئلة المهمة (' + questions.filter(q => q.important).length + ')' }),
+    questions.some(q => q.exam_tag)
+      ? el('option', { value:'exam_tag', text:'التي جاءت في اختبارات سابقة (' + questions.filter(q => q.exam_tag).length + ')' })
+      : null,
     el('option', { value:'wrong', text:'أخطائي السابقة (' + Object.keys(prog.wrong).length + ')' })
   ].concat(topics.map(t => el('option', { value:'topic:' + t, text:'قسم: ' + t }))));
 
@@ -6549,6 +6747,13 @@ function buildPrintDoc(sub, questions, opts){
     const star = QBANK.progress.forSubject(sub.id).star;
     qs = qs.filter(q => star[q.id]);
   }
+  /* ★ بنك أخطائي: كل ما تعثّر فيه، الأكثر تعثّرًا أولًا — ورقةٌ يأخذها معه
+     صباح الاختبار. الترتيب مقصود: ما أخطأ فيه ثلاثًا يُقرأ قبل ما أخطأ فيه مرة. */
+  if (opts.range === 'wrong') {
+    const wrong = QBANK.progress.forSubject(sub.id).wrong || {};
+    qs = qs.filter(q => wrong[q.id]).sort((a, b) => (wrong[b.id] || 0) - (wrong[a.id] || 0));
+  }
+  if (opts.range === 'exam_tag') qs = qs.filter(q => q.exam_tag);
 
   if (opts.what === 'overview') {
     root.appendChild(el('p', { text: sub.descr || '' }));
@@ -6628,7 +6833,9 @@ function openPrintDialog(sub){
   const range = el('select', { class:'input' }, [
     el('option', { value:'all', text:'كل الأسئلة' }),
     el('option', { value:'important', text:'المهمة فقط' }),
-    el('option', { value:'starred', text:'ما ميّزته بنجمة' })
+    el('option', { value:'starred', text:'ما ميّزته بنجمة' }),
+    el('option', { value:'wrong', text:'بنك أخطائي — ما تعثّرتُ فيه' }),
+    el('option', { value:'exam_tag', text:'ما جاء في اختبارات سابقة' })
   ]);
   function check(label, checked){
     const c = el('input', { type:'checkbox' });
@@ -7882,6 +8089,24 @@ function qCard(q, sub, refresh){
   });
   head.appendChild(star);
 
+  /*
+    ★ «جاء في اختبار سابق» — حقلٌ صغير في رأس السؤال لا في نافذة التحرير.
+    الوسم عملٌ يُفعل لعشرين سؤالًا متتابعة بعد الاختبار مباشرة، ونافذةٌ
+    تُفتح وتُغلق لكلٍّ منها تجعله لا يُفعل. حقلٌ في الصفّ يُكتب ويُغادَر.
+  */
+  const tagIn = el('input', { class:'input input--sm num', type:'text', maxlength:'16',
+    value: q.exam_tag || '', placeholder:'اختبار ٢٠٢٥ ف١',
+    'aria-label':'جاء في اختبار سابق — اكتب السنة والفصل' });
+  tagIn.addEventListener('change', async () => {
+    const v = tagIn.value.trim().slice(0, 16);
+    const r = await SubjEditor.patchQuestion(q.id, { exam_tag: v });
+    if (!r.ok) return QBANK.toast('تعذّر الحفظ');
+    q.exam_tag = v;
+    QBANK.toast(v ? 'وُسم: ' + v : 'أُزيل الوسم');
+  });
+  head.appendChild(el('label', { class:'ad-inline' }, [
+    el('span', { class:'ad-inline__l', text:'اختبار سابق' }), tagIn ]));
+
   const more = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'حرّر' });
   head.appendChild(more);
   box.appendChild(head);
@@ -8208,7 +8433,10 @@ const SET = {
       fields:[
       { k:'pay_note', t:'area',
         label:'كيف يدفع لك الطالب؟ — يظهر له في بطاقة المادة المقفلة',
-        ph:'حوّل {السعر} على حساب الراجحي SA00 0000 0000 0000 0000، أو STC Pay على 0500000000، وأرسل الإيصال على واتساب مع اسم المادة «{المادة}» ويصلك رمز التفعيل.' }
+        ph:'حوّل {السعر} على حساب الراجحي SA00 0000 0000 0000 0000، أو STC Pay على 0500000000، وأرسل الإيصال على واتساب مع اسم المادة «{المادة}» ويصلك رمز التفعيل.' },
+      /* ★ الانتظار المعلوم يُحتمل والمجهول يُشتكى منه — والمشرف وحده يعرف
+         متى يفتح لوحته، فهو من يكتب الوعد. */
+      { k:'review_eta', t:'text', label:'متى تفتح الطلبات؟ — يظهر للطالب بعد «حوّلتُ»' }
     ]},
     /*
       ★ «من سعر البيع» و«صافي الربح» مكتوبتان في التسميتين لا في وثيقة.
@@ -8823,6 +9051,7 @@ function walletWithShop(){
     /* ★ توثيق الجوال قبل المال: هو ما يربط الحساب بصاحبه، وكل ما تحته
        — أرباحٌ وتحويلاتٌ ومشتريات — يتّكئ على أن الحساب لصاحبه فعلًا. */
     QBANK.views.phoneCard ? QBANK.views.phoneCard() : null,
+    QBANK.views.notifyCard ? QBANK.views.notifyCard() : null,
     /* ★ الأرباح قبل المتجر: المحفظة تُفتح لسؤال «كم لي؟» قبل «بكم أشتري؟» */
     QBANK.views.earnCard ? QBANK.views.earnCard() : null,
     codeCard,
@@ -10495,6 +10724,8 @@ function proDashTab(box){
   const onlineBox = el('div', {});
   /* المتصلون فوق كل شيء: أول ما يريد المشرف معرفته «من هنا الآن؟» —
      وخارج body كي لا يمحوه تبديل المدى الزمني */
+  /* ★ صندوق الوارد قبل كل شيء — «ماذا ينتظرني» يسبق «من هنا» و«كم بعنا» */
+  if (QBANK.views.inboxPanel) box.appendChild(QBANK.views.inboxPanel());
   box.appendChild(head); box.appendChild(onlineBox); box.appendChild(body);
 
   [7, 30, 90].forEach(d => {
@@ -10722,6 +10953,8 @@ function proMoneyTab(box){
   /* ★ وطلبات التوثيق فوق الجميع: هي وحدها التي يقف صاحبها منتظرًا الآن.
      المال يُراجَع متى شئت، والطالب الذي أرسل رمزه ينظر إلى شاشته. */
   if (QBANK.views.adminPhoneCard) box.insertBefore(QBANK.views.adminPhoneCard(), box.firstChild);
+  /* ★ وطلبات الشراء أولَ الكل: مالٌ دُفع فعلًا وصاحبه يقف على بابٍ مغلق */
+  if (QBANK.views.adminOrdersCard) box.insertBefore(QBANK.views.adminOrdersCard(), box.firstChild);
 
   function draw(){
     body.innerHTML = '';
@@ -11405,8 +11638,20 @@ const ViewPeer = {
             el('span', { text:'سؤالًا أهداه' }) ]),
           el('div', { class:'peer-stat' }, [
             el('b', { class:'num', text: Number(p.rating_avg) ? Number(p.rating_avg).toFixed(1) : '—' }),
-            el('span', { text: p.rating_n ? 'من ' + QBANK.views.arNum(p.rating_n) + ' تقييم' : 'بلا تقييم بعد' }) ])
+            el('span', { text: p.rating_n ? 'من ' + QBANK.views.arNum(p.rating_n) + ' تقييم' : 'بلا تقييم بعد' }) ]),
+          /* ★ «كم اشترى منه غيري» — الرقم الذي يسبق تحويلًا بنكيًا إلى غريب */
+          el('div', { class:'peer-stat' }, [
+            el('b', { class:'num', text: QBANK.views.arNum(p.sales || 0) }),
+            el('span', { text:'طالبًا اشتروا منه' }) ])
         ]));
+
+        /* شارات الثقة: تُقال كلمةً لا رقمًا حين تكون كلمة */
+        const trust = [];
+        if (p.phone_verified) trust.push(el('span', { class:'badge badge--ok', text:'✓ رقم جوال موثَّق' }));
+        if (Number(p.exam_tagged) > 0)
+          trust.push(el('span', { class:'badge badge--gold', text:
+            QBANK.views.arNum(p.exam_tagged) + ' سؤالًا جاء في اختبارات سابقة' }));
+        if (trust.length) box.appendChild(el('div', { class:'row', style:'gap:6px' }, trust));
 
         /* مواده: بطاقات حقيقية تُفتح */
         const subs = p.subjects || [];
@@ -13428,6 +13673,441 @@ function adminPhoneCard(){
   return box;
 }
 QBANK.views.adminPhoneCard = adminPhoneCard;
+
+
+/* ===== 67-orders.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  طلب الشراء داخل المنصة — البيعة بخطوتين بدل خمس
+  ═══════════════════════════════════════════════════════════════════
+  كان: يحوّل الطالب ← يراسل ← يولّد المشرف رمزًا ← يرسله ← يُدخله الطالب.
+  صار: زرّ «حوّلتُ» يُسجّل طلبًا في القاعدة ثم يفتح واتساب — فيرى المشرف
+  الطلب في لوحته ويضغط «افتح له». والرمز لم يعد في الطريق ليضيع.
+
+  ★ الطلب يُسجَّل قبل واتساب لا بعده.
+  لو انتظرنا رجوع الطالب من واتساب لما رجع كثيرون — أرسلوا الإيصال وأغلقوا.
+  والطلب في القاعدة هو ما يجعل الإيصال الذي وصل بلا اسمٍ واضح يجد صاحبه.
+*/
+
+const Orders = {
+  KEY: 'purchase_requests',
+  list(){ return QBANK.store.get(Orders.KEY, []); },
+
+  /*
+    نسخة الجهاز تُقرأ فورًا كي لا تومض البطاقة، وتُصحَّح من القاعدة حين
+    يصل الردّ — وإن اختلفتا أُعيد الرسم. ولا حلقة: الرسم الثاني يجد
+    النسختين متطابقتين فيسكت.
+  */
+  refresh(onChange){
+    if (!QBANK.api.user()) return Promise.resolve(false);
+    return QBANK.api.rpc('my_purchase_requests').then(r => {
+      if (!r.ok || !Array.isArray(r.data)) return false;
+      const before = JSON.stringify(Orders.list());
+      const after  = JSON.stringify(r.data);
+      if (before === after) return false;
+      QBANK.store.set(Orders.KEY, r.data);
+      if (onChange) onChange();
+      return true;
+    });
+  },
+
+  pendingFor(subjectId){
+    return Orders.list().filter(x => x.subject_id === subjectId && x.status === 'pending')[0] || null;
+  },
+  lastFor(subjectId){
+    return Orders.list().filter(x => x.subject_id === subjectId)[0] || null;
+  },
+
+  create(subjectId){
+    return QBANK.api.rpc('request_purchase', { p_subject: subjectId }).then(r => {
+      const d = (r.ok && r.data) ? r.data : null;
+      if (d && d.ok){
+        /* نُثبت الطلب محليًا فورًا: الطالب عائدٌ من واتساب بعد ثوانٍ، ويجب
+           أن يجد «قيد المراجعة» لا الأزرار نفسها فيظنّ أن شيئًا لم يُسجَّل. */
+        const cur = Orders.list().filter(x => !(x.subject_id === subjectId && x.status === 'pending'));
+        cur.unshift({ id: d.id, subject_id: subjectId, status:'pending',
+                      amount_halalas: d.amount_halalas || 0, at: new Date().toISOString() });
+        QBANK.store.set(Orders.KEY, cur);
+      }
+      return d;
+    });
+  },
+
+  eta(){
+    const s = (QBANK.data.pack().settings) || {};
+    return String(s.review_eta || 'قريبًا');
+  },
+
+  /* ما يراه الطالب بدل الأزرار بعد أن طلب */
+  waitingBand(sub, req){
+    const at = req && req.at ? new Date(req.at) : null;
+    return el('div', { class:'card orderwait' }, [
+      el('span', { class:'orderwait__i', 'aria-hidden':'true', text:'◔' }),
+      el('div', { class:'orderwait__x' }, [
+        el('p', { class:'orderwait__t', text:'طلبك قيد المراجعة' }),
+        el('p', { class:'field__hint', style:'margin:0', text:
+          'وصلنا أنك حوّلتَ ثمن «' + sub.name + '». يفتحها لك المشرف ' + Orders.eta() + '.' }),
+        at ? el('p', { class:'field__hint num', style:'margin:4px 0 0',
+          text:'أُرسل ' + QBANK.admin.charts.ago(at.toISOString()) }) : null,
+        el('p', { class:'field__hint', style:'margin:4px 0 0', text:
+          'لم ترسل صورة الإيصال بعد؟ أرسلها بالزر أدناه — فبها يُفتح الطلب.' })
+      ])
+    ]);
+  },
+
+  WHY: {
+    auth:          'سجّل دخولك أولًا.',
+    not_found:     'المادة غير موجودة.',
+    already_free:  'هذه المادة مجانية — لا تحتاج شراء.',
+    already_owned: 'المادة مفتوحة لك بالفعل.',
+    no_price:      'لا سعر لهذه المادة بعد.'
+  }
+};
+QBANK.orders = Orders;
+
+/* ═══════════════ لوحة المشرف: طلبات الشراء ═══════════════ */
+function adminOrdersCard(){
+  const box = el('div', { class:'card stack' });
+  box.appendChild(el('h2', { style:'margin:0', text:'طلبات الشراء' }));
+  box.appendChild(el('p', { class:'field__hint', style:'margin:0', text:
+    'كل طلب هنا طالبٌ ضغط «حوّلتُ». طابق إيصاله في واتساب، ثم «افتح له» — تُفتح المادة فورًا ويُحتسب نصيب الرافع.' }));
+
+  const list = el('div', { class:'stack' });
+  let status = 'pending';
+  const chips = el('div', { class:'ex-chips', role:'group', 'aria-label':'تصفية طلبات الشراء' });
+  [['pending','معلّقة'],['approved','فُتحت'],['rejected','مرفوضة'],['','الكل']].forEach(t => {
+    const b = el('button', { class:'chip' + (t[0] === status ? ' is-on' : ''), type:'button',
+      'data-s': t[0], text: t[1] });
+    b.addEventListener('click', () => {
+      status = t[0];
+      chips.querySelectorAll('.chip').forEach(x =>
+        x.classList.toggle('is-on', x.getAttribute('data-s') === status));
+      draw();
+    });
+    chips.appendChild(b);
+  });
+  box.appendChild(chips);
+  box.appendChild(list);
+
+  const M = h => QBANK.pay ? QBANK.pay.money(h, 'SAR') : String(h);
+
+  let seq = 0;
+  function draw(){
+    const mine = ++seq;
+    list.innerHTML = '';
+    list.appendChild(el('p', { class:'field__hint', style:'margin:0', text:'جارٍ التحميل…' }));
+    QBANK.api.rpc('admin_purchase_requests', { p_status: status }).then(r => {
+      if (mine !== seq || !alive()) return;
+      list.innerHTML = '';
+      if (!r.ok || !Array.isArray(r.data)){
+        list.appendChild(el('p', { class:'field__hint is-bad', style:'margin:0',
+          text:'تعذّر الجلب — تأكّد من تنفيذ db/ORDERS.sql.' }));
+        return;
+      }
+      if (!r.data.length){
+        list.appendChild(el('p', { class:'field__hint', style:'margin:0',
+          text: status === 'pending' ? 'لا طلبات معلّقة — كل من دفع فُتحت له.' : 'لا شيء هنا.' }));
+        return;
+      }
+      r.data.forEach(o => {
+        const row = el('div', { class:'payrow' }, [
+          el('span', { class:'payrow__t', text: o.name || 'بلا اسم' }),
+          el('span', { class:'badge', text: o.subject }),
+          el('span', { class:'badge num', text: M(o.amount_halalas) }),
+          /*
+            ★ علامة التوثيق بجانب الرقم: المشرف يطابق إيصالًا وصله من رقمٍ
+            ما بطلبٍ هنا. ورقمٌ موثَّق يجعل المطابقة يقينًا؛ وغير الموثَّق
+            يُقال إنه كذلك كي لا يُعامَل كيقين.
+          */
+          o.phone ? el('span', { class:'badge num ' + (o.phone_verified ? 'badge--ok' : ''),
+            title: o.phone_verified ? 'رقم موثَّق' : 'رقم غير موثَّق',
+            text: (o.phone_verified ? '✓ ' : '؟ ') +
+                  (QBANK.phone ? QBANK.phone.pretty(o.phone) : o.phone) }) : null,
+          el('span', { class:'payrow__d num', text: QBANK.admin.charts.ago(o.at) })
+        ]);
+        const det = el('div', { class:'codeuse' }, [
+          el('span', { class:'codeuse__i', 'aria-hidden':'true', text:'↳' }),
+          el('span', { class:'codeuse__e num', text: o.email || '' }),
+          o.note ? el('span', { class:'codeuse__n', text: o.note }) : null
+        ]);
+        const blk = el('div', { class:'codeblk' }, [row, det]);
+
+        if (o.status === 'pending'){
+          const ok = el('button', { class:'btn btn--sm', type:'button', text:'افتح له',
+            'aria-label':'افتح «' + o.subject + '» للطالب ' + (o.name || o.email || '') });
+          const no = el('button', { class:'btn btn--ghost btn--sm', type:'button', text:'ارفض',
+            'aria-label':'ارفض طلب ' + (o.name || o.email || '') });
+          const set = async (yes) => {
+            ok.disabled = no.disabled = true;
+            const rr = await QBANK.api.rpc('admin_settle_purchase', { p_id: o.id, p_ok: yes, p_note: '' });
+            const x = (rr.ok && rr.data) ? rr.data : null;
+            if (x && x.ok){ QBANK.toast(yes ? 'فُتحت له المادة' : 'رُفض الطلب'); draw(); return; }
+            ok.disabled = no.disabled = false;
+            QBANK.toast('تعذّر التعديل');
+          };
+          ok.addEventListener('click', () => set(true));
+          no.addEventListener('click', () => set(false));
+          row.appendChild(ok); row.appendChild(no);
+        } else {
+          const L = { approved:['badge--ok','فُتحت'], rejected:['badge--bad','مرفوض'] };
+          const st = L[o.status] || ['', o.status];
+          row.appendChild(el('span', { class:'badge ' + st[0], text: st[1] }));
+        }
+        list.appendChild(blk);
+      });
+    });
+  }
+  draw();
+  return box;
+}
+QBANK.views.adminOrdersCard = adminOrdersCard;
+
+/* ═══════════════ صندوق الوارد ═══════════════ */
+/*
+  ★ أول ما يراه المشرف: ماذا ينتظرني، لا كم زائرًا جاء.
+  أربعة طوابير كانت موزّعة على تبويبات لا يعرف ما فيها حتى يفتحها —
+  فيفتح «المال» ليكتشف أن الطلبات في «المال» أصلًا لكنه لم يكن يعلم أن
+  فيه شيئًا. وصفٌّ واحد بعدّادات يُنهي الجولة.
+*/
+function inboxPanel(){
+  const box = el('div', { class:'inbox' });
+  const items = [
+    ['purchases', 'طلب شراء',   '#/admin/money',    '💳'],
+    ['phones',    'توثيق جوال', '#/admin/money',    '☎'],
+    ['payouts',   'تحويل أرباح','#/admin/money',    '⇄'],
+    ['drafts',    'مسوّدة',     '#/admin/content',  '✎'],
+    ['reports',   'بلاغ',       '#/admin/quality',  '⚑']
+  ];
+  box.appendChild(el('p', { class:'field__hint', style:'margin:0', text:'جارٍ العدّ…' }));
+
+  QBANK.api.rpc('admin_inbox').then(r => {
+    if (!alive()) return;
+    box.innerHTML = '';
+    const d = (r.ok && r.data && !r.data.error) ? r.data : null;
+    if (!d){
+      box.appendChild(el('p', { class:'field__hint', style:'margin:0',
+        text:'صندوق الوارد يحتاج db/ORDERS.sql.' }));
+      return;
+    }
+    const total = items.reduce((n, it) => n + (Number(d[it[0]]) || 0), 0);
+    box.appendChild(el('div', { class:'inbox__h' }, [
+      el('span', { class:'inbox__t', text: total ? 'ينتظرك' : 'لا شيء ينتظرك' }),
+      total ? el('span', { class:'badge badge--warn num', text: QBANK.views.arNum(total) }) : null
+    ]));
+    const row = el('div', { class:'inbox__row' });
+    items.forEach(it => {
+      const n = Number(d[it[0]]) || 0;
+      row.appendChild(el('a', { class:'inbox__i' + (n ? ' is-on' : ''), href: it[2] }, [
+        el('span', { class:'inbox__ic', 'aria-hidden':'true', text: it[3] }),
+        el('span', { class:'inbox__n num', text: QBANK.views.arNum(n) }),
+        el('span', { class:'inbox__l', text: it[1] })
+      ]));
+    });
+    box.appendChild(row);
+    /* ★ «منذ كم ينتظر أقدمهم» أهمّ من «كم ينتظرون»: عشرة انتظروا دقيقة
+       أهون من واحدٍ انتظر ليلة. */
+    if (d.oldest_purchase)
+      box.appendChild(el('p', { class:'field__hint', style:'margin:6px 0 0', text:
+        'أقدم طلب شراء ينتظر ' + QBANK.admin.charts.ago(d.oldest_purchase) +
+        ' — وعدتَ الطلاب: ' + (d.review_eta || '') }));
+  });
+  return box;
+}
+QBANK.views.inboxPanel = inboxPanel;
+
+
+/* ===== 68-notify.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  إشعارات المتصفح — ما يُعيد الطالب
+  ═══════════════════════════════════════════════════════════════════
+  التكرار المتباعد يحسب «راجع اليوم» ولا أحد يخبر الطالب أن اليوم جاء.
+  Web Push يفعل ذلك مجانًا: المتصفح يحمل الإشعار، وخادمنا يوقّعه بمفتاح
+  VAPID ويرسله صباحًا لمن عنده ما يُراجَع أو اختبارٌ قريب.
+
+  ★ يُطلب الإذن عند سببٍ لا عند الدخول.
+  نافذة «السماح بالإشعارات؟» في أول ثانية تُرفض بلا قراءة، والرفض في
+  المتصفح دائم. فنسأل حين يكون للسؤال معنى: بعد أول جلسة مراجعة، أو حين
+  يكون له اختبارٌ قريب — وبزرٍّ يضغطه هو، لا بنافذةٍ تقفز.
+*/
+
+const Notify = {
+  supported(){
+    return typeof window !== 'undefined' && 'Notification' in window &&
+           'serviceWorker' in navigator && 'PushManager' in window &&
+           location.protocol.indexOf('http') === 0;
+  },
+  permission(){
+    try { return (typeof Notification !== 'undefined' && Notification.permission) || 'default'; }
+    catch(e){ return 'default'; }
+  },
+
+  /* المفتاح العام من الخادم — عامٌّ بطبيعته، ويُخبَّأ في الجهاز بعد أول جلب */
+  KEY: 'vapid_pub',
+  async publicKey(){
+    const cached = QBANK.store.get(Notify.KEY, '');
+    if (cached) return cached;
+    const r = await QBANK.admin.serverGet('/api/push');
+    const k = (r && r.ok && r.data && r.data.publicKey) || '';
+    if (k) QBANK.store.set(Notify.KEY, k);
+    return k;
+  },
+
+  /* المتصفح يريد المفتاح مصفوفة بايتات لا نصًّا */
+  toBytes(b64){
+    const pad = '='.repeat((4 - b64.length % 4) % 4);
+    const s = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(s);
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  },
+
+  /* هل هذا الجهاز مشترك؟ — نسأل المتصفح لا القاعدة: هو من يعرف */
+  async current(){
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      return await reg.pushManager.getSubscription();
+    } catch(e){ return null; }
+  },
+
+  async enable(){
+    if (!Notify.supported()) return { ok:false, reason:'unsupported' };
+    if (!QBANK.api.user()) return { ok:false, reason:'auth' };
+    const key = await Notify.publicKey();
+    if (!key) return { ok:false, reason:'no_key' };
+
+    let perm = Notify.permission();
+    if (perm !== 'granted'){
+      try { perm = await Notification.requestPermission(); } catch(e){ perm = 'denied'; }
+    }
+    if (perm !== 'granted') return { ok:false, reason: perm === 'denied' ? 'denied' : 'dismissed' };
+
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true, applicationServerKey: Notify.toBytes(key) });
+      const j = sub.toJSON();
+      const r = await QBANK.api.rpc('save_push_sub', {
+        p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth,
+        p_ua: (navigator.userAgent || '').slice(0, 80) });
+      if (!(r.ok && r.data && r.data.ok)) return { ok:false, reason:'save' };
+      QBANK.store.set('push_on', true);
+      return { ok:true };
+    } catch(e){ return { ok:false, reason:'subscribe', err: e.message }; }
+  },
+
+  async disable(){
+    const sub = await Notify.current();
+    if (sub){
+      try { await QBANK.api.rpc('drop_push_sub', { p_endpoint: sub.endpoint }); } catch(e){}
+      try { await sub.unsubscribe(); } catch(e){}
+    }
+    QBANK.store.set('push_on', false);
+    return { ok:true };
+  },
+
+  WHY: {
+    unsupported: 'متصفحك لا يدعم الإشعارات — على آيفون افتح المنصة من الشاشة الرئيسية (أضفها أولًا من زر المشاركة).',
+    auth:        'سجّل دخولك أولًا.',
+    no_key:      'الإشعارات لم تُفعَّل على الخادم بعد.',
+    denied:      'رفضتَ الإشعارات في المتصفح — يمكن تغييره من إعدادات الموقع في المتصفح.',
+    dismissed:   'أغلقتَ النافذة بلا اختيار — اضغط الزرّ ثانيةً حين تريد.',
+    save:        'تعذّر حفظ الاشتراك — تأكّد من تنفيذ db/PUSH.sql.',
+    subscribe:   'تعذّر الاشتراك في هذا المتصفح.'
+  },
+  why(r){ return Notify.WHY[r] || 'تعذّر تفعيل الإشعارات.'; },
+
+  /*
+    ★ متى نعرض الدعوة؟ حين يكون لها سبب.
+    - عنده أسئلة مستحقّة أو اختبار خلال أسبوع → الدعوة تقول ما ستذكّره به.
+    - لم يرفض من قبل (الرفض في المتصفح دائم، فلا نُلحّ على ما لا يُفتح).
+    - لم يُغلق الدعوة بيده مرتين.
+  */
+  DISMISS_KEY: 'push_dismiss',
+  shouldInvite(){
+    if (!Notify.supported() || !QBANK.api.user()) return false;
+    if (Notify.permission() === 'denied') return false;
+    if (QBANK.store.get('push_on', false)) return false;
+    if ((QBANK.store.get(Notify.DISMISS_KEY, 0) || 0) >= 2) return false;
+    return true;
+  },
+  reason(){
+    const due = QBANK.progress && QBANK.progress.dueAll ? QBANK.progress.dueAll().length : 0;
+    const subs = (QBANK.data.pack().subjects || []);
+    const soon = subs.filter(s => s.exam_date && (new Date(s.exam_date) - Date.now()) / 86400000 <= 14
+                                  && (new Date(s.exam_date) - Date.now()) >= 0)[0];
+    if (due) return 'عندك ' + QBANK.views.arNum(due) + ' سؤالًا مستحقًّا اليوم — نذكّرك كل صباح بما ينتظرك.';
+    if (soon) return 'اختبار «' + soon.name + '» قريب — نذكّرك قبله ولا نُزعجك بعده.';
+    return 'نذكّرك صباحًا بأسئلة اليوم وبموعد اختبارك — لا شيء غيرهما.';
+  }
+};
+QBANK.notify = Notify;
+
+/* ═══════════════ شريط الدعوة في الرئيسية ═══════════════ */
+function notifyBanner(){
+  if (!Notify.shouldInvite()) return null;
+  const box = el('div', { class:'campus-band campus-band--ask notify-band', role:'region',
+    'aria-label':'تفعيل الإشعارات' });
+  const msg = el('span', { class:'campus-band__d', text: Notify.reason() });
+  const go = el('button', { class:'btn btn--sm', type:'button', text:'فعّل التذكير' });
+  const no = el('button', { class:'btn btn--ghost btn--sm', type:'button', text:'لاحقًا',
+    'aria-label':'أخفِ دعوة الإشعارات' });
+  go.addEventListener('click', async () => {
+    go.disabled = true; msg.textContent = 'جارٍ التفعيل…';
+    const r = await Notify.enable();
+    if (r.ok){ msg.textContent = 'تمّ — يصلك التذكير صباحًا حين يكون هناك ما يُراجَع.'; go.hidden = true; no.hidden = true; return; }
+    go.disabled = false; msg.textContent = Notify.why(r.reason);
+  });
+  no.addEventListener('click', () => {
+    QBANK.store.set(Notify.DISMISS_KEY, (QBANK.store.get(Notify.DISMISS_KEY, 0) || 0) + 1);
+    box.remove();
+  });
+  box.appendChild(el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'🔔' }));
+  box.appendChild(el('span', { class:'campus-band__x' }, [
+    el('span', { class:'campus-band__t', text:'تذكيرٌ صباحي بما يستحق' }), msg ]));
+  box.appendChild(el('span', { class:'notify-band__b' }, [go, no]));
+  return box;
+}
+QBANK.views.notifyBanner = notifyBanner;
+
+/* ═══════════════ بطاقة الإعداد في الحساب ═══════════════ */
+function notifyCard(){
+  const box = el('div', { class:'card stack' });
+  box.appendChild(el('h2', { style:'margin:0', text:'الإشعارات' }));
+  const msg = el('p', { class:'field__hint', role:'status', style:'margin:0' });
+  const btn = el('button', { class:'btn btn--soft', type:'button', text:'…' });
+  box.appendChild(el('p', { class:'field__hint', style:'margin:0', text:
+    'تذكيرٌ واحد صباحًا: أسئلة اليوم المستحقّة، وموعد اختبارك إن اقترب. لا شيء غيرهما.' }));
+  box.appendChild(btn);
+  box.appendChild(msg);
+
+  if (!Notify.supported()){
+    btn.hidden = true;
+    msg.textContent = Notify.WHY.unsupported;
+    return box;
+  }
+
+  const paint = async () => {
+    const sub = await Notify.current();
+    const on = !!sub && Notify.permission() === 'granted';
+    btn.textContent = on ? 'أوقف الإشعارات' : 'فعّل الإشعارات';
+    btn.className = 'btn ' + (on ? 'btn--ghost' : 'btn--soft');
+    btn.dataset.on = on ? '1' : '0';
+    if (!on && Notify.permission() === 'denied') msg.textContent = Notify.WHY.denied;
+  };
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    const on = btn.dataset.on === '1';
+    const r = on ? await Notify.disable() : await Notify.enable();
+    btn.disabled = false;
+    msg.textContent = r.ok ? (on ? 'أُوقفت.' : 'تمّ التفعيل — يصلك التذكير صباحًا.') : Notify.why(r.reason);
+    paint();
+  });
+  paint();
+  return box;
+}
+QBANK.views.notifyCard = notifyCard;
 
 })();
 

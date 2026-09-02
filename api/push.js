@@ -1,9 +1,19 @@
 'use strict';
 /*
   /api/push — إشعارات المتصفح.
-  GET  → المفتاح العام لـVAPID. POST → الإرسال اليومي (جدولة Vercel) محروسًا بـCRON_SECRET.
-  من لا شيء عنده لا يُزعَج — إشعارٌ بلا خبر يُعلّم الطالب أن يكتم الإشعارات كلها.
-  الحساب في القاعدة (push_targets)؛ الخادم يوقّع ويُرسل فقط.
+
+  GET  → المفتاح العام لـVAPID (يحتاجه المتصفح ليشترك). عامٌّ بطبيعته.
+  POST → الإرسال اليومي. تناديه جدولة Vercel صباحًا (vercel.json → crons)،
+         ويحرس نفسه بـCRON_SECRET كي لا يُطلق أيُّ زائر إشعارات الناس.
+
+  ═══ ما يُقال ═══
+  «١٢ سؤالًا تنتظر مراجعتك اليوم» — أو «اختبار علم السموم بعد ٣ أيام» —
+  أو كلاهما. ومن لا شيء عنده لا يُزعَج: إشعارٌ بلا خبر يُعلّم الطالب أن
+  يكتم الإشعارات كلها، فنخسر اليوم الذي يكون فيه خبر.
+
+  ═══ الحساب في القاعدة ═══
+  push_targets تُعيد لكل اشتراك ما يستحق قوله. الخادم هنا يوقّع ويُرسل
+  فقط — ولا يجلب تقدّم ألف طالب ليعدّه بنفسه.
 */
 const { rpc } = require('./_lib/supa.js');
 
@@ -21,8 +31,13 @@ function riyadhDay(){
   return Math.floor(now / 86400000);
 }
 
+/* الأرقام بالعربية كما في المنصة */
 function ar(n){ return String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]); }
 
+/*
+  نصّ الإشعار. قصيرٌ لأنه يُقرأ في شريط القفل، ومحدَّد لأنه يُنافس عشرين
+  إشعارًا آخر: «١٢ سؤالًا» تُفتح، و«لا تنسَ المراجعة» تُمسح.
+*/
 function compose(t){
   const due = Number(t.due) || 0;
   const ex = t.exam && typeof t.exam.days === 'number' && t.exam.days <= 7 ? t.exam : null;
@@ -54,6 +69,10 @@ module.exports = async function handler(req, res){
   }
   if (req.method !== 'POST') return res.status(405).json({ error:'GET أو POST' });
 
+  /*
+    ★ الحارس. Vercel تُرسل Authorization: Bearer <CRON_SECRET> مع كل نداء
+    مجدول متى ضُبط المتغيّر. وبدونه يستطيع أي زائر أن يُطلق الإرسال.
+  */
   const secret = process.env.CRON_SECRET || '';
   const auth = String(req.headers.authorization || '');
   const given = auth.indexOf('Bearer ') === 0 ? auth.slice(7) : String(req.headers['x-cron-secret'] || '');
@@ -78,11 +97,13 @@ module.exports = async function handler(req, res){
       await webpush.sendNotification(
         { endpoint: t.endpoint, keys: { p256dh: t.p256dh, auth: t.auth } },
         JSON.stringify(msg),
-        { TTL: 12 * 3600 }
+        { TTL: 12 * 3600 }             // إشعارُ الصباح لا يُسلَّم مساءً
       );
       sent++;
       await rpc('push_mark', { p_endpoint: t.endpoint, p_ok: true }).catch(() => {});
     } catch(e){
+      /* 404/410 = الاشتراك مات (ألغى الطالب الإذن أو حذف الموقع) — يُحذف
+         بعد ثلاث مرات لا فورًا: عطلٌ عابر في خادم Google لا يُفقد الطالب اشتراكه */
       const gone = e && (e.statusCode === 404 || e.statusCode === 410);
       if (gone) dead++; else failed++;
       await rpc('push_mark', { p_endpoint: t.endpoint, p_ok: false }).catch(() => {});
