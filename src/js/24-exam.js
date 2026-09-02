@@ -22,6 +22,7 @@ const Exam = {
     let pool = questions.slice();
     if (opts.scope === 'topic' && opts.topic) pool = pool.filter(q => q.topic === opts.topic);
     if (opts.scope === 'important') pool = pool.filter(q => q.important);
+    if (opts.scope === 'exam_tag')  pool = pool.filter(q => q.exam_tag);
     if (opts.scope === 'wrong') pool = pool.filter(q => (opts.wrongMap || {})[q.id]);
 
     const wrongMap = opts.wrongMap || {};

@@ -10,8 +10,28 @@ const Api = {
   fetchFn(){ return Api._fetch || (typeof fetch !== 'undefined' ? fetch.bind(window) : null); },
 
   session(){ return QBANK.store.get(Api.SESSION_KEY, null); },
+  /* مفتاح صاحب البيانات المخزّنة — لا رمزٌ ولا سرّ، معرّفٌ للمقارنة وحده */
+  UID_KEY: 'last_uid',
   saveSession(s){
-    if (!s) return QBANK.store.remove(Api.SESSION_KEY);
+    if (!s) {
+      /* خروجٌ أو رمزٌ ميت: لا نترك أثر صاحبه لمن يأتي بعده */
+      QBANK.store.clearPersonal();
+      QBANK.store.remove(Api.UID_KEY);
+      return QBANK.store.remove(Api.SESSION_KEY);
+    }
+    /*
+      ★ الحارس الحقيقي هنا لا في زرّ الخروج.
+      الخروجُ طريقٌ واحد من طرقٍ كثيرة لتبدّل الهوية: رمزٌ انتهت صلاحيته،
+      دخولٌ برابط بريد، حسابٌ ثانٍ على المتصفح نفسه، تطبيقٌ أُعيد فتحه بعد
+      شهر. فنقيس عند كل حفظِ جلسةٍ: من كان هنا؟ ومن جاء الآن؟
+    */
+    const uid = (s.user && s.user.id) || null;
+    const was = QBANK.store.get(Api.UID_KEY, null);
+    /* `was` فارغةً لا تعني تبدّلًا: قد يكون زائرًا ذاكر مجانًا ثم سجّل،
+       ومسحُ تقدّمه عقوبةٌ على أنه سجّل. التبدّل يكون بين معلومَين. */
+    if (uid && was && was !== uid) QBANK.store.clearPersonal();
+    if (uid) QBANK.store.set(Api.UID_KEY, uid);
+
     // نحفظ وقت الانتهاء المطلق كي نعرف متى نجدّد دون الرجوع للخادم
     s.expires_abs = Date.now() + (s.expires_in ? s.expires_in * 1000 : 3600 * 1000);
     QBANK.store.set(Api.SESSION_KEY, s);
@@ -79,6 +99,27 @@ const Api = {
       return c.url + '/auth/v1/authorize?provider=' + provider + '&redirect_to=' + encodeURIComponent(back);
     },
     // عند العودة من رابط سحري أو OAuth تصل الرموز في هاش الصفحة
+    /*
+      ★ التحقق برمز مكتوب — طريق الدخول داخل التطبيق المغلّف.
+      رابط البريد يفتح في متصفح الجهاز الافتراضي لا داخل التطبيق، فتُحفظ
+      الجلسة هناك ويبقى التطبيق زائرًا. الرمز يُكتب حيث يقف الطالب،
+      فتولد الجلسة في المكان الصحيح — تطبيقًا كان أو متصفحًا.
+    */
+    async verifyOtp(email, token){
+      const r = await Api.raw('/auth/v1/verify', {
+        method:'POST',
+        body: JSON.stringify({ type:'email', email, token: String(token || '').trim() })
+      });
+      if (r.ok && r.data && r.data.access_token){
+        Api.saveSession({
+          access_token: r.data.access_token,
+          refresh_token: r.data.refresh_token || '',
+          expires_in: r.data.expires_in || 3600,
+          user: r.data.user || Api.auth.decodeUser(r.data.access_token)
+        });
+      }
+      return r;
+    },
     captureFromHash(hash){
       const h = String(hash || '');
       if (h.indexOf('access_token=') === -1) return false;
@@ -120,6 +161,13 @@ const Api = {
       return r;
     },
     async signOut(){
+      /*
+        الكنس قبل النداء لا بعده: لو انقطعت الشبكة عند الخادم بقيت بيانات
+        الخارج على الجهاز رغم أنه ضغط «خروج». نيّته صريحة، فتُنفَّذ محليًا
+        على كل حال، والخادم يلحق.
+      */
+      QBANK.store.clearPersonal();
+      QBANK.store.remove(Api.UID_KEY);
       await Api.raw('/auth/v1/logout', { method:'POST' });
       Api.saveSession(null);
     },

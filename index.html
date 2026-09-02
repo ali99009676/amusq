@@ -40,18 +40,24 @@ try{
   /* الأرقام: نفس اللاتيني مع أرقام جدولية ثابتة العرض كي لا ترقص العدّادات */
   --font-num: var(--font-latin);
 
-  /* لوحة AMSU الفاتحة */
-  --bg:        #f4f6f9;
-  --bg-soft:   #eaedf3;
-  --surface:   #ffffff;
-  --surface-2: #f8fafc;
-  --line:      #e4e8ef;
-  --line-soft: #eef1f5;
-  --line-2:    #d6dce6;
+  /*
+    لوحة AMSU الفاتحة — مُدفّأة.
+    ★ كانت رمادية باردة (#f4f6f9 على #ffffff) فبدت الشاشة «رمادي على رمادي»:
+    البطاقات لا تنفصل عن الأرض، والأزرار الأردوازية تبدو معطَّلة. نُميلها
+    درجةً نحو الورق — ورقة الإجابة التي هي رمز المنصة بيضاءُ دافئة لا
+    زرقاء — فتبقى AMSU في العظم، وتصير البطاقة بيضاء فوق أرضٍ ورقية.
+  */
+  --bg:        #f5f3ee;
+  --bg-soft:   #ece9e1;
+  --surface:   #fffefb;
+  --surface-2: #f8f6f1;
+  --line:      #e5e1d7;
+  --line-soft: #eeebe4;
+  --line-2:    #d5d0c4;
 
-  --text:      #141821;
-  --text-2:    #5a6273;
-  --text-3:    #8c94a5;
+  --text:      #17161a;
+  --text-2:    #5b5a63;
+  --text-3:    #8c8b95;
 
   /* المِحور اللوني: رمادي أردوازي محايد في العموم، وتلوّنه كل مادة بلونها
      عبر --acc محلّيًا — هذه فكرة AMSU المركزية: الحياد في الهيكل واللون للمادة */
@@ -62,6 +68,20 @@ try{
 
   --gold:      #e8a317;
   --gold-soft: #fdf3dd;
+  /* ★ الزر الأساسي ذهبيٌّ على حبر — لا أردوازيّ.
+     الذهبي كان في حبّة التنقّل وحدها، والزرّ الذي يُشترى به ويُراجَع به
+     بلون الهيكل المحايد فلا يُرى. ما يُضغط يستحق لون العلامة، وكل ما
+     تصبغه المادة بلونها يستعيده (انظر [style*="--acc"] في المكوّنات). */
+  --btn-bg:  var(--gold);
+  --btn-fg:  #17161a;
+  --btn-sh:  0 8px 20px -8px color-mix(in srgb, var(--gold) 70%, transparent);
+  --ink:     #17161a;
+  /* لوحة «الحبر والذهب»: بطل اليوم، بطل الملف، شريط المشرف — داكنٌ في
+     الفاتح فيقفز من الورق؛ وفي الليلي سطحٌ أفتح درجة (انظر أدناه) */
+  --today-bg:   var(--ink);
+  --today-fg:   #fffefb;
+  --today-fg2:  #b9b6ad;
+  --today-line: rgba(255,254,251,.14);
 
   --ok:      #12805c; --ok-soft:   #e6f6ef;
   --warn:    #b06d1e; --warn-soft: #fdf0dc;
@@ -146,6 +166,12 @@ try{
 
   --gold:      #f5c04e;
   --gold-soft: #2e2410;
+  --btn-fg:    #14110a;
+  --ink:       #0e1117;
+  --today-bg:   var(--surface-2);
+  --today-fg:   var(--text);
+  --today-fg2:  var(--text-2);
+  --today-line: var(--line-2);
 
   --ok:      #39d39a; --ok-soft:   #0f2a22;
   --warn:    #dda049; --warn-soft: #2e2410;
@@ -383,6 +409,8 @@ img,svg{ max-width:100%; height:auto; }
 .card{
   background:var(--surface); border:1px solid var(--line); border-radius:var(--r3);
   padding:var(--s5); box-shadow:var(--sh1);
+  /* حدٌّ يميل درجةً إلى الأرض لا إلى الرمادي: البطاقة تُرفَع من الورق لا تُرسم عليه */
+  border-color:color-mix(in srgb, var(--line) 80%, var(--bg-soft));
   transition:box-shadow var(--t) var(--ease), border-color var(--t) var(--ease);
 }
 .card--flat{ box-shadow:none; }
@@ -392,14 +420,23 @@ img,svg{ max-width:100%; height:auto; }
 .btn{
   display:inline-flex; align-items:center; justify-content:center; gap:.5em;
   padding:.72em 1.25em; border-radius:var(--r2); border:1px solid transparent;
-  background:var(--acc); color:var(--on-acc); font-weight:700; font-size:.94em; cursor:pointer;
+  background:var(--btn-bg); color:var(--btn-fg); font-weight:800; font-size:.94em; cursor:pointer;
   min-height:44px; white-space:nowrap;
   font-family:var(--font-display); letter-spacing:-.01em;
-  box-shadow:0 6px 18px -6px var(--acc);
+  box-shadow:var(--btn-sh);
   transition:transform .16s var(--ease), box-shadow .16s var(--ease),
-             background .16s var(--ease), color .16s var(--ease), border-color .16s;
+             background .16s var(--ease), color .16s var(--ease), border-color .16s, filter .16s;
 }
-.btn:hover{ text-decoration:none; transform:translateY(-1px); background:var(--acc-d); box-shadow:var(--sh2); }
+.btn:hover{ text-decoration:none; transform:translateY(-1px); filter:brightness(1.06); box-shadow:var(--sh2); }
+/*
+  ★ حيث تصبغ المادةُ سياقَها (style="--acc:…") يعود الزرّ إلى لونها:
+  فكرة AMSU «الحياد في الهيكل واللون للمادة» تبقى داخل صفحة المادة
+  وبطاقتها، والذهبي لما هو للمنصة كلها: راجع اليوم، احفظ، اشترِ.
+*/
+[style*="--acc"] .btn, [style*="--acc"].btn{
+  --btn-bg: var(--acc); --btn-fg: var(--on-acc); --btn-sh: 0 6px 18px -6px var(--acc);
+}
+.btn--ink{ --btn-bg: var(--text); --btn-fg: var(--bg); --btn-sh: var(--sh1); }
 .btn:active{ transform:translateY(0) scale(.985); box-shadow:var(--sh1); }
 .btn[disabled],.btn[aria-disabled="true"]{ opacity:.45; cursor:not-allowed; transform:none; }
 .btn--ghost{
@@ -457,29 +494,53 @@ img,svg{ max-width:100%; height:auto; }
 .empty__title{ font-weight:700; color:var(--text); margin-bottom:var(--s2); }
 .empty__text{ max-width:44ch; margin-inline:auto; font-size:.95rem; }
 
-.page__head{ margin-bottom:var(--s5); }
-.page__title{ margin-bottom:var(--s1); }
+/*
+  ★ رأس الصفحة: عنوانٌ يُرى، وشرطة ذهبية قصيرة تحته.
+  كان العنوان بحجم عنوان بطاقة فلا يُميَّز أين تبدأ الصفحة. الشرطة هي
+  توقيع المنصة الصغير: «فقاعة» ورقة الإجابة مبسوطةً خطًّا — تتكرّر في
+  بطل اليوم ورأس الحساب واللوحة، فيعرف الطالب أنه في المكان نفسه.
+*/
+.page__head{ margin-bottom:var(--s6); position:relative; padding-bottom:var(--s3); }
+.page__head::after{
+  content:''; position:absolute; inset-inline-start:0; bottom:0;
+  width:44px; height:4px; border-radius:var(--r-pill); background:var(--gold);
+}
+.page__title{ margin-bottom:var(--s1); font-size:clamp(1.55rem, 1.2rem + 1.4vw, 2.1rem); letter-spacing:-.025em; }
 .page__sub{ color:var(--text-2); font-size:.95rem; margin:0; }
+.is-admin .page__head{ display:none; }   /* اللوحة رأسُها قشرتها — العنوان يُهدر شاشة */
 
 .stack{ display:flex; flex-direction:column; gap:var(--s4); }
 .row{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
 .spacer{ flex:1; }
 
 /* تبويبات AMSU: حبوب — النشط ممتلئ بلون المحور بظل ملوّن */
+/*
+  ★ التبويبات: شريحة واحدة مقسّمة (segmented) لا حبوبًا متناثرة.
+  الحبوب المتفرّقة تبدو أزرارًا مستقلّة فلا يُعرف أنها تتبادل شاشةً واحدة؛
+  الشريحة تقول «هذه أقسام شيء واحد» — والمفعَّل يرتفع كبطاقة بيضاء فوقها.
+*/
 .tabs{
-  display:flex; gap:.3rem; margin-bottom:var(--s5); overflow-x:auto;
-  scrollbar-width:none; padding:.5rem 0; border-bottom:1px solid var(--line);
+  display:flex; gap:2px; margin-bottom:var(--s5); overflow-x:auto;
+  scrollbar-width:none; padding:4px; border-radius:var(--r2);
+  background:var(--bg-soft); border:1px solid var(--line-soft);
 }
 .tabs::-webkit-scrollbar{ display:none; }
 .tabs__btn{
-  background:none; border:0; cursor:pointer; border-radius:11px;
-  padding:.6em 1em; color:var(--text-2); font-weight:700; font-size:.9em;
-  white-space:nowrap; min-height:42px;
-  transition:color .2s, background .2s;
+  background:none; border:0; cursor:pointer; border-radius:calc(var(--r2) - 4px);
+  padding:.55em 1em; color:var(--text-2); font-weight:700; font-size:.88em;
+  white-space:nowrap; min-height:40px; flex:1 0 auto;
+  display:inline-flex; align-items:center; justify-content:center; gap:.4em;
+  transition:color .2s, background .2s, box-shadow .2s;
 }
-.tabs__btn:hover{ color:var(--text); background:var(--acc-soft); }
+.tabs__btn:hover{ color:var(--text); }
 .tabs__btn[aria-selected="true"]{
-  color:var(--on-acc); background:var(--acc); box-shadow:0 6px 16px -8px var(--acc);
+  color:var(--text); background:var(--surface); box-shadow:var(--sh1);
+}
+.tabs__ico{ font-size:1em; line-height:1; opacity:.85; }
+.tabs__n{
+  font-family:var(--font-num); font-size:.72em; font-weight:800; line-height:1;
+  min-width:1.7em; padding:.25em .4em; border-radius:var(--r-pill);
+  background:var(--gold); color:var(--btn-fg);
 }
 
 .toast{
@@ -979,12 +1040,19 @@ img,svg{ max-width:100%; height:auto; }
 .analysis section + section{ margin-top:1.6em; }
 
 /* ═══ بطل الملف الشخصي — وجه الطالب في المنصة ═══ */
+/*
+  ★ بطل الملف: حبرٌ وذهب لا رمادي.
+  كان تدرّجًا رماديًا باهتًا تفيض منه الصورة، فبدا الملف بلا صاحب.
+  الآن اللوحة نفسها التي في «ورقة اليوم» — فالطالب في المكان نفسه —
+  والصورة داخل الإطار بحلقة ذهبية، لا فوقه.
+*/
 .pf-hero{
   display:flex; align-items:center; gap:var(--s5);
-  background:linear-gradient(135deg,
-    color-mix(in srgb, var(--acc) 14%, var(--surface)),
-    color-mix(in srgb, var(--acc) 4%, var(--surface)));
+  background:var(--today-bg); color:var(--today-fg);
+  border-color:var(--today-line); box-shadow:var(--sh3);
+  position:relative; overflow:hidden; isolation:isolate;
 }
+
 .pf-hero__avwrap{ position:relative; flex:0 0 auto;
   /* الصورة والرمز مختلفا الحجم، فنُثبّت المساحة كي لا يقفز البطل بينهما */
   width:104px; height:104px; display:grid; place-items:center; }
@@ -1288,6 +1356,77 @@ a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
 .notify-band__b{ display:flex; gap:var(--s1); flex-shrink:0; align-items:center; }
 @media (max-width:480px){ .notify-band{ flex-wrap:wrap; } .notify-band__b{ width:100%; justify-content:flex-end; } }
 
+/* ═══════════════ «ورقة اليوم» — بطل الرئيسية ═══════════════ */
+/*
+  حبرٌ على ورق: البطل وحده داكن في الوضع الفاتح، فيقفز من الصفحة الورقية
+  كما تقفز ورقة الإجابة السوداء الحواف من كومة الأوراق. وفي الليلي هو
+  سطحٌ أفتح درجة بحدٍّ ذهبي — الدور نفسه: «هذا ما تفتح المنصة لأجله».
+*/
+/* الألوان (--today-*) في 00-tokens.css — لا لون صريح هنا */
+.today{
+  position:relative; overflow:hidden; isolation:isolate;
+  background:var(--today-bg); color:var(--today-fg);
+  border:1px solid var(--today-line); border-radius:var(--r4);
+  padding:var(--s5) var(--s6); box-shadow:var(--sh3);
+  display:flex; flex-direction:column; gap:var(--s3);
+}
+/* لا زخرفة في الزوايا: الفقاعات وحدها توقيعُ البطل (اختُبرت علاماتُ المحاذاة وأُزيلت — كانت تُقرأ خللًا) */
+.today__meta{ display:flex; align-items:baseline; gap:var(--s3); flex-wrap:wrap; }
+.today__hi{ font-weight:800; font-size:.95rem; }
+.today__date{ color:var(--today-fg2); font-size:.8rem; margin-inline-start:auto; }
+.today__t{
+  margin:0; font-size:clamp(1.5rem, 1.1rem + 1.8vw, 2.25rem); line-height:1.25;
+  letter-spacing:-.03em; color:var(--today-fg);
+}
+.today__s{ margin:0; color:var(--today-fg2); font-size:.95rem; max-width:52ch; }
+.today__facts{ display:flex; flex-wrap:wrap; gap:var(--s2) var(--s5); margin-top:var(--s1); }
+.today__fact{ display:inline-flex; align-items:center; gap:var(--s2); color:var(--today-fg2); font-size:.85rem; text-decoration:none; }
+.today__fact.today__exam{ color:var(--today-fg); }
+.today__fact.today__exam:hover{ color:var(--gold); text-decoration:none; }
+.today__fi{ color:var(--gold); }
+.today__act{ display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; margin-top:var(--s2); }
+.today .btn--ghost{ background:transparent; color:var(--today-fg); border-color:var(--today-line); box-shadow:none; }
+.today .btn--ghost:hover{ border-color:var(--gold); color:var(--gold); }
+
+/* الفقاعات: عشر دوائر بحدٍّ رفيع، والمعبَّأة ذهبية — كما تُظلَّل في القاعة */
+.omr{ display:inline-flex; gap:5px; }
+.omr__b{
+  display:inline-block; width:12px; height:12px; border-radius:50%;
+  border:1.5px solid var(--today-fg2); opacity:.7;
+  transition:background .3s var(--ease), border-color .3s;
+  transition-delay:calc(var(--i, 0) * 45ms);
+}
+.omr__b.is-on{ background:var(--gold); border-color:var(--gold); opacity:1; }
+@media (prefers-reduced-motion: reduce){ .omr__b{ transition:none; } }
+@media (max-width:480px){
+  .today{ padding:var(--s4) var(--s4); border-radius:var(--r3); }
+  .today__date{ margin-inline-start:0; width:100%; }
+  .today .btn{ flex:1 1 auto; }
+}
+
+/*
+  الشرائط تحت البطل: صفٌّ مضغوط لا كومة.
+  على الشاشة الواسعة تقف جنبًا إلى جنب بوصف أقصر؛ على الجوال تبقى كومة
+  لكن بحواشٍ أصغر — هي تذكيراتٌ لا أبطال.
+*/
+.nudges{ display:grid; gap:var(--s3); grid-template-columns:1fr; }
+.nudges:empty, .nudges__slot:empty{ display:none; }
+@media (min-width:760px){ .nudges{ grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); } }
+.nudges .campus-band{ margin:0; padding:var(--s3) var(--s4); box-shadow:none; }
+.nudges .campus-band__d{ font-size:.78rem; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.nudges .campus-band__ico{ width:36px; height:36px; flex-basis:36px; font-size:1.1rem; }
+.nudges .campus-band{ border-inline-start-color:var(--gold); }
+
+/* ألوان بطل الملف فوق الحبر — بعد قواعده الأصلية كي تغلبها بالترتيب لا بـ!important */
+.pf-hero .pf-hero__n{ color:var(--today-fg); font-size:1.35rem; }
+.pf-hero .pf-hero__mail, .pf-hero .pf-hero__bio{ color:var(--today-fg2); }
+.pf-hero .pf-hero__img{ border-color:var(--gold); background:var(--today-line); }
+.pf-hero .pf-hero__cam{ background:var(--gold); color:var(--btn-fg); border-color:var(--today-bg); }
+.pf-hero .pf-hero__emoji{ background:transparent; color:var(--today-fg); border-color:var(--today-fg2); }
+
+/* الرئيسية: حين يوجد البطل فهو رأس الصفحة — و«موادي» يبقى في الشجرة عنوانًا للقارئ الآلي وللشبكة تحته */
+.page--hero > .page__head{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); margin:0; padding:0; }
+
 
 /* ===== 50-landing.css ===== */
 /*
@@ -1583,18 +1722,27 @@ a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
 .is-admin .main{ padding-bottom:var(--s8); }
 
 /* شريط اللوحة: هوية المنطقة ومخرجها الوحيد الصريح */
+/*
+  ★ الشريط بلوحة «الحبر والذهب» نفسها التي في بطل الطالب — لكن أنحف:
+  هو رأسُ عالمٍ كامل لا بطاقة، فلا يستحق أكثر من سطرٍ واحد.
+*/
 .ad-shell{
   display:flex; align-items:center; gap:var(--s3);
-  padding:var(--s3) var(--s4); margin-bottom:var(--s4);
-  background:var(--surface); border:1px solid var(--line);
-  border-inline-start:4px solid var(--acc);
-  border-radius:var(--r2); box-shadow:var(--sh1);
+  padding:var(--s2) var(--s4); margin-bottom:var(--s3);
+  background:var(--today-bg); color:var(--today-fg);
+  border:1px solid var(--today-line);
+  border-radius:var(--r2); box-shadow:var(--sh2);
 }
-.ad-shell__mark{ font-size:1.5rem; line-height:1; }
+.ad-shell .btn--ghost{ background:transparent; color:var(--today-fg); border-color:var(--today-line); box-shadow:none; }
+.ad-shell .btn--ghost:hover{ border-color:var(--gold); color:var(--gold); }
+.ad-shell__mark{
+  font-size:1rem; line-height:1; width:32px; height:32px; border-radius:9px;
+  display:grid; place-items:center; background:var(--gold); color:var(--btn-fg);
+}
 .ad-shell__x{ display:flex; flex-direction:column; line-height:1.3; min-width:0; }
 .ad-shell__t{ font-family:var(--font-display); letter-spacing:-.01em; }
 .ad-shell__s{
-  font-size:.75rem; color:var(--text-3); direction:ltr; text-align:end;
+  font-size:.72rem; color:var(--today-fg2); direction:ltr; text-align:end;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:52vw;
 }
 
@@ -1602,19 +1750,33 @@ a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
 .ad-kpis{ display:grid; gap:var(--s3); grid-template-columns:repeat(2,1fr); }
 @media (min-width:700px){ .ad-kpis{ grid-template-columns:repeat(3,1fr); } }
 @media (min-width:1000px){ .ad-kpis{ grid-template-columns:repeat(6,1fr); } }
+/*
+  ★ المؤشّر: التسمية فوق الرقم، وخطٌّ علوي يحمل لون الحال.
+  كانت أرقامًا مجرّدة متساوية؛ الخطّ الملوّن يقول «هذا حيّ / هذا تحذير»
+  قبل قراءة الرقم، والتسمية أولًا لأن المشرف يبحث عن «المبيعات» لا عن «٤٢».
+*/
 .ad-kpi{
+  --kpi: var(--text-3);
   background:var(--surface); border:1px solid var(--line); border-radius:var(--r2);
-  padding:var(--s4); box-shadow:var(--sh1); position:relative; overflow:hidden;
+  padding:var(--s3) var(--s4) var(--s4); box-shadow:var(--sh1); position:relative; overflow:hidden;
+  display:flex; flex-direction:column; gap:2px;
 }
+.ad-kpi::before{ content:''; position:absolute; inset-inline:0; top:0; height:3px; background:var(--kpi); }
 .ad-kpi__n{
-  display:block; font-family:var(--font-num); font-size:1.6rem; font-weight:700;
-  line-height:1.15; color:var(--text); letter-spacing:-.02em;
+  display:block; font-family:var(--font-num); font-size:1.75rem; font-weight:700;
+  line-height:1.1; color:var(--text); letter-spacing:-.03em; font-variant-numeric:tabular-nums;
 }
-.ad-kpi__l{ font-size:.76rem; color:var(--text-3); font-weight:700; }
-.ad-kpi__s{ font-size:.7rem; color:var(--text-3); margin-top:var(--s1); display:block; }
-.ad-kpi--live .ad-kpi__n{ color:var(--brand); }
+.ad-kpi__l{ font-size:.74rem; color:var(--text-3); font-weight:700; order:-1; }
+.ad-kpi__s{ font-size:.7rem; color:var(--text-3); display:block; }
+.ad-kpi--live{ --kpi: var(--ok); }
+.ad-kpi--live .ad-kpi__n{ color:var(--ok); }
+.ad-kpi--warn{ --kpi: var(--warn); }
 .ad-kpi--warn .ad-kpi__n{ color:var(--warn); }
+.ad-kpi--bad{ --kpi: var(--bad); }
 .ad-kpi--bad .ad-kpi__n{ color:var(--bad); }
+
+/* تبويبات اللوحة: عشرة — على الجوال تنزلق أفقيًا وتُبقي المُفعَّل ظاهرًا */
+.tabs--admin .tabs__btn{ flex:0 0 auto; padding-inline:.85em; }
 
 /* ===== لوحات الرسوم ===== */
 .ad-panels{ display:grid; gap:var(--s4); grid-template-columns:1fr; margin-top:var(--s5); }
@@ -3517,7 +3679,16 @@ const ViewHome = {
       يحدّدها يرى سببًا واضحًا ليفعل. وضعناه فوق دعوة الرفع لأن الانتماء
       يسبق المساهمة: من لا يعرف أين يرفع لا يرفع.
     */
-    body.push(campusBand());
+    /*
+      ★ «ورقة اليوم» أولًا (69-today.js): كم عليّ، متى اختباري، أين وصلت،
+      وزرٌّ واحد. ثم الشرائط الثلاثة (جامعتي، الجوال، الإشعارات) في صفٍّ
+      واحد مضغوط تحتها — كانت متراكمةً بوزن البطل فتُغرقه.
+    */
+    const hero = QBANK.views.todayHero ? QBANK.views.todayHero() : null;
+    if (hero) body.push(hero);
+    const nudges = el('div', { class:'nudges' });
+    body.push(nudges);
+    nudges.appendChild(campusBand());
 
     /*
       ★ «راجع اليوم» أعلى الرئيسية.
@@ -3526,7 +3697,8 @@ const ViewHome = {
       صباح لا عند الاختبار وحده. ومن لم يبدأ بعد لا يرى شيئًا: بطاقةٌ
       فارغة تعليمٌ ناقص، وغيابُها أصدق.
     */
-    if (QBANK.views.reviewCard) {
+    /* البطل يقولها بصوتٍ أعلى؛ البطاقة تبقى لمن لا بطل له (لا مواد بعد) */
+    if (!hero && QBANK.views.reviewCard) {
       const rc = QBANK.views.reviewCard();
       if (rc) body.push(rc);
     }
@@ -3537,8 +3709,8 @@ const ViewHome = {
       شريط واحد يظهر لمن جواله فارغ ويختفي أبدًا بعد الحفظ — ولا يحجب
       المذاكرة: الطالب جاء ليراجع، ونحن نطلب لا نبتزّ.
     */
-    const phoneNudge = el('div');
-    body.push(phoneNudge);
+    const phoneNudge = el('div', { class:'nudges__slot' });
+    nudges.appendChild(phoneNudge);
     QBANK.api.myProfile().then(r => {
       if (!phoneNudge.isConnected) return;
       const p = (r.ok && r.data) ? r.data : null;
@@ -3555,7 +3727,7 @@ const ViewHome = {
 
     /* ★ دعوة الإشعارات — حين يكون لها سبب (مستحقّ اليوم أو اختبار قريب)،
        وبزرٍّ يضغطه هو لا بنافذةٍ تقفز فتُرفض بلا قراءة. */
-    if (QBANK.views.notifyBanner){ const nb = QBANK.views.notifyBanner(); if (nb) body.push(nb); }
+    if (QBANK.views.notifyBanner){ const nb = QBANK.views.notifyBanner(); if (nb) nudges.appendChild(nb); }
 
     // دعوة الرفع: الطالب لا يبحث عن ميزة لا يعرف بوجودها
     body.push(el('a', { class:'upsell', href:'#/upload' }, [
@@ -3615,7 +3787,9 @@ const ViewHome = {
         return c;
       })));
     }
-    return page('موادي', 'اختر مادة لتبدأ المراجعة.', body);
+    const pg = page('موادي', 'اختر مادة لتبدأ المراجعة.', body);
+    if (hero) pg.classList.add('page--hero');   // البطل هو الرأس؛ العنوان يبقى للقارئ الآلي
+    return pg;
   }
 };
 
@@ -3900,7 +4074,8 @@ function accountBody(){
     يطرد طالبًا رقمه صحيح، وهذا أسوأ من فراغ الحقل.
   */
   const phoneMsg = el('span', { class:'field__hint', role:'status' });
-  const saveBtn = el('button', { class:'btn btn--block', type:'button', text:'احفظ ملفي' });
+  /* زرٌّ بحجمه الطبيعي لا شريطًا بعرض الشاشة: الحفظ فعلٌ عادي لا مصيري */
+  const saveBtn = el('button', { class:'btn', type:'button', text:'احفظ ملفي' });
   saveBtn.addEventListener('click', async () => {
     const digits = (phoneInput.value || '').replace(/\D/g, '');
     if (digits.length < 9){
@@ -4133,10 +4308,10 @@ function myStatsCard(){
   والتمرير الطويل يدفن ما يهم. والتبويب في الهاش فيبقى بعد التحديث.
 */
 const ACC_TABS = [
-  { id:'profile', label:'ملفي' },
-  { id:'uploads', label:'موادي' },
-  { id:'activity', label:'نشاطي' },
-  { id:'account', label:'الحساب' }
+  { id:'profile',  label:'ملفي',   ico:'☺' },
+  { id:'uploads',  label:'موادي',  ico:'⇪' },
+  { id:'activity', label:'نشاطي', ico:'↻' },
+  { id:'account',  label:'الحساب', ico:'⚙' }
 ];
 
 const ViewAccount = {
@@ -4146,9 +4321,13 @@ const ViewAccount = {
     if (!u) return QBANK.views.ViewLogin.view();
     const active = (route && ACC_TABS.some(t => t.id === route.rest[0])) ? route.rest[0] : 'profile';
 
+    /* أيقونة قبل كل تبويب: على الجوال تُقرأ الرموز قبل الكلمات، والشريحة
+       المقسّمة (CSS .tabs) تجعلها أقسامَ شيءٍ واحد لا أزرارًا متفرّقة */
     const tabs = el('div', { class:'tabs', role:'tablist' }, ACC_TABS.map(t =>
       el('button', { class:'tabs__btn', type:'button', role:'tab', 'data-tab':t.id,
-        'aria-selected': t.id === active ? 'true' : 'false', text:t.label })));
+        'aria-selected': t.id === active ? 'true' : 'false' }, [
+        el('span', { class:'tabs__ico', 'aria-hidden':'true', text:t.ico }),
+        el('span', { text:t.label }) ])));
     tabs.addEventListener('click', e => {
       const b = e.target.closest('[data-tab]');
       if (b) QBANK.router.go('#/account/' + b.getAttribute('data-tab'));
@@ -4952,6 +5131,12 @@ const ADMIN_TABS = [
   { id:'settings', label:'الإعدادات', fill: adminSettingsTab }
 ];
 
+/* أيقونة كل تبويب — بالمعرّف لا بالموضع، فالملفات اللاحقة تُدخل تبويباتها حيث تشاء */
+Admin.ICONS = {
+  dash:'◫', students:'☺', content:'▤', ugc:'⇪', reports:'⚑', quality:'✓',
+  money:'◎', campus:'⌂', audit:'≡', settings:'⚙'
+};
+
 const AdminView = {
   title:'لوحة التحكم',
   view(route){
@@ -4967,6 +5152,9 @@ const AdminView = {
       كله: هوية اللوحة، وكل التبويبات، ومخرج واحد صريح «افتح المنصة»
       يفتح واجهة الطالب في تبويب جديد — فلا يفقد المشرف مكانه أبدًا.
     */
+    /* رأسٌ واحد مضغوط: كان فوقه عنوان الصفحة «لوحة التحكم» وشرحه، ثم هذا
+       الشريط يقول الشيء نفسه — شاشةٌ كاملة على الجوال قبل أول رقم. عنوان
+       الصفحة يُخفى على مسارات اللوحة (CSS)، والشريط يحمل الهوية والمخرج. */
     const head = el('div', { class:'ad-shell' }, [
       el('span', { class:'ad-shell__mark', 'aria-hidden':'true', text:'⛨' }),
       el('div', { class:'ad-shell__x' }, [
@@ -4978,10 +5166,34 @@ const AdminView = {
         text:'افتح المنصة ↗' })
     ]);
 
-    const tabs = el('div', { class:'tabs', role:'tablist' },
+    /*
+      ★ التبويبات بأيقونة وشارة عدّ.
+      عشرة تبويبات نصّية متساوية لا تقول أيّها ينتظر. الأيقونة تُقرأ قبل
+      الكلمة، والشارة الذهبية تقول «هنا ثلاثة ينتظرون» قبل أن يفتح
+      المشرف صندوق الوارد أصلًا — الأرقام من admin_inbox نفسه.
+    */
+    const tabs = el('div', { class:'tabs tabs--admin', role:'tablist' },
       ADMIN_TABS.map(t => el('button', {
         class:'tabs__btn', type:'button', role:'tab', 'data-tab':t.id,
-        'aria-selected': t.id === active ? 'true' : 'false', text: t.label })));
+        'aria-selected': t.id === active ? 'true' : 'false' }, [
+        el('span', { class:'tabs__ico', 'aria-hidden':'true', text: Admin.ICONS[t.id] || '▪' }),
+        el('span', { text: t.label }),
+        el('span', { class:'tabs__n', 'data-n': t.id, hidden: true })
+      ])));
+    if (u && QBANK.api.rpc) QBANK.api.rpc('admin_inbox').then(r => {
+      const d = (r && r.ok && r.data && !r.data.error) ? r.data : null;
+      if (!d || !alive()) return;
+      const counts = {
+        money:   (Number(d.purchases) || 0) + (Number(d.phones) || 0) + (Number(d.payouts) || 0),
+        content: Number(d.drafts) || 0,
+        quality: Number(d.reports) || 0
+      };
+      Object.keys(counts).forEach(id => {
+        const b = tabs.querySelector('[data-n="' + id + '"]');
+        if (!b || !counts[id]) return;
+        b.textContent = QBANK.views.arNum(counts[id]); b.hidden = false;
+      });
+    }).catch(() => {});
     tabs.addEventListener('click', e => {
       const b = e.target.closest('[data-tab]');
       if (b) QBANK.router.go('#/admin/' + b.getAttribute('data-tab'));
@@ -14108,6 +14320,142 @@ function notifyCard(){
   return box;
 }
 QBANK.views.notifyCard = notifyCard;
+
+
+/* ===== 69-today.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  «ورقة اليوم» — بطل الرئيسية
+  ═══════════════════════════════════════════════════════════════════
+  كانت الرئيسية تبدأ بثلاثة شرائط رمادية متراكمة (جامعتي، راجع اليوم،
+  الجوال…) ثم بطاقات المواد — كلّها بالوزن نفسه، فلا يعرف الطالب ما
+  الأهمّ. البطلُ يجيب عن ثلاثة أسئلة يفتح الطالبُ المنصةَ لأجلها:
+  كم عليّ اليوم؟ متى اختباري؟ أين وصلت؟ — ثم زرٌّ واحد.
+
+  ★ التوقيع: صفّ فقاعات ورقة الإجابة (OMR).
+  عشر فقاعات، تمتلئ بقدر ما مرّ عليه من بنكه — الرمزُ نفسه الذي يظلّل
+  الطالب فقاعاته في قاعة الاختبار. لا شريط تقدّم عام، بل أداةُ المادّة.
+*/
+
+const Today = {
+  /* التحية بساعة الجهاز: «صباح الخير» في المساء يفضح أن لا أحد هنا */
+  greet(now){
+    const h = (now || new Date()).getHours();
+    if (h < 12) return 'صباح الخير';
+    if (h < 18) return 'مساء الخير';
+    return 'سهرة موفّقة';
+  },
+  /* اسمه الأول من الملف المخبَّأ — البطل لا ينتظر الشبكة ليقول مرحبًا */
+  firstName(){
+    const u = QBANK.api.user();
+    const p = QBANK.store.get('profile', null);
+    const n = (p && u && p.uid === u.id && p.name) ? String(p.name).trim() : '';
+    return n.split(/\s+/)[0] || '';
+  },
+  dateLine(now){
+    const d = now || new Date();
+    try {
+      return d.toLocaleDateString('ar-SA-u-ca-gregory-nu-arab', { weekday:'long', day:'numeric', month:'long' });
+    } catch(e){ return ''; }
+  },
+
+  /*
+    حال الطالب في كلمة: ما يُنجَز الآن. الترتيب هو الأولوية:
+    اختبارٌ غدًا أهمّ من مستحقّ، والمستحقّ أهمّ من «ابدأ».
+  */
+  state(){
+    const V = QBANK.views;
+    const subs = (QBANK.data.pack().subjects || []);
+    const mineIds = V.mySubjects();
+    const mine = subs.filter(s => mineIds.indexOf(s.id) !== -1);
+    const pool = mine.length ? mine : subs;
+    if (!pool.length) return null;
+
+    const due = QBANK.progress.dueAll().length;
+    const next = QBANK.progress.nextDue();
+
+    /* أقرب اختبارٍ لم يمضِ */
+    let exam = null;
+    pool.forEach(s => {
+      const d = V.daysLeft(s.exam_date);
+      if (d === null || d < 0) return;
+      if (!exam || d < exam.days) exam = { name: s.name, days: d, id: s.id };
+    });
+
+    /* الإتقان: ما مرّ عليه من أسئلة مواده كلّها */
+    let total = 0, seen = 0;
+    pool.forEach(s => {
+      const q = Number(s.q_count) || 0; total += q;
+      seen += Math.round(QBANK.progress.pctDone(s.id, q) * q / 100);
+    });
+    const pct = total ? Math.round(seen / total * 100) : 0;
+
+    const started = seen > 0 || due > 0 || next !== null;
+    return { due, next, exam, pct, total, seen, started, first: pool[0] };
+  },
+
+  /* العنوان الكبير — رقمٌ واحد وفعلٌ واحد */
+  headline(st){
+    const N = QBANK.views.arNum;
+    if (st.exam && st.exam.days <= 1)
+      return { t: 'اختبار ' + st.exam.name + (st.exam.days === 0 ? ' اليوم' : ' غدًا'),
+               s: st.due ? N(st.due) + ' سؤالًا تعثّرت فيها تنتظرك — راجعها قبل أن تدخل.' : 'راجع أصعب أسئلتك قبل أن تدخل.',
+               href: st.due ? '#/review' : '#/subject/' + st.exam.id, btn: st.due ? 'راجع الآن' : 'افتح المادة' };
+    if (st.due)
+      return { t: N(st.due) + ' سؤالًا تنتظر مراجعتك', s: 'حان موعد استرجاعها — خمس دقائق تكفي قبل أن تنساها.',
+               href: '#/review', btn: 'راجع اليوم' };
+    if (st.next !== null)
+      return { t: 'أنهيتَ مراجعة اليوم', s: st.next === 1 ? 'القادمة غدًا — والآن اختبر نفسك في مادة.' : 'القادمة بعد ' + N(st.next) + ' أيام — والآن اختبر نفسك في مادة.',
+               href: '#/subject/' + st.first.id, btn: 'افتح ' + st.first.name };
+    return { t: 'ابدأ بأول سؤال', s: 'كل ما تجيب عنه يدخل جدول مراجعتك، ونذكّرك به في وقته.',
+             href: '#/subject/' + st.first.id, btn: 'ابدأ ' + st.first.name };
+  }
+};
+QBANK.today = Today;
+
+/* ═══ صفّ الفقاعات: عشر فقاعات، الممتلئة منها بقدر الإتقان ═══ */
+function bubbleRow(pct){
+  const filled = Math.round(pct / 10);
+  const row = el('span', { class:'omr', role:'img', 'aria-label':'مرّ عليك ' + QBANK.views.arNum(pct) + '٪ من أسئلتك' });
+  for (let i = 0; i < 10; i++)
+    row.appendChild(el('i', { class:'omr__b' + (i < filled ? ' is-on' : ''), style:'--i:' + i }));
+  return row;
+}
+
+function todayHero(){
+  const st = Today.state();
+  if (!st) return null;
+  const N = QBANK.views.arNum;
+  const h = Today.headline(st);
+  const name = Today.firstName();
+
+  const meta = el('div', { class:'today__meta' }, [
+    el('span', { class:'today__hi', text: Today.greet() + (name ? '، ' + name : '') }),
+    el('span', { class:'today__date', text: Today.dateLine() })
+  ]);
+
+  const facts = el('div', { class:'today__facts' }, [
+    el('span', { class:'today__fact' }, [ bubbleRow(st.pct),
+      el('span', { class:'today__fl', text: st.total ? N(st.pct) + '٪ من ' + N(st.total) + ' سؤالًا مرّت عليك' : 'لا أسئلة بعد' }) ]),
+    st.exam ? el('a', { class:'today__fact today__exam', href:'#/subject/' + st.exam.id }, [
+      el('span', { class:'today__fi', 'aria-hidden':'true', text:'◷' }),
+      el('span', { class:'today__fl', text: 'أقرب اختبار: ' + st.exam.name + ' ' +
+        (st.exam.days === 0 ? 'اليوم' : st.exam.days === 1 ? 'غدًا' : 'بعد ' + N(st.exam.days) + ' أيام') })
+    ]) : null
+  ]);
+
+  return el('section', { class:'today', 'aria-label':'ورقة اليوم' }, [
+    meta,
+    el('h2', { class:'today__t', text: h.t }),
+    el('p', { class:'today__s', text: h.s }),
+    facts,
+    el('div', { class:'today__act' }, [
+      el('a', { class:'btn', href: h.href, text: h.btn + ' ←' }),
+      el('a', { class:'btn btn--ghost btn--sm today__more', href:'#/account/activity', text:'نشاطي' })
+    ])
+  ]);
+}
+QBANK.views.todayHero = todayHero;
 
 })();
 

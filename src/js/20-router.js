@@ -53,7 +53,19 @@ const Router = {
     if (view) main.appendChild(view);
 
     document.title = (r.def && r.def.title ? r.def.title + ' · ' : '') + 'مراجعة';
+    /* ★ منطقة المشرف عالمها مستقل: صنف على الجسد يخفي غلاف الطالب
+       (الشريط السفلي وروابطه) عبر CSS — فلا زرّ يعيد المشرف لواجهة الطالب سهوًا */
+    try {
+      document.body.classList.toggle('is-admin', r.path.indexOf('#/admin') === 0);
+    } catch(e){}
     Router.paintNav(r.path);
+    /* ★ الترويسة تتبع الجلسة لا تجمد عليها.
+       كان زرّ «دخول» مكتوبًا في هيكل الصفحة ولا يمسّه أحد، فيبقى معروضًا
+       على من دخل فعلًا — يظنّ أن دخوله لم يُقبل فيعيده مرة بعد مرة. */
+    if (QBANK.authChip) QBANK.authChip();
+    /* ★ النبضة تتبع الشاشة: «متصل» وحدها نصفُ خبر، و«في اختبار السموم»
+       خبرٌ كامل. والإرسال يُهمَل إن لم يتبدّل الحال — لا نداء بلا جديد. */
+    if (QBANK.presence) QBANK.presence.beat();
     // نُعيد التركيز إلى المحتوى كي يعرف قارئ الشاشة أن الصفحة تبدّلت
     if (Router.booted) { try { main.focus(); } catch(e){} }
     Router.booted = true;

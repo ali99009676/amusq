@@ -2,8 +2,10 @@
 .topbar{
   position:sticky; top:0; z-index:20;
   height:var(--topbar-h);
-  background:color-mix(in srgb, var(--surface) 82%, transparent);
-  backdrop-filter:saturate(180%) blur(16px);
+  /* زجاج AMSU: خلفية الصفحة نفسها مموّهة لا سطح أبيض */
+  background:color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter:saturate(180%) blur(14px);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);
   border-bottom:1px solid var(--line);
   transition:box-shadow var(--t) var(--ease);
 }
@@ -13,11 +15,10 @@
 .brand{ display:inline-flex; align-items:center; gap:var(--s2); color:var(--text); font-weight:800; letter-spacing:.5px; }
 .brand:hover{ text-decoration:none; }
 .brand__mark{
-  width:34px; height:34px; border-radius:9px; display:grid; place-items:center;
-  background:var(--brand); color:var(--on-brand);
-  box-shadow:var(--sh1);
-  /* حافة ذهبية رفيعة كحرف مذهّب على غلاف */
-  outline:1px solid var(--gold); outline-offset:-3px;
+  width:32px; height:32px; border-radius:9px; display:grid; place-items:center;
+  /* تدرّج علامة AMSU نفسه: بنفسجي إلى فيروزي بتوهّج ناعم */
+  background:linear-gradient(135deg, var(--mark-1), var(--mark-2)); color:var(--on-acc);
+  box-shadow:0 4px 12px -4px var(--mark-1);
 }
 /* الاسم فوق والوصف تحته: «مراجعة» هو الاسم، و«بنك الأسئلة» يشرحه لمن يراه أول مرة */
 .brand__text{ display:flex; flex-direction:column; line-height:1.15; }
@@ -32,24 +33,79 @@
   padding-bottom:calc(var(--tabbar-h) + var(--s8));
 }
 
+/*
+  ═══ الشريط السفلي ═══
+  أكثر عنصرٍ يراه الطالب في المنصة، فيُعامَل معاملة الواجهة لا الحاشية:
+  زجاجٌ يُظهر ما تحته بلا أن يُقرأ، وحدٌّ شعري لا خطّ سميك، وحبّةُ تمييز
+  خلف أيقونة الصفحة الحالية وحدها — التمييز الذي يبتلع الكلمة يُثقل.
+*/
 .tabbar{
   position:fixed; inset-inline:0; bottom:0; z-index:20;
   height:calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px));
   padding-bottom:env(safe-area-inset-bottom, 0px);
   display:flex; align-items:stretch;
-  background:color-mix(in srgb, var(--surface) 94%, transparent);
-  backdrop-filter:saturate(180%) blur(12px);
-  border-top:1px solid var(--line);
+  background:color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter:saturate(180%) blur(18px);
+  -webkit-backdrop-filter:saturate(180%) blur(18px);
+  border-top:1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  /* ظلٌّ للأعلى يفصل الشريط عن المحتوى حين يمرّ تحته */
+  box-shadow:0 -1px 20px color-mix(in srgb, #000 8%, transparent);
 }
+/* من لا يدعم الزجاج يحصل على سطحٍ صلب لا على شفافيةٍ تُخفي النص تحته */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){
+  .tabbar{ background:var(--surface); }
+}
+
 .tabbar__item{
-  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
-  color:var(--text-3); font-size:.72rem; font-weight:600; padding:var(--s1);
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+  color:var(--text-3); font-size:.7rem; font-weight:600;
+  padding:6px var(--s1) 8px;
   min-width:0;                       /* يمنع تمدّد النص فيكسر الشريط على ٣٦٠ بكسل */
+  -webkit-tap-highlight-color:transparent;
 }
+/* الأيقونة أغمق من كلمتها درجةً: العين تمسك الشكل قبل النص، فيقود الشكلُ */
+.tabbar__item .tabbar__box{ color:var(--text-2); }
 .tabbar__item:hover{ text-decoration:none; color:var(--text-2); }
-.tabbar__item[aria-current="page"]{ color:var(--brand); }
-.tabbar__ico{ font-size:1.15rem; line-height:1; }
-.tabbar__lbl{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+
+/* غلاف الأيقونة: هو ما تُرسم عليه حبّة التمييز */
+.tabbar__box{
+  display:grid; place-items:center;
+  width:46px; height:30px; border-radius:999px;
+  transition:background .2s var(--ease), color .2s var(--ease),
+             transform .2s cubic-bezier(.34,1.4,.64,1);
+}
+.tabbar__box svg{ display:block; width:22px; height:22px; }
+
+/*
+  الصفحة الحالية: حبّة ذهبية، وخطٌّ أثقل قليلًا، ونصٌّ أوضح.
+
+  ★ ولمَ الذهب لا --acc؟ لسببين:
+  الأول أن --acc محايدٌ رماديّ في العموم (وهذه فكرة AMSU: الحياد في
+  الهيكل واللون للمادة)، فالتمييز به يعطي حبّةً رمادية على سطحٍ رمادي —
+  تُقرأ «معطّلة» لا «مختارة»، ولا هوية فيها.
+  والثاني أن كل مادة تلوّن --acc بلونها، فلو تبعه الشريطُ لتبدّل لونه مع
+  كل مادة يفتحها الطالب — وثبات الإطار هو ما يجعله إطارًا.
+  والذهب لون الهوية الثابت: يقول «أنت هنا» ويقول «هذه مراجعة» معًا.
+*/
+.tabbar__item[aria-current="page"]{ color:var(--gold); }
+.tabbar__item[aria-current="page"] .tabbar__box{
+  color:var(--gold);
+  background:color-mix(in srgb, var(--gold) 18%, transparent);
+  transform:translateY(-1px);
+}
+.tabbar__item[aria-current="page"] .tabbar__box svg path{ stroke-width:2; }
+.tabbar__item[aria-current="page"] .tabbar__lbl{ font-weight:800; }
+
+/* اللمس يستجيب فورًا: التأخير في ردّ الفعل يُقرأ بطئًا في التطبيق كله */
+.tabbar__item:active .tabbar__box{ transform:scale(.9); }
+
+.tabbar__lbl{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+  letter-spacing:-.01em; }
+
+@media (prefers-reduced-motion: reduce){
+  .tabbar__box{ transition:none; }
+  .tabbar__item:active .tabbar__box{ transform:none; }
+}
 
 .footer{
   flex:0 0 auto;
@@ -62,13 +118,41 @@
 .footer__credit{ margin:0; }
 .footer__credit a{ font-weight:700; }
 
-.grid{ display:grid; gap:var(--s4); grid-template-columns:1fr; }
+.grid{ display:grid; gap:clamp(14px,2.2vw,20px); grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr)); }
 @media (min-width:640px){ .grid--2{ grid-template-columns:repeat(2,1fr); } }
 @media (min-width:900px){ .grid--3{ grid-template-columns:repeat(3,1fr); } }
 
-/* على الشاشات الكبيرة يختفي الشريط السفلي وتظهر روابط أعلى */
+/*
+  ═══ سطح المكتب ═══
+  ★ عطلٌ صامت عاش طويلًا: كان الشريط السفلي يُخفى على الشاشات العريضة،
+  والتعليق يَعِد بـ«روابط أعلى» — روابط لم تُكتب قط. فمن فتح المنصة على
+  حاسوبه وجد نفسه بلا تنقّلٍ إطلاقًا: لا استكشاف ولا رفع ولا حساب، ولا
+  طريق إلى شيء إلا بالعودة إلى الرئيسية وتخمين الروابط.
+  فبُنيت الروابط أخيرًا، وصارت الترويسة تحمل ما يحمله الشريط.
+*/
+.topnav{ display:none; }
 @media (min-width:820px){
   .tabbar{ display:none; }
   .main{ padding-bottom:var(--s8); }
   .footer{ padding-bottom:var(--s5); }
+
+  .topnav{ display:flex; align-items:center; gap:var(--s1); margin-inline-end:auto;
+           padding-inline-start:var(--s5); }
+  .topnav__item{
+    display:inline-flex; align-items:center; gap:7px;
+    padding:8px 12px; border-radius:10px; text-decoration:none;
+    color:var(--text-2); font-size:.88rem; font-weight:600;
+    transition:background .16s var(--ease), color .16s var(--ease);
+  }
+  .topnav__item:hover{ background:var(--surface-2); color:var(--text); text-decoration:none; }
+  .topnav__item[aria-current="page"]{
+    color:var(--gold);
+    background:color-mix(in srgb, var(--gold) 14%, transparent);
+  }
+  .topnav__item svg{ display:block; opacity:.9; }
+}
+/* بين ٨٢٠ و٩٦٠ تضيق الترويسة: تبقى الأيقونات وتُطوى الكلمات */
+@media (min-width:820px) and (max-width:960px){
+  .topnav__item{ padding:8px; }
+  .topnav__lbl{ display:none; }
 }

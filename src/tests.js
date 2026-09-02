@@ -153,11 +153,19 @@ describe('٥ · الموجّه والتنقّل');
   eq(A.router.resolve('#/').def.title, 'الرئيسية', 'الجذر يصل إلى الرئيسية');
   eq(A.router.resolve('').def.title, 'الرئيسية', 'الهاش الفارغ يصل إلى الرئيسية');
 
-  A.router.render('#/settings');
-  has(W.document.title, 'الإعدادات', 'عنوان المستند يتبع الشاشة');
-  const onNav = W.document.querySelector('[data-nav="#/settings"]');
+  /* ★ «الإعدادات» خرجت من الشريط السفلي لتدخل «راجع»، فالفحص ينتقل معها:
+     التعليم يكون على ما في الشريط، والإعدادات صارت داخل «حسابي». */
+  A.router.render('#/review');
+  has(W.document.title, 'راجع اليوم', 'عنوان المستند يتبع الشاشة');
+  const onNav = W.document.querySelector('[data-nav="#/review"]');
   eq(onNav.getAttribute('aria-current'), 'page', 'الرابط النشط معلَّم aria-current');
-  eq(W.document.querySelectorAll('[aria-current="page"]').length, 1, 'رابط نشط واحد لا أكثر');
+  /* ★ صار للتنقّل موضعان: الشريط السفلي على الجوال، والترويسة على سطح
+     المكتب (فحص ١٥٢). فالعدد اثنان — واحد في كلٍّ — ولا يظهران معًا:
+     الأنماط تُخفي أحدهما دائمًا. والقاعدة الباقية: واحد لكل شريط. */
+  eq(W.document.querySelectorAll('.tabbar [aria-current="page"]').length, 1,
+     'رابط نشط واحد في الشريط السفلي');
+  eq(W.document.querySelectorAll('.topnav [aria-current="page"]').length, 1,
+     'وواحد في تنقّل الترويسة');
   W.close();
 }
 
@@ -189,14 +197,21 @@ describe('٦ · الشاشات الفارغة تُرسم');
   eq(doc.querySelector('[data-tab="dash"]').getAttribute('aria-selected'), 'true', 'تبويب اللوحة هو الافتراضي');
   A.router.render('#/admin/content');
   eq(doc.querySelector('[data-tab="content"]').getAttribute('aria-selected'), 'true', 'تبويب المحتوى يُفعَّل من المسار');
-  eq(doc.querySelectorAll('.tabs__btn').length, 5, 'خمسة تبويبات في اللوحة');
+  eq(doc.querySelectorAll('.tabs__btn').length, 10, 'عشرة تبويبات في اللوحة');
   A.api.saveSession(null);   // نعيد حالة الزائر لبقية فحوص هذا القسم
 
   // المنصة تبدأ فارغة: لا مادة ولا سؤال داخل الكود
   A.api.saveSession(null);
   A.router.render('#/');
-  eq(doc.querySelectorAll('.lp-card').length, 6, 'صفحة الهبوط بلا مواد مدمجة — ست بطاقات مزايا فقط');
-  ok(!!doc.querySelector('#main .empty'), 'الهبوط يعلن بوضوح أن المواد لم تُنشر بعد');
+  // ست بطاقات مزايا + نموذجا مادة ثابتان. ولا بطاقة واحدة تأتي من القاعدة
+  eq(doc.querySelectorAll('.lp-card').length, 10, 'عشر بطاقات: ست مزايا ونموذجان وبطاقتا إضافة');
+  eq(doc.querySelectorAll('.lp-card--sample').length, 2, 'منها نموذجان مختومان');
+  eq(doc.querySelectorAll('.lp-card__meta').length, 0, 'ولا بطاقة مادة مبنيّة من المحتوى المنشور');
+  /* الهبوط لم يعد يعرض حالة «لا مواد»: هو شرح للمنصة لا مرآة لمخزونها،
+     فيقرأ الزائر الشيء نفسه سواء كانت القاعدة فارغة أو فيها ألف مادة */
+  ok(!doc.querySelector('#main .empty'), 'ولا حالة فراغ: الشرح لا يتعلّق بما نُشر');
+  has(doc.getElementById('main').textContent, 'من ملف الأسئلة إلى بنك مراجعة',
+      'بل شرح الآلية يظهر حتى والقاعدة فارغة');
   W.close();
 }
 
@@ -205,14 +220,15 @@ describe('٧ · الوضع الليلي');
 {
   const d = makeDom('#/');
   const W = d.window, A = W.QBANK, root = W.document.documentElement;
-  eq(root.getAttribute('data-theme'), 'light', 'الوضع الفاتح هو الافتراضي');
-  eq(A.theme.toggle(), 'dark', 'التبديل يُفعّل الليلي');
-  eq(root.getAttribute('data-theme'), 'dark', 'السمة تُكتب على عنصر الجذر');
-  eq(A.store.get('theme'), 'dark', 'الاختيار يُحفظ في الجهاز');
-  eq(W.document.querySelector('[data-theme-icon]').textContent, '☀', 'أيقونة الزر تتبع الحالة');
-  eq(A.theme.toggle(), 'light', 'التبديل يرجع للفاتح');
+  /* ★ الليلي هو الافتراضي — هوية AMSU المنقولة بطلب علي */
+  eq(root.getAttribute('data-theme'), 'dark', '★ الليلي هو الافتراضي مثل AMSU');
+  eq(A.theme.toggle(), 'light', 'التبديل يُفعّل الفاتح');
+  eq(root.getAttribute('data-theme'), 'light', 'السمة تُكتب على عنصر الجذر');
+  eq(A.store.get('theme'), 'light', 'الاختيار يُحفظ في الجهاز');
+  eq(W.document.querySelector('[data-theme-icon]').textContent, '☾', 'أيقونة الزر تتبع الحالة');
+  eq(A.theme.toggle(), 'dark', 'التبديل يرجع لليلي');
   W.document.getElementById('themeBtn').click();
-  eq(root.getAttribute('data-theme'), 'dark', 'زر الشريط العلوي يبدّل السمة');
+  eq(root.getAttribute('data-theme'), 'light', 'زر الشريط العلوي يبدّل السمة');
   W.close();
 }
 
@@ -422,8 +438,10 @@ describe('١٦ · شاشات الدخول والحساب');
   ok(!!doc.getElementById('loginEmail'), 'حقل البريد في شاشة الدخول');
   const btns = Array.prototype.map.call(doc.querySelectorAll('#main button'), b => b.textContent);
   ok(btns.indexOf('أرسل رابط الدخول') !== -1, 'زر الرابط السحري موجود');
-  ok(btns.indexOf('الدخول بحساب جوجل') !== -1, 'زر جوجل موجود');
-  ok(btns.indexOf('الدخول بحساب آبل') !== -1, 'زر آبل موجود');
+  /* ★ جوجل مفعّل في Supabase وGoogle Cloud «In production» — زرّه ظاهر.
+     آبل ينتظر حساب المطوّر المدفوع — زرٌ ظاهر معطوب أسوأ من غائب */
+  ok(btns.indexOf('الدخول بحساب جوجل') !== -1, '★ زر جوجل ظاهر — مزوّده مفعّل');
+  ok(btns.indexOf('الدخول بحساب آبل') === -1, 'وزر آبل مخفي حتى حساب Apple Developer');
 
   A.router.render('#/admin/login');
   ok(!!doc.getElementById('adminEmail'), 'شاشة دخول المشرف مستقلة بحقلها');
@@ -439,8 +457,11 @@ describe('١٦ · شاشات الدخول والحساب');
   has(doc.getElementById('main').textContent, 's@t.sa', 'بريد المستخدم يظهر في حسابي');
   ok(!!doc.getElementById('accName'), 'حقل الاسم موجود');
   ok(doc.querySelectorAll('[role="radio"]').length >= 5, 'اختيار الصورة الرمزية متاح');
+  /* ★ اللوحة صارت تبويبات: المزامنة والخروج والحذف في تبويب «الحساب»،
+     ولم تختفِ — الفحص يتبعها إلى مكانها الجديد */
+  A.router.render('#/account/account');
   const acctBtns = Array.prototype.map.call(doc.querySelectorAll('#main button'), b => b.textContent);
-  ok(acctBtns.indexOf('زامن الآن') !== -1, 'زر المزامنة موجود');
+  ok(acctBtns.indexOf('زامن الآن') !== -1, 'زر المزامنة موجود في تبويب الحساب');
   ok(acctBtns.indexOf('تسجيل الخروج') !== -1, 'زر الخروج موجود');
   ok(acctBtns.indexOf('احذف حسابي نهائيًا') !== -1, 'زر الحذف النهائي موجود — شرط متجر آبل');
   W.close();
@@ -691,7 +712,10 @@ describe('٢٣ · أمان دوال الخادم');
 {
   const ing = fs.readFileSync(path.join(ROOT, 'api', 'ingest.js'), 'utf8');
   const ai  = fs.readFileSync(path.join(ROOT, 'api', 'ai.js'), 'utf8');
-  has(ai, 'process.env.ANTHROPIC_API_KEY', 'مفتاح الذكاء من بيئة الخادم');
+  const prov23 = fs.readFileSync(path.join(ROOT, 'api', '_lib', 'provider.js'), 'utf8');
+  // المفاتيح انتقلت إلى المحوّل — والاختبار يتبع الكود لا العكس
+  has(prov23, 'process.env.ANTHROPIC_API_KEY', 'مفتاح Anthropic من بيئة الخادم');
+  has(prov23, 'process.env.GEMINI_API_KEY', 'ومفتاح Gemini كذلك');
   no(ai, 'sk-ant', 'لا مفتاح مكتوب في الكود');
   has(ai, "questions.length > 40", 'الخادم يرفض دفعة تتجاوز ٤٠');
   has(ai, 'verbatimOk', 'الخادم يفحص المطابقة الحرفية بعد الفرض');
@@ -793,12 +817,17 @@ describe('٢٥ · الرئيسية والبطاقات');
   // الموعد يُعرض كعدّاد أكاديمي: رقم عربي كبير وكلمته تحته
   has(t, '\u0665', 'العد التنازلي لموعد الاختبار بالأرقام العربية');
   has(t, 'أيام', 'ووحدته مكتوبة تحت الرقم');
-  has(t, 'انتهى موعده', 'ختم الانتهاء للمادة الماضية');
+  has(t, 'انتهى موعده', 'سطر الموعد يعلن الانتهاء للمادة الماضية');
+  has(t, 'تم الانتهاء', '★ وختم AMSU المائل فوق بطاقتها');
   has(t, 'من', 'العدد المطلق للأسئلة المنجزة — لا النسبة وحدها');
   has(t, 'مجانية', 'وسم المادة المجانية');
+  has(t, 'ابدأ المراجعة', '★ ودعوة AMSU أسفل كل بطاقة');
   ok(!!doc.querySelector('[aria-label*="أضف"]'), 'زر + أضف إلى موادي موجود');
+  /* ★ بطاقة AMSU تلوّن نفسها بحقن --acc — نفحص الحقن لا الشكل */
+  const anyCard = doc.querySelector('#main .sub-card');
+  has(anyCard.getAttribute('style') || '', '--acc:var(--subject-', 'لون المادة يُحقن متغيّرًا لا hex');
   // المنتهية تنزل آخر قائمة موادي
-  const cards = doc.querySelectorAll('#main .subj');
+  const cards = doc.querySelectorAll('#main .sub-card');
   has(cards[0].textContent, 'الإسعافات', 'المادة القادمة أولًا');
   has(cards[1].textContent, 'التشريح', 'المنتهية تنزل تلقائيًا');
   // لون غير معتمد لا يُحقن
@@ -988,8 +1017,12 @@ describe('٢٩ · بوابة المحتوى: المجاني مفتوح والم�
   has(t, 'مادة مدفوعة', 'صفحة المادة المقفلة تعرض بطاقة الشراء');
   has(t, 'حزمة الفصل', 'العرض يشرح نموذج البيع: مفردة أو حزمة فصل');
   no(t, 'بنك الأسئلة', 'لا محتوى يتسرب قبل الشراء');
-  // على الويب: الشراء من الموقع؛ وداخل التطبيق يصير زر شراء داخلي (قاعدة المتاجر)
-  ok(!!doc.querySelector('#main a[href*="alsoqoor.com"]'), 'زر الشراء من الموقع على الويب');
+  /* ★ الشراء صار داخل المنصة لا رابطًا خارجيًا: كان يفتح alsoqoor.com،
+     أي أن الطالب يغادر عند أهم لحظة — لحظة قرار الدفع. */
+  ok(!doc.querySelector('#main a[href*="alsoqoor.com"]'), 'ولا رابط خارجي للشراء');
+  /* ★ هذه المادة مقفلة بلا سعر — والصفحة تقولها بدل زرٍّ لا يشتري شيئًا */
+  ok(!!doc.querySelector('#main [data-noprice]'), 'ومادة بلا سعر تُعلن ذلك بصراحة');
+  has(t, 'لم يُحدَّد سعر هذه المادة', 'بنصّ يفهمه الطالب ويقوده إلى المشرف');
   A.router.render('#/exam/p1');
   has(doc.getElementById('main').textContent, 'مادة مدفوعة', 'الاختبار محمي بنفس البوابة');
   W.close();
@@ -1078,13 +1111,50 @@ describe('٣٣ · صفحة الهبوط للزائر');
   has(t, 'كل أسئلة موادك', 'العنوان الرئيسي يظهر للزائر');
   has(t, 'طلاب الجامعات العربية', 'الجمهور المستهدف: كل التخصصات لا الصحية وحدها');
   no(t, 'التخصصات الصحية', 'ولا حصر بالتخصصات الصحية في الهبوط');
-  ok(doc.querySelectorAll('.lp-stat').length === 4, 'شريط الأرقام بأربع خانات');
-  has(t, '200', 'إجمالي الأسئلة محسوب من المواد المنشورة فعلًا');
-  has(t, 'الإسعافات الأولية', 'المواد المنشورة معروضة في الصفحة التعريفية');
-  has(t, 'مجانية بالكامل', 'المادة المجانية موسومة للزائر');
-  has(t, '120 سؤالًا', 'عدد أسئلة كل مادة ظاهر');
-  // مساران للخطوات: البدء العادي، ورفع مادة — أربع خطوات لكلٍّ
-  eq(doc.querySelectorAll('.lp-steps').length, 2, 'مساران معروضان: البدء ورفع مادة');
+
+  /* ★ قاعدة الصفحة الأولى: شرح المنصة فقط — ولا مادة بعينها.
+     المقررات تختلف بين الجامعات، فزائر من القاهرة لو رأى هنا مواد جامعة
+     واحدة لظنّ أن المنصة لا تخصّه أو أن هذه كل موادها. هذه الفحوص هي ما
+     يمنع عودة قائمة المواد إلى الهبوط سهوًا. */
+  no(t, 'الإسعافات الأولية', 'لا اسم مادة بعينها في الهبوط — المواد تخصّ جامعتها');
+  no(t, 'التشريح', 'ولا المادة الثانية');
+  no(t, '120 سؤالًا', 'ولا عدد أسئلة مادة');
+  no(t, 'مجانية بالكامل', 'ولا وسم مادة مجانية بعينها');
+  eq(doc.querySelectorAll('.lp-stat').length, 0, 'ولا شريط أرقام محسوب من المحتوى المنشور');
+  eq(doc.querySelectorAll('.lp-exams').length, 0, 'ولا عدّاد امتحانات مرتبط بمواد جامعة');
+  has(t, 'كل جامعة موادها تخصّها', 'بل سطر صريح يشرح أن المقررات تختلف بين الجامعات');
+  ok(doc.querySelectorAll('a[href="#/explore"]').length >= 2,
+     'ومسار واضح إلى «استكشف» حيث يبحث الطالب عن جامعته');
+
+  // الصفحة تشرح الآلية قبل المزايا
+  has(t, 'من ملف الأسئلة إلى بنك مراجعة', 'قسم «كيف تعمل» يتصدّر الشرح');
+  has(t, 'يبقى النص كما هو', 'وخطوة حفظ النص حرفيًا مذكورة في الآلية');
+
+  /* نموذجا المادة: يملآن الصفحة بلا أن يعرضا مخزون جامعة.
+     الختم والسطر التوضيحي هما ما يفصل «نموذج» عن «مادة معروضة» —
+     وبدونهما يعود العطل نفسه بشكل ألطف. */
+  /* ★ أهم رسالة على الصفحة لمنصة محتواها من مستخدميها:
+     من لا يعرف أنه يستطيع الإضافة لا يضيف — فيغادر إن لم يجد جامعته. */
+  has(t, 'جامعتك ومقرّراتك — تضيفها أنت', 'الصفحة تعلن أن الطالب يضيف جامعته ومقرّراته');
+  has(t, 'أضف جامعتك وكليتك', 'ببطاقة لإضافة الجامعة');
+  has(t, 'أضف موادك ومقرّراتك', 'وأخرى لإضافة المواد');
+  has(t, 'اكتب اسمها فتُنشأ في الحال', '★ ويُقال صراحةً إن الجامعة غير الموجودة تُنشأ');
+  has(t, 'نوحّد الإملاء تلقائيًا', 'ويُطمأن أن التهجئات لا تفتّت جامعته');
+  has(t, 'فأضفها أنت', 'وسطر البطل نفسه يذكر إضافة الجامعة لا البحث وحده');
+  ok(doc.querySelectorAll('.lp-add').length === 2, 'وبطاقتان موسومتان بحدّ الدعوة');
+
+  has(t, 'ماذا ستراجع؟', 'قسم «ماذا ستراجع؟» معروض');
+  eq(doc.querySelectorAll('.lp-card--sample').length, 2, 'بنموذجَي مادة لا أكثر');
+  eq(doc.querySelectorAll('.lp-card__stamp').length, 2, 'وكلٌّ منهما مختوم «نموذج»');
+  const tags = Array.prototype.map.call(doc.querySelectorAll('.lp-card__tag'), n => n.textContent);
+  eq(tags.length, 2, 'ولكلٍّ تخصصه');
+  ok(tags[0] !== tags[1], '★ من تخصصين مختلفين — كي لا يظنّ طالب الهندسة أنها منصة طبية');
+  ok(doc.querySelectorAll('.lp-topic').length >= 6, 'ومحاور كل مادة معروضة');
+  no(t, 'سؤالًا', 'ولا عدد أسئلة في النموذجين — الرقم يُقرأ مخزونًا حقيقيًا وهو ليس كذلك');
+  has(t, 'هذان نموذجان توضيحيان', 'وسطر صريح أنهما نموذجان لا مادّتان معروضتان');
+
+  // مساران للخطوات: كيف تعمل، ورفع مادة — أربع خطوات لكلٍّ
+  eq(doc.querySelectorAll('.lp-steps').length, 2, 'مساران معروضان: كيف تعمل ورفع مادة');
   doc.querySelectorAll('.lp-steps').forEach((g, i) =>
     eq(g.querySelectorAll('.lp-step').length, 4, 'أربع خطوات في المسار ' + (i + 1)));
   has(t, 'مادتك ليست هنا؟ ارفعها أنت', 'دعوة رفع المادة ظاهرة للزائر قبل التسجيل');
@@ -1129,7 +1199,7 @@ describe('٣٣ · صفحة الهبوط للزائر');
   const t2 = doc.getElementById('main').textContent;
   eq(doc.querySelector('#main h1').textContent, 'موادي', 'المسجَّل يرى مواده مباشرة لا الصفحة التعريفية');
   no(t2, 'كل أسئلة موادك', 'الهبوط لا يظهر للمسجَّل');
-  ok(!!doc.querySelector('.subj'), 'بطاقات المواد التفاعلية للمسجَّل');
+  ok(!!doc.querySelector('.sub-card'), 'بطاقات AMSU التفاعلية للمسجَّل');
   W.close();
 }
 
@@ -1178,39 +1248,65 @@ describe('٣٥ · لوحة المشرف');
     recent:[{ student:'سارة', avatar:'👩', subject:'التسمم', pct:88, correct:22, total:25,
               created_at:new Date(Date.now() - 300000).toISOString() }]
   };
+  /* اللوحة صارت نداءين: admin_overview للقمع والمال، وadmin_dashboard
+     للوحات المحتوى التي بقيت كما هي. نُجهّز الاثنين. */
+  const OVER = { ok:true, days:30,
+    funnel:{ signed_up:42, has_campus:20, enrolled:18, examined:12, uploaded:3, paid:2 },
+    activity:{ new_users:7, active:9, attempts:120, avg_pct:72, online:3 },
+    content:{ subjects:5, published:4, verified:1, free:1, questions:252, derived:30, drafts:2, orphan:1 },
+    quality:{ reports_open:0, reports_all:3, ratings:8, avg_rating:4.2, low_rated:0 },
+    money:{ revenue:4500, revenue_all:9000, paid_n:3, pending_n:0, failed_n:1,
+            coins_outstanding:1200, coins_spent:800 },
+    community:{ universities:2, colleges:3, challenges:1 },
+    series:[{d:'2026-08-24',users:1,attempts:5,revenue:0},{d:'2026-08-25',users:0,attempts:0,revenue:1500}] };
   A.api.rpc = (name, args) => {
-    if (name !== 'admin_dashboard') return Promise.resolve({ ok:false, data:null });
-    ok(args && typeof args.days === 'number', 'اللوحة تمرّر مدى الأيام إلى الخادم');
-    return Promise.resolve({ ok:true, data: DATA });
+    if (name === 'admin_overview'){
+      ok(args && typeof args.p_days === 'number', 'اللوحة تمرّر مدى الأيام إلى الخادم');
+      return Promise.resolve({ ok:true, data: OVER });
+    }
+    if (name === 'admin_dashboard') return Promise.resolve({ ok:true, data: DATA });
+    return Promise.resolve({ ok:false, data:null });
   };
 
   pending.push((async () => {
     await nav(W, '#/admin');
-    await until(W, () => doc.querySelector('.ad-kpi'));
+    // لوحات المحتوى تصل بنداء ثانٍ — ننتظر آخرها لا أولها
+    await until(W, () => doc.querySelector('.ad-feed'));
     const t = doc.getElementById('main').textContent;
-    has(t, '42', 'عدد الطلاب في المؤشرات');
-    has(t, '71.5٪', 'متوسط النتائج بعلامة النسبة');
-    has(t, '4/5', 'المنشور من إجمالي المواد');
-    has(t, 'مسوّدة معلّقة', 'المسوّدات المعلّقة تُنبَّه');
+
+    /* ★ المؤشرات صارت تبدأ بالمال والالتزام لا بعدد الطلاب.
+       «٤٢ طالبًا» رقم يُطمئن؛ «١٢٠٠ كوين لم يُنفَق» التزامٌ قادم يُغيّر قرارًا. */
     eq(doc.querySelectorAll('.ad-kpi').length, 6, 'ستة مؤشرات');
+    has(t, '٤٥ ريال', 'دخل المدة بالريال');
+    has(t, 'كوين لم يُنفَق', '★ والالتزام القادم معروض — رقم يغيب عن أكثر اللوحات');
+    has(t, 'مسوّدة تنتظر اعتمادك', 'والمسوّدات المعلّقة تُنبَّه');
+    has(t, 'مادة بلا جامعة', '★ والمواد اليتيمة تُنبَّه — لا يجدها أحد في «استكشف»');
+
+    // القمع
+    eq(doc.querySelectorAll('.fun__row').length, 6, 'والقمع بست خطوات');
+    has(t, 'قمع الطلاب', 'بعنوانه');
 
     // الرسم: عمود لكل يوم، والفارغ يأخذ صنفًا مختلفًا كي يُقرأ الصفر لا يختفي
-    const bars = doc.querySelectorAll('.ad-chart .bar');
+    /* صارت في الشاشة عدّة رسوم (اختبارات، تسجيلات، دخل) ولوحة النشاط
+       السابقة. فنقصر الفحص على الأخيرة كي يبقى دقيقًا لا فضفاضًا. */
+    const legacyBox = doc.querySelector('.ad-legacy');
+    ok(!!legacyBox, 'لوحات النسخة السابقة باقية داخل اللوحة الجديدة');
+    const bars = legacyBox.querySelectorAll('.ad-chart .bar');
     eq(bars.length, 3, 'عمود لكل يوم في السلسلة');
-    eq(doc.querySelectorAll('.ad-chart .bar--empty').length, 1, 'اليوم الخالي يُرسم شريطًا باهتًا لا فراغًا');
+    eq(legacyBox.querySelectorAll('.ad-chart .bar--empty').length, 1, 'اليوم الخالي يُرسم شريطًا باهتًا لا فراغًا');
     // أطول عمود هو الأعلى قيمة — الفحص على الارتفاع نفسه لا على وجود العنصر
     const hs = Array.prototype.map.call(bars, b => parseFloat(b.getAttribute('height')));
     ok(hs[2] > hs[0] && hs[0] > hs[1], 'ارتفاع الأعمدة يتناسب مع الأعداد ١٢ > ٥ > ٠');
-    ok(!!doc.querySelector('.ad-chart .line'), 'خط متوسط النتيجة مرسوم');
+    ok(!!legacyBox.querySelector('.ad-chart .line'), 'خط متوسط النتيجة مرسوم');
     has(doc.getElementById('main').textContent, 'اختبارًا خلال', 'مجموع الفترة معروض');
 
-    eq(doc.querySelectorAll('.ad-bucket').length, 5, 'خمس شرائح للنتائج');
+    eq(legacyBox.querySelectorAll('.ad-bucket').length, 5, 'خمس شرائح للنتائج');
     // المواد مرتبة بالمحاولات: «الصدمات» ٩٩ قبل «التسمم» ٨٠ رغم ترتيب المصفوفة
-    const rows = doc.querySelectorAll('.ad-row');
+    const rows = legacyBox.querySelectorAll('.ad-row');
     has(rows[0].textContent, 'الصدمات', 'المواد مرتبة بالأكثر استخدامًا لا بترتيب الجلب');
     has(rows[0].textContent, 'مخفية', 'حالة النشر ظاهرة في الصف');
-    has(doc.querySelector('.ad-feed').textContent, 'سارة', 'آخر النشاط يعرض اسم الطالب');
-    has(doc.querySelector('.ad-feed').textContent, ' د', 'وقت النشاط نسبي بالدقائق');
+    has(legacyBox.querySelector('.ad-feed').textContent, 'سارة', 'آخر النشاط يعرض اسم الطالب');
+    has(legacyBox.querySelector('.ad-feed').textContent, ' د', 'وقت النشاط نسبي بالدقائق');
     W.close();
   })());
 }
@@ -1268,8 +1364,17 @@ describe('٣٦ · محرر المادة');
     // ★ قاعدة القداسة: لا حقل إدخال على نص السؤال ولا على خياراته
     const qbox = doc.querySelector('[data-qid="q1"]');
     has(qbox.textContent, 'ما ترياق الباراسيتامول؟', 'نص السؤال معروض كما هو');
-    eq(qbox.querySelectorAll('textarea, input[type="text"], [contenteditable="true"]').length, 0,
-       'قاعدة القداسة: لا حقل تحرير على نص السؤال أو خياراته');
+    /*
+      الحقل الوحيد المسموح في البطاقة هو وسم «اختبار سابق» — بيانٌ عن
+      السؤال لا نصّه. فنستثنيه بتسميته، ونتحقّق مع ذلك أن قيمته ليست نص
+      السؤال ولا أحد خياراته — الحارس يبقى حارسًا.
+    */
+    const inputs = [].slice.call(qbox.querySelectorAll('textarea, input[type="text"], [contenteditable="true"]'))
+      .filter(x => (x.getAttribute('aria-label') || '').indexOf('اختبار سابق') === -1);
+    eq(inputs.length, 0, 'قاعدة القداسة: لا حقل تحرير على نص السؤال أو خياراته');
+    const tag = qbox.querySelector('input[aria-label*="اختبار سابق"]');
+    ok(!tag || (tag.value !== 'ما ترياق الباراسيتامول؟' && tag.maxLength === 16),
+       'وحقل الوسم قصيرٌ ولا يحمل نصّ السؤال');
 
     // تصحيح الإجابة بالضغط على الخيار — والمستنتج يُنزع عنه الوسم
     const q2 = doc.querySelector('[data-qid="q2"]');
@@ -1353,7 +1458,11 @@ describe('٣٧ · الإعدادات');
     await until(W, () => doc.querySelector('[data-group="exam"]'));
     const main = doc.getElementById('main');
 
-    eq(doc.querySelectorAll('.ad-panel[data-group]').length, 3, 'ثلاث مجموعات إعدادات');
+    /* صارت خمسًا: «الشراء والتفعيل» لطريقة الدفع، ثم «أرباح الرافعين»
+       لنسبة العمولة وحدّ التحويل — والنسبتان لا مكان لهما إلا هنا. */
+    eq(doc.querySelectorAll('.ad-panel[data-group]').length, 5, 'خمس مجموعات إعدادات');
+    has(main.textContent, 'الشراء والتفعيل', 'ومنها طريقة الدفع — الطالب يقرؤها في بطاقة القفل');
+    has(main.textContent, 'أرباح الرافعين', 'ونسبة الرافع وحدّ التحويل');
     has(main.textContent, 'ربط الخادم', 'الربط حاضر — أول ما يُضبط عند التركيب');
     has(main.textContent, 'انون'.replace('انون','anon'), 'المفتاح العام مشروح لا مخفي');
 
@@ -1510,7 +1619,9 @@ describe('٣٩ · تجربة العشر دقائق');
   eq(REAL_BEAT_CHECK, 30000, 'النبضة كل ٣٠ ثانية كما هو مطلوب');
 
   pending.push((async () => {
-    await until(W, () => fired === 'expired', 8000);
+    /* ننتظر الشرط لا مدةً ثابتة: المؤقّت هنا مُسرَّع، والمجموعة كلما كبرت
+       زاحمت حلقة الأحداث فتأخّرت نبضة — فيسقط الفحص لبطء الجهاز لا لعطل. */
+    await until(W, () => fired === 'expired' && used >= 600, 25000);
     eq(fired, 'expired', 'العدّاد يقفل المادة عند بلوغ العشر دقائق');
     eq(used, 600, 'الاستهلاك بلغ السقف بالضبط ولم يتجاوزه');
     eq(T.state, null, 'العدّاد يتوقف بعد القفل — لا نبض بلا فائدة');
@@ -1560,10 +1671,13 @@ describe('٤٠ · الزميل والرابط والكوينز');
   A.api.saveSession(null);
   eq(G.localGuess(SUB).reason, 'anon', 'الزائر يُوجَّه للدخول');
 
-  // المنشئ نفسه ⇦ تجربة
+  /* ★ المنشئ يدخل بصفته مالكًا لا مُجرِّبًا.
+     كان يُوسم «تجربة» — والتجربة عيّنةٌ تُنتزع، والملكية حقٌّ يُمنح.
+     الاسم يغيّر ما تعرضه الشاشة: عدّادٌ يركض، أم سطرٌ يقول «هذه مادتك». */
   const mk = id => W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:id, email:'x@x.x' }))));
   A.api.auth.captureFromHash('#access_token=h.' + mk('creator-9') + '.s&refresh_token=r&expires_in=9999');
-  eq(G.localGuess(SUB).reason, 'trial', 'المنشئ يدخل بالتجربة');
+  eq(G.localGuess(SUB).reason, 'owner', '★ المنشئ يدخل بصفته مالكًا');
+  ok(G.localGuess(SUB).allowed, 'ومسموح له بلا انتظار القاعدة');
 
   // الزميل ⇦ شراء مباشر بلا تجربة (جوهر الطلب)
   A.api.auth.captureFromHash('#access_token=h.' + mk('mate-7') + '.s&refresh_token=r&expires_in=9999');
@@ -1578,8 +1692,9 @@ describe('٤٠ · الزميل والرابط والكوينز');
 
   // زر الشراء يحمل السعر والمُحيل
   const btn = G.buyButton(SUB);
-  has(btn.textContent, '49 ريال', 'زر الشراء يعرض السعر');
-  eq(btn.getAttribute('data-ref'), 'creator-9', 'زر الشراء يحمل المُحيل كي تصله كوينزه');
+  has(btn.textContent, '٤٩ ريال', 'زر الشراء يعرض السعر بأرقام عربية');
+  eq(btn.querySelector('[data-ref]').getAttribute('data-ref'), 'creator-9',
+     'زر الشراء يحمل المُحيل كي تصله كوينزه');
 
   // رابط المشاركة بالشكل المطلوب تمامًا
   const url = A.share.shareUrl('physio-x1', 'creator-9');
@@ -1649,7 +1764,8 @@ describe('٤١ · رفع الطالب والمحفظة');
       ledger:[{ amount:50, reason:'بيع مادة عبر رابطك', created_at:new Date(Date.now()-3600000).toISOString() }]
     } }) : Promise.resolve({ ok:false });
 
-    await nav(W, '#/account');
+    /* المحفظة تسكن تبويب «موادي» بعد تقسيم اللوحة — المال بجانب مصدره */
+    await nav(W, '#/account/uploads');
     await until(W, () => doc.querySelector('.wallet'));
     const t = doc.getElementById('main').textContent;
     has(t, '150', 'الرصيد معروض');
@@ -1767,8 +1883,8 @@ describe('٤٤ · الهوية والاسم');
   has(brand.getAttribute('aria-label'), 'مراجعة', 'قارئ الشاشة يسمع الاسم لا حرفًا مفردًا');
   ok(!!doc.querySelector('.brand__mark svg'), 'العلامة كتاب مفتوح مرسوم لا حرف لاتيني');
   eq(doc.title.indexOf('مراجعة') !== -1, true, 'عنوان التبويب بالاسم الجديد');
-  eq(doc.querySelector('meta[name="theme-color"]').getAttribute('content'), '#8c2f39',
-     'لون الترويسة عنّابي — يطابق الهوية في شريط المتصفح');
+  eq(doc.querySelector('meta[name="theme-color"]').getAttribute('content'), '#0e1117',
+     '★ لون الترويسة ليل AMSU — يطابق الهوية في شريط المتصفح');
 
   // التذييل الثابت — قاعدة مشروع لا تتغيّر مع الهوية
   has(doc.querySelector('.footer').textContent, 'علي الصقور', 'التذييل باقٍ كما هو');
@@ -1786,32 +1902,44 @@ describe('٤٥ · ألوان الورق والمكتبة');
   const css = html.split('<style>')[1].split('</style>')[0];
   const tokens = fs.readFileSync(path.join(__dirname,'css','00-tokens.css'), 'utf8');
 
-  has(tokens, '--brand:      #8c2f39', 'العنّابي هو لون الهوية');
-  has(tokens, '--gold:      #c9a227', 'والرملي الذهبي للتمييز');
-  has(tokens, '--bg:        #fbf7f0', 'وخلفية ورقية دافئة لا بيضاء');
-  no(tokens, '#12805c', 'لا أثر للأخضر الطبي القديم');
-  no(tokens, '#3b5bdb', 'ولا للأزرق الأقدم');
+  /* ★ لوحة AMSU المنقولة حرفيًا — بطلب علي: «طريقة العرض خذها من هنا» */
+  /* ★ الفاتح دُفّئ درجةً نحو الورق (س١): كان رماديًا على رمادي فلا تنفصل
+     البطاقة عن الأرض. العظم AMSU باقٍ (المحور والنجمة والليل). */
+  has(tokens, '--bg:        #f5f3ee', '★ خلفية AMSU الفاتحة — مُدفّأة ورقيًّا');
+  no(tokens, '--bg:        #f4f6f9', 'ولا أثر للرمادي البارد');
+  has(tokens, '--btn-bg:  var(--gold)', '★ الزر الأساسي ذهبي لا أردوازي');
+  has(tokens, '--brand:      #4b5563', 'المحور محايد — واللون الحيّ للمادة عبر --acc');
+  has(tokens, '--star:    #e8a317', 'ونجمة AMSU الكهرمانية');
+  no(tokens, '#8c2f39', 'لا أثر للعنّابي القديم');
+  no(tokens, '#fbf7f0', 'ولا للورق القديم');
 
-  // نصّ داكن على ورق فاتح: الحبر بنّي مسودّ لا أسود صريح
-  has(tokens, '--text:      #241a15', 'الحبر بنّي مسودّ — أرحم للعين على الورق');
+  has(tokens, '--text:      #17161a', 'حبر AMSU — بدرجةٍ أدفأ');
 
-  // الوضع الليلي موجود ومقلوب فعلًا لا منسوخ
+  // الوضع الليلي — وهو الافتراضي — لوحة AMSU الليلية
   const dark = tokens.slice(tokens.indexOf('[data-theme="dark"]'));
-  has(dark, '--bg:        #16110e', 'الوضع الليلي بنّي محروق لا أزرق بارد');
-  has(dark, '--brand:      #d97a83', 'والعنّابي يفتحّ في الليل كي يبقى مقروءًا');
+  has(dark, '--bg:        #0e1117', '★ ليل AMSU الأزرق الفحمي');
+  has(dark, '--surface:   #161b23', 'وسطح بطاقاته');
   ok(dark.indexOf('--gold:') !== -1, 'والذهبي معرّف في الليل أيضًا');
 
-  // ست ألوان مواد في الوضعين
+  // ست ألوان مواد حيوية مثل بطاقات AMSU
   for (let i = 1; i <= 6; i++){
     ok(tokens.indexOf('--subject-' + i + ':') !== -1, 'لون المادة ' + i + ' معرّف');
   }
-  eq((tokens.match(/--subject-1:/g) || []).length, 2, 'ألوان المواد معرّفة في الوضعين معًا');
+  /* ★ لوحة واحدة للوضعين: بطاقة AMSU تمزج لون المادة مع السطح بـ color-mix
+     فيتكيّف بنفسه — تعريف مكرر في الليل كان سيصير نسختين تفترقان يومًا */
+  eq((tokens.match(/--subject-1:/g) || []).length, 1, '★ ألوان المواد لوحة واحدة تمتزج مع السطحين');
 
   // القاعدة الثابتة: لا لون صريح خارج ملف المتغيّرات
-  ['30-components.css','40-screens.css','50-landing.css','60-admin.css'].forEach(f => {
+  ['30-components.css','40-screens.css','50-landing.css','60-admin.css','70-polish.css'].forEach(f => {
     const t = fs.readFileSync(path.join(__dirname,'css',f), 'utf8');
     ok(!/#[0-9a-fA-F]{3,6}\b/.test(t), f + ' بلا لون صريح — كله من المتغيّرات');
   });
+
+  /* ★ طبقة الإبهار: ضوء وحركة دخولٍ ثم سكون — وكلها خلف مطفأة تقليل الحركة */
+  has(css, 'pageIn', 'دخول الصفحة نهضة واحدة هادئة');
+  has(css, 'cardIn', 'والبطاقات تصعد متعاقبة كرفّ مكتبة');
+  has(css, 'patDrift', 'ونقش رأس المادة ينجرف ببطء — حياة لا ضجيج');
+  has(css, 'scrollbar-width:thin', 'وشريط التمرير رفيع مصمَّم لا افتراضي');
 
   // الرفّ حلّ محلّ خط تخطيط القلب
   has(css, '.lp-shelf', 'رفّ الكتب معرّف');
@@ -1824,7 +1952,10 @@ describe('٤٦ · رفّ الهبوط');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   A.api.saveSession(null);
-  // مادتان: واحدة ضخمة وأخرى صغيرة — يجب أن يختلف سُمك كعبيهما
+  /* ★ الرفّ صار صورةً لفكرة «بنك الأسئلة» لا رسمًا بيانيًا لمخزون.
+     كان سُمك كل كعب مشتقًّا من عدد أسئلة مادته — وهذا يجعل الصفحة الأولى
+     تنطق بمحتوى جامعة بعينها. هذه الفحوص تثبّت أن الصورة واحدة لكل زائر
+     مهما اختلف ما في القاعدة، فلا تُقرأ إحصاءً ولا تفضح صِغَر المخزون. */
   A.data.savePack({ subjects:[
     { id:'a', name:'مادة كبيرة', q_count:300, color:'subject-1', icon:'▤', topics:[] },
     { id:'b', name:'مادة صغيرة', q_count:20,  color:'subject-2', icon:'▤', topics:[] }
@@ -1834,17 +1965,20 @@ describe('٤٦ · رفّ الهبوط');
   const shelf = doc.querySelector('.lp-shelf');
   ok(!!shelf, 'الرفّ مرسوم على صفحة الهبوط');
   const books = shelf.querySelectorAll('.lp-shelf__book');
-  eq(books.length, 2, 'كعب لكل مادة');
-  const wide = parseFloat(books[0].getAttribute('width'));
-  const thin = parseFloat(books[1].getAttribute('width'));
-  ok(wide > thin, 'سُمك الكعب يتناسب مع عدد الأسئلة — الصورة تقول ما تقوله الأرقام');
-  has(shelf.getAttribute('aria-label'), '2', 'قارئ الشاشة يسمع عدد المواد');
+  eq(books.length, 9, 'تسعة كعوب ثابتة — لا كعب لكل مادة');
+  const widths = Array.prototype.map.call(books, b => parseFloat(b.getAttribute('width')));
+  ok(Math.max.apply(null, widths) > Math.min.apply(null, widths),
+     'وتتفاوت سُمكًا كي تبدو رفًّا لا مسطرة');
+  no(shelf.getAttribute('aria-label'), '2', 'ولا يذكر قارئ الشاشة عددًا من القاعدة');
+  has(shelf.getAttribute('aria-label'), 'رفّ كتب', 'بل يصفه صورةً تعبيرية');
   ok(!!shelf.querySelector('.lp-shelf__plank'), 'لوح الرفّ مرسوم');
 
-  // منصة فارغة: رفّ نموذجي لا فراغ محرج
+  // ★ الدليل الحاسم: القاعدة الفارغة تُنتج الرفّ نفسه حرفيًا
+  const before = shelf.outerHTML;
   A.data.savePack({ subjects:[], settings:{} });
   A.router.render('#/');
-  ok(doc.querySelectorAll('.lp-shelf__book').length > 0, 'بلا مواد بعد: رفّ نموذجي لا صفحة عارية');
+  eq(doc.querySelector('.lp-shelf').outerHTML, before,
+     'والرفّ نفسه تمامًا بلا مواد — الصفحة لا تفضح مخزون القاعدة');
   W.close();
 }
 
@@ -2122,7 +2256,7 @@ describe('٥٣ · التصميم الأكاديمي');
   has(css, '.qitem__n', 'رقم السؤال في الهامش');
   has(css, 'max-width:var(--measure)', 'عرض السطر مقيَّد — العين لا تضيع في سطر طويل');
   has(css, '--measure: 64ch', 'والقياس ٦٤ محرفًا');
-  has(css, '--read-lh: 2', 'وارتفاع السطر ٢ لنص إنجليزي داخل واجهة عربية');
+  has(css, '--read-lh: 1.85', 'وارتفاع سطر AMSU ١٫٨٥ للنص المزدوج');
 
   // مفتاح الإجابة: ثلاث إشارات لا لون وحده — قاعدة إمكانية الوصول
   has(css, '.opt.is-answer .opt__l{', 'حرف الإجابة الصحيحة يُملأ');
@@ -2206,21 +2340,21 @@ describe('٥٥ · بطاقة المادة');
   A.router.render('#/');
   const t = doc.getElementById('main').textContent;
 
-  has(t, 'EMS 301', 'رمز المقرر كما يُكتب في الجدول الدراسي');
-  ok(!!doc.querySelector('.subj__code'), 'وله موضعه الخاص فوق الاسم');
+  has(t, 'EMS 301', 'رمز المقرر يظهر تحت الاسم حين لا اسم إنجليزيًا');
+  ok(!!doc.querySelector('.sub-card .qn'), 'وله سطره الخاص كما في بطاقة AMSU');
 
-  // الموعد عدّاد لا وسم
-  const dl = doc.querySelector('.deadline');
-  ok(!!dl, 'موعد الاختبار عدّاد مستقل');
+  /* ★ سطر الموعد بعدّه — examline من AMSU */
+  const dl = doc.querySelector('.examline b');
+  ok(!!dl, 'موعد الاختبار عدّاد داخل سطر الموعد');
   has(dl.textContent, '٥', 'رقمه بالعربية');
-  has(dl.textContent, 'أيام', 'ووحدته تحته');
+  has(dl.textContent, 'أيام', 'ووحدته معه');
 
   // العدد المطلق قبل النسبة
-  has(t, 'من ١٢٠ سؤالًا', 'العدد المطلق للأسئلة — لا النسبة وحدها');
-  has(t, '٣ محاور', 'وعدد المحاور');
-  ok(!!doc.querySelector('.subj__pct'), 'والنسبة إلى جانبه لا بدلًا منه');
+  has(t, '١٢٠ سؤالًا', 'شارة العدد الكلي على المنطقة الفنية');
+  has(t, 'من ١٢٠', 'والعدد المطلق المنجز — لا النسبة وحدها');
+  has(t, '٪', 'والنسبة إلى جانبه لا بدلًا منه');
   has(t, 'انتهى موعده', 'والمادة الماضية موسومة بلا عدّاد');
-  eq(doc.querySelectorAll('.deadline').length, 1, 'لا عدّاد لمادة انتهى موعدها');
+  eq(doc.querySelectorAll('.examline b').length, 1, 'لا عدّاد لمادة انتهى موعدها');
   W.close();
 }
 
@@ -2443,6 +2577,21 @@ describe('٦١ · اتّساق اللوحة');
       data:{ students:42, active_7d:9, attempts:120, avg_pct:74 } });
     if (name === 'admin_students') return Promise.resolve({ ok:true,
       data:{ rows:[{ id:'u1', name:'سعد', avatar:'👤', attempts:12, best:88 }] } });
+    if (name === 'admin_students_pro') return Promise.resolve({ ok:true, data:[
+      { id:'u1', name:'سعد', avatar:'👤', is_admin:false, coins:120,
+        university:'جامعة نجران', attempts:12, uploaded:0, paid:0, best:88 }] });
+    if (name === 'admin_overview') return Promise.resolve({ ok:true, data:{ ok:true, days:30,
+      funnel:{ signed_up:42, has_campus:10, enrolled:8, examined:5, uploaded:1, paid:0 },
+      activity:{ new_users:2, active:9, attempts:120, avg_pct:74, online:2 },
+      content:{ subjects:5, published:5, verified:0, free:1, questions:252, derived:0, drafts:0, orphan:0 },
+      quality:{ reports_open:0, reports_all:0, ratings:0, avg_rating:0, low_rated:0 },
+      money:{ revenue:0, revenue_all:0, paid_n:0, pending_n:0, failed_n:0, coins_outstanding:0, coins_spent:0 },
+      community:{ universities:1, colleges:1, challenges:0 }, series:[] } });
+    if (name === 'admin_coins')    return Promise.resolve({ ok:true, data:{ ok:true, by_kind:[] } });
+    if (name === 'admin_payments') return Promise.resolve({ ok:true, data:[] });
+    if (name === 'admin_hard_questions') return Promise.resolve({ ok:true, data:[] });
+    if (name === 'admin_campus')   return Promise.resolve({ ok:true, data:{ ok:true, universities:[], top_creators:[] } });
+    if (name === 'admin_audit')    return Promise.resolve({ ok:true, data:[] });
     if (name === 'admin_dashboard') return Promise.resolve({ ok:true, data:{
       kpi:{ students:42, active_7d:9, online:2, attempts:120, avg_pct:74, subjects:5,
             published:5, questions:252, derived:0, drafts:0, enrollments:0 },
@@ -2459,8 +2608,9 @@ describe('٦١ · اتّساق اللوحة');
     return Promise.resolve({ ok:true, data:[] });
   };
 
-  const TABS = ['dash','students','ugc','content','settings'];
-  eq(A.views.ADMIN_TABS.length, 5, 'خمسة تبويبات في اللوحة');
+  // ★ «البلاغات» قبل «الإعدادات»: الإعدادات آخر ما يُفتح والبلاغات أول ما يُرى
+  const TABS = ['dash','students','ugc','content','reports','quality','money','campus','audit','settings'];
+  eq(A.views.ADMIN_TABS.length, 10, 'عشرة تبويبات في اللوحة');
   eq(A.views.ADMIN_TABS.map(t => t.id).join(','), TABS.join(','), 'وترتيبها ثابت ومعروف');
 
   pending.push((async () => {
@@ -2477,13 +2627,17 @@ describe('٦١ · اتّساق اللوحة');
       ok(!!main.querySelector('.tabs__btn[aria-selected="true"]'), 'وتبويبه المُفعَّل معلَّم');
     }
 
-    // تبويب الطلاب يستعمل نفس مؤشرات اللوحة
+    /* ★ تبويب الطلاب صار عرضًا وتحكمًا في مكان واحد.
+       كان مؤشرات وقائمة للقراءة فقط: يرى المشرف اسمًا ونتيجة ثم يفتح
+       Supabase ليمنح كوينًا. الآن الرصيد والصلاحية والفعل في البطاقة نفسها. */
     await nav(W, '#/admin/students');
-    await until(W, () => doc.querySelector('.ad-kpi'));
-    eq(doc.querySelectorAll('.ad-kpi').length, 4, 'أربعة مؤشرات للطلاب بنفس مكوّن اللوحة');
-    ok(!!doc.querySelector('.ad-panel'), 'والقائمة داخل لوحة معنونة');
-    ok(!!doc.querySelector('.ad-row'), 'وصفوفها بلغة الصفوف الموحّدة');
-    has(doc.getElementById('main').textContent, 'أفضل 88٪', 'وأفضل نتيجة للطالب ظاهرة');
+    await until(W, () => doc.querySelector('.stu'));
+    ok(!!doc.querySelector('.stu__act'), 'ولكل طالب أفعاله في بطاقته');
+    const acts = Array.prototype.map.call(
+      doc.querySelectorAll('.stu__act button'), b => b.textContent);
+    ok(acts.indexOf('امنح') !== -1 && acts.indexOf('اسحب') !== -1,
+       'منح الكوينز وسحبها من الشاشة نفسها');
+    ok(acts.some(x => x.indexOf('مشرف') !== -1), 'وتغيير الصلاحية');
 
     // تبويب المحتوى: المسوّدات المعتمدة لا تُعرض — ليست عملًا معلّقًا
     await nav(W, '#/admin/content');
@@ -2524,18 +2678,24 @@ describe('٦٢ · بوابة الدخول');
 describe('٦٣ · توفير تكلفة الذكاء');
 {
   const ai = fs.readFileSync(path.join(ROOT,'api','ai.js'), 'utf8');
+  const prov = fs.readFileSync(path.join(ROOT,'api','_lib','provider.js'), 'utf8');
 
-  has(ai, "'claude-haiku-4-5-20251001'", 'Haiku 4.5 هو الافتراضي — ثلث سعر Sonnet 4.5');
-  has(ai, 'process.env.AI_MODEL', 'ويبقى قابلًا للتبديل من متغيّر البيئة');
-  no(ai, "|| 'claude-sonnet-4-5'", 'ولم يبقَ النموذج الأغلى افتراضًا');
+  has(prov, "'claude-haiku-4-5-20251001'", 'Haiku 4.5 هو الافتراضي — ثلث سعر Sonnet 4.5');
+  has(prov, 'process.env.AI_MODEL', 'ويبقى قابلًا للتبديل من متغيّر البيئة');
+  no(prov, "|| 'claude-sonnet-4-5'", 'ولم يبقَ النموذج الأغلى افتراضًا');
 
   // تخزين التعليمات: قراءة الذاكرة بعُشر سعر الدخل
-  has(ai, "cache_control: { type:'ephemeral' }", 'تعليمات النظام مخزَّنة مؤقتًا');
-  has(ai, "system: [{ type:'text'", 'وبالشكل الذي يقبله الخادم');
+  has(prov, "cache_control:{ type:'ephemeral' }", 'تعليمات النظام مخزَّنة مؤقتًا');
+  has(prov, "system: [{ type:'text'", 'وبالشكل الذي يقبله الخادم');
 
   // الشرح الإنجليزي أُسقط — إخراج مكرّر على منصة عربية، والإخراج ٥ أضعاف سعر الدخل
   no(ai, 'expl_en (الشرح بالانجليزية)', 'لا يُطلب شرح إنجليزي — إخراج مكرّر مكلف');
-  has(ai, 'شرح عربي مركز في جملتين', 'والشرح العربي محدود الطول صراحةً');
+  /* ★ انقلب المعيار: كان «جملتان» فأنتج شرحًا يكرّر الإجابة ولا يعلّم.
+     صار مثالًا ذهبيًا من مواد AMSU نفسها بأطوالها المقيسة. */
+  has(ai, 'const GOLD', 'المثال الذهبي حاضر — النموذج يقلّد ما يرى لا ما يُوصف له');
+  has(ai, 'من ٣ إلى ٤ جمل', 'والشرح العربي مطلوب بعمق AMSU لا بجملتين');
+  has(ai, 'المعلومة المفتاحية:', 'ويختم بالمعلومة المفتاحية كما في مواد علي');
+  has(ai, 'maxTokens: 32768', 'وسقف الخرج يتّسع للمعيار الجديد فلا يُقطع الردّ');
 
   has(ai, 'questions.length > 40', 'حدّ الدفعة ٤٠ — تعليمات أقل لكل سؤال');
   has(ai, 'usage: aiOut._usage', 'والاستهلاك الحقيقي يعود للمشرف لا التقدير وحده');
@@ -2617,7 +2777,9 @@ describe('٦٥ · اختيار المسار');
                has_options: hasOpts });
   }
   const w = A.admin.newWizard();
-  eq(w.enrich, false, 'المسار المجاني هو الافتراضي — الإثراء اختيار واعٍ يُدفع ثمنه');
+  /* ★ انقلب الافتراض: المادة الكاملة هي المخرَج الذي رفع الطالبُ ملفَه لأجله.
+     المجاني يبقى بضغطة واحدة، لكن الافتراض صار أفضل ما نعطيه لا أرخصه. */
+  eq(w.enrich, true, 'المادة الكاملة — كطريقة AMSU — هي الافتراض');
   w.step = 2; w.raw = raw; w.total = raw.length; w.filename = 'f.txt';
   A.views.ViewUpload._set(w);
 
@@ -2634,7 +2796,9 @@ describe('٦٥ · اختيار المسار');
     eq(doc.querySelectorAll('.path').length, 2, 'مساران معروضان');
     const free = doc.querySelector('[data-path="false"]');
     const paid = doc.querySelector('[data-path="true"]');
-    eq(free.getAttribute('aria-checked'), 'true', 'والمجاني محدَّد ابتداءً');
+    /* ★ الافتراض صار المادة الكاملة: الطالب يرفع ليذاكر لا ليخزّن نصًّا */
+    eq(paid.getAttribute('aria-checked'), 'true', 'والمادة الكاملة محدَّدة ابتداءً');
+    eq(free.getAttribute('aria-checked'), 'false', 'والمجاني خيارٌ بضغطة لا افتراض');
     has(free.textContent, 'مجانًا', 'وثمنه معلن: مجانًا');
 
     // ★ الفرق يُقال بالأسماء لا يُخبأ — الطالب لا يعرف ما «الإثراء» حتى يرى ما ينقصه بدونه
@@ -2642,7 +2806,8 @@ describe('٦٥ · اختيار المسار');
     has(free.textContent, 'ولا ترجمة', 'ولا ترجمة');
     has(free.textContent, 'بطاقات حفظ', 'ولا بطاقات حفظ');
     has(free.textContent, 'بلا إجابة معلنة', 'ويحذّر من الأسئلة التي ستحتاج ضبطًا يدويًا');
-    has(paid.textContent, 'شرح لكل إجابة', 'والمدفوع يقول ما يضيفه');
+    has(paid.textContent, 'بطاقة حفظ', 'والمسار الكامل يقول ما يضيفه — بطاقة حفظ');
+    has(paid.textContent, 'طريقة الحفظ', 'وتحليلًا للمادة كما في AMSU');
     has(paid.textContent, 'كوين', 'وثمنه بالكوين');
 
     has(main.textContent, '120 سؤالًا', 'وعدد الأسئلة معروض');
@@ -2687,8 +2852,10 @@ describe('٦٦ · نقص الرصيد');
     // ★ الضغط عليه لا يُفعّله — لا نُدخل الطالب مسارًا نعلم أنه سيفشل
     paid.dispatchEvent(new W.Event('click', { bubbles:true }));
     eq(A.views.ViewUpload._get().enrich, false, 'والضغط عليه لا يُفعّله');
+    /* ★ ومن لم يكفه رصيده يُردّ إلى المجاني تلقائيًا — لا يُترك على مسار مسدود */
     eq(doc.querySelector('[data-path="false"]').getAttribute('aria-checked'), 'true',
-       'ويبقى المجاني هو المحدَّد');
+       'ويرتدّ الاختيار إلى المجاني وحده');
+    ok(!doc.querySelector('.costbox').hidden, 'وصندوق الرصيد يبقى ظاهرًا يشرح سبب الحجب');
 
     // المجاني لا يُحجب أبدًا — من لا يدفع ينشر بنكه على كل حال
     ok(doc.querySelector('[data-path="false"]').className.indexOf('is-blocked') === -1,
@@ -2747,6 +2914,4140 @@ describe('٦٧ · النشر بلا إثراء');
   })());
 }
 
+/* ============ ٦٨ · vercel.json يجتاز مخطط Vercel ============ */
+/*
+  لماذا هذا الفحص موجود:
+  أضفتُ مرة مفتاح "_تعليق" عربيًا داخل vercel.json أشرح فيه قرارًا تقنيًا.
+  ومخطط Vercel صارم — يرفض أي مفتاح خارج قائمته. فشل كل نشر بعدها،
+  وظلّ الموقع يقدّم بناءً قديمًا ساعتين ونحن نظنّه محدَّثًا. الملف كان
+  سليم الصياغة JSON، فلم يلتقطه شيء عندنا. هذا الفحص هو ما كان ناقصًا.
+*/
+describe('٦٨ · صحة إعدادات النشر');
+{
+  const vjPath = path.join(ROOT, 'vercel.json');
+  const rawVj = fs.readFileSync(vjPath, 'utf8');
+
+  let vj = null;
+  try { vj = JSON.parse(rawVj); } catch (e) { vj = null; }
+  ok(vj !== null, 'vercel.json صالح JSON');
+
+  // القائمة المسموحة في مخطط Vercel — أي مفتاح خارجها يُفشل النشر كاملًا
+  const ALLOWED = ['$schema','buildCommand','devCommand','installCommand','ignoreCommand',
+    'outputDirectory','framework','public','regions','functions','routes','rewrites',
+    'redirects','headers','cleanUrls','trailingSlash','crons','images','git','builds',
+    'name','version','env','build','github','functionFailoverRegions'];
+
+  const unknown = Object.keys(vj || {}).filter(k => ALLOWED.indexOf(k) === -1);
+  eq(unknown.length, 0, 'لا مفتاح خارج مخطط Vercel' +
+     (unknown.length ? ' — وُجد: ' + unknown.join('، ') : ''));
+
+  // ★ الحارس المباشر: لا تعليقات عربية ولا مفاتيح بشرطة سفلية. التوثيق مكانه ملف .md
+  ok(!/"_/.test(rawVj), 'لا مفتاح يبدأ بشرطة سفلية — التعليق مكانه ملف توثيق لا ملف إعداد');
+  ok(!/[؀-ۿ]/.test(rawVj), 'ولا نص عربي داخل الملف إطلاقًا');
+
+  // القرار الذي كان التعليق يشرحه — نُثبته فحصًا بدل أن نشرحه نصًّا
+  eq(vj.buildCommand, undefined,
+     'لا buildCommand: index.html يُبنى ويُختبر محليًا، فما يُرفع هو ما يُقدَّم');
+  eq(vj.outputDirectory, '.', 'ومجلد الإخراج هو الجذر');
+
+  /*
+    ★ نصف الحقيقة الذي كلّفنا ساعة:
+    حذف buildCommand وحده لا يوقف البناء. حين لا يجد Vercel أمر بناء في
+    vercel.json يسقط تلقائيًا إلى scripts.build في package.json وينفّذه.
+    فبقي ينفّذ `node src/build.js` ويعيد توليد index.html من src داخل خادمه،
+    فيدهس الملف المبنيّ والمفحوص الذي رفعناه. رفعنا index.html صحيحًا
+    ٢٦٨ ألف حرف فقدّم الموقع ٢٧٢ ألفًا — بناءً من مصادر أقدم.
+    الفحص التالي هو المنفذ الذي كان مفتوحًا.
+  */
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+  const scripts = pkg.scripts || {};
+  eq(scripts.build, undefined,
+     'ولا سكربت باسم build في package.json — وإلا نفّذه Vercel وبنى فوق ما رفعناه');
+  ok(!!scripts.site, 'والبناء المحلي باسم لا يلتقطه Vercel: npm run site');
+  eq(scripts.site, 'node src/build.js', 'وهو نفسه أمر البناء');
+  ok(!scripts.vercel_build && !scripts['vercel-build'],
+     'ولا vercel-build — وهو منفذ آخر يلتقطه Vercel تلقائيًا');
+
+  // الرؤوس التي تمنع تقديم صفحة قديمة من الكاش
+  const srcs = (vj.headers || []).map(h => h.source);
+  ok(srcs.indexOf('/index.html') !== -1, 'وindex.html له رأس تحقّق يمنع كاشًا قديمًا');
+  ok(srcs.indexOf('/sw.js') !== -1, 'وعامل الخدمة لا يُخبَّأ أبدًا');
+}
+
+/* ============ ٦٩ · سلامة بنية CSS ============ */
+/*
+  لماذا هذا الفحص موجود:
+  وجدتُ في 50-landing.css كتلة @media فقد سطرُ فتحها، فصار
+  `animation:none` مطبَّقًا على كل زائر لا على من طلب تقليل الحركة.
+  ثم صنعتُ العطل نفسه بيدي حين حذفتُ سطور محدِّدات وتركت أجسامها يتيمة.
+  المشترك بينهما أن CSS لا ينهار عند الخطأ — يتجاوزه المتصفح بصمت،
+  فيبقى الخلل شهورًا. الأقواس هي ما يكشفه، فنعدّها.
+*/
+describe('٦٩ · سلامة بنية CSS');
+{
+  const dir = path.join(ROOT, 'src', 'css');
+  const files = fs.readdirSync(dir).filter(f => f.endsWith('.css')).sort();
+  ok(files.length > 0, 'ملفات CSS موجودة');
+
+  files.forEach(f => {
+    const s = fs.readFileSync(path.join(dir, f), 'utf8');
+    // نُسقط التعليقات أولًا: قوس داخل تعليق عربي لا يعني شيئًا للمتصفح
+    const code = s.replace(/\/\*[\s\S]*?\*\//g, '');
+
+    let depth = 0, wentNegative = false;
+    for (let i = 0; i < code.length; i++){
+      if (code[i] === '{') depth++;
+      else if (code[i] === '}'){ depth--; if (depth < 0) wentNegative = true; }
+    }
+    ok(!wentNegative, f + ': لا قوس إغلاق يتيم — لا كتلة فقدت سطر فتحها');
+    eq(depth, 0, f + ': الأقواس متوازنة تمامًا');
+
+    // كتلة بلا محدِّد: سطر إعلانات يلي } مباشرة، وهو أثر الحذف السطري
+    ok(!/}\s*\n\s+[a-z-]+\s*:[^;{]*;/i.test(code),
+       f + ': ولا جسم إعلانات بلا محدِّد يسبقه');
+  });
+
+  // ★ ولا لون ثابت من الهوية القديمة: الظلال والألوان تأتي من المتغيّرات
+  const landing = fs.readFileSync(path.join(dir, '50-landing.css'), 'utf8');
+  no(landing, 'rgba(18,128,92', 'ولا أثر للأخضر الطبي القديم بعد تحوّل الهوية للعنّابي');
+}
+
+/* ============ ٧٠ · تجميع مواد القسم تحت كلياتها ============ */
+describe('٧٠ · تجميع القسم');
+{
+  const A = makeDom().window.QBANK;
+  const G = A.campus.groupByCollege;
+
+  const cols = [{ id:'c1', name:'كلية الهندسة' }, { id:'c2', name:'كلية الطب' }, { id:'c3', name:'كلية فارغة' }];
+  const subs = [
+    { id:'s1', college_id:'c1' }, { id:'s2', college_id:'c2' },
+    { id:'s3', college_id:'c1' }, { id:'s4', college_id:null },
+    { id:'s5', college_id:'مفقودة' }          // كلية حُذفت والمادة باقية
+  ];
+  const g = G(subs, cols);
+
+  eq(g.length, 3, 'ثلاث مجموعات: كليتان فيهما مواد + مجموعة بلا كلية');
+  eq(g[0].name, 'كلية الهندسة', 'الترتيب كما وصل من الخادم — الأكبر أولًا');
+  eq(g[0].items.length, 2, 'والهندسة فيها مادتان');
+  ok(!g.some(x => x.name === 'كلية فارغة'), 'والكلية بلا مواد لا تُعرض — تُربك ولا تُفيد');
+
+  // ★ لا مادة تسقط: من لم يحدّد كليته، ومن أشارت مادته إلى كلية محذوفة
+  const last = g[g.length - 1];
+  eq(last.id, null, 'المجموعة الأخيرة هي «بلا كلية»');
+  eq(last.items.length, 2, 'وتضمّ المادة بلا كلية والمادة ذات الكلية المفقودة');
+  eq(subs.length, g.reduce((n, x) => n + x.items.length, 0),
+     '★ مجموع المعروض يساوي مجموع الوارد — لا مادة تضيع في التجميع');
+
+  eq(G([], cols).length, 0, 'ولا مجموعات حين لا مواد');
+  eq(G(null, null).length, 0, 'ولا انهيار مع مدخلات فارغة');
+}
+
+/* ============ ٧١ · انتماء الطالب: حفظ وقراءة ومسح ============ */
+describe('٧١ · جامعتي');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u1', email:'a@a.a' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  const calls = [];
+  A.api.rpc = (name, args) => {
+    calls.push({ name, args });
+    if (name === 'set_my_campus')
+      return Promise.resolve({ ok:true, data: args.p_university
+        ? { university_id:'U1', university:args.p_university, country:args.p_country,
+            college_id: args.p_college ? 'C1' : null, college: args.p_college || null }
+        : {} });
+    if (name === 'my_campus')
+      return Promise.resolve({ ok:true, data:{ university_id:'U1', university:'جامعة نجران', country:'SA' } });
+    return Promise.resolve({ ok:true, data:[] });
+  };
+
+  pending.push((async () => {
+    const saved = await A.campus.save('SA', 'جامعة نجران', 'كلية الهندسة');
+    eq(saved.university_id, 'U1', 'الحفظ يُرجع الجامعة');
+    eq(A.campus.cached().university, 'جامعة نجران', 'وتُخزَّن محليًا للرسم الفوري');
+
+    // ★ الاسم نصًّا لا معرّفًا: أول طالب في جامعته لن يجدها في أي قائمة
+    const c = calls.filter(x => x.name === 'set_my_campus')[0];
+    eq(c.args.p_university, 'جامعة نجران', 'ويُرسل الاسم نصًّا كي تُنشأ إن لم تكن موجودة');
+
+    // ★ المسح يمسح فعلًا — وإلا بقي الطالب يرى جامعة تركها
+    const cleared = await A.campus.save('', '', '');
+    eq(cleared, null, 'المسح يُرجع لا شيء');
+    eq(A.campus.cached(), null, 'ويُفرغ المخزَّن المحلي — لا يُبقي القديم');
+
+    W.close();
+  })());
+}
+
+/* ============ ٧٢ · شريط جامعتي على الشاشة الأولى ============ */
+describe('٧٢ · شريط الجامعة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u2', email:'b@b.b' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.data.savePack({ subjects:[{ id:'s1', name:'مادة', q_count:10, color:'subject-1', icon:'▤', topics:[] }], settings:{} });
+  A.api.rpc = () => new Promise(() => {});      // الخادم صامت: نختبر الرسم الفوري من المخزَّن
+
+  // بلا انتماء: دعوة لتحديد الجامعة
+  A.store.remove('campus');
+  A.router.render('#/');
+  const ask = doc.querySelector('.campus-band--ask');
+  ok(!!ask, 'من لم يحدّد جامعته يرى دعوة لتحديدها');
+  has(ask.getAttribute('href'), '#/account', 'تقوده إلى حسابه حيث يختارها');
+  has(ask.textContent, 'حدّد جامعتك', 'بنصّ صريح');
+
+  // مع انتماء: باب القسم
+  A.store.set('campus', { university_id:'U9', university:'جامعة الملك سعود', college:'كلية الحاسب', country:'SA' });
+  A.router.render('#/');
+  const band = doc.querySelector('.campus-band');
+  ok(!!band, 'ومن حدّدها يرى شريط جامعته');
+  ok(band.className.indexOf('campus-band--ask') === -1, 'لا دعوة بعد الآن');
+  has(band.getAttribute('href'), '#/u/U9', '★ ويقود إلى قسم جامعته لا إلى قائمة عامة');
+  has(band.textContent, 'جامعة الملك سعود', 'واسمها معروض');
+  has(band.textContent, 'كلية الحاسب', 'وكليته معها');
+  W.close();
+}
+
+/* ============ ٧٣ · صفحة القسم ============ */
+describe('٧٣ · صفحة القسم');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+
+  A.api.rpc = (name, args) => {
+    if (name !== 'university_page') return Promise.resolve({ ok:true, data:[] });
+    if (args.p_uni === 'GONE') return Promise.resolve({ ok:true, data:{ ok:false, reason:'not_found' } });
+    return Promise.resolve({ ok:true, data:{
+      ok:true, total:3,
+      university:{ id:'U1', name:'جامعة نجران', country:'SA', city:'نجران', verified:true },
+      colleges:[{ id:'c1', name:'كلية الهندسة', n:2 }],
+      subjects:[
+        { id:'s1', name:'الدوائر الكهربائية', slug:'circ', college_id:'c1', q_count:80, students:4, icon:'⚡', color:'subject-2' },
+        { id:'s2', name:'الاستاتيكا', slug:'stat', college_id:'c1', q_count:40, students:1, icon:'▤', color:'subject-3' },
+        { id:'s3', name:'مادة يتيمة', slug:'orph', college_id:null, q_count:12, students:0, icon:'▤', color:'subject-4' }
+      ]
+    }});
+  };
+
+  pending.push((async () => {
+    await nav(W, '#/u/U1');
+    await until(W, () => doc.querySelector('.uni-head'));
+    const main = doc.getElementById('main');
+
+    has(main.textContent, 'جامعة نجران', 'اسم الجامعة في الترويسة');
+    has(main.textContent, 'موثّقة', 'ووسم التوثيق يظهر للموثّقة');
+    has(main.textContent, 'السعودية', 'ودولتها بالاسم العربي لا الرمز');
+    eq(doc.querySelectorAll('.excard').length, 3, 'وكل مواد القسم معروضة');
+    eq(doc.querySelectorAll('.uni-col').length, 2, 'تحت عنوانَي مجموعة: الكلية و«بلا كلية»');
+    has(doc.querySelectorAll('.uni-col')[0].textContent, 'كلية الهندسة', 'الكلية أولًا');
+
+    // ★ الرابط هو الميزة: قسمٌ لا يُشارَك لا يجمع دفعة
+    const copy = Array.prototype.filter.call(main.querySelectorAll('button'),
+      b => b.textContent.indexOf('انسخ رابط القسم') !== -1)[0];
+    ok(!!copy, 'وزر نسخ رابط القسم موجود');
+
+    W.close();
+  })());
+}
+
+/* ============ ٧٤ · قسم فارغ ورابط ميت ============ */
+describe('٧٤ · حواف القسم');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  A.api.rpc = (name, args) => Promise.resolve({ ok:true, data:
+    args.p_uni === 'GONE' ? { ok:false, reason:'not_found' } : {
+      ok:true, total:0, university:{ id:'U2', name:'جامعة جديدة', country:'EG', city:'', verified:false },
+      colleges:[], subjects:[] } });
+
+  pending.push((async () => {
+    // جامعة بلا بنوك: دعوة للرفع لا شاشة فارغة محبِطة
+    await nav(W, '#/u/U2');
+    await until(W, () => doc.getElementById('main').textContent.indexOf('لا بنوك') !== -1);
+    const t = doc.getElementById('main').textContent;
+    has(t, 'كن أنت أول من يرفع', '★ القسم الفارغ يدعو للرفع — أول طالب هو من يبنيه');
+    ok(!!doc.querySelector('a[href="#/upload"]'), 'وبزر يقوده إلى الرفع');
+    ok(t.indexOf('موثّقة') === -1, 'وغير الموثّقة لا تُوسم');
+
+    // رابط لجامعة غير موجودة: رسالة تفهم لا صفحة مكسورة
+    await nav(W, '#/u/GONE');
+    await until(W, () => doc.getElementById('main').textContent.indexOf('لم نجد') !== -1);
+    has(doc.getElementById('main').textContent, 'قد يكون الرابط قديمًا', 'والرابط الميت يشرح نفسه');
+
+    // بلا معرّف إطلاقًا
+    await nav(W, '#/u');
+    has(doc.getElementById('main').textContent, 'لم تُحدَّد جامعة', 'ومسار بلا معرّف لا ينهار');
+    W.close();
+  })());
+}
+
+/* ============ ٧٥ · الرفع يرث انتماء الطالب ============ */
+describe('٧٥ · الرفع يملأ الجامعة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u3', email:'c@c.c' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.rpc = () => new Promise(() => {});
+  A.store.set('campus', { university_id:'U1', university:'جامعة نجران', college:'كلية الطب', country:'SA' });
+
+  // ★ الملء التلقائي ليس رفاهية: إعادة الكتابة تُنتج تهجئات تفتّت الجامعة
+  const w = A.admin.newWizard();
+  w.step = 3; w.raw = [{ q:'س', options:['أ','ب'], answer:0, has_options:true }];
+  w.enriched = [{ q:'س', q_original:'س', options:['أ','ب'], answer:0, sanctity_mode:'strict' }];
+  w.total = 1; w.done = 1;
+  A.views.ViewUpload._set(w);
+  A.router.render('#/upload');
+
+  const cur = A.views.ViewUpload._get();
+  eq(cur.country, 'SA', 'الدولة تُملأ من انتماء الطالب');
+  eq(cur.university, 'جامعة نجران', 'والجامعة');
+  eq(cur.college, 'كلية الطب', 'والكلية');
+
+  // ولا يطمس ما كتبه بيده
+  A.views.ViewUpload._reset();
+  const w2 = A.admin.newWizard();
+  w2.step = 3; w2.university = 'جامعة أخرى'; w2.country = 'EG';
+  w2.raw = w.raw; w2.enriched = w.enriched; w2.total = 1; w2.done = 1;
+  A.views.ViewUpload._set(w2);
+  A.router.render('#/upload');
+  eq(A.views.ViewUpload._get().university, 'جامعة أخرى', '★ ولا يطمس ما كتبه الطالب بيده');
+  eq(A.views.ViewUpload._get().college, 'كلية الطب', 'ويملأ الفارغ وحده');
+
+  A.views.ViewUpload._reset();
+  W.close();
+}
+
+/* ============ ٧٦ · دوال القسم في قاعدة البيانات ============ */
+describe('٧٦ · ملف CAMPUS.sql');
+{
+  const sql = fs.readFileSync(path.join(ROOT, 'db', 'CAMPUS.sql'), 'utf8');
+
+  has(sql, 'add column if not exists university_id', 'انتماء الطالب يُضاف بأمان التكرار');
+  has(sql, 'on delete set null', '★ حذف جامعة لا يحذف حساب طالب — يفقد انتماءه فقط');
+  has(sql, 'create or replace function qbank.university_page', 'دالة صفحة القسم موجودة');
+  has(sql, 'create or replace function qbank.set_my_campus', 'ودالة حفظ الانتماء');
+  has(sql, 'create or replace function qbank.my_campus', 'ودالة قراءته');
+  has(sql, 'create or replace function qbank.list_universities', 'وقائمة الجامعات للاختيار');
+
+  // القسم مفتوح للزائر: الرابط يُشارَك في مجموعة الدفعة قبل أن يسجّل أحد
+  has(sql, 'grant execute on function qbank.university_page(uuid) to anon, authenticated',
+      '★ القسم يُفتح بلا تسجيل — الرابط يُشارَك قبل أن يسجّل أحد');
+  // والانتماء لا يُكتب إلا من صاحبه
+  has(sql, 'grant execute on function qbank.set_my_campus(text, text, text) to authenticated',
+      'وحفظ الانتماء للمسجَّلين وحدهم');
+  no(sql, 'grant execute on function qbank.set_my_campus(text, text, text) to anon',
+     'ولا يُمنح للزائر');
+  has(sql, 'auth.uid()', 'والدالة تكتب لصاحب الجلسة لا لمن يُمرَّر لها');
+
+  // كل دالة تثبّت search_path — وإلا أمكن خداعها بمخطط بديل
+  const defs = sql.split('create or replace function').slice(1);
+  eq(defs.filter(d => d.indexOf('set search_path = qbank, public') === -1).length, 0,
+     'وكل دالة تثبّت search_path');
+
+  // المرور عبر ensure_* هو ما يمنع تفتّت الجامعة الواحدة إلى تهجئات
+  has(sql, 'qbank.ensure_university(p_country, p_university)',
+      '★ الحفظ يمرّ على ensure_university فيوحّد الإملاء');
+  has(sql, 'published and s.status', 'ولا يُعرض في القسم إلا المنشور');
+  no(sql, 'drop table', 'ولا حذف جدول في الملف');
+  no(sql, 'drop column', 'ولا حذف عمود');
+}
+
+/* ============ ٧٧ · عرض التقييم ============ */
+describe('٧٧ · نجوم التقييم');
+{
+  const A = makeDom().window.QBANK;
+  const T = A.trust;
+
+  // ★ العدد يُعرض مع المتوسط دائمًا: ٥٫٠ من تقييم واحد ليس إجماعًا
+  has(T.starsText(5, 1), 'تقييم', 'المتوسط يُعرض ومعه عدد المقيّمين');
+  has(T.starsText(5, 1), '٥٫٠', 'والمتوسط برقم عربي بمنزلة واحدة');
+  has(T.starsText(4.25, 12), '٤٫٣', 'ويُقرَّب لمنزلة واحدة');
+  has(T.starsText(4.25, 12), 'تقييمات', 'والجمع يُصاغ صحيحًا');
+  eq(T.starsText(0, 0), 'لم يُقيَّم بعد', 'وبلا تقييمات لا يُعرض صفر مضلِّل');
+
+  eq(T.reasonName('wrong_answer'), 'الإجابة المعلَّمة خاطئة', 'أسباب البلاغ بالعربية');
+  eq(T.reasonName('شيء'), 'شيء', 'وسبب غير معروف يُعرض كما هو بلا انهيار');
+  eq(T.reasons.length, 5, 'خمسة أسباب محدَّدة');
+  ok(T.reasons.some(r => r[0] === 'wrong_answer'),
+     '★ ومنها «الإجابة خاطئة» — وهو البلاغ الوحيد الذي يمنع تعلّم خطأ');
+}
+
+/* ============ ٧٨ · شارات الثقة ============ */
+describe('٧٨ · شارات الجودة');
+{
+  const A = makeDom().window.QBANK;
+  const B = s => A.trust.badges(s).map(n => n.textContent).join(' | ');
+
+  has(B({ verified:true, rating_n:0 }), 'موثّقة', 'الموثّقة تُوسم');
+  eq(B({ verified:false, rating_n:0 }), '', 'وغير الموثّقة بلا تقييم: لا شارة — لا وسم سلبي');
+  has(B({ verified:false, rating_avg:4.5, rating_n:8 }), '٤٫٥', 'والمقيَّمة تعرض نجومها');
+  has(B({ verified:true, rating_avg:5, rating_n:3 }), 'موثّقة', 'والاثنتان معًا ممكنتان');
+  eq(A.trust.badges({ verified:true, rating_n:2, rating_avg:4 }).length, 2, 'شارتان حين تجتمعان');
+}
+
+/* ============ ٧٩ · زر الإبلاغ عند السؤال ============ */
+describe('٧٩ · الإبلاغ');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const sent = [];
+  A.api.rpc = (name, args) => {
+    if (name === 'report_issue'){ sent.push(args); return Promise.resolve({ ok:true, data:{ ok:true } }); }
+    return Promise.resolve({ ok:true, data:{} });
+  };
+
+  const host = doc.createElement('div');
+  doc.body.appendChild(host);
+  const btn = A.trust.reportButton('S1', 'Q7');
+  host.appendChild(btn);
+
+  eq(btn.getAttribute('aria-label'), 'أبلغ عن مشكلة', 'الزر موصوف لقارئ الشاشة');
+  btn.dispatchEvent(new W.Event('click', { bubbles:true }));
+
+  const form = host.querySelector('.report');
+  ok(!!form, 'الضغط يفتح نموذج البلاغ عند السؤال نفسه');
+  eq(form.querySelectorAll('option').length, 5, 'بخمسة أسباب');
+
+  const send = Array.prototype.filter.call(form.querySelectorAll('button'),
+    b => b.textContent.indexOf('أرسل') !== -1)[0];
+  send.dispatchEvent(new W.Event('click', { bubbles:true }));
+
+  pending.push((async () => {
+    await until(W, () => sent.length > 0);
+    // ★ البلاغ يحمل معرّف السؤال لا المادة وحدها: «فيها خطأ» بلاغ لا يُتصرَّف فيه
+    eq(sent[0].p_subject, 'S1', 'البلاغ يحمل معرّف المادة');
+    eq(sent[0].p_question, 'Q7', '★ ومعرّف السؤال — بدونه لا يستطيع المشرف التصرّف');
+    ok(sent[0].p_reason, 'وسببًا');
+    W.close();
+  })());
+}
+
+/* ============ ٨٠ · التقييم لمن جرّب المادة ============ */
+describe('٨٠ · حارس التقييم');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  A.api.rpc = (name) => name === 'rate_subject'
+    ? Promise.resolve({ ok:true, data:{ ok:false, reason:'not_enrolled' } })
+    : Promise.resolve({ ok:true, data:{} });
+
+  const host = doc.createElement('div'); doc.body.appendChild(host);
+  host.appendChild(A.trust.ratingWidget({ id:'S1', name:'مادة' }));
+
+  eq(host.querySelectorAll('.rate__star').length, 5, 'خمس نجوم');
+  const send = Array.prototype.filter.call(host.querySelectorAll('button'),
+    b => b.textContent.indexOf('أرسل تقييمي') !== -1)[0];
+
+  // بلا اختيار نجوم: رسالة لا إرسال فارغ
+  send.dispatchEvent(new W.Event('click', { bubbles:true }));
+  has(host.querySelector('[role="status"]').textContent, 'اختر عدد النجوم', 'لا يُرسل تقييم بلا نجوم');
+
+  host.querySelectorAll('.rate__star')[3].dispatchEvent(new W.Event('click', { bubbles:true }));
+  eq(host.querySelectorAll('.rate__star.is-on').length, 4, 'اختيار ٤ يُضيء أربع نجوم');
+  send.dispatchEvent(new W.Event('click', { bubbles:true }));
+
+  pending.push((async () => {
+    await until(W, () => host.querySelector('[role="status"]').textContent.indexOf('راجع') !== -1);
+    // ★ سبب الرفض بالاسم: «تعذّر» وحدها تجعله يعيد المحاولة بلا فائدة
+    has(host.querySelector('[role="status"]').textContent, 'التقييم لمن جرّبها',
+        '★ ورفض «لم يفتحها» يُشرح بالاسم لا بـ«تعذّر»');
+    W.close();
+  })());
+}
+
+/* ============ ٨١ · طابور بلاغات المشرف ============ */
+describe('٨١ · طابور البلاغات');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const resolved = [];
+  A.api.rpc = (name, args) => {
+    if (name === 'admin_reports') return Promise.resolve({ ok:true, data:[{
+      id:'R1', reason:'wrong_answer', note:'الإجابة الصحيحة هي ج', status:'open',
+      created_at: new Date().toISOString(), subject_id:'S1', subject:'الفسيولوجيا',
+      question_id:'Q1', q:'What is the normal heart rate?',
+      options:['40–60','60–100','100–140','140–180'], answer:0
+    }]});
+    if (name === 'resolve_report'){ resolved.push(args); return Promise.resolve({ ok:true, data:{ ok:true } }); }
+    return Promise.resolve({ ok:true, data:[] });
+  };
+  A.store.set('is_admin_check', { uid:'x', ok:true });
+
+  const host = doc.createElement('div'); doc.body.appendChild(host);
+  host.appendChild(A.views.reportsBody());
+
+  pending.push((async () => {
+    await until(W, () => host.querySelector('.rep'));
+    const t = host.textContent;
+
+    // ★ نصّ السؤال داخل البلاغ: بدونه يفتح المشرف المادة مع كل بلاغ فيتراكم الطابور
+    has(t, 'normal heart rate', '★ نصّ السؤال يصل مع البلاغ — لا حاجة لفتح المادة');
+    has(t, 'المعلَّمة', 'والإجابة المعلَّمة موسومة');
+    has(t, 'الإجابة المعلَّمة خاطئة', 'وسبب البلاغ بالعربية');
+    has(t, 'الإجابة الصحيحة هي ج', 'وملاحظة الطالب معروضة');
+    has(t, 'الفسيولوجيا', 'واسم المادة');
+
+    const ok1 = Array.prototype.filter.call(host.querySelectorAll('button'),
+      b => b.textContent.indexOf('عولج') !== -1)[0];
+    ok1.dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => resolved.length > 0);
+    eq(resolved[0].p_report, 'R1', 'المعالجة تُرسل معرّف البلاغ');
+    eq(resolved[0].p_status, 'resolved', 'وحالته الجديدة');
+    W.close();
+  })());
+}
+
+/* ============ ٨٢ · ملف TRUST.sql ============ */
+describe('٨٢ · قاعدة الثقة');
+{
+  const sql = fs.readFileSync(path.join(ROOT, 'db', 'TRUST.sql'), 'utf8');
+
+  has(sql, 'check (stars between 1 and 5)', 'النجوم محصورة بين ١ و٥ في القاعدة لا في الواجهة فقط');
+  has(sql, 'primary key (subject_id, user_id)', '★ تقييم واحد لكل طالب لكل مادة — لا حشد أصوات');
+  has(sql, "reason = any(ok_reason)", 'وسبب البلاغ من قائمة مغلقة');
+
+  // ★ أرخص هجوم على منصة محتواها من المستخدمين: إغراق منافس بنجمة واحدة
+  has(sql, "reason','not_enrolled", '★ لا يُقيّم إلا من فتح المادة — يمنع إغراق منافس بتقييمات زائفة');
+  has(sql, 'qbank.enrollments', 'والتحقق من الاشتراك');
+  has(sql, 'qbank.subject_trials', 'أو من التجربة');
+
+  has(sql, 'reports_once', 'وبلاغ واحد مفتوح لكل طالب لكل سؤال');
+  has(sql, "where status = 'open'", 'والفهرس الفريد على المفتوحة وحدها — يُعاد الإبلاغ بعد البتّ');
+
+  // التوثيق قرار إنسان: لو مُنح تلقائيًا بعدد تقييمات لصار وسمًا يُشترى
+  has(sql, 'qbank.is_admin()', 'والتوثيق للمشرف وحده');
+  no(sql, 'verified = true where rating_n', '★ ولا توثيق تلقائي بعدد التقييمات — وسمٌ يُشترى لا يعني شيئًا');
+
+  // لا سياسة تعديل للطالب على البلاغ
+  no(sql, 'create policy reports_update on qbank.reports for update',
+     '★ ولا يُغلق الطالب بلاغه بنفسه — يُغلقه المشرف عبر الدالة');
+
+  has(sql, 'create or replace function qbank.find_similar', 'وكشف المكرر موجود');
+  has(sql, 'is not distinct from s.university_id',
+      '★ والمطابقة داخل الجامعة وحدها — «فيزياء ١» في نجران ليست تكرارًا لمثيلتها في القاهرة');
+
+  const defs = sql.split('create or replace function').slice(1);
+  eq(defs.filter(d => d.indexOf('set search_path = qbank, public') === -1).length, 0,
+     'وكل دالة تثبّت search_path');
+  no(sql, 'drop table', 'ولا حذف جدول');
+}
+
+/* ============ ٨٣ · صياغة الوقت والميداليات ============ */
+describe('٨٣ · أدوات المجتمع');
+{
+  const A = makeDom().window.QBANK;
+  const C = A.community;
+  const h = n => new Date(Date.now() + n * 3600000).toISOString();
+
+  has(C.timeLeft(h(50)), 'يوم', 'ما يزيد على يوم يُقال بالأيام');
+  has(C.timeLeft(h(5)),  'ساعة', 'وما دونه بالساعات');
+  has(C.timeLeft(h(0.2)),'دقيقة', 'وآخر ساعة بالدقائق');
+  eq(C.timeLeft(h(-3)), 'انتهى', 'والمنتهي يُقال صراحةً');
+  // ★ الوقت بعبارة لا بتاريخ: الطالب يقرّر بلمحة لا بحساب
+  no(C.timeLeft(h(50)), '20', 'ولا تاريخ خام يحسبه الطالب بنفسه');
+
+  eq(C.medal(1), '🥇', 'الأول ذهب');
+  eq(C.medal(3), '🥉', 'والثالث برونز');
+  eq(C.medal(4), '', '★ ولا ميدالية للرابع — ميدالية للجميع لا تميّز أحدًا');
+}
+
+/* ============ ٨٤ · لوحة متصدّري الجامعة ============ */
+describe('٨٤ · متصدّرو الجامعة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  A.api.rpc = () => Promise.resolve({ ok:true, data:{
+    ok:true, total:200, days:30,
+    rows:[
+      { rank:1, name:'سارة', avatar:'🧠', points:420, exams:12, best:96, me:false },
+      { rank:2, name:'',     avatar:'',   points:310, exams:9,  best:88, me:false },
+      { rank:3, name:'خالد', avatar:'🩺', points:290, exams:8,  best:84, me:false }
+    ],
+    me:{ rank:47, points:60, exams:2 }
+  }});
+
+  const host = doc.createElement('div'); doc.body.appendChild(host);
+  host.appendChild(A.community.boardBody());
+
+  pending.push((async () => {
+    await until(W, () => host.querySelector('.brd__row'));
+    const rows = host.querySelectorAll('.brd__row');
+    eq(rows.length, 4, 'ثلاثة صفوف ومعها صفّك أنت');
+
+    has(rows[0].textContent, '🥇', 'الأول بميدالية');
+    // ★ من لم يضع اسمًا يظهر «طالب» — لا فراغ ولا بريد
+    has(rows[1].textContent, 'طالب', '★ ومن بلا اسم يظهر «طالب» لا فراغًا ولا بريدًا');
+    ok(host.textContent.indexOf('@') === -1, 'ولا بريد في اللوحة إطلاقًا');
+
+    // ★ ترتيبك ولو خارج العشرين: الغياب يُحبط، و«٤٧» يُحفّز
+    const mine = host.querySelector('.is-mine-out');
+    ok(!!mine, '★ وترتيبك يظهر ولو كنت خارج المعروضين');
+    has(mine.textContent, '٤٧', 'برقمه');
+    has(host.textContent, 'داخل جامعتك', 'والنطاق معلن: جامعتك لا المنصة');
+    W.close();
+  })());
+}
+
+/* ============ ٨٥ · لوحة بلا جامعة ============ */
+describe('٨٥ · لوحة بلا انتماء');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  A.api.rpc = () => Promise.resolve({ ok:true, data:{ ok:false, reason:'no_university' } });
+
+  const host = doc.createElement('div'); doc.body.appendChild(host);
+  host.appendChild(A.community.boardBody());
+
+  pending.push((async () => {
+    await until(W, () => host.textContent.indexOf('حدّد جامعتك') !== -1);
+    // ★ الفراغ يُشرح ويُعالَج: «لا جامعة» خطوة ناقصة لا عطل
+    has(host.textContent, 'المتصدرون داخل جامعتك', 'يُشرح سبب الفراغ');
+    ok(!!host.querySelector('a[href="#/account"]'), '★ ومعه الزر الذي يُصلحه');
+    W.close();
+  })());
+}
+
+/* ============ ٨٦ · التحدّي: إنشاء ورمز ولوحة ============ */
+describe('٨٦ · تحدّي الدفعة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const made = [];
+  A.api.rpc = (name, args) => {
+    if (name === 'create_challenge'){ made.push(args); return Promise.resolve({ ok:true, data:{ ok:true, id:'X1', code:'ABC234' } }); }
+    return Promise.resolve({ ok:true, data:{} });
+  };
+
+  const host = doc.createElement('div'); doc.body.appendChild(host);
+  host.appendChild(A.community.challengeBox({ id:'S1', name:'مادة' }));
+
+  const make = Array.prototype.filter.call(host.querySelectorAll('button'),
+    b => b.textContent.indexOf('افتح تحدّيًا') !== -1)[0];
+  ok(!!make, 'زر فتح التحدّي موجود');
+  make.dispatchEvent(new W.Event('click', { bubbles:true }));
+
+  pending.push((async () => {
+    await until(W, () => host.querySelector('.chall__code'));
+    eq(made[0].p_subject, 'S1', 'التحدّي يُفتح على المادة');
+    eq(host.querySelector('.chall__code').textContent, 'ABC234', 'والرمز يُعرض كبيرًا');
+    // ★ الرمز بلا حروف ملتبسة: يُملى صوتًا في مجموعة الدفعة
+    ok(!/[O0I1]/.test(host.querySelector('.chall__code').textContent),
+       '★ ولا حروف ملتبسة (O/0 و I/1) — الرمز يُملى صوتًا لا يُنسخ فقط');
+    ok(!!host.querySelector('a[href="#/challenge/ABC234"]'), 'ورابط اللوحة جاهز');
+    W.close();
+  })());
+}
+
+/* ============ ٨٧ · شاشة لوحة التحدّي ============ */
+describe('٨٧ · لوحة التحدّي');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  A.api.rpc = (name, args) => {
+    if (name !== 'challenge_board') return Promise.resolve({ ok:true, data:{} });
+    if (args.p_code === 'NOPE') return Promise.resolve({ ok:true, data:{ ok:false, reason:'not_found' } });
+    return Promise.resolve({ ok:true, data:{
+      ok:true, code:'ABC234', title:'تحدّي دفعة ٢٠٢٦', subject:'الفسيولوجيا', subject_id:'S1',
+      ends_at: new Date(Date.now() + 36e5 * 30).toISOString(), ended:false,
+      rows:[{ rank:1, name:'سارة', avatar:'🧠', score:92, me:false },
+            { rank:2, name:'أنا',  avatar:'◍', score:80, me:true }]
+    }});
+  };
+
+  pending.push((async () => {
+    await nav(W, '#/challenge/ABC234');
+    await until(W, () => doc.querySelector('.brd__row'));
+    const t = doc.getElementById('main').textContent;
+    has(t, 'تحدّي دفعة ٢٠٢٦', 'عنوان التحدّي');
+    has(t, 'الفسيولوجيا', 'والمادة');
+    has(t, 'يبقى', 'والوقت المتبقي بعبارة');
+    eq(doc.querySelectorAll('.brd__row').length, 2, 'وصفّان في اللوحة');
+    ok(!!doc.querySelector('.brd__row.is-me'), 'وصفّك مميَّز');
+    ok(!!doc.querySelector('a[href*="challenge=ABC234"]'), 'وزر بدء اختبار التحدّي يحمل رمزه');
+
+    // رمز خاطئ: رسالة تفهم لا شاشة مكسورة
+    await nav(W, '#/challenge/NOPE');
+    await until(W, () => doc.getElementById('main').textContent.indexOf('لم نجد') !== -1);
+    has(doc.getElementById('main').textContent, 'ستة محارف', 'والرمز الخاطئ يشرح الشكل المتوقَّع');
+    W.close();
+  })());
+}
+
+/* ============ ٨٨ · ملف COMMUNITY.sql ============ */
+describe('٨٨ · قاعدة المجتمع');
+{
+  const sql = fs.readFileSync(path.join(ROOT, 'db', 'COMMUNITY.sql'), 'utf8');
+
+  // ★ الخطّ الأحمر الأول: لا بريد ولا معرّف مستخدم يخرج من أي دالة
+  no(sql, "'email'", '★ لا بريد في أي مُخرَج');
+  no(sql, "'user_id', ", '★ ولا معرّف مستخدم — الاسم والصورة فقط');
+  has(sql, "'name', nullif(btrim(p.name)", 'والاسم يُنظَّف قبل عرضه');
+
+  // ★ الخطّ الأحمر الثاني: المقارنة داخل الجامعة
+  has(sql, 'p.university_id = uni', '★ والمقارنة داخل الجامعة لا عبر المنصة');
+  has(sql, 'p.show_on_board', 'ومن اختار الاختفاء لا يُحسب');
+  has(sql, 'add column if not exists show_on_board boolean not null default true',
+      'والظهور اختيار بافتراض ظاهر');
+
+  // المعيار يقيس المراجعة لا النقر
+  has(sql, 'sum(greatest(coalesce(a.correct, 0), 0))',
+      '★ النقاط بالإجابات الصحيحة لا بعدد الاختبارات — نقيس المراجعة لا النقر');
+  has(sql, "now() - (least(greatest(coalesce(p_days,30), 1), 365)",
+      'ونافذة زمنية تُبقي اللوحة قابلة للفوز');
+
+  // التحدّي
+  has(sql, 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789',
+      '★ رمز التحدّي بلا O/0 وI/1 — يُملى صوتًا في مجموعة الدفعة');
+  has(sql, "reason','ended", 'ولا تُقبل نتيجة بعد انتهاء الوقت');
+  has(sql, 'greatest(qbank.challenge_entries.score, excluded.score)',
+      '★ وأفضل نتيجة تبقى لا الأخيرة — كي لا يخاف الطالب من محاولة ثانية');
+
+  // العطل الذي وقعنا فيه سابقًا: متغيّر يطابق اسم عمود
+  has(sql, 'new_id uuid', 'والمتغيّر new_id لا id — تظليل اسم عمود يُنتج عطلًا صامتًا');
+  no(sql, 'into id;', 'ولا returning إلى متغيّر ملتبس');
+
+  const defs = sql.split('create or replace function').slice(1);
+  eq(defs.filter(d => d.indexOf('set search_path = qbank, public') === -1).length, 0,
+     'وكل دالة تثبّت search_path');
+  no(sql, 'drop table', 'ولا حذف جدول');
+}
+
+/* ============ ٨٩ · التوثيق ومدخل الطابور ============ */
+describe('٨٩ · وسم موثّق');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+
+  /* ★ شاشة بلا مدخل غير موجودة عمليًا: بنينا الطابور وكاد يبقى بلا رابط،
+     وطابور بلاغات لا يفتحه أحد يمنح الطالب ثقة كاذبة بأن أحدًا يتابع. */
+  const ids = A.views.ADMIN_TABS.map(t => t.id);
+  ok(ids.indexOf('reports') !== -1, '★ «البلاغات» تبويب في لوحة المشرف — للطابور مدخل');
+  ok(ids.indexOf('reports') < ids.indexOf('settings'),
+     'وقبل الإعدادات: الإعدادات آخر ما يُفتح والبلاغات أول ما يُرى');
+
+  const sent = [];
+  A.api.rpc = (name, args) => {
+    if (name === 'set_verified'){ sent.push(args); return Promise.resolve({ ok:true, data:{ ok:true, verified:args.p_on } }); }
+    return Promise.resolve({ ok:true, data:[] });
+  };
+  A.store.set('is_admin_check', { uid:'x', ok:true });
+
+  const host = doc.createElement('div'); doc.body.appendChild(host);
+  const sub = { id:'S1', name:'مادة', q_count:10, topics:[], color:'subject-1', icon:'▤',
+                verified:false, rating_n:4, rating_avg:4.5, reports_open:2 };
+  host.appendChild(A.views.subjIdentity(sub, () => {}));
+
+  const btn = Array.prototype.filter.call(host.querySelectorAll('button'),
+    b => b.textContent.indexOf('وثّق') !== -1)[0];
+  ok(!!btn, 'زر التوثيق موجود في محرّر المادة');
+  has(host.textContent, '٤٫٥', 'وتقييم المادة معروض للمشرف');
+
+  // ★ توثيق مادة عليها بلاغ مفتوح يمنح خطأً محتملًا ختم المراجعة
+  const link = host.querySelector('a[href="#/admin/reports"]');
+  ok(!!link, '★ ومادة عليها بلاغات تعرض بابًا إلى طابورها');
+  has(link.textContent, '٢', 'بعددها');
+
+  let asked = false;
+  W.confirm = () => { asked = true; return false; };
+  btn.dispatchEvent(new W.Event('click', { bubbles:true }));
+  ok(asked, '★ ويُسأل المشرف قبل توثيق مادة عليها بلاغ مفتوح');
+  eq(sent.length, 0, 'ورفضه يوقف التوثيق');
+
+  W.confirm = () => true;
+  btn.dispatchEvent(new W.Event('click', { bubbles:true }));
+  pending.push((async () => {
+    await until(W, () => sent.length > 0);
+    eq(sent[0].p_on, true, 'وقبوله يوثّقها');
+    eq(sent[0].p_subject, 'S1', 'بمعرّفها');
+    W.close();
+  })());
+}
+
+/* ============ ٩٠ · عرض المبالغ ============ */
+describe('٩٠ · الريال والهللة');
+{
+  const A = makeDom().window.QBANK;
+  const P = A.pay;
+
+  // الهللة وحدة تخزين لا وحدة عرض: نخزّن بها كي لا نجمع كسورًا، ونعرض بالريال
+  eq(P.money(1500, 'SAR'), '١٥ ريال', 'المبلغ الصحيح بلا كسر زائد');
+  has(P.money(750, 'SAR'), '٧٫٥٠', 'والكسر بفاصلة عربية');
+  eq(P.money(0, 'SAR'), '٠ ريال', 'والصفر يُعرض صفرًا');
+  no(P.money(1500, 'SAR'), '1500', '★ ولا تظهر الهللات للطالب إطلاقًا');
+
+  eq(P.questionsFor(300, 1), 300, '★ الكوين وحدة داخلية — نترجمها أسئلةً يفهمها الطالب');
+  eq(P.questionsFor(300, 2), 150, 'وتتبع تكلفة السؤال');
+  eq(P.questionsFor(300, 0), 300, 'وتكلفة صفر لا تُنتج قسمة على صفر');
+  eq(P.questionsFor(0, 1), 0, 'وصفر كوين صفر سؤال');
+}
+
+/* ============ ٩١ · لا يُرسل المتصفح مبلغًا ============ */
+describe('٩١ · السعر من القاعدة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const sent = [];
+  A.admin.server = (path, body) => { sent.push({ path, body });
+    return Promise.resolve({ ok:true, data:{ ok:true, url:'https://tap.test/pay/1', payment_id:'P1' } }); };
+  A.api.rpc = () => Promise.resolve({ ok:true, data:{
+    open:true, currency:'SAR', cost_per_q:1,
+    packages:[{ coins:300, halalas:1500 }, { coins:700, halalas:3000 }] } });
+
+  const host = doc.createElement('div'); doc.body.appendChild(host);
+  host.appendChild(A.pay.coinShop());
+
+  pending.push((async () => {
+    await until(W, () => host.querySelector('.pack'));
+    eq(host.querySelectorAll('.pack').length, 2, 'الباقتان معروضتان');
+    has(host.textContent, '١٥ ريال', 'بأسعارها بالريال');
+    has(host.textContent, 'سؤالًا مُثرى', 'وبقيمتها بالأسئلة لا بالكوين وحده');
+
+    // ★ «الأوفر» محسوبة لا مكتوبة: لو كُتبت يدويًا لكذبت عند أول تغيير سعر
+    const best = host.querySelector('.pack--best');
+    ok(!!best, 'والأوفر موسومة');
+    has(best.textContent, '٧٠٠', '★ وهي الأقل سعرًا للكوين — محسوبة لا مكتوبة');
+
+    const buy = Array.prototype.filter.call(host.querySelectorAll('button'),
+      b => b.textContent === 'اشترِ')[0];
+    buy.dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => sent.length > 0);
+
+    eq(sent[0].path, '/api/pay', 'الشراء يمرّ بالخادم');
+    eq(sent[0].body.kind, 'coins', 'ونوعه معلن');
+    eq(sent[0].body.coins, 300, 'ومعه رقم الباقة');
+    // ★ الفحص الذي يمنع «مادة بريال»
+    ok(!('amount' in sent[0].body) && !('halalas' in sent[0].body) && !('price' in sent[0].body),
+       '★ ولا مبلغ في الطلب إطلاقًا — القاعدة تحسبه، ولو أرسله المتصفح لاشترى بما يشاء');
+    W.close();
+  })());
+}
+
+/* ============ ٩٢ · الشراء موقوف ============ */
+describe('٩٢ · إيقاف الشراء');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  A.api.rpc = () => Promise.resolve({ ok:true, data:{ open:false, packages:[] } });
+  const host = doc.createElement('div'); doc.body.appendChild(host);
+  host.appendChild(A.pay.coinShop());
+
+  pending.push((async () => {
+    await until(W, () => host.textContent.indexOf('موقوف') !== -1);
+    // ★ نقول «موقوف» ولا نُخفي القسم: من يبحث عن الشراء ولا يجده يظنّه عطلًا فيغادر
+    has(host.textContent, 'رصيدك الحالي يبقى كما هو',
+        '★ والطالب يُطمأن أن رصيده وما اشتراه لا يتأثران');
+    W.close();
+  })());
+}
+
+/* ============ ٩٣ · زر شراء المادة ============ */
+describe('٩٣ · شراء مادة');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  eq(A.pay.buySubjectButton({ id:'s', free:true, price:20 }), null, 'المجانية بلا زر شراء');
+  eq(A.pay.buySubjectButton({ id:'s', price:0 }), null, 'وبلا سعر كذلك');
+  eq(A.pay.buySubjectButton(null), null, 'ومدخل فارغ لا يُنتج انهيارًا');
+  const b = A.pay.buySubjectButton({ id:'s', price:20 });
+  ok(!!b, 'وذات السعر لها زر');
+  has(b.textContent, '٢٠ ريال', '★ والسعر مكتوب على الزر — لا مفاجأة بعد الضغط');
+
+  /* ★ زر الشراء صار دفعًا داخل المنصة لا رابطًا خارجيًا:
+     كان يفتح موقعًا آخر عند أهم لحظة في المنصة — لحظة قرار الدفع. */
+  const gate = A.gate.buyButton({ id:'s', name:'مادة', price:20 });
+  ok(gate.querySelector ? !gate.querySelector('a[href^="http"]') : true,
+     '★ ولا رابط خارجي في بوابة الشراء');
+  W.close();
+}
+
+/* ============ ٩٤ · شاشة العودة لا تصدّق العنوان ============ */
+describe('٩٤ · العودة من البوابة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const calls = [];
+  A.admin.server = (path, body) => { calls.push(body); return Promise.resolve({ ok:true, data:{ ok:true } }); };
+  A.api.rpc = (n, args) => {
+    if (n !== 'payment_status') return Promise.resolve({ ok:true, data:{} });
+    return Promise.resolve({ ok:true, data:{ ok:true, status:'paid', kind:'coins', coins:300 } });
+  };
+
+  pending.push((async () => {
+    await nav(W, '#/pay/P1?tap_id=chg_777');
+    await until(W, () => doc.getElementById('main').textContent.indexOf('تمّت') !== -1);
+    const t = doc.getElementById('main').textContent;
+    has(t, 'تمّت العملية', 'النجاح يُعلن');
+    has(t, '٣٠٠', 'وعدد الكوينز الواصل');
+
+    // ★ لا نصدّق العنوان: نُرسل المعرّف إلى خادمنا ليسأل البوابة بنفسه
+    eq(calls[0].action, 'confirm', '★ الشاشة تطلب تحققًا من الخادم');
+    eq(calls[0].charge_id, 'chg_777', 'بمعرّف العملية القادم من البوابة');
+    W.close();
+  })());
+}
+
+/* ============ ٩٥ · دفعة معلّقة وأخرى فاشلة ============ */
+describe('٩٥ · حواف الدفع');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  let status = 'pending';
+  A.admin.server = () => Promise.resolve({ ok:true, data:{ ok:false } });
+  A.api.rpc = (n) => n === 'payment_status'
+    ? Promise.resolve({ ok:true, data:{ ok:true, status, kind:'coins', coins:300,
+        reason: status === 'failed' ? 'المبلغ المدفوع أقل من المطلوب' : '' } })
+    : Promise.resolve({ ok:true, data:{} });
+
+  pending.push((async () => {
+    await nav(W, '#/pay/P2');
+    await until(W, () => doc.getElementById('main').textContent.indexOf('قيد التأكيد') !== -1);
+    // ★ المعلّقة ليست فاشلة: ادّعاء الفشل يدفع الطالب إلى الدفع مرتين
+    has(doc.getElementById('main').textContent, 'لا تدفع مرة أخرى',
+        '★ والمعلّقة تُحذّر من الدفع مرتين — لا تُعلن فشلًا لم يحدث');
+
+    status = 'failed';
+    await nav(W, '#/pay/P3');
+    await until(W, () => doc.getElementById('main').textContent.indexOf('لم تكتمل') !== -1);
+    has(doc.getElementById('main').textContent, 'المبلغ المدفوع أقل من المطلوب',
+        'والفاشلة تقول سببها');
+    W.close();
+  })());
+}
+
+/* ============ ٩٦ · ملف PAY.sql ============ */
+describe('٩٦ · قاعدة الدفع');
+{
+  const sql = fs.readFileSync(path.join(ROOT, 'db', 'PAY.sql'), 'utf8');
+
+  // ★ السعر يُحسم في القاعدة
+  has(sql, "(x->>'coins')::int = p_coins",
+      '★ باقة الكوينز تُطابَق بقائمة معلنة — لا عدد حر يرسله المتصفح');
+  has(sql, "reason','bad_package", 'وباقة غير معروفة تُرفض');
+  has(sql, 'greatest(coalesce(sub.price, 0), 0) * 100',
+      '★ وسعر المادة من صفّها لا من الطلب');
+  has(sql, "reason','already_owned", 'ولا يُدفع ثمن مادة يملكها');
+
+  // ★ التسوية بمفتاح الخدمة وحده
+  has(sql, 'grant execute on function qbank.settle_payment(uuid, text, int, text) to service_role',
+      '★ التسوية لمفتاح الخدمة وحده');
+  no(sql, 'grant execute on function qbank.settle_payment(uuid, text, int, text) to authenticated',
+      '★ ولو مُنحت للطالب لمنح نفسه ما يشاء بنداء واحد');
+
+  // ★ لا تكرار ولا نقص
+  has(sql, 'payments_provider_ref', 'ومرجع الدفعة فريد — الإشعار المكرر لا يمنح مرتين');
+  has(sql, "if pay.status = 'paid'", 'والصف المدفوع يُرجع نجاحًا بلا منح ثانٍ');
+  has(sql, 'p_paid_halalas, 0) < pay.amount_halalas',
+      '★ ومبلغ أقل من المطلوب لا يُسوّى — حزام ثانٍ لو خُدعت البوابة');
+
+  // ★ لا كتابة للطالب على جدول الدفعات
+  no(sql, 'create policy payments_insert', '★ ولا سياسة إدراج للطالب — صفٌّ يكتبه يعني رصيدًا مجانيًا');
+  no(sql, 'create policy payments_update', 'ولا تعديل');
+  has(sql, 'for update', 'والتسوية تقفل الصف قبل قراءته — إشعاران متزامنان لا يمنحان مرتين');
+
+  // الإحالة لا تُبطل شراءً دُفع ثمنه
+  has(sql, 'exception when others then', '★ وفشل مكافأة الإحالة لا يُبطل شراءً دُفع ثمنه');
+  has(sql, 'when p_ref = uid then null', 'ولا يُحيل الطالب نفسه');
+
+  const defs = sql.split('create or replace function').slice(1);
+  eq(defs.filter(d => d.indexOf('set search_path = qbank, public') === -1).length, 0,
+     'وكل دالة تثبّت search_path');
+  no(sql, 'drop table', 'ولا حذف جدول');
+}
+
+/* ============ ٩٧ · خادم الدفع ============ */
+describe('٩٧ · api/pay');
+{
+  const js = fs.readFileSync(path.join(ROOT, 'api', 'pay.js'), 'utf8');
+  const gw = fs.readFileSync(path.join(ROOT, 'api', '_lib', 'gateway.js'), 'utf8');
+
+  // ★ الخادم لا يقرأ مبلغًا من الطلب
+  no(js, 'body.amount', '★ الخادم لا يقرأ مبلغًا من الطلب');
+  no(js, 'body.price', 'ولا سعرًا');
+  has(js, "rpc('create_payment'", 'بل ينادي القاعدة لتحسبه');
+
+  // ★ الدليل الوحيد هو سؤال البوابة
+  has(js, 'gateway.retrieveCharge', '★ والتسوية بعد سؤال البوابة مباشرة');
+  has(js, "reason:'not_paid'", 'وغير المقبوضة تُرفض');
+  has(gw, "=== 'CAPTURED'", 'والحالة المقبولة واحدة معلنة');
+
+  // ★ المفتاح السري لا يُسرَّب
+  has(gw, 'process.env.TAP_SECRET_KEY', 'المفتاح من البيئة');
+  no(gw, 'console.log(secret', 'ولا يُسجَّل');
+  no(js, 'TAP_SECRET', '★ ولا يظهر في مسار الطلب إطلاقًا');
+
+  // webhook وconfirm معًا: أحدهما قد لا يصل
+  has(js, "action === 'webhook'", 'وإشعار البوابة مسموع');
+  has(js, 'req.query && req.query.hook', '★ ويُتعرَّف عليه بلا اشتراط حقل ترسله البوابة');
+  has(js, 'res.status(200).json({ received:true', 'ويُردّ عليه ٢٠٠ دائمًا كي لا يتكرر بلا نهاية');
+
+  // المقارنة بالأعداد الصحيحة
+  has(gw, 'Math.round(Number(d.amount || 0) * 100)',
+      '★ والمبلغ يُقارَن هللاتٍ صحيحة لا كسورًا عشرية');
+}
+
+/* ============ ٩٨ · التصدير لا يدهس الجلب ============ */
+describe('٩٨ · أسماء الوحدة');
+{
+  const A = makeDom().window.QBANK;
+  /*
+    ★ كان QBANK.pay.history يُصدَّر فوق Pay.history — دالة جلب السجل —
+    فصارت دالة البناء تنادي نفسها بلا نهاية وتنهار الصفحة كاملة.
+    شاشة بيضاء كاملة سببها حرفٌ في اسم.
+  */
+  ok(typeof A.pay.history === 'function', 'دالة جلب السجل باقية');
+  ok(typeof A.pay.historyCard === 'function', 'وبناء البطاقة باسم آخر');
+  ok(A.pay.history !== A.pay.historyCard, '★ ولا يدهس أحدهما الآخر');
+  ok(A.pay.options !== A.pay.coinShop, 'وكذلك الخيارات والمتجر');
+  eq(typeof A.pay.status, 'function', 'وحالة الدفعة دالة جلب');
+
+  /* ★ الانتقال إلى البوابة يقع داخل .then بعد رحلة شبكة — وقد يكون
+     المستند فُكِّك حينها، فالكتابة على وصفه ترمي وتُسقط ما بعدها. */
+  eq(typeof A.pay.goTo, 'function', 'والانتقال إلى البوابة عبر حارس');
+}
+
+/* ============ ٩٩ · القمع ============ */
+describe('٩٩ · قمع الطلاب');
+{
+  const A = makeDom().window.QBANK;
+  const f = A.views.funnelPanel({ signed_up:100, has_campus:60, enrolled:40, examined:20, uploaded:5, paid:2 });
+
+  eq(f.querySelectorAll('.fun__row').length, 6, 'ست خطوات');
+  const pcts = Array.prototype.map.call(f.querySelectorAll('.fun__p'), n => n.textContent).filter(Boolean);
+
+  /* ★ النسبة من الخطوة السابقة لا من القمة.
+     «٢٪ من المسجّلين دفعوا» رقم صحيح لا يقول شيئًا؛ و«٤٠٪ ممن رفعوا دفعوا»
+     يقول أين تُكسب المعركة. النسبة من القمة تُخفي موضع التسرّب. */
+  eq(pcts[0], '٦٠٪', '★ النسبة من الخطوة السابقة: ٦٠ من ١٠٠');
+  eq(pcts[1], '٦٧٪', 'و٤٠ من ٦٠');
+  eq(pcts[4], '٤٠٪', 'و٢ من ٥ — لا ٢٪ من ١٠٠');
+
+  eq(f.querySelectorAll('.fun__p.is-low').length, 1, '★ وخطوة واحدة موسومة بالتسرّب (٢٥٪ دون الثلث)');
+
+  const zero = A.views.funnelPanel({ signed_up:0, has_campus:0, enrolled:0, examined:0, uploaded:0, paid:0 });
+  eq(zero.querySelectorAll('.fun__row').length, 6, 'ومنصة فارغة لا تنهار');
+  eq(zero.querySelectorAll('.fun__p.is-low').length, 0, 'ولا تُوسم كلها بالتسرّب');
+  eq(A.admin.pro.step(5, 0), null, 'والقسمة على صفر تُرجع لا شيء لا NaN');
+}
+
+/* ============ ١٠٠ · تبويبات اللوحة ============ */
+describe('١٠٠ · بنية اللوحة');
+{
+  const A = makeDom().window.QBANK;
+  const ids = A.views.ADMIN_TABS.map(t => t.id);
+
+  eq(ids.join(','), 'dash,students,ugc,content,reports,quality,money,campus,audit,settings',
+     'عشرة تبويبات بترتيب ما يستحق أن يُرى');
+  // ★ الإعدادات آخرًا دائمًا: آخر ما يُفتح، وتصدُّرها يزاحم ما يحتاج تدخّلًا
+  eq(ids[ids.length - 1], 'settings', '★ والإعدادات آخرًا');
+  eq(ids[0], 'dash', 'واللوحة أولًا');
+  ok(ids.indexOf('reports') < ids.indexOf('settings'), 'وما يحتاج تدخّلًا قبل ما يُضبط مرة');
+
+  eq(A.views.ADMIN_TABS.filter(t => t.id === 'dash')[0].fill, A.views.proDashTab,
+     'واللوحة القديمة استُبدلت بالكاملة');
+  eq(A.views.ADMIN_TABS.filter(t => t.id === 'students')[0].fill, A.views.proStudentsTab,
+     'وتبويب الطلاب صار فيه تحكم');
+  eq(A.views.ADMIN_TABS.filter((t, i, arr) => arr.findIndex(x => x.id === t.id) !== i).length, 0,
+     'ولا تبويب مكرَّر');
+}
+
+/* ============ ١٠١ · التحكم في الطالب ============ */
+describe('١٠١ · تحكم الطلاب');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const sent = [];
+  let roleReply = { ok:true };
+  A.api.rpc = (n, a) => {
+    sent.push({ n, a });
+    if (n === 'admin_students_pro') return Promise.resolve({ ok:true, data:[
+      { id:'u1', name:'سارة', avatar:'🧠', is_admin:false, coins:250,
+        university:'جامعة نجران', attempts:4, uploaded:2, paid:1500 }]});
+    if (n === 'admin_set_role') return Promise.resolve({ ok:true, data: roleReply });
+    return Promise.resolve({ ok:true, data:{ ok:true, balance:350 } });
+  };
+
+  const box = doc.createElement('div'); doc.body.appendChild(box);
+  A.views.proStudentsTab(box);
+
+  pending.push((async () => {
+    await until(W, () => box.querySelector('.stu'));
+    const btn = t => Array.prototype.filter.call(box.querySelectorAll('button'), b => b.textContent === t)[0];
+
+    has(box.textContent, '٢٥٠ كوين', 'رصيد الطالب ظاهر');
+    has(box.textContent, '١٥ ريال', 'وما دفعه — لا عدد عملياته وحده');
+    has(box.textContent, 'جامعة نجران', 'وجامعته');
+
+    btn('امنح').dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => box.textContent.indexOf('الرصيد الآن') !== -1);
+    const g = sent.filter(x => x.n === 'admin_grant_coins')[0];
+    eq(g.a.p_amount, 100, 'المنح يُرسل العدد موجبًا');
+    /* ★ الرصيد الجديد يبقى معروضًا: كانت القائمة تُعاد بناؤها فتُمحى الرسالة
+       قبل أن يقرأها المشرف — فيشكّ هل وصل المنح ويمنح ثانيةً، وهذا في المال يُكلّف. */
+    has(box.textContent, 'الرصيد الآن ٣٥٠', '★ والرصيد الجديد يبقى معروضًا');
+    has(box.textContent, '٣٥٠ كوين', 'والشارة تُحدَّث في مكانها');
+
+    btn('اسحب').dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => sent.filter(x => x.n === 'admin_grant_coins').length > 1);
+    eq(sent.filter(x => x.n === 'admin_grant_coins')[1].a.p_amount, -100, 'والسحب يُرسله سالبًا');
+
+    // ★ حارسان يستحقان اسمًا لا «تعذّر»
+    W.confirm = () => true;
+    roleReply = { ok:false, reason:'last_admin' };
+    btn('ارفعه مشرفًا').dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => box.textContent.indexOf('آخر مشرف') !== -1);
+    has(box.textContent, 'ارفع غيره أولًا', '★ ورفض «آخر مشرف» يُشرح بالاسم');
+
+    // ولا يُنفَّذ فعلٌ خطير بلا تأكيد
+    W.confirm = () => false;
+    const before = sent.filter(x => x.n === 'admin_set_role').length;
+    btn('ارفعه مشرفًا').dispatchEvent(new W.Event('click', { bubbles:true }));
+    eq(sent.filter(x => x.n === 'admin_set_role').length, before,
+       '★ ورفض التأكيد يمنع الترقية — لا صلاحية تُمنح بضغطة واحدة');
+    W.close();
+  })());
+}
+
+/* ============ ١٠٢ · ردّ الدفعة يقول حدوده ============ */
+describe('١٠٢ · ردّ الدفعة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  let asked = '';
+  A.api.rpc = (n) => {
+    if (n === 'admin_payments') return Promise.resolve({ ok:true, data:[
+      { id:'P1', kind:'coins', coins:300, amount_halalas:1500, status:'paid',
+        created_at:new Date().toISOString(), student:'سارة' }]});
+    if (n === 'admin_coins') return Promise.resolve({ ok:true, data:{ ok:true, by_kind:[
+      { kind:'signup', n:12, coins:600 }, { kind:'spend', n:30, coins:-900 }] } });
+    return Promise.resolve({ ok:true, data:{ ok:true } });
+  };
+  W.confirm = t => { asked = t; return false; };
+
+  const box = doc.createElement('div'); doc.body.appendChild(box);
+  A.views.proMoneyTab(box);
+
+  pending.push((async () => {
+    await until(W, () => box.querySelector('.payrow'));
+    has(box.textContent, 'منحة تسجيل', 'دفتر الكوينز يفصل المنحة عن الشراء');
+    has(box.textContent, 'إنفاق على الإثراء', 'والإنفاق بابٌ مستقل');
+
+    const rb = Array.prototype.filter.call(box.querySelectorAll('button'), b => b.textContent === 'ردّ')[0];
+    ok(!!rb, 'وللدفعة المدفوعة زر ردّ');
+    rb.dispatchEvent(new W.Event('click', { bubbles:true }));
+    /* ★ الوهم هنا يعني طالبًا ينتظر مالًا لن يصله: نحن لا نملك سحب مال من
+       بطاقة، فنقولها في نص التأكيد بدل أن ندع المشرف يفترض. */
+    has(asked, 'لوحة Tap', '★ والتأكيد يقول صراحةً إن إعادة المال تتم في لوحة البوابة');
+    has(asked, 'هذه لا تفعلها', 'وأن هذا الزر لا يفعلها');
+    W.close();
+  })());
+}
+
+/* ============ ١٠٣ · ملف ADMIN-PRO.sql ============ */
+describe('١٠٣ · قاعدة اللوحة');
+{
+  const sql = fs.readFileSync(path.join(ROOT, 'db', 'ADMIN-PRO.sql'), 'utf8');
+
+  has(sql, 'create table if not exists qbank.admin_actions', 'سجل التدقيق موجود');
+  // ★ سجلٌّ يستطيع صاحبه محوَه ليس سجلًّا
+  no(sql, 'create policy audit_insert', '★ ولا سياسة إدراج عليه — يُكتب بالدالة وحدها');
+  no(sql, 'create policy audit_delete', 'ولا حذف');
+  no(sql, 'create policy audit_update', 'ولا تعديل');
+
+  // كل فعل خطير يُسجَّل
+  ['grant_coins','set_role','refund','merge_university','grant_entitlement'].forEach(a =>
+    has(sql, "log_admin('" + a + "'", 'الفعل «' + a + '» يُسجَّل'));
+
+  // ★ حارسا الصلاحية
+  has(sql, "reason','self_demote", '★ لا يُنزل المشرف نفسه — لن يبقى من يرفعه');
+  has(sql, "reason','last_admin", '★ ولا يُترك آخر مشرف بلا خلف');
+
+  // ★ قائمة بيضاء لتعديل المادة
+  has(sql, "coalesce((p_patch->>'published')::boolean, published)",
+      'تعديل المادة بقائمة بيضاء صريحة');
+  no(sql, 'q_count = coalesce', '★ ولا يُكتب q_count — عمود يُحسب، وكتابته تجعل كل إحصاء يكذب');
+  no(sql, 'rating_avg = coalesce', 'ولا متوسط التقييم');
+  no(sql, 'created_by = coalesce', 'ولا هوية الرافع');
+
+  // القمع والالتزام
+  has(sql, "'coins_outstanding'", '★ والكوينز غير المنفقة معروضة — التزام قادم يغيب عن أكثر اللوحات');
+  has(sql, "'funnel', jsonb_build_object", 'والقمع محسوب في القاعدة لا في المتصفح');
+
+  // الأسئلة الصعبة من المصدر الحقيقي
+  has(sql, "jsonb_each(coalesce(per.sdata->'wrong'", 'وتقرير الأسئلة الصعبة يقرأ تقدّم الطلاب فعلًا');
+  has(sql, 'count(distinct per.user_id)',
+      '★ ويعدّ الطلاب لا المرات — تكرار طالب واحد لا يجعل السؤال أصعب على غيره');
+  has(sql, 'sn.n >= 5', 'وبحدّ أدنى خمسة طلاب: نسبة من طالبين ضوضاء');
+
+  const defs = sql.split('create or replace function').slice(1);
+  eq(defs.filter(d => d.indexOf('set search_path = qbank, public') === -1).length, 0,
+     'وكل دالة تثبّت search_path');
+  eq(defs.filter(d => d.indexOf('qbank.is_admin()') === -1 && d.indexOf('log_admin') === -1).length, 0,
+     '★ وكل دالة تتحقق من الصلاحية — عدا مسجّل التدقيق نفسه');
+  no(sql, 'drop table', 'ولا حذف جدول');
+}
+
+/* ============ ١٠٤ · لا تُنشر مادة فارغة ============ */
+describe('١٠٤ · حارس المادة الفارغة');
+{
+  /*
+    ★ هذا الفحص وُلد من عطل حقيقي في الإنتاج.
+    رُفع ملف لم يتعرّف المحلّل على سؤال واحد فيه، فتقدّم المعالج صامتًا
+    إلى «راجع» — شاشة فارغة تحتها زر «انشر» — فأُنشئت مادة منشورة بصفر
+    أسئلة ظهرت في «استكشف» ولا شيء فيها.
+
+    الصمت هنا أسوأ من الفشل: الفشل يُصلَح، والصمت يُنشر.
+    ولذلك أربعة أقفال لا قفل واحد: كل باب يؤدي إلى النشر يحتاج قفله،
+    والخامس في القاعدة لأن الواجهة تُخدع والقاعدة لا تُخدع.
+  */
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u1', email:'a@a.a' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.rpc = () => new Promise(() => {});
+
+  // ★ القفل الأول: الاستيراد
+  A.admin.server = async () => ({ ok:true, data:{ questions:[], total:0, subject_name:'س', slug:'s' } });
+  pending.push((async () => {
+    const w = await A.admin.wizardIngest(A.admin.newWizard(), 'f.txt', 'x');
+    eq(w.step, 1, '★ ملفٌ بصفر أسئلة لا يتقدّم من الخطوة الأولى');
+    has(w.error, 'لم نتعرّف على سؤال واحد', 'ويقول السبب لا «تعذّر» وحدها');
+    has(w.error, 'قالب بنك الأسئلة', 'ويدلّ على القالب — الطالب يحتاج مخرجًا لا تشخيصًا');
+    eq(w.total, 0, 'ولا يدّعي عددًا');
+
+    // ★ القفل الثاني: المسار المجاني
+    const w2 = A.admin.newWizard(); w2.raw = []; w2.total = 0;
+    const out = A.admin.plainEnrich(w2);
+    ok(out.error, '★ والمسار المجاني لا يتقدّم بلا سؤال — «مجاني» لا يعني «فارغ»');
+    ok(out.step !== 3, 'ولا يقفز إلى المراجعة');
+
+    // ★ القفل الثالث: شاشة المراجعة
+    const w3 = A.admin.newWizard(); w3.step = 3; w3.enriched = []; w3.raw = [];
+    A.views.ViewUpload._set(w3);
+    A.router.render('#/upload');
+    const t = doc.getElementById('main').textContent;
+    has(t, 'لا أسئلة في هذه المسوّدة', '★ والمراجعة الفارغة تُعلن نفسها');
+    no(t, 'تابع للنشر', '★ ولا زرّ نشر تحتها — كان هذا هو الباب المفتوح');
+    has(t, 'ارجع وارفع ملفًا آخر', 'بل مخرجٌ يعيده للرفع');
+
+    // ★ القفل الرابع: خطوة النشر
+    const w4 = A.admin.newWizard(); w4.step = 4; w4.enriched = [];
+    A.views.ViewUpload._set(w4);
+    A.router.render('#/upload');
+    has(doc.getElementById('main').textContent, 'لا شيء يُنشر', '★ وخطوة النشر مقفلة كذلك');
+
+    A.views.ViewUpload._reset();
+    W.close();
+  })());
+}
+
+/* ============ ١٠٥ · قفل القاعدة ============ */
+describe('١٠٥ · approve_draft يحرس نفسه');
+{
+  const sql = fs.readFileSync(path.join(ROOT, 'db', 'FIX-EMPTY-SUBJECT.sql'), 'utf8');
+
+  has(sql, 'jsonb_array_length(coalesce(d.payload', 'القاعدة تعدّ الأسئلة قبل الإنشاء');
+  has(sql, 'لا يمكن نشر بنك فارغ', '★ وترفض بنكًا فارغًا برسالة مفهومة');
+  has(sql, 'update qbank.subjects set q_count = i where id = sid',
+      '★ والعدّاد من الصفوف المُدرَجة فعلًا — الرقم الوحيد الذي لا يكذب');
+
+  // ★ التنظيف يُخفي ولا يحذف
+  /* ★ الحالة من القيم التي يقبلها قيد القاعدة لا من اختراعنا.
+     كتبتُ 'hidden' فرفضها subjects_status_ck — وحالةٌ لا يعرفها النظام
+     لا يجوز أن تدخله، والقيد كان محقًّا. */
+  has(sql, "set published = false, status = 'suspended'",
+      '★ وما نُشر فارغًا يُوقف لا يُحذف — قد ينتظره صاحبه');
+  no(sql, "status = 'hidden'", 'ولا حالة خارج ما يقبله القيد');
+  no(sql, 'delete from qbank.subjects', 'ولا حذف لمادة أحد');
+  has(sql, 'where s.q_count <> (select count(*)', 'وكل عدّاد لا يطابق الواقع يُصحَّح');
+  has(sql, 'qbank.is_admin()', 'والدالة تبقى محروسة');
+  has(sql, 'set search_path = qbank, public', 'ومسار البحث مثبّت');
+}
+
+/* ============ ١٠٦ · محوّل المزوّدين ============ */
+describe('١٠٦ · اختيار المزوّد');
+{
+  const P = require(path.join(ROOT, 'api', '_lib', 'provider.js'));
+  const save = { p: process.env.AI_PROVIDER, g: process.env.GEMINI_API_KEY,
+                 a: process.env.ANTHROPIC_API_KEY, m: process.env.AI_MODEL };
+  const clear = () => { delete process.env.AI_PROVIDER; delete process.env.GEMINI_API_KEY;
+                        delete process.env.ANTHROPIC_API_KEY; delete process.env.AI_MODEL; };
+
+  clear();
+  eq(P.pickProvider(), 'none', 'بلا مفتاح لا مزوّد');
+
+  process.env.ANTHROPIC_API_KEY = 'x';
+  eq(P.pickProvider(), 'anthropic', 'ومفتاح واحد يكفي لاختياره');
+
+  /* ★ الاستنتاج من المفتاح الموجود يحذف متغيّرًا من الإعداد. كل متغيّر
+     يدويّ بابُ عطلٍ صامت: يُضبط المفتاح ويُنسى المزوّد فيبدو كأن المفتاح
+     خاطئ. الأقلّ إعدادًا أقلّ عطلًا. */
+  process.env.GEMINI_API_KEY = 'y';
+  eq(P.pickProvider(), 'gemini', '★ ووجود مفتاح Gemini يختاره بلا متغيّر ثانٍ');
+
+  process.env.AI_PROVIDER = ' ANTHROPIC ';
+  eq(P.pickProvider(), 'anthropic', 'والصريح يفوز، ويتحمّل الفراغ واختلاف الحالة');
+  process.env.AI_PROVIDER = 'مجهول';
+  eq(P.pickProvider(), 'gemini', 'وقيمة لا نعرفها تسقط للاستنتاج لا للانهيار');
+  delete process.env.AI_PROVIDER;
+
+  eq(P.modelFor('gemini'), 'gemini-3.6-flash', '★ Flash لا Pro — حصته المجانية ثلاثون ضعفًا');
+  ok(P.modelFor('anthropic').indexOf('haiku') > -1, 'وHaiku لـ Anthropic — ثلث كلفة Sonnet');
+
+  process.env.AI_MODEL = 'gemini-3.6-pro';
+  eq(P.modelFor('gemini'), 'gemini-3.6-pro', 'ومتغيّر البيئة يتجاوز الافتراض');
+
+  /* ★ متغيّر واحد لمزوّدين: AI_MODEL ضُبط لـ Anthropic قبل يومين، ولو طُبّق
+     على Gemini لطلبنا من Google نموذج Claude — عطلٌ محيّر سببه إعدادٌ كان
+     صحيحًا في زمنه. الغريب يُهمَل بصمت لا يُمرَّر. */
+  process.env.AI_MODEL = 'claude-sonnet-4-5';
+  eq(P.modelFor('gemini'), 'gemini-3.6-flash', '★ ونموذج مزوّد آخر يُهمَل لا يُمرَّر');
+  eq(P.modelFor('anthropic'), 'claude-sonnet-4-5', 'ويُطاع عند مزوّده');
+
+  clear();
+  Object.keys(save).forEach(k => {
+    const name = { p:'AI_PROVIDER', g:'GEMINI_API_KEY', a:'ANTHROPIC_API_KEY', m:'AI_MODEL' }[k];
+    if (save[k] !== undefined) process.env[name] = save[k];
+  });
+}
+
+describe('١٠٧ · انتزاع ردّ الذكاء');
+{
+  const P = require(path.join(ROOT, 'api', '_lib', 'provider.js'));
+
+  eq(P.parseArray('[{"a":1}]').length, 1, 'مصفوفة عارية');
+  eq(P.parseArray('```json\n[1,2]\n```').length, 2, 'ومصفوفة داخل سياج كود');
+  eq(P.parseArray('تفضل: [1,2,3] انتهى').length, 3, 'ومصفوفة مسبوقة بكلام');
+
+  /* ★ «فشل التحليل» وحدها تترك المشرف بلا خيط: لا يعرف أرفض النموذج،
+     أم انقطع الردّ، أم ردّ باعتذار. عرضُ ما وصل فعلًا يحسم ذلك في ثانية. */
+  let msg = '';
+  try { P.parseArray('عذرًا لا أستطيع'); } catch(e){ msg = e.message; }
+  has(msg, 'عذرًا لا أستطيع', '★ وخطأ التحليل يعرض ما وصل فعلًا');
+
+  msg = '';
+  try { P.parseArray('{"a":1}'); } catch(e){ msg = e.message; }
+  has(msg, 'ليس مصفوفة', 'وكائنٌ مفرد يُرفض — الترتيب هو ما يربط السؤال بجوابه');
+}
+
+/* ★ كتلتا ١٠٨ و١١٠ تستبدلان global.fetch ومتغيّرات البيئة — وكلاهما عالميّ
+   واحد. لو جرتا معًا في Promise.all سحبت نهاية إحداهما مُزيَّف الأخرى.
+   والأهم: التزييف نفسه يجب أن يقع داخل الدور لا عند تعريف الكتلة، وإلا
+   نصّبت الكتلة الثانية مُزيَّفها قبل أن تبدأ الأولى أصلًا. */
+let fetchLock = Promise.resolve();
+const serial = fn => { fetchLock = fetchLock.then(fn); pending.push(fetchLock); };
+
+/* يحفظ البيئة والشبكة، ينفّذ، ثم يعيد كل شيء مهما حدث */
+const withFakeNet = (fetchImpl, env, body) => serial(async () => {
+  const keys = ['AI_PROVIDER','AI_MODEL','ANTHROPIC_API_KEY','GEMINI_API_KEY'];
+  const save = {}; keys.forEach(k => { save[k] = process.env[k]; delete process.env[k]; });
+  const savedFetch = global.fetch;
+  Object.keys(env).forEach(k => { process.env[k] = env[k]; });
+  global.fetch = fetchImpl;
+  try { await body(); }
+  finally {
+    global.fetch = savedFetch;
+    keys.forEach(k => { if (save[k] === undefined) delete process.env[k];
+                        else process.env[k] = save[k]; });
+  }
+});
+
+describe('١٠٨ · نداء Gemini');
+{
+  const P = require(path.join(ROOT, 'api', '_lib', 'provider.js'));
+  let seen = null;
+  const okNet = async (u, o) => { seen = { u, o }; return { ok:true, json: async () => ({
+    candidates: [{ content: { parts: [{ text: '[{"expl_ar":"شرح"}]' }] } }],
+    usageMetadata: { promptTokenCount: 11, candidatesTokenCount: 22 }
+  }) }; };
+
+  withFakeNet(okNet, { GEMINI_API_KEY:'K123' }, async () => {
+    const r = await P.callAI('نظام', 'مستخدم');
+
+    has(seen.u, 'gemini-3.6-flash:generateContent', 'المسار يحمل النموذج');
+    /* ★ مفتاحٌ في المسار مفتاحٌ في السجلّ: كل وسيط بينك وبين Google يدوّن
+       سطر الطلب كاملًا، وGoogle نفسها تدوّنه. الترويسة لا تُدوَّن. */
+    ok(seen.u.indexOf('K123') === -1, '★ والمفتاح ليس في المسار — المسارات تُسجَّل');
+    eq(seen.o.headers['x-goog-api-key'], 'K123', 'بل في الترويسة');
+    eq(JSON.parse(seen.o.body).generationConfig.responseMimeType, 'application/json',
+       'وJSON مفروض من المزوّد لا مرجوّ في التعليمات');
+
+    eq(r.provider, 'gemini', 'والردّ يقول من أجاب');
+    eq(r.model, 'gemini-3.6-flash', 'وبأي نموذج');
+    /* ★ أسماء موحّدة: بقية المنصة تعرض الاستهلاك للمشرف، ولو حملت أسماء
+       Google لانكسرت لحظة تبديل المزوّد — وهذا نقيض غاية المحوّل. */
+    eq(r.usage.input_tokens, 11, '★ والاستهلاك بأسماء موحّدة لا بأسماء Google');
+    eq(r.usage.output_tokens, 22, 'دخلًا وخرجًا');
+    eq(r.items[0].expl_ar, 'شرح', 'والمحتوى وصل');
+  });
+
+  /* ★ ثلاثة أعطال يسمّيها المحوّل: حجبٌ، وانقطاعُ طول، وغيابُ مفتاح.
+     كلها كانت ستصل للطالب كـ «تعذّر» واحدة لا تدلّ على فعل. */
+  withFakeNet(async () => ({ ok:true, json: async () => ({
+      promptFeedback: { blockReason: 'SAFETY' } }) }),
+    { GEMINI_API_KEY:'K' }, async () => {
+      let e = ''; try { await P.callAI('a','b'); } catch(x){ e = x.message; }
+      has(e, 'فلتر المحتوى', '★ وحجب الفلتر يُسمّى — أسئلة الجرعات تُحجب أحيانًا');
+    });
+
+  withFakeNet(async () => ({ ok:true, json: async () => ({
+      candidates: [{ finishReason:'MAX_TOKENS', content:{ parts:[{ text:'[1' }] } }] }) }),
+    { GEMINI_API_KEY:'K' }, async () => {
+      let e = ''; try { await P.callAI('a','b'); } catch(x){ e = x.message; }
+      has(e, 'قسّمها', 'وانقطاع الطول يقول الحلّ لا العطل');
+    });
+
+  withFakeNet(async () => { throw new Error('ما كان يجب أن نطلب شيئًا'); }, {}, async () => {
+    let e = ''; try { await P.callAI('a','b'); } catch(x){ e = x.message; }
+    has(e, 'ارفع بلا إثراء', '★ وغياب كل مفتاح يدلّ على المسار المجاني — لا يوصد الباب');
+  });
+}
+
+describe('١٠٩ · ai.js لا يعد بما لا يملك');
+{
+  const src = fs.readFileSync(path.join(ROOT, 'api', 'ai.js'), 'utf8');
+
+  /* ★ كان الردّ يحمل `model` مجرّدًا — متغيّرٌ محليّ داخل callClaude لا يراه
+     نطاق الـ handler. فكل نجاحٍ ينتهي بـ ReferenceError يُلتقط ويُعاد ٥٠٠:
+     المسار لم يكن ليعمل حتى بمفتاحٍ سليم. */
+  ok(!/\bmodel,\s*$/m.test(src) && !/{\s*ok:true[^}]*\bmodel,/.test(src),
+     '★ ولا يُعاد `model` مجرّدًا — متغيّر خارج نطاقه كان يُسقط كل نجاح');
+  has(src, 'model: aiOut._model', 'بل يُقرأ مما أرجعه المحوّل');
+  has(src, 'provider: aiOut._provider', 'ومعه اسم المزوّد — المشرف يحتاج معرفة من أجاب');
+
+  has(src, "require('./_lib/provider.js')", 'والنداء يمرّ بالمحوّل');
+  // ★ لا عنوان مزوّد مكتوب في ai.js: الطبقة التي تعرف «ماذا نسأل» لا تعرف «مَن»
+  ok(src.indexOf('api.anthropic.com') === -1 && src.indexOf('generativelanguage') === -1,
+     '★ ولا عنوان مزوّد في ai.js — الفصل هو الفائدة كلها');
+
+  const prov = fs.readFileSync(path.join(ROOT, 'api', '_lib', 'provider.js'), 'utf8');
+  // المفاتيح تُقرأ عند النداء ولا تُصدَّر ولا تُسجَّل
+  ok(prov.indexOf('console.log') === -1, 'ولا طباعة في المحوّل — المفاتيح تمرّ فيه');
+  ok(/module\.exports\s*=\s*{[^}]*}/.test(prov) && prov.indexOf('API_KEY:') === -1,
+     'ولا مفتاح مُصدَّر');
+
+  const built = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  ok(built.indexOf('GEMINI_API_KEY') === -1, '★ ولا أثر لـ GEMINI_API_KEY في ملف المتصفح');
+  ok(built.indexOf('x-goog-api-key') === -1, 'ولا لترويسته');
+}
+
+
+describe('١١٠ · تقاعُد النموذج لا يُسقط المنصة');
+{
+  const P = require(path.join(ROOT, 'api', '_lib', 'provider.js'));
+
+  eq(P.suggestedModel('This model models/gemini-2.5-flash is no longer available to new ' +
+     'users. Please update your code to use models/gemini-3.6-flash for the latest features.'),
+     'gemini-3.6-flash', 'البديل يُنتزع من نصّ الرفض');
+  eq(P.suggestedModel('quota exceeded'), null, 'ورفضٌ بلا بديل لا يخترع واحدًا');
+  /* ★ النقطة تفصل أجزاء الاسم ولا تُنهيه. لو ابتلعناها لطلبنا «x-1.» فيُردّ
+     بـ ٤٠٤ ثانيةً، فيبدو البديلُ عاطلًا وهو سليم. */
+  eq(P.suggestedModel('use models/gemini-4.1-flash.'), 'gemini-4.1-flash',
+     '★ والنقطة الختامية ليست من الاسم — والداخلية منه');
+
+  const asked = [];
+  withFakeNet(async (u) => {
+    asked.push(String(u).split('/models/')[1].split(':')[0]);
+    if (asked.length === 1) return { ok:false, status:404, text: async () =>
+      'This model models/gemini-3.6-flash is no longer available. ' +
+      'Please update your code to use models/gemini-4-flash.' };
+    return { ok:true, json: async () => ({
+      candidates:[{ content:{ parts:[{ text:'[{"expl_ar":"ش"}]' }] } }],
+      usageMetadata:{ promptTokenCount:5, candidatesTokenCount:6 } }) };
+  }, { GEMINI_API_KEY:'K' }, async () => {
+    /* ★ Google تُقاعد أسماء النماذج وتذكر البديل في نصّ الرفض. بلا هذا،
+       يوم التقاعد يوقف كل رفعٍ على المنصة حتى أنتبه أنا وأعدّل وأنشر —
+       وطالبٌ ليلة اختباره لا يعنيه أن اسمًا تغيّر. */
+    const r = await P.callAI('نظام', 'مستخدم');
+    eq(asked.length, 2, '★ ورفض ٤٠٤ يُعاد مرة واحدة بالبديل');
+    eq(asked[1], 'gemini-4-flash', 'وبالاسم الذي سمّته Google');
+    eq(r.model, 'gemini-4-flash', '★ والمُبلَّغ هو ما أجاب فعلًا لا ما طُلب');
+  });
+
+  // ★ مرةً واحدة: رفضٌ متكرر لا يدور بلا نهاية
+  const again = [];
+  withFakeNet(async (u) => { again.push(u); return { ok:false, status:404, text: async () =>
+      'no longer available. Please update your code to use models/x-1.' }; },
+    { GEMINI_API_KEY:'K' }, async () => {
+      let err = ''; try { await P.callAI('a','b'); } catch(e){ err = e.message; }
+      eq(again.length, 2, '★ ومحاولتان لا أكثر — لا دوران بلا نهاية');
+      has(err, '404', 'ثم يُرفع الخطأ كما هو');
+    });
+}
+
+
+/* ============ ١١١ · مادة أحدث من قائمة الجهاز ============ */
+describe('١١١ · «غير موجودة» تُقال بعد السؤال لا قبله');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const SID = 'new-sub-1';
+  let asked = 0;
+
+  // قائمة هذا الجهاز لا تعرف المادة — كما لو أُقلع التطبيق قبل نشرها
+  A.store.set('pack', { subjects: [], settings: {} });
+  A.api.rpc = (n) => {
+    if (n === 'content_pack'){
+      asked++;
+      return Promise.resolve({ ok:true, data:{ subjects:[
+        { id:SID, name:'فسيولوجي', slug:'physio', q_count:40, free:true, status:'published' }
+      ], settings:{} } });
+    }
+    return Promise.resolve({ ok:true, data:[] });
+  };
+
+  const box = doc.createElement('div'); doc.body.appendChild(box);
+  box.appendChild(A.views.ViewSubject.view({ rest:[SID], query:{} }));
+
+  /* ★ لا نقول «غير موجودة» ونحن لم نسأل: قائمة المواد تُجلب مرة عند الإقلاع،
+     فمادةٌ نُشرت بعدها — نشرها الطالب قبل ثانية، أو أرسل زميله رابطها —
+     ليست فيها. كان الرافع يُنشئ مادته ثم يراها «غير موجودة». */
+  ok(box.textContent.indexOf('غير موجودة') === -1,
+     '★ لا حكم قبل السؤال — ولا كلمة «غير موجودة» في أول لحظة');
+  has(box.textContent, 'جارٍ تحديث', 'بل يُقال إننا نتحقق');
+
+  pending.push((async () => {
+    // ننتظر وصول القائمة لا مجرّد إرسال الطلب — وإلا قِسنا سباقنا لا المنتج
+    await until(W, () => A.data.pack().subjects.length > 0);
+    eq(asked, 1, '★ والقائمة تُجدَّد من الخادم مرة واحدة');
+    ok(A.data.pack().subjects.some(s => s.id === SID), 'ثم تعرفها القائمة');
+    const again = A.views.ViewSubject.view({ rest:[SID], query:{} });
+    has(again.textContent, 'فسيولوجي', 'وتُفتح باسمها');
+
+    /* ★ الغياب بعد السؤال يُقال بلغة أخرى: «غير متاحة» لا «غير موجودة»،
+       ومعها بابٌ يُفتح — «استكشف» — لا طريق مسدود. */
+    A.store.set('pack', { subjects: [], settings: {} });
+    A.api.rpc = () => Promise.resolve({ ok:true, data:{ subjects:[], settings:{} } });
+    const miss = doc.createElement('div'); doc.body.appendChild(miss);
+    miss.appendChild(A.views.ViewSubject.view({ rest:['ghost'], query:{} }));
+    await until(W, () => miss.textContent.indexOf('جارٍ تحديث') === -1);
+    has(miss.textContent, 'غير متاحة', '★ وبعد السؤال يُقال «غير متاحة»');
+    has(miss.innerHTML, '#/explore', 'ومعها باب لا طريق مسدود');
+
+    // ★ انقطاع الشبكة ليس غيابًا: الأول يُعاد فيه، والثاني يُيئِس
+    A.api.rpc = () => Promise.resolve({ ok:false, offline:true });
+    const off = doc.createElement('div'); doc.body.appendChild(off);
+    off.appendChild(A.views.ViewSubject.view({ rest:['ghost2'], query:{} }));
+    await until(W, () => off.textContent.indexOf('جارٍ تحديث') === -1);
+    has(off.textContent, 'تعذّر الوصول', '★ وبلا اتصال يُقال «تعذّر الوصول» لا «غير متاحة»');
+    W.close();
+  })());
+}
+
+/* ============ ١١٢ · النشر يُجدّد القائمة قبل أن يعد ============ */
+describe('١١٢ · النشر لا يعد بما لا تراه القائمة');
+{
+  const up = fs.readFileSync(path.join(ROOT, 'src', 'js', '34-upload.js'), 'utf8');
+  /* ★ الرافع أولى الناس بألا تختفي مادته: يضغط «انشر» فيُعطى زر «افتح
+     المادة» — ولو لم نُجدّد القائمة قاده زرّنا إلى «غير موجودة». */
+  has(up, 'QBANK.data.refreshPack()', '★ والنشر يُجدّد القائمة قبل عرض الرابط');
+  ok(up.indexOf('refreshPack') < up.indexOf('showShare(box'),
+     'قبل شاشة المشاركة لا بعدها');
+
+  const sub = fs.readFileSync(path.join(ROOT, 'src', 'js', '35-subject.js'), 'utf8');
+  const exam = fs.readFileSync(path.join(ROOT, 'src', 'js', '36-examview.js'), 'utf8');
+  // العلاج في مكان واحد يخدم البابين: صفحة المادة وصفحة الاختبار
+  has(exam, 'refetchThenSubject(sid', 'وشاشة الاختبار تُعالَج بالعلاج نفسه');
+  ok(sub.indexOf("'المادة غير موجودة'") === -1 && exam.indexOf("'المادة غير موجودة'") === -1,
+     '★ ولم تبقَ عبارة «غير موجودة» في أيٍّ منهما');
+}
+
+/* ============ ١١٣ · محلّل المادة: البرومبت والتحقق ============ */
+describe('١١٣ · برومبت التحليل وتحقّقه');
+{
+  const AN = require(path.join(ROOT, 'api', '_lib', 'analyst.js'));
+
+  // البرومبت هو برومبت علي — علاماته المميزة فيه
+  has(AN.SYS_ANALYST, 'قاعدة القداسة', 'قاعدة القداسة في صدر البرومبت');
+  has(AN.SYS_ANALYST, 'أنت لا تؤلّف منهجًا — أنت تحلّل بنكًا', '★ ومبدؤه الحاكم كما صاغه علي');
+  has(AN.SYS_ANALYST, 'الملاحظة الأهم امتحانيًا', 'والملاحظة الأهم امتحانيًا');
+  has(AN.SYS_ANALYST, 'كلمة منحوتة عربية', 'وحيلة الحفظ المنحوتة');
+  has(AN.SYS_ANALYST, 'فخ الصياغة المنفية', 'وأنماط الأفخاخ');
+  has(AN.SYS_ANALYST, 'لا تخترع فخًا', '★ والفخ يُقتبس من خيار موجود لا يُخترع');
+  has(AN.SYS_ANALYST, 'ثلاثة أسئلة فأكثر', 'وعتبة «تكررت» مرقّمة');
+  has(AN.sysFor('en'), 'English', 'واختيار الإنجليزية يُلحق استثناء اللغة');
+  ok(AN.sysFor('ar') === AN.SYS_ANALYST, 'والعربية هي الأصل بلا زيادة');
+
+  /* ★ التعقيم: التحليل يُحقن في صفحات كل الطلاب — سطر سكربت فيه يعني XSS
+     على المنصة كلها. البرومبت وعدٌ، والتعقيم قانون. */
+  const dirty = '<section onclick="x()"><p style="color:red">نص</p>' +
+    '<script>alert(1)</script><a href="http://evil">رابط</a>' +
+    '<table><tr><td>خلية</td></tr></table></section>';
+  const clean = AN.sanitizeHtml(dirty);
+  ok(clean.indexOf('<script') === -1, '★ السكربت يُمحى');
+  ok(clean.indexOf('onclick') === -1, 'والحدث يُنزع');
+  ok(clean.indexOf('style=') === -1, 'والنمط المضمّن يُنزع');
+  ok(clean.indexOf('<a') === -1 && clean.indexOf('رابط') > -1,
+     'والرابط يذوب — وسمه يسقط ونصّه يبقى');
+  has(clean, '<td>خلية</td>', 'والجدول المسموح يمرّ');
+
+  // التحقق: كل سؤال في محور ولا محور شبح
+  const items = [ { id:'q-1', q:'أ', options:['1','2'] }, { id:'q-2', q:'ب', options:['1','2'] } ];
+  const good = { name_en:'X', overview:'<p>' + 'م'.repeat(100) + '</p>',
+    memorize:'<section><p>' + 'ح'.repeat(100) + '</p></section>', mistakes:'<p>خ</p>',
+    topics:[{ key:'a', name:'محور أ' }], assign:{ 'q-1':'a', 'q-2':'a' }, notes:'' };
+  const v = AN.validateAnalysis(good, items);
+  eq(v.counts.a, 2, 'العدّ من الإسناد الفعلي');
+
+  let e1 = '';
+  try { AN.validateAnalysis(Object.assign({}, good, { assign:{ 'q-1':'a' } }), items); }
+  catch(x){ e1 = x.message; }
+  has(e1, 'q-2', '★ سؤال بلا محور يُرفض ويُسمّى — لا يسقط بصمت من البنك المقسَّم');
+
+  let e2 = '';
+  try { AN.validateAnalysis(Object.assign({}, good, { assign:{ 'q-1':'a', 'q-2':'ghost' } }), items); }
+  catch(x){ e2 = x.message; }
+  has(e2, 'ghost', 'ومحور غير معرّف يُرفض بالاسم');
+
+  let e3 = '';
+  try { AN.validateAnalysis(Object.assign({}, good, { overview:'<p>قصير</p>' }), items); }
+  catch(x){ e3 = x.message; }
+  has(e3, 'أقصر', '★ ونظرة عامة هزيلة تُرفض — سطران ليسا تحليلًا');
+
+  // الحمولة: الأسئلة كما هي بلا شروح تلوّث التحليل
+  const payload = JSON.parse(AN.buildUserPayload('مادة', [
+    { id:'q-1', q:'نص السؤال', options:['أ','ب'], answer:1, expl_ar:'شرح قديم' } ]));
+  eq(payload.questions[0].text, 'نص السؤال', 'النص يمرّ حرفيًا');
+  eq(payload.questions[0].answer, 1, 'والإجابة');
+  ok(!('expl_ar' in payload.questions[0]), 'والشرح القديم لا يُرسل — يلوّث تحليلًا جديدًا');
+}
+
+/* ============ ١١٤ · نقطة النهاية analyze ============ */
+describe('١١٤ · analyze.js يحرس بابه');
+{
+  const src = fs.readFileSync(path.join(ROOT, 'api', 'analyze.js'), 'utf8');
+
+  has(src, 'userFromToken', 'الهوية من Supabase لا من فكّ JWT محلي');
+  /* ★ صاحب المادة أو المشرف — التحليل يكتب في صفوف يقرؤها الجميع،
+     وبابٌ مفتوح يعني أن أي طالب يعيد كتابة ما يذاكر منه الآخرون. */
+  has(src, 'created_by !== user.id', '★ وغير المالك يُصدّ');
+  has(src, 'is_admin', 'إلا المشرف');
+  has(src, 'هذه ليست مادتك', 'برسالة تسمّي السبب');
+  has(src, 'expectObject: true', 'والردّ كائن مادة لا مصفوفة');
+  has(src, 'maxTokens: 32768', '★ وسقف خرج يتّسع لجداول مادة كاملة');
+  has(src, "order=ord", 'والأسئلة بترتيبها — الترتيب دليل الفصول');
+  ok(src.indexOf('req.body.questions') === -1,
+     '★ والأسئلة من القاعدة لا من المتصفح — حمولة المتصفح تُزوَّر');
+
+  const prov = fs.readFileSync(path.join(ROOT, 'api', '_lib', 'provider.js'), 'utf8');
+  has(prov, 'opts.maxTokens || 8192', 'والمحوّل يقبل سقفًا مخصصًا');
+  has(prov, 'function parseObject', 'ويعرف الكائن المفرد');
+}
+
+/* ============ ١١٥ · قاعدة التحليل ============ */
+describe('١١٥ · ANALYZE.sql');
+{
+  const sql = fs.readFileSync(path.join(ROOT, 'db', 'ANALYZE.sql'), 'utf8');
+
+  ['overview','memorize','mistakes','name_en','analyzed_at'].forEach(c =>
+    has(sql, 'add column if not exists ' + c, 'عمود ' + c));
+
+  /* ★ تحليل أقدم من أسئلته يكذب: «تكرر في ٤ أسئلة» وقد صارت ٧.
+     أي تغيير محتوى يمسح analyzed_at فيُعاد التوليد تلقائيًا. */
+  has(sql, 'update of q, options, answer', '★ القادح يراقب المحتوى');
+  has(sql, 'or delete', 'والحذف كذلك');
+  /* ★ لكن كتابة التحليل تحدّث topic — لو راقبناه لدار التوليد بلا نهاية:
+     يكتب فيبطل فيكتب. التصنيف من التحليل لا من المادة. */
+  ok(!/update of[^;]*topic/.test(sql), '★ وtopic خارج المراقبة — وإلا دار التوليد بلا نهاية');
+
+  has(sql, "'stale', (s.analyzed_at is null", 'والبُطلان معلن في القراءة');
+  has(sql, 'create or replace function qbank.subject_analysis', 'ودالة القراءة موجودة');
+  has(sql, 'to authenticated, anon', 'مفتوحة للجميع — كما اختار علي');
+}
+
+/* ============ ١١٦ · واجهة التحليل ============ */
+describe('١١٦ · العرض والتعقيم الثاني');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+
+  /* ★ الدفاع في العمق: الخادم عقّم، والمتصفح يعقّم ثانية — القاعدة قد
+     تُكتب من طريق آخر يومًا، والمتصفح لا يثق حتى بقاعدته. */
+  const node = A.views.analysisHtml('<section><p onclick="hack()">نص</p>' +
+    '<script>alert(1)</script><table><tr><td>خ</td></tr></table>' +
+    '<div class="x">داخل div</div></section>');
+  eq(node.querySelectorAll('script').length, 0, '★ السكربت لا يصل DOM');
+  eq(node.querySelectorAll('[onclick]').length, 0, 'ولا حدث');
+  eq(node.querySelectorAll('div').length, 0, 'وdiv الغريب يذوب');
+  has(node.textContent, 'داخل div', 'ونصّه يبقى');
+  eq(node.querySelectorAll('td').length, 1, 'والجدول يمرّ');
+
+  // بطاقة المحاور بعدّاداتها
+  const tc = A.views.topicsCard({ topics:[ { name:'الابتكار التسويقي', n:11 }, { name:'القيادة', n:10 } ] });
+  has(tc.textContent, 'الابتكار التسويقي', 'اسم المحور');
+  has(tc.textContent, '١١ سؤالًا', 'وعدّاده بالهندية');
+  eq(A.views.topicsCard({ topics:[] }), null, 'وبلا محاور لا بطاقة فارغة');
+  W.close();
+}
+
+/* ============ ١١٧ · عدّاد الاختبار — لكل طالب موعده ============ */
+describe('١١٧ · عدّاد الاختبار');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const E = A.examDate;
+
+  E.set('s1', '2099-01-01T10:00:00.000Z');
+  eq(E.get('s1'), '2099-01-01T10:00:00.000Z', 'الموعد يُحفظ');
+  E.set('s2', '2099-02-01T10:00:00.000Z');
+  eq(E.get('s1'), '2099-01-01T10:00:00.000Z', 'ولكل مادة موعدها المستقل');
+  E.set('s1', null);
+  eq(E.get('s1'), null, 'والإزالة تعمل');
+
+  /* ★ بالساعات الكلية لا بالأيام: «متبقٍ ٤٥:١٢:٠٩» يوقظ، و«يومان» يخدّر */
+  const base = new Date('2026-01-01T00:00:00Z').getTime();
+  const L = E.left(new Date(base + (45*3600 + 12*60 + 9) * 1000).toISOString(), base);
+  has(L.text, '٤٥:١٢:٠٩', '★ ساعات كلية:دقائق:ثوانٍ بالهندية');
+  ok(!L.over, 'ولم يفت');
+  ok(E.left(new Date(base - 1000).toISOString(), base).over, 'والفائت يُعلن');
+  has(E.left(new Date(base - 1000).toISOString(), base).text, 'بالتوفيق', 'بدعاء لا بصفر أحمر');
+  eq(E.left('ليس تاريخًا'), null, 'والتالف لا يكسر الشاشة');
+  W.close();
+}
+
+/* ============ ١١٨ · الرفع ينتهي بتحليل ============ */
+describe('١١٨ · التحليل خطوة في النشر');
+{
+  const up = fs.readFileSync(path.join(ROOT, 'src', 'js', '34-upload.js'), 'utf8');
+
+  /* ★ بعد النشر لا قبله: لو حجزنا زرّ النشر نصف دقيقة لظنّ الرافع أن
+     النشر علق. المادة تُنشر فورًا والتحليل يلحقها بسطر حالة صادق. */
+  has(up, 'QBANK.analysis.generate(newId', '★ التوليد يبدأ تلقائيًا بعد النشر');
+  ok(up.indexOf('showShare') < up.indexOf('يجري تحليل مادتك'),
+     'وسطر الحالة داخل شاشة المشاركة');
+  has(up, 'سيُعاد تلقائيًا', 'وفشله يَعِد بالمحاولة عند فتح المادة — لا طريق مسدود');
+  has(up, "analysisLang", 'ولغة التحليل يختارها الرافع');
+
+  const subj = fs.readFileSync(path.join(ROOT, 'src', 'js', '35-subject.js'), 'utf8');
+  has(subj, 'maybeRefresh', 'وصفحة المادة تعيد توليد الباطل تلقائيًا');
+  has(subj, 'examDate.band', 'وفيها عدّاد الطالب');
+
+  const an = fs.readFileSync(path.join(ROOT, 'src', 'js', '57-analysis.js'), 'utf8');
+  /* ★ الباطل يُجدّده صاحبه لا زائره: الزائر يرى آخر نسخة صالحة ولا
+     يدفع كلفة توليدٍ ليس له */
+  has(an, 'sub.created_by === u.id', '★ maybeRefresh لصاحب المادة');
+  has(an, 'clearInterval', 'والعدّاد يوقف نفسه عند تفكيك الوثيقة');
+
+  const pr = fs.readFileSync(path.join(ROOT, 'src', 'js', '37-print.js'), 'utf8');
+  has(pr, "value:'full'", 'والطباعة تعرف «المادة كاملة»');
+  has(pr, 'opts.analysis.memorize', 'وتضم طريقة الحفظ');
+}
+
+/* ============ ١١٩ · مفتاح الخدمة بجيليه ============ */
+describe('١١٩ · supa يقبل الجيلين');
+{
+  const supa = fs.readFileSync(path.join(ROOT, 'api', '_lib', 'supa.js'), 'utf8');
+  /* ★ حكمت التجربة الحية: apikey وحدها تُعامل anon فتحجب RLS الصفوف غير
+     المنشورة عن مفتاح الخدمة نفسه. فالمفتاح يمرّ في الترويستين، وهوية
+     الطالب تفوز متى وُجدت. */
+  has(supa, "'Bearer ' + (asUser || key)", '★ المفتاح في الترويستين وهوية الطالب تفوز');
+
+  const an = fs.readFileSync(path.join(ROOT, 'api', 'analyze.js'), 'utf8');
+  has(an, "'Bearer ' + key", 'وanalyze كذلك');
+}
+
+/* ============ ١٢٠ · الدخول بالرمز — طريق التطبيق المثبّت ============ */
+describe('١٢٠ · الدخول برمز من البريد');
+{
+  /* ★ رابط البريد يفتح في متصفح الجوال لا داخل التطبيق المغلّف، فتولد
+     الجلسة خارج التطبيق ويبقى زائرًا. الرمز يُكتب حيث يقف الطالب. */
+  has(html, 'ادخل بالرمز', '★ زر الدخول بالرمز موجود في بطاقة الدخول');
+  has(html, 'one-time-code', 'والحقل يلتقط الرمز تلقائيًا من رسائل الجوال');
+  has(html, "type:'email', email, token", 'والتحقق يمرّ على /auth/v1/verify بنوع email');
+  has(html, 'طلبت الدخول مرات كثيرة', '★ وسقف البريد يُسمّى باسمه لا «تعذّر الإرسال» العامة');
+
+  const dom = makeDom('#/login'), W = dom.window, A = W.QBANK;
+  const savedFetch = W.fetch;
+  serial(async () => {
+    // نداء verify ناجح يعيد جلسة — يجب أن تُحفظ ويُعرف المستخدم
+    A.api._fetch = async (u, o) => {
+      if (String(u).indexOf('/auth/v1/verify') > -1){
+        const body = JSON.parse(o.body);
+        eq(body.type, 'email', 'النوع email');
+        eq(body.token, '123456', 'والرمز يمرّ كما كُتب');
+        const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-otp', email: body.email }))));
+        return { ok:true, status:200, text: async () => JSON.stringify({
+          access_token:'h.' + pl + '.s', refresh_token:'r', expires_in: 3600,
+          user:{ id:'u-otp', email: body.email } }) };
+      }
+      return { ok:true, status:200, text: async () => '[]' };
+    };
+    const r = await A.api.auth.verifyOtp('t@t.t', ' 123456 ');
+    ok(r.ok, 'التحقق نجح');
+    eq(A.api.user().id, 'u-otp', '★ والجلسة حُفظت — المستخدم معروف بعد الرمز مباشرة');
+    A.api._fetch = null;
+    W.close();
+  });
+}
+
+/* ============ ١٢١ · عالم المشرف المستقل ============ */
+describe('١٢١ · اللوحة المستقلة ووجهة ما بعد الدخول');
+{
+  /* ★ علّة علي: دخل من بوابة المشرف فهبط على واجهة الطالب.
+     الوجهة الآن تُحفظ قبل المغادرة وتُقرأ بعد التقاط الجلسة. */
+  has(html, "after:'#/admin'", '★ بوابة المشرف تحمل وجهتها');
+  has(html, "'after_login'", 'والوجهة تُحفظ قبل مغادرة الصفحة وتُقرأ عند الإقلاع');
+  has(html, 'is-admin', 'وصنف عالم المشرف يُكتب على الجسد');
+  has(html, '.is-admin .tabbar{ display:none', '★ وغلاف الطالب يختفي في مساراته');
+  has(html, 'لوحة المشرف', 'وشريط اللوحة معرّف باسمه');
+  has(html, 'افتح المنصة', 'وله مخرج صريح واحد لواجهة الطالب');
+  has(html, 'هذه اللوحة للمشرف', '★ وغير المشرف يقابل رسالة لا هيكلًا فارغًا');
+  has(html, '⟳ حلّل', '★ وصلاحية إعادة التحليل بضغطة لكل مادة');
+
+  /* الصنف يعمل فعلًا: مسار إداري يضيفه ومسار طالب يزيله */
+  const dom = makeDom('#/admin/settings'), W = dom.window;
+  ok(W.document.body.classList.contains('is-admin'), 'مسار ‎#/admin يضيف الصنف');
+  W.QBANK.router.render('#/');
+  ok(!W.document.body.classList.contains('is-admin'), 'والعودة للطالب تزيله');
+  W.close();
+}
+
+/* ============ ١٢٢ · التطوير الشامل: محرر المشرف والملف الشخصي وعين الأدمن ============ */
+describe('١٢٢ · محرر شامل وملف شخصي وعين المشرف');
+{
+  /* ★ محرر المشرف صار مؤلفًا: نص وخيارات خلف باب واعٍ، وسؤال من الصفر،
+     ومحتوى تحليلي يُكتب باليد ويُختم كي لا يمحوه التوليد التلقائي */
+  has(html, 'تحرير النص والخيارات', '★ باب تحرير نص السؤال موجود ومسمّى بوعيه');
+  has(html, '+ أضف سؤالًا', 'وزر تأليف سؤال من الصفر');
+  has(html, 'المحتوى التحليلي', 'ولوحة تحرير المحتوى اليدوي');
+  has(html, 'analyzed_at: new Date().toISOString()', '★ والحفظ اليدوي يُختم — فلا يمحوه التوليد التلقائي');
+  has(html, 'ولّده بالذكاء من جديد', 'وإعادة التوليد بجانب التحرير اليدوي');
+
+  /* عين المشرف */
+  has(html, 'admin_online', '★ المتصلون الآن يُجلبون بدالة المشرف');
+  has(html, 'المتصلون الآن', 'ولوحتهم معنونة');
+  has(html, 'stu__mail', 'وإيميل الطالب سطر ظاهر في بطاقته');
+
+  /* الملف الشخصي */
+  has(html, 'pf-hero', '★ بطل الملف الشخصي معرّف');
+  has(html, 'uploadAvatar', 'ورفع الصورة الشخصية موجود');
+  has(html, "'/storage/v1/object/avatars/'", 'إلى حاوية avatars في مخزن Supabase');
+  has(html, 'toBlob', 'والصورة تُصغَّر في المتصفح قبل الرفع — لا خام ٥ ميغابايت');
+  has(html, 'رقم الجوال *', '★ وحقل الجوال إلزامي — بنجمة معلنة');
+  has(html, 'رقم الجوال مطلوب', 'ورفض الحفظ يقول السبب لا يصمت');
+  has(html, 'أكمل ملفك: رقم جوالك', '★ ومن سجّل قديمًا يُذكَّر بشريط لا يحجب مذاكرته');
+  has(html, ".replace(/\\D/g, '')", 'والتحقق يجرّد الرموز — ‎+966‎ و‎05‎ كلاهما يمرّ');
+  has(html, 'نبذة عني', 'والنبذة');
+  has(html, 'تقييماتي', 'وتقييمات الطالب جزء من ملفه');
+
+  /* بطل الملف يرسم فعلًا */
+  const dom = makeDom('#/'), W = dom.window, A = W.QBANK, doc = W.document;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-pf', email:'pf@t.t' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  /* ★ الملف المخزّن يحمل هوية صاحبه — وبدونها لا يُعرض (فحص ١٢٩) */
+  A.store.set('profile', { uid:'u-pf', name:'عليّ', avatar:'🩺', phone:'0555',
+                           bio:'أُراجع طوارئ', avatar_url:'' });
+  A.router.render('#/login');   // حسابي يُعرض لمن سجّل
+  const t = doc.getElementById('main').textContent;
+  has(t, 'عليّ', 'الاسم في صدر الملف');
+  has(t, 'أُراجع طوارئ', 'والنبذة تحته');
+  ok(!!doc.querySelector('.pf-hero__cam'), 'وزر الكاميرا فوق الصورة');
+  ok(!!doc.querySelector('input[type="tel"]'), 'وحقل الجوال بنوعه الصحيح');
+  W.close();
+}
+
+/* ============ ١٢٣ · المجتمع: الملف العام وتقييم الزملاء ============ */
+describe('١٢٣ · تقييم الطلاب والملف العام');
+{
+  const sql = fs.readFileSync(path.join(ROOT, 'db', 'PEER.sql'), 'utf8');
+  has(sql, 'create table if not exists qbank.student_ratings', 'جدول تقييم الطلاب');
+  has(sql, 'target_id <> rater_id', '★ ولا أحد يقيّم نفسه — يُمنع في القاعدة لا في الواجهة');
+  has(sql, "reason','no_uploads'", '★ ولا يُقيَّم إلا من رفع مادة — التقييم عن العطاء');
+  has(sql, 'create or replace function qbank.public_profile', 'ودالة الملف العام');
+  no(sql.slice(sql.indexOf('public_profile')), 'au.email', '★ والملف العام بلا إيميل — الخصوصية في الدالة');
+  no(sql.slice(sql.indexOf('public_profile')), "'phone', p.phone", 'ولا جوال');
+  has(sql, 'grant execute on function qbank.public_profile(uuid) to authenticated, anon',
+      'ويقرؤه الزائر كذلك — الملف عام بطبيعته');
+
+  has(html, "'#/p/'", '★ مسار الملف العام ‎#/p‎ لا ‎#/u‎ (المحجوز للجامعة)');
+  eq((html.match(/\.add\('#\/u',/g) || []).length, 1, '★ ‎#/u‎ مسجَّل مرة واحدة — لا مسار يبتلع آخر');
+  has(html, 'rate_student', 'ونداء التقييم موجود');
+  has(html, 'قيّم هذا الطالب', 'وودجت التقييم معنونة');
+  has(html, 'رفعها', 'وسطر الرافع فوق المادة');
+  has(html, 'موادي المرفوعة', 'ومواد الطالب في لوحته');
+  /* ★ صار «انشر» لا «انسخ» — بضغطة لا بثلاث خطوات (فحص ١٤٧) */
+  has(html, 'انشر ملفي', 'ورابط ملفه العام يُنشَر بزرّ واحد');
+  has(html, 'peer-stats', 'وأرقام العطاء');
+
+  /* اللوحة بتبويبات، والتبويب في الهاش فيبقى بعد التحديث */
+  const dom = makeDom('#/'), W = dom.window, A = W.QBANK, doc = W.document;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-acc', email:'a@a.a' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.router.render('#/account');
+  ok(!!doc.querySelector('.tabs__btn[aria-selected="true"]'), 'لوحة الطالب صارت تبويبات');
+  has(doc.getElementById('main').textContent, 'ملفي', 'وتبويب الملف أولًا');
+  A.router.render('#/account/uploads');
+  has(doc.getElementById('main').textContent, 'موادي المرفوعة', '★ وتبويب موادي يفتح بمساره');
+  W.close();
+}
+
+/* ============ ١٢٤ · الإثراء مجانًا: صفرٌ يعني صفرًا ============ */
+/*
+  قرارُ المنصة أن يكون توليد المادة مجانيًا يجب أن يمرّ سليمًا من القاعدة
+  إلى الزرّ. وأخطر ما يعترضه سطرٌ بريء: `cost_per_q || 1` — فالصفر قيمةٌ
+  كاذبة في جافاسكربت، فيصير المجانُ كوينًا للسؤال بلا أن يقرّره أحد.
+*/
+describe('١٢٤ · الإثراء مجانًا');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'s9', email:'z@z.z' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  // ── الحساب المجرّد ──
+  eq(A.admin.costPerQ({ cost_per_q: 0 }), 0, 'صفرُ القاعدة يصل كصفر لا كواحد');
+  eq(A.admin.costPerQ({ cost_per_q: 3 }), 3, 'وسعرٌ حقيقي يمرّ كما هو');
+  eq(A.admin.costPerQ(null), 1, 'وغياب الجواب يسقط إلى الافتراض الآمن');
+  const wc = A.admin.newWizard(); wc.raw = new Array(120).fill({ q:'x' }); wc.done = 0;
+  eq(A.admin.creditsNeeded(wc, 0), 0, 'و١٢٠ سؤالًا بصفرٍ للسؤال = صفر كوين');
+  eq(A.admin.creditsNeeded(wc, 1), 120, 'وبكوينٍ للسؤال = ١٢٠');
+
+  // ── الشاشة: رصيد صفر، وثمن صفر، ولا حجب ──
+  const raw = [];
+  for (let i = 0; i < 120; i++) raw.push({ q:'Q'+i, options:['a','b'], answer:0, has_options:true });
+  const w = A.admin.newWizard();
+  w.step = 2; w.raw = raw; w.total = raw.length; w.filename = 'free.txt';
+  A.views.ViewUpload._set(w);
+
+  // محفظة فارغة تمامًا — ومع ذلك يجب أن يمرّ
+  A.api.rpc = name => name === 'my_credits'
+    ? Promise.resolve({ ok:true, data:{ balance:0, cost_per_q:0, coin_halalas:5, open:true } })
+    : Promise.resolve({ ok:false });
+
+  pending.push((async () => {
+    await nav(W, '#/upload');
+    await until(W, () => {
+      const p = doc.querySelector('[data-path="true"]');
+      return p && p.textContent.indexOf('مجانًا') !== -1;
+    }, 6000);
+    const paid = doc.querySelector('[data-path="true"]');
+    has(paid.textContent, 'مجانًا', 'الثمن يُقال «مجانًا» لا «٠ كوين»');
+    ok(paid.className.indexOf('is-blocked') === -1,
+       '★ ولا يُحجب المسار الكامل ولو كانت المحفظة فارغة');
+    eq(paid.getAttribute('aria-checked'), 'true', 'ويبقى هو المحدَّد');
+    eq(A.views.ViewUpload._get().enrich, true, 'ولا يرتدّ إلى المجاني — لا سبب للارتداد');
+    eq(A.views.ViewUpload._get().costPerQ, 0, 'وسعر السؤال المحفوظ صفر');
+    ok(doc.querySelector('.costbox').hidden, 'وصندوق الرصيد يختفي: لا محفظة حيث لا ثمن');
+    A.views.ViewUpload._reset();
+    W.close();
+  })());
+}
+
+/* ============ ١٢٥ · التوليد المجاني لا يمرّ بالمحفظة ============ */
+describe('١٢٥ · لا حسم حين لا ثمن');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'s8', email:'y@y.y' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  const w = A.admin.newWizard();
+  w.step = 2; w.enrich = true; w.costPerQ = 0; w.total = 2; w.draftId = 'd9';
+  w.raw = [{ q:'Q1', options:['a','b'], answer:0, has_options:true },
+           { q:'Q2', options:['a','b'], answer:1, has_options:true }];
+
+  // ★ المحفظة معطّلة عمدًا: لو نودِيت لفشل الإثراء — وهذا ما نمنعه
+  const called = [];
+  A.api.rpc = name => { called.push(name); return Promise.resolve({ ok:false }); };
+  A.admin.server = async (path, body) => {
+    if (path !== '/api/ai') return { ok:false };
+    return { ok:true, data:{ questions: body.questions.map(q => Object.assign({ expl_ar:'شرح' }, q)) } };
+  };
+  A.admin.saveDraft = async () => ({ ok:true });
+
+  pending.push((async () => {
+    const r = await A.admin.wizardEnrich(w);
+    eq(called.indexOf('spend_credits'), -1, '★ لا نداء حسمٍ إطلاقًا حين الثمن صفر');
+    eq(called.indexOf('refund_credits'), -1, 'ولا نداء ردٍّ — لا شيء يُردّ');
+    eq(r.error, '', 'ولا يفشل الإثراء بعطلٍ في محفظة لا شأن لها به');
+    eq(r.done, 2, 'والسؤالان أُثريا');
+    eq(r.step, 3, 'والمعالج تقدّم إلى المراجعة');
+    W.close();
+  })());
+}
+
+/* ============ ١٢٦ · قراءة الملف بالذكاء ============ */
+/*
+  المقسّم بالقواعد يشترط شكلًا، والبشر لا يلتزمون شكلًا. هذه الفحوص تحرس
+  الشبكة الثانية: أن يقرأ الذكاءُ ما سقط، وألا يؤلّف وهو يقرأ.
+*/
+describe('١٢٦ · قراءة الملف بالذكاء');
+{
+  const R = require('../api/_lib/reader.js');
+  const ING = require('../api/ingest.js');
+  const P = require('../api/_lib/parser.js');
+
+  // ملفٌ حقيقيّ الشكل: ترقيم عربي، خيارات بحروف عربية، إجابة بكلمة
+  const messy = [
+    'مراجعة الفصل الأول — د. محمد',
+    '',
+    '١- ما هو العضو المسؤول عن إفراز الأنسولين؟',
+    'أ) الكبد',
+    'ب) البنكرياس',
+    'ج) الطحال',
+    'الإجابة الصحيحة: ب',
+    '',
+    '٢- تُعرَّف الحساسية بأنها',
+    'أ) نسبة السلبيات الحقيقية',
+    'ب) نسبة الإيجابيات الحقيقية',
+    'الصحيح: ب'
+  ].join('\n');
+
+  /* ★ صار المقسّم يفهم هذا الشكل بلا ذكاء ولا حصّة تنفد — والقارئ يبقى
+     للأشكال التي لا تنضبط لقاعدة أصلًا. */
+  eq(P.parse(messy).length, 2, 'القواعد صارت تلتقط الترقيم العربي — بلا نداء ذكاء');
+
+  // ── التطبيع للمقارنة وحده ──
+  eq(R.norm('البنكرياسُ   الكبير'), 'البنكرياس الكبير', 'التطبيع يُسقط التشكيل ويطوي المسافات');
+  eq(R.norm('سؤال ١٢'), 'سؤال 12', 'ويوحّد الأرقام العربية باللاتينية');
+  ok(R.verbatimIn(R.norm(messy), 'ما هو العضو المسؤول عن إفراز الأنسولين؟'),
+     'ونصٌّ منقولٌ من الملف يُعرف أنه منقول');
+  ok(!R.verbatimIn(R.norm(messy), 'ما العضو الذي يفرز الأنسولين؟'),
+     '★ ونصٌّ أعيدت صياغته يُكشف — قاعدة القداسة تعمل على القارئ نفسه');
+
+  // ── التقطيع لا يشطر سطرًا ──
+  const big = new Array(2000).fill('سطر من الأسئلة الطويلة جدًا للاختبار').join('\n');
+  const parts = R.chunkText(big);
+  ok(parts.length > 1, 'النص الكبير يُقطَّع دفعات');
+  parts.forEach(p => ok(p.indexOf('للاختبارسطر') === -1, 'ولا تُلصق نهاية سطر ببداية آخر'));
+
+  // ── القراءة بذكاءٍ مُقلَّد: نتحقق من التحويل لا من النموذج ──
+  const fakeAI = async (sys, user) => ({ items: [
+    { q:'ما هو العضو المسؤول عن إفراز الأنسولين؟',
+      options:['الكبد','البنكرياس','الطحال'], answer_index:1, answer_text:null },
+    { q:'تُعرَّف الحساسية بأنها',
+      options:['نسبة السلبيات الحقيقية','نسبة الإيجابيات الحقيقية'], answer_index:1 },
+    // ★ سؤالٌ ألّفه النموذج ولا وجود له في الملف — يجب أن يُوسم لا أن يُصدَّق
+    { q:'ما هو تعريف النوعية في الاختبارات؟', options:['أ','ب'], answer_index:0 }
+  ] });
+  pending.push((async () => {
+    const r = await R.aiRead(messy, fakeAI);
+    eq(r.questions.length, 3, 'القارئ يعيد ما التقطه الذكاء');
+    eq(r.questions[0].has_options, true, 'ويصوغه بشكل المقسّم نفسه');
+    eq(r.questions[0].answer, 1, 'وموضع الإجابة يُنقل رقمًا');
+    eq(r.questions[0].answer_letter, 'B', 'وحرفها يُشتق منه');
+    eq(r.questions[0].unverified, false, 'والمنقول حرفيًا غير موسوم');
+    eq(r.questions[2].unverified, true, '★ والمؤلَّف موسومٌ ليراه الرافع قبل النشر');
+    eq(r.questions[0].num, 1, 'والترقيم يبدأ من واحد');
+
+    // التكرار من تراكب الدفعات يُطوى
+    const dup = await R.aiRead(messy, async () => ({ items:[
+      { q:'ما هو العضو المسؤول عن إفراز الأنسولين؟', options:['الكبد','البنكرياس'], answer_index:1 },
+      { q:'ما هو العضو المسؤول عن إفراز الأنسولين؟', options:['الكبد','البنكرياس'], answer_index:1 }
+    ] }));
+    eq(dup.questions.length, 1, 'والسؤال المكرر يُطوى مرة واحدة');
+
+    // ★ دفعةٌ تنفجر لا تُسقط الملف كله
+    let n = 0;
+    const flaky = async () => { n++; if (n === 1) throw new Error('انقطاع'); return { items:[{ q:'سطر من الأسئلة الطويلة جدًا للاختبار', options:['أ','ب'], answer_index:0 }] }; };
+    const survived = await R.aiRead(big, flaky);
+    ok(survived.questions.length >= 1, 'وانقطاع دفعةٍ لا يُسقط الملف كله');
+  })());
+
+  // ── متى يُستدعى الذكاء؟ ──
+  const sound = [];
+  for (let i = 0; i < 10; i++) sound.push({ has_options:true });
+  ok(ING.rulesLookSound(sound), 'حصادٌ وافر أغلبه بخيارات: لا حاجة للذكاء');
+  ok(!ING.rulesLookSound([{ has_options:true }, { has_options:true }]),
+     'وسؤالان فقط من ملف كامل: حصادٌ مشبوه يستدعي الذكاء');
+  ok(!ING.rulesLookSound(sound.map(() => ({ has_options:false }))),
+     'وعشرةٌ كلها بلا خيارات: الشكل فات القواعد');
+  eq(ING.rulesLookSound([]), false, 'وصفرٌ لا يكون سليمًا أبدًا');
+}
+
+/* ============ ١٢٧ · صيغ الملفات الموسَّعة ============ */
+describe('١٢٧ · صيغ أكثر تُقرأ');
+{
+  const E = require('../api/_lib/extract.js');
+  const html = Buffer.from('<html><body><h1>أسئلة</h1><p>1) سؤال أول</p><p>A) خيار</p>' +
+                           '<script>var x=1</script></body></html>', 'utf8');
+  const t = E.fromHtml(html);
+  has(t, 'سؤال أول', 'HTML: النص يخرج من الوسوم');
+  ok(t.indexOf('var x') === -1, 'وسكربتات الصفحة تُطرح');
+  ok(t.indexOf('أسئلة\n') !== -1 || t.split('\n').length > 2, 'وبنية الأسطر محفوظة — عليها يقوم المقسّم');
+
+  ok(E.looksLikeText(Buffer.from('سؤال عادي بالعربية\nوسطر ثانٍ', 'utf8')),
+     'ملفٌ نصّي بلا امتداد يُعرف نصًّا');
+  ok(!E.looksLikeText(Buffer.from([0x00,0x01,0x02,0x00,0x03,0x04,0x00,0x05])),
+     '★ وملفٌ ثنائي لا يُقرأ نصًّا — الحارس لا يبتلع كل شيء');
+  ok(!E.looksLikeText(Buffer.from('   \n  ', 'utf8')), 'وفراغٌ ليس نصًّا');
+}
+
+/* ============ ١٢٨ · لا يرث حسابٌ بيانات حساب ============ */
+/*
+  جهازٌ واحد يتناوب عليه حسابان. كان الداخل الجديد يجد صورة سابقه ورقم
+  جواله وتقدّمه — بل ومشترياته. هذه الفحوص تحرس الحدّ بين شخصين.
+*/
+describe('١٢٨ · لا يرث حسابٌ بيانات حساب');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const S = A.store;
+
+  const sess = (id, mail) => ({
+    access_token:'t', refresh_token:'r', expires_in:9999,
+    user:{ id:id, email:mail }
+  });
+
+  // ── حساب أول: يملأ ملفه ويذاكر ويشتري ──
+  A.api.saveSession(sess('u-one', 'one@x.com'));
+  S.set('profile', { uid:'u-one', name:'علي', phone:'0500000001', avatar_url:'a1.png' });
+  S.set('progress', { 'subj-1': { done:40 } });
+  S.set('entitlements', { 'subj-9': true });
+  S.set('campus', { university:'جامعة الملك سعود' });
+  S.set('theme', 'dark');                 // تفضيل جهاز لا شخص
+  S.set('api_base', 'https://x.dev');     // إعداد جهاز كذلك
+
+  // ── خروج ──
+  A.api.saveSession(null);
+  eq(S.get('profile', null), null, '★ الخروج يمسح الملف الشخصي');
+  eq(S.get('progress', null), null, 'ويمسح التقدّم');
+  eq(S.get('entitlements', null), null, '★ ويمسح المشتريات — أخطرها');
+  eq(S.get('campus', null), null, 'ويمسح الجامعة والكلية');
+  eq(S.get('theme', null), 'dark', 'ولا يمسّ السمة — تفضيل جهاز لا شخص');
+  eq(S.get('api_base', null), 'https://x.dev', 'ولا إعداد الربط');
+
+  // ── حساب ثانٍ يدخل على الجهاز نفسه ──
+  A.api.saveSession(sess('u-two', 'two@x.com'));
+  eq(S.get('profile', null), null, 'والداخل الجديد يبدأ بملفٍ فارغ');
+
+  // ── والحارس يعمل حتى بلا خروج: انتهت جلسة الأول ودخل الثاني مباشرة ──
+  S.set('profile', { uid:'u-two', name:'سارة', phone:'0500000002' });
+  S.set('progress', { 'subj-2': { done:9 } });
+  A.api.saveSession(sess('u-three', 'three@x.com'));
+  eq(S.get('profile', null), null, '★ تبدّل الهوية وحده يكنس — ولو لم يضغط أحد «خروج»');
+  eq(S.get('progress', null), null, 'والتقدّم معه');
+
+  // ── التجديد ليس تبدّلًا: الرمز يُجدَّد كل ساعة ولا يُمسح شيء ──
+  S.set('profile', { uid:'u-three', name:'محمد' });
+  S.set('progress', { 'subj-3': { done:5 } });
+  A.api.saveSession(sess('u-three', 'three@x.com'));
+  eq((S.get('profile', {}) || {}).name, 'محمد', '★ تجديد جلسة الشخص نفسه لا يمسح ملفه');
+  ok(S.get('progress', null), 'ولا تقدّمه — وإلا ضاع عمل الطالب كل ساعة');
+
+  // ── الزائر الذي سجّل: تقدّمه المجاني لا يُصادَر ──
+  S.clearAll();
+  S.set('progress', { 'free-1': { done:12 } });   // ذاكر بلا حساب
+  A.api.saveSession(sess('u-new', 'new@x.com'));
+  ok(S.get('progress', null), '★ من ذاكر زائرًا ثم سجّل يحتفظ بتقدّمه — التسجيل ليس عقوبة');
+
+  // ── القائمة نفسها: صريحة ومقصودة ──
+  ok(S.PERSONAL.indexOf('entitlements') !== -1, 'المشتريات في قائمة الشخصي');
+  ok(S.PERSONAL.indexOf('theme') === -1, 'والسمة خارجها');
+  ok(S.PERSONAL.indexOf('config') === -1, 'وإعداد المنصة خارجها');
+  W.close();
+}
+
+/* ============ ١٢٩ · شاشة الحساب لا تعرض ملف غيره ============ */
+describe('١٢٩ · الملف يحمل هوية صاحبه');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'acc-2', email:'two@x.com' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  /* ملفٌ لصاحبٍ آخر تسلّل إلى التخزين (نسخة قديمة كتبته بلا هوية، أو
+     بقي من قبل الحارس) — يجب ألا يُعرض حرفًا واحدًا منه */
+  A.store.set('profile', { uid:'acc-1', name:'صاحب الحساب الأول',
+                           phone:'0500000001', avatar_url:'https://x/one.png', bio:'نبذة غيري' });
+
+  pending.push((async () => {
+    await nav(W, '#/account/profile');
+    const t = doc.getElementById('main').textContent;
+    ok(t.indexOf('صاحب الحساب الأول') === -1, '★ لا يظهر اسم صاحب الملف الآخر');
+    ok(t.indexOf('0500000001') === -1, '★ ولا رقم جواله');
+    ok(t.indexOf('نبذة غيري') === -1, 'ولا نبذته');
+    const img = doc.querySelector('.pf-hero__img');
+    ok(!img || !img.src || img.src.indexOf('one.png') === -1, '★ ولا صورته الشخصية');
+
+    /* ملفٌ كتبته نسخةٌ قديمة بلا هوية إطلاقًا: لا نفترض أنه لصاحب الجلسة.
+       الافتراض هنا رخيصُ الخطأ عليه غالٍ: الخادم يعيد ملفه بعد لحظة، أما
+       عرضُ ملف غيره فتسريبٌ لا يُستدرك. */
+    A.store.set('profile', { name:'ملفٌ بلا هوية', phone:'0509999999' });
+    A.router.render('#/account/profile');
+    const t2 = doc.getElementById('main').textContent;
+    ok(t2.indexOf('ملفٌ بلا هوية') === -1, '★ وملفٌ قديم بلا هوية لا يُعرض — الخادم يعيد الحقيقة');
+    W.close();
+  })());
+}
+
+/* ============ ١٣٠ · حين ينفد ما عند مزوّد الذكاء ============ */
+/*
+  ٤٢٩ من Google ليست عطلًا في منصتنا، وليست شيئًا واحدًا: حصّةُ دقيقةٍ
+  تُنتظر ثوانيَ، وحصّةُ يومٍ انتظارها إلى الغد. وكان الطالب يرى JSON
+  إنجليزيًّا خامًا لا يعرف منه أيعيد المحاولة أم ينصرف.
+*/
+describe('١٣٠ · نفاد حصّة الذكاء');
+{
+  const PV = require('../api/_lib/provider.js');
+
+  const dayBody = JSON.stringify({ error:{ code:429, message:'You exceeded your current quota',
+    details:[{ violations:[{ quotaId:'GenerateRequestsPerDayPerProjectPerModel' }] }] } });
+  const minBody = JSON.stringify({ error:{ code:429, message:'quota',
+    details:[{ violations:[{ quotaId:'GenerateRequestsPerMinutePerProject' }] }],
+    retryDelay:'27s' } });
+
+  eq(PV.classify(429, dayBody).kind, 'quota_day', 'حصّة اليوم تُميَّز');
+  eq(PV.classify(429, dayBody).retryable, false, '★ ولا يُعاد المحاولة فيها — انتظارها إلى الغد');
+  eq(PV.classify(429, minBody).kind, 'quota_minute', 'وحصّة الدقيقة تُميَّز');
+  eq(PV.classify(429, minBody).retryable, true, 'وهي وحدها تستحق الانتظار');
+  eq(PV.classify(401, '{}').kind, 'auth', 'ومفتاحٌ مرفوض عطلٌ إداري لا يُعاد');
+  eq(PV.classify(503, '{}').kind, 'overloaded', 'وازدحام الخادم يُعاد');
+  eq(PV.retryAfter('{"retryDelay":"27s"}'), 27, 'ونقرأ المهلة التي تطلبها Google نفسها');
+  eq(PV.retryAfter('{}'), null, 'وغيابها لا يكسر شيئًا');
+
+  // ── الرسالة: عربية، تقول ما العمل ──
+  const e = PV.aiError(429, dayBody, 'Gemini');
+  eq(e.kind, 'quota_day', 'الخطأ يحمل تصنيفه معه');
+  ok(e.message.indexOf('Gemini 429') === -1, '★ ولا يُسرَّب JSON المزوّد إلى وجه الطالب');
+  ok(e.message.indexOf('quota') === -1, 'ولا كلمة إنجليزية واحدة');
+  has(e.message, 'المحفوظ لا يضيع', 'وتطمئنه على ما أُنجز');
+  has(e.message, 'بلا إثراء', '★ وتدلّه على المخرج: انشر الآن وأثرِ لاحقًا');
+  has(PV.aiError(429, minBody, 'Gemini').message, 'انتظر دقيقة', 'وحصّة الدقيقة تُقاس بدقيقة');
+  eq(PV.aiError(429, dayBody, 'Gemini').status, 429, 'والحالة تُنقل كما هي لا ٥٠٠');
+}
+
+/* ============ ١٣١ · الشاشة تفتح بابًا لا جدارًا ============ */
+describe('١٣١ · مخرج النشر بلا إثراء');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'q1', email:'q@q.q' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  const raw = [];
+  for (let i = 0; i < 12; i++) raw.push({ q:'Q'+i, options:['a','b'], answer:0, has_options:true });
+  const w = A.admin.newWizard();
+  w.step = 2; w.raw = raw; w.total = 12; w.filename = 'f.txt'; w.enrich = true;
+  A.views.ViewUpload._set(w);
+
+  A.api.rpc = name => name === 'my_credits'
+    ? Promise.resolve({ ok:true, data:{ balance:0, cost_per_q:0, coin_halalas:5, open:true } })
+    : Promise.resolve({ ok:true, data:{ ok:true } });
+  // الخادم ينفد منه الذكاء
+  A.admin.server = async (path) => path === '/api/ai'
+    ? { ok:false, status:429, data:{ error:'بلغ الذكاء حصّته اليومية عند المزوّد.', kind:'quota_day' } }
+    : { ok:true, data:{} };
+  A.admin.saveDraft = async () => ({ ok:true });
+
+  pending.push((async () => {
+    await nav(W, '#/upload');
+    await until(W, () => doc.querySelector('.btn--block'), 6000);
+    const go = Array.prototype.slice.call(doc.querySelectorAll('button'))
+      .filter(b => /ولّد المادة|شغّل الذكاء|أثرِ/.test(b.textContent))[0];
+    ok(go, 'زر التشغيل موجود');
+    go.dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => doc.querySelector('.js-plainout'), 6000);
+
+    const t = doc.getElementById('main').textContent;
+    has(t, 'حصّته اليومية', 'العطل يُقال بالعربية');
+    ok(t.indexOf('429') === -1, '★ ولا رقم حالة ولا JSON في وجه الطالب');
+
+    const out = doc.querySelector('.js-plainout');
+    ok(out, '★ ويُفتح له باب النشر بلا إثراء');
+    out.dispatchEvent(new W.Event('click', { bubbles:true }));
+    await until(W, () => A.views.ViewUpload._get() && A.views.ViewUpload._get().step === 3, 6000);
+    const w2 = A.views.ViewUpload._get();
+    eq(w2.step, 3, 'والضغط عليه ينقله إلى المراجعة');
+    eq(w2.enriched.length, 12, 'بأسئلته الاثني عشر كما وصلت');
+    eq(w2.error, '', 'ولا يبقى عطلٌ معلّق');
+    A.views.ViewUpload._reset();
+    W.close();
+  })());
+}
+
+/* ============ ١٣٢ · القواعد تقرأ العربية ============ */
+/*
+  الذكاء له حصّة تنفد، والقواعد مجانيةٌ لا تنفد. فملفٌ عربيٌّ مرتّب يجب أن
+  يُقرأ ولو انقطع الإنترنت عن كل مزوّدي العالم.
+*/
+describe('١٣٢ · القواعد تقرأ العربية');
+{
+  const P = require('../api/_lib/parser.js');
+
+  const ar = ['مراجعة الفصل الأول — د. محمد', '',
+    '١- ما هو العضو المسؤول عن إفراز الأنسولين؟',
+    'أ) الكبد', 'ب) البنكرياس', 'ج) الطحال', 'الإجابة الصحيحة: ب', '',
+    '٢. تُعرَّف الحساسية بأنها',
+    'أ) نسبة السلبيات الحقيقية', 'ب) نسبة الإيجابيات الحقيقية', 'الصحيح: ب'].join('\n');
+  const r = P.parse(ar);
+  eq(r.length, 2, 'سؤالان عربيان يُلتقطان');
+  eq(r[0].num, 1, '★ والرقم العربي ١ يُقرأ رقمًا لا زخرفة');
+  eq(r[0].q, 'ما هو العضو المسؤول عن إفراز الأنسولين؟', 'ونصّ السؤال بلا ترقيمه');
+  eq(r[0].options.length, 3, 'وخياراته الثلاثة بحروف عربية');
+  eq(r[0].options[1], 'البنكرياس', 'ونصّ الخيار بلا حرفه');
+  eq(r[0].answer, 1, '★ و«الإجابة الصحيحة: ب» تُقرأ موضعًا رقميًا');
+  eq(r[1].answer, 1, 'و«الصحيح: ب» كذلك — الصيغة المختصرة مفهومة');
+  ok(r[0].q.indexOf('د. محمد') === -1, 'وعنوان الملف واسم الدكتور خارج الأسئلة');
+
+  // ── ترتيب الحروف ──
+  eq(P.letterIndex('أ'), 0, 'أ أول الخيارات');
+  eq(P.letterIndex('ا'), 0, 'والألف بلا همزة مثلها — الطالب لا يفرّق وهو يكتب');
+  eq(P.letterIndex('ج'), 2, 'وج ثالثها');
+  eq(P.letterIndex('هـ'), 4, 'وهـ خامسها');
+  eq(P.letterIndex('B'), 1, 'واللاتينية كما كانت');
+  eq(P.letterIndex('zz'), -1, 'وما ليس حرف خيار يُردّ بـ ‎-1‎');
+  eq(P.toLatinDigits('سؤال ١٢٣'), 'سؤال 123', 'والأرقام تُحوَّل للحساب لا للعرض');
+
+  // ── النجمة علامة تصحيح تُقشَّر ولا تُعرض ──
+  const star = ['5) Which drug causes miosis?', 'A) Ketamine', 'B) Morphine *', 'C) Atropine'].join('\n');
+  const rs = P.parse(star)[0];
+  eq(rs.answer, 1, '★ والخيار المعلَّم بنجمة هو الإجابة');
+  eq(rs.options[1], 'Morphine', 'والنجمة تُقشَّر — وإلا رأى الطالب الجواب قبل أن يجيب');
+
+  // ── ما كان يعمل يبقى يعمل ──
+  const latin = ['1) Old style question', 'A) one', 'B) two', 'ANSWER: B'].join('\n');
+  const rl = P.parse(latin)[0];
+  eq(rl.answer, 1, 'والشكل اللاتيني القديم لم يتغيّر');
+  eq(rl.q, 'Old style question', 'ونصّه كما كان');
+
+  // ── الخيار لا يُخلط بالسؤال ولو كان مرقّمًا ──
+  const numbered = ['1. ما لون الدم؟', '1) أحمر', '2) أزرق'].join('\n');
+  ok(P.parse(numbered).length >= 1, '★ خيارٌ مرقّم لا يُقرأ سؤالًا جديدًا');
+}
+
+/* ============ ١٣٣ · عطل الذكاء لا يُتَّهم به الملف ============ */
+describe('١٣٣ · لا نتّهم ملفًا بريئًا');
+{
+  const R = require('../api/_lib/reader.js');
+  pending.push((async () => {
+    const boom = async () => { const e = new Error('بلغ الذكاء حصّته اليومية عند المزوّد.');
+                               e.kind = 'quota_day'; e.status = 429; throw e; };
+    const r = await R.aiRead('١- سؤال عربي\nأ) خيار\nب) خيار', boom);
+    eq(r.questions.length, 0, 'لا أسئلة حين يسقط الذكاء');
+    ok(r.error, '★ لكن العطل يعود معه لا يُبتلع');
+    eq(r.error.kind, 'quota_day', 'بتصنيفه كاملًا');
+    has(r.error.message, 'حصّته اليومية', 'وبنصّه العربي');
+
+    // وحين ينجح لا عطل معلّق
+    const ok2 = await R.aiRead('نص', async () => ({ items:[{ q:'نص', options:null }] }));
+    eq(ok2.error, null, 'والنجاح لا يحمل عطلًا');
+  })());
+}
+
+/* ============ ١٣٤ · الترويسة تعرف من دخل ============ */
+/*
+  «دخول» نصٌّ ثابت في هيكل الصفحة كان يبقى معروضًا على من دخل فعلًا،
+  فيظنّ أن دخوله لم يُقبل ويعيد الكرّة. الترويسة يجب أن تتبع الجلسة.
+*/
+describe('١٣٤ · الترويسة تتبع الجلسة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+
+  // قبل الدخول: زرّ الدخول في مكانه
+  A.router.render('#/');
+  const slot = doc.getElementById('authSlot');
+  ok(slot, 'موضع الحساب موجود في الترويسة');
+  ok(slot.querySelector('[data-nav="#/login"]'), 'وقبل الدخول: زرّ «دخول»');
+  has(slot.textContent, 'دخول', 'بنصّه');
+
+  // بعد الدخول: بطاقة الحساب
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'hdr-1', email:'ali@t.t' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.store.set('profile', { uid:'hdr-1', name:'علي', avatar:'🩺', avatar_url:'' });
+  A.router.render('#/');
+  ok(!slot.querySelector('[data-nav="#/login"]'), '★ وبعد الدخول يختفي زرّ «دخول»');
+  const chip = slot.querySelector('.authchip');
+  ok(chip, 'وتحلّ محلّه بطاقة الحساب');
+  eq(chip.getAttribute('href'), '#/account', 'وتقود إلى حسابه — طريق عودة من كل شاشة');
+  has(chip.textContent, 'علي', 'وتحمل اسمه');
+  ok(chip.querySelector('.authchip__ico'), 'ورمزه حين لا صورة له');
+
+  // صورة مرفوعة تفوز على الرمز
+  A.store.set('profile', { uid:'hdr-1', name:'علي', avatar:'🩺', avatar_url:'https://x/a.jpg' });
+  A.router.render('#/explore');
+  const img = doc.querySelector('.authchip__img');
+  ok(img, '★ ومن رفع صورته يراها في الترويسة');
+  ok(img.src.indexOf('a.jpg') !== -1, 'صورته هو');
+
+  // ملفٌ لصاحبٍ آخر لا يُعرض — حارس الهوية يسري هنا أيضًا
+  A.store.set('profile', { uid:'someone-else', name:'زيد', avatar_url:'https://x/z.jpg' });
+  A.router.render('#/');
+  const t = doc.getElementById('authSlot').textContent;
+  ok(t.indexOf('زيد') === -1, '★ ولا يظهر اسم صاحب ملفٍ آخر في ترويستي');
+
+  // الخروج يعيد الزرّ
+  A.api.saveSession(null);
+  A.router.render('#/');
+  ok(doc.getElementById('authSlot').querySelector('[data-nav="#/login"]'),
+     'والخروج يعيد زرّ الدخول');
+  W.close();
+}
+
+/* ============ ١٣٥ · الصورة والرمز ليسا سواءً ============ */
+describe('١٣٥ · الصورة تكبر والرمز يصغر');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  /* الحجم رسالة: الكبير مطلوب والصغير مؤقّت. وكانا بحجمٍ واحد فبدا
+     الرمز اختيارًا نهائيًا لا دعوةً لرفع صورة. */
+  ok(/\.pf-hero__img\{[^}]*width:104px/.test(html.replace(/\s+/g,'')) ||
+     html.indexOf('.pf-hero__img{') !== -1, 'الصورة لها قاعدتها المستقلة');
+  ok(html.indexOf('width:104px; height:104px; border-radius:50%; object-fit:cover;') !== -1,
+     '★ والصورة الشخصية ١٠٤ بكسل — أكبر ما في البطاقة');
+  ok(html.indexOf('.pf-hero__emoji{\n  width:64px; height:64px') !== -1 ||
+     /pf-hero__emoji\{\s*width:64px/.test(html), '★ والرمز ٦٤ بكسل — أصغر منها بوضوح');
+  has(html, 'border:2px dashed', 'وإطاره متقطّع: مكانٌ ينتظر أن يُملأ');
+  has(html, '.avpick .iconbtn{', 'ولشبكة الاختيار قاعدتها الخاصة');
+  has(html, 'width:38px; height:38px; border-radius:50%', 'ورقاقاتها ٣٨ بكسل دائرية');
+  has(html, 'رمز مؤقّت — يظهر حتى ترفع صورتك', 'والنصّ يقول إنه مؤقّت لا بديل دائم');
+  // مساحة البطل ثابتة فلا يقفز التخطيط بين الحالين
+  has(html, "width:104px; height:104px; display:grid; place-items:center;",
+      'ومساحة البطل مثبّتة — لا قفزة عند تبدّل الصورة بالرمز');
+}
+
+/* ============ ١٣٦ · سلّم التكرار المتباعد ============ */
+/*
+  المذاكرة بالإعادة الفورية وهمُ إتقان. والذي يثبّت هو الاسترجاع بعد أن
+  تكاد تنسى. هذه الفحوص تحرس السُّلَّم نفسه — قبل أي شاشة.
+*/
+describe('١٣٦ · سلّم المراجعة');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const P = A.progress;
+
+  // ── الصعود درجةً درجة ──
+  eq(P.nextInterval(0, true), 1, 'أول إصابة: يوم واحد');
+  eq(P.nextInterval(1, true), 3, 'ثم ثلاثة');
+  eq(P.nextInterval(3, true), 7, 'ثم سبعة');
+  eq(P.nextInterval(7, true), 16, 'ثم ستة عشر');
+  eq(P.nextInterval(16, true), 35, 'ثم خمسة وثلاثون');
+  eq(P.nextInterval(35, true), 60, 'ثم ستون');
+  eq(P.nextInterval(60, true), 60, '★ ولا يتجاوز الستين — سؤالٌ يُنسى بعد شهرين يستحق العودة');
+
+  // ── الهبوط إلى القاع عند الخطأ ──
+  eq(P.nextInterval(60, false), 1, '★ والخطأ يُعيده إلى يومٍ واحد مهما بلغ');
+  eq(P.nextInterval(7, false), 1, 'من أي درجة كان');
+  eq(P.nextInterval(999, true), 1, 'وفترةٌ غريبة تبدأ من أول السلّم لا تُصدَّق');
+
+  // ── رقم اليوم ──
+  const t0 = P.today('2026-03-10T06:00:00');
+  const t1 = P.today('2026-03-11T23:00:00');
+  eq(t1 - t0, 1, 'رقم اليوم يتقدّم يومًا بيوم لا بالساعات');
+  eq(P.today('2026-03-10T00:30:00'), P.today('2026-03-10T22:30:00'),
+     '★ وساعتان في يومٍ واحد رقمُهما واحد — المراجعة تُقاس بالأيام');
+
+  // ── التسجيل والاستحقاق ──
+  A.store.clearAll();
+  P.review('s1', 'q1', true,  '2026-03-10T09:00:00');   // يستحق ١١ مارس
+  P.review('s1', 'q2', false, '2026-03-10T09:00:00');   // يستحق ١١ مارس، بتعثّر
+  const srs = P.forSubject('s1').srs;
+  eq(srs.q1.i, 1, 'المصاب فترته يوم');
+  eq(srs.q2.e, 1, 'والمخطئ يُسجَّل تعثّره');
+  eq(P.dueIn('s1', '2026-03-10T20:00:00').length, 0, 'ولا يستحق شيء في اليوم نفسه');
+  eq(P.dueIn('s1', '2026-03-11T07:00:00').length, 2, 'ويستحقّان في اليوم التالي');
+
+  // ── الترتيب: الأكثر تعثّرًا أولًا ──
+  P.review('s1', 'q1', true, '2026-03-11T09:00:00');   // صعد إلى ٣ أيام
+  P.review('s1', 'q2', false, '2026-03-11T09:00:00');  // تعثّر ثانيًا
+  const due = P.dueAll('2026-03-15T09:00:00');
+  eq(due.length, 2, 'كلاهما مستحقّ');
+  eq(due[0].qid, 'q2', '★ والأكثر تعثّرًا أولًا — هو ما يُسقطك في الاختبار');
+
+  // ── الموعد القادم ──
+  A.store.clearAll();
+  P.review('s1', 'q9', true, '2026-03-10T09:00:00');
+  eq(P.nextDue('2026-03-10T20:00:00'), 1, 'ومن أنهى اليوم يُقال له متى يعود');
+  eq(P.nextDue('2026-03-20T09:00:00'), null, 'ولا موعد قادمًا حين مرّ كل شيء');
+  W.close();
+}
+
+/* ============ ١٣٧ · دمج جدول المراجعة بين جهازين ============ */
+describe('١٣٧ · الأحدث مراجعةً يفوز');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const local  = { s1: { seen:{}, wrong:{}, star:{}, exams:0, best:0,
+    srs: { q1: { i:1,  d:100, e:3, t:99 } } } };          // جهازٌ راجعه أمس وأخطأ
+  const remote = { s1: { seen:{}, wrong:{}, star:{}, exams:0, best:0,
+    srs: { q1: { i:35, d:130, e:0, t:95 } } } };          // جهازٌ راجعه قبل أيام وأصاب
+  const m = A.progress.merge(local, remote);
+  eq(m.s1.srs.q1.i, 1, '★ الأحدث مراجعةً يفوز — لا الأطول فترةً');
+  eq(m.s1.srs.q1.t, 99, 'بتاريخه هو');
+
+  // والعكس: الأقدم لا يزيح الأحدث
+  const m2 = A.progress.merge(remote, local);
+  eq(m2.s1.srs.q1.t, 99, 'مهما كان ترتيب الدمج');
+
+  // سؤالٌ في جهازٍ واحد لا يضيع
+  const m3 = A.progress.merge(
+    { s1: { seen:{}, wrong:{}, star:{}, srs:{ a:{ i:1,d:5,t:1 } } } },
+    { s1: { seen:{}, wrong:{}, star:{}, srs:{ b:{ i:3,d:9,t:2 } } } });
+  eq(Object.keys(m3.s1.srs).length, 2, 'واتحاد الأسئلة لا تقاطعها — لا يخسر أحد جدوله');
+  W.close();
+}
+
+/* ============ ١٣٨ · شاشة «راجع اليوم» ============ */
+describe('١٣٨ · راجع اليوم');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  A.store.clearAll();
+
+  // بطاقة الرئيسية: تغيب قبل أن يبدأ الطالب
+  eq(A.views.reviewCard(), null, '★ لا بطاقة لمن لم يبدأ — بطاقةٌ فارغة تعليمٌ ناقص');
+
+  // بعد مراجعتين مستحقّتين
+  A.progress.review('s1', 'q1', false);
+  A.progress.review('s1', 'q2', false);
+  const p = A.progress.all();
+  Object.keys(p.s1.srs).forEach(k => { p.s1.srs[k].d = 0; });   // نُنضجها
+  A.store.set('progress', p);
+
+  const card = A.views.reviewCard();
+  ok(card, 'وتظهر حين يستحقّ شيء');
+  has(card.textContent, 'راجع اليوم', 'بعنوانها');
+  has(card.textContent, '٢', 'وبعدد المستحقّ');
+  eq(card.getAttribute('href'), '#/review', 'وتقود إلى الشاشة');
+
+  // الشريط السفلي خمسة لا ستة
+  A.router.render('#/');
+  eq(doc.querySelectorAll('.tabbar__item').length, 5,
+     '★ الشريط يبقى خمسة — السادس يضيّق مساحة اللمس');
+  ok(doc.querySelector('[data-nav="#/review"]'), 'و«راجع» فيه');
+  ok(!doc.querySelector('.tabbar [data-nav="#/settings"]'), 'و«الإعدادات» خرجت منه');
+
+  // ومسارها يعمل
+  A.router.render('#/review');
+  has(doc.getElementById('main').textContent, 'راجع اليوم', 'والشاشة تُرسم');
+  W.close();
+}
+
+/* ============ ١٣٩ · بطاقة المشاركة كصورة ============ */
+describe('١٣٩ · بطاقة السؤال');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const S = A.shareCard;
+  ok(S, 'الوحدة محمّلة');
+  eq(S.W, 1080, 'مربّع ١٠٨٠ — الشكل الذي تقبله سناب وواتساب معًا');
+  eq(S.H, 1080, 'ارتفاعًا كعرضه');
+
+  ok(S.isRtl('ما هو العضو؟'), 'العربية تُعرف عربية');
+  ok(!S.isRtl('Which drug?'), 'واللاتينية لاتينية — الاتجاه من النص لا من الواجهة');
+
+  // اللفّ بالقياس
+  const fakeCtx = { measureText: t => ({ width: t.length * 10 }) };
+  const lines = S.wrap(fakeCtx, 'كلمة كلمة كلمة كلمة كلمة كلمة', 100);
+  ok(lines.length > 1, 'النص الطويل يُلفّ أسطرًا');
+  lines.forEach(l => ok(l.length * 10 <= 110, 'ولا يتجاوز سطرٌ العرض المتاح'));
+  const cut = S.wrap(fakeCtx, new Array(40).fill('كلمة').join(' '), 100, 3);
+  eq(cut.length, 3, 'وسقف الأسطر يُحترم');
+  has(cut[2], '…', 'ويُختم بعلامة قطع — لا نوهم أن النص انتهى');
+
+  // ★ الإجابة لا تُكشف
+  const src = require('fs').readFileSync(__dirname + '/js/60-sharecard.js', 'utf8');
+  ok(src.indexOf('q.answer') === -1,
+     '★ البطاقة لا تعرف الإجابة أصلًا — الفضول هو ما يُعبر الرابط');
+  has(src, 'تعرف الإجابة؟', 'وتدعو لمعرفتها على المنصة');
+  W.close();
+}
+
+/* ============ ١٤٠ · «اشرح لي أكثر» ============ */
+describe('١٤٠ · شرح الخطأ');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const E = A.explain;
+  ok(E, 'الوحدة محمّلة');
+
+  const q = { id:'q1', q:'سؤال', options:['أ','ب','ج'], answer:1, topic:'محور' };
+  eq(E.button(q, 1), null, '★ من أصاب لا زرّ له — لا شيء يُشرح');
+  eq(E.button(q, null), null, 'ومن لم يُجب كذلك');
+  ok(E.button(q, 0), 'والمخطئ يراه');
+  has(E.button(q, 0).textContent, 'لماذا أخطأت', 'بنصٍّ يقول ما سيحدث');
+
+  // الجواب يُحفظ فلا يُدفع ثمنه مرتين
+  E._reset();
+  let calls = 0;
+  A.api.fetchFn = () => (url, o) => { calls++; return Promise.resolve({
+    ok:true, json: () => Promise.resolve({ ok:true, why:'خلطتَ بين الأفيونات والكيتامين.' }) }); };
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'ex1', email:'e@e.e' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.store.set('api_base', 'https://x.dev');
+
+  pending.push((async () => {
+    const r1 = await E.ask(q, 0);
+    eq(r1.ok, true, 'الشرح يصل');
+    has(r1.why, 'الأفيونات', 'بنصّه');
+    const r2 = await E.ask(q, 0);
+    eq(r2.cached, true, '★ والسؤال نفسه لا يُنادى مرتين');
+    eq(calls, 1, 'نداءٌ واحد لا اثنان');
+
+    // اختيارٌ آخر سوء فهمٍ آخر — يستحق نداءه
+    await E.ask(q, 2);
+    eq(calls, 2, 'وخطأٌ مختلف يستحق شرحًا مختلفًا');
+    W.close();
+  })());
+}
+
+/* ============ ١٤١ · خادم الشرح: حرّاسه ============ */
+describe('١٤١ · حرّاس /api/explain');
+{
+  const src = require('fs').readFileSync(__dirname + '/../api/explain.js', 'utf8');
+  has(src, 'supa.userFromToken', '★ الجلسة شرط — نداءٌ مفتوح للعالم بابُ استنزاف');
+  has(src, "res.status(401)", 'ومن لا جلسة له يُردّ ٤٠١');
+  has(src, 'if (ci === ki)', '★ ولا نُنفق نداءً على من أصاب');
+  has(src, 'slice(0, CAP)', 'والنصوص مقصوصة — لا نمرّر حمولة بحجم كتاب');
+  has(src, 'maxTokens: 1024', 'والخرج قصير: ثلاث جمل تكفي والطويل لا يُقرأ');
+  has(src, 'ثلاث جمل لا أكثر', 'والبرومبت يقولها صراحة');
+  has(src, 'لا تُلقِ عليه اللوم', 'ولا يُلام الطالب على خطئه');
+}
+
+/* ============ ١٤٢ · المسوّدة تُحفظ أو يُقال لماذا ============ */
+/*
+  عطلٌ صامت أوصل الطالب إلى آخر خطوة ثم ردّه: سياسة جدول المسوّدات بقيت
+  «للمشرف وحده» بعد أن فُتح الرفع للطلاب، فيُرفض الإدراج بصمت، ويمضي
+  المعالج بأسئلةٍ في المتصفح تبدو سليمة، حتى يضغط «انشر» فيُقال له
+  «المسوّدة غير موجودة».
+*/
+describe('١٤٢ · حفظ المسوّدة وفشله');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'dr1', email:'d@d.d' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  // ── الفشل يُسجَّل ولا يُبتلع ──
+  const w = A.admin.newWizard();
+  w.filename = 'f.txt'; w.subjectName = 'مادة'; w.total = 2; w.done = 2;
+  w.enriched = [{ q:'س١' }, { q:'س٢' }];
+  A.api.rest = async () => ({ ok:false, status:403,
+    data:{ message:'new row violates row-level security policy' } });
+
+  pending.push((async () => {
+    await A.admin.saveDraft(w);
+    eq(w.draftId, null, 'لا معرّف حين يفشل الحفظ');
+    ok(w.draftError, '★ لكن سبب الفشل محفوظ لا مُهمَل');
+    has(w.draftError, 'row-level security', 'بنصّ الخادم نفسه — لا «تعذّر» عامة');
+
+    // ── الاعتماد يحاول الإنقاذ قبل أن يُعلن الفشل ──
+    let tries = 0;
+    A.api.rest = async () => { tries++; return { ok:false, status:403, data:{ message:'ممنوع' } }; };
+    A.api.rpc = async () => ({ ok:true, data:'sub-1' });
+    const r = await A.admin.approve(w, true);
+    ok(tries >= 1, '★ يحاول حفظ المسوّدة قبل الاعتماد — الأسئلة في المتصفح كاملة');
+    eq(r.ok, false, 'وإن عجز يُعلن الفشل');
+    has(r.data.message, 'أسئلتك لم تضِع', 'ويطمئن الطالب على عمله');
+    ok(r.data.message.indexOf('المسوّدة غير موجودة') === -1,
+       'ولا يقول جملةً صادقة لا تدلّ على السبب');
+
+    // ── ونجاح الإنقاذ يُكمل الطريق ──
+    const w2 = A.admin.newWizard();
+    w2.filename = 'g.txt'; w2.total = 1; w2.done = 1; w2.enriched = [{ q:'س' }];
+    A.api.rest = async () => ({ ok:true, data:[{ id:'draft-9' }] });
+    let approved = null;
+    A.api.rpc = async (name, args) => { approved = args; return { ok:true, data:'sub-2' }; };
+    const r2 = await A.admin.approve(w2, true);
+    eq(w2.draftId, 'draft-9', '★ ومن حُفظت مسوّدته في اللحظة الأخيرة يمضي');
+    eq(approved.draft_id, 'draft-9', 'ويُعتمد بمعرّفها');
+    eq(r2.ok, true, 'وينجح');
+    W.close();
+  })());
+}
+
+/* ============ ١٤٣ · صلاحية المسوّدات في القاعدة ============ */
+describe('١٤٣ · سياسة المسوّدات');
+{
+  const sql = require('fs').readFileSync(__dirname + '/../db/DRAFTS-OWNER.sql', 'utf8');
+  has(sql, 'drop policy if exists drafts_all', 'السياسة القديمة تُزال');
+  has(sql, 'created_by = auth.uid() or qbank.is_admin()',
+      '★ والجديدة: صاحبها أو المشرف — لا المشرف وحده');
+  has(sql, 'with check (created_by = auth.uid() or qbank.is_admin())',
+      'والكتابة كالقراءة — من يعتمد يملك أن يُنشئ');
+  // القاعدة العامة موثّقة كي لا يتكرّر الخلل في جدولٍ آخر
+  has(sql, 'الصلاحية تُمنح للجدول والدالة معًا', 'والدرس مكتوب لا مُستنتَج');
+}
+
+/* ============ ١٤٤ · إعادة التشغيل لا تُضاعف الأسئلة ============ */
+/*
+  ملفٌ من ٦٥ سؤالًا خرج بـ٢٥٩ — نُسخًا مكرّرة يظنّها الطالب مادته.
+  السبب: كل دفعة كانت تُلحق بآخر ما عند المعالج، فإعادة التشغيل تُلحق
+  ثانيةً. والعلاج: الكتابة بالموضع، فإعادة التشغيل تكتب فوق نفسها.
+*/
+describe('١٤٤ · الإثراء لا يُضاعف');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'dup', email:'x@x.x' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  const raw = [];
+  for (let i = 0; i < 65; i++) raw.push({ q:'Q'+i, options:['a','b'], answer:0, has_options:true });
+  const mk = () => { const w = A.admin.newWizard();
+    w.step = 2; w.raw = raw; w.total = 65; w.enrich = true; w.costPerQ = 0; return w; };
+
+  A.api.rpc = async () => ({ ok:true, data:{ ok:true } });
+  A.admin.saveDraft = async () => ({ ok:true });
+
+  let failFirst = true;
+  A.admin.server = async (path, body) => {
+    if (path !== '/api/ai') return { ok:false };
+    return { ok:true, data:{ questions: body.questions.map(q => ({ q:q.q, expl_ar:'ش' })) } };
+  };
+
+  pending.push((async () => {
+    // تشغيل كامل
+    const w1 = await A.admin.wizardEnrich(mk());
+    eq(w1.enriched.length, 65, 'التشغيل الكامل يعطي العدد نفسه');
+    eq(w1.done, 65, 'والعدّاد يطابقه');
+
+    // ★ إعادة التشغيل على المعالج نفسه لا تُضاعف
+    w1.done = 40;                       // كأن الدفعة الثانية انقطعت
+    const w2 = await A.admin.wizardEnrich(w1);
+    eq(w2.enriched.length, 65, '★ وإعادة التشغيل بعد انقطاع تبقيه ٦٥ لا ١٣٠');
+    eq(w2.done, 65, 'والعدّاد لا يتجاوز المجموع');
+
+    // ولا نسخة مكرّرة من سؤال واحد
+    const names = w2.enriched.map(x => x && x.q);
+    eq(new Set(names).size, 65, '★ وكل سؤال مرة واحدة — لا نسختين');
+
+    // التقدّم يُعلن بدء الدفعة لا نهايتها وحدها
+    const seen = [];
+    const w3 = mk();
+    await A.admin.wizardEnrich(w3, (d, t, st) => { if (st) seen.push(st.running); });
+    ok(seen.indexOf(true) !== -1, '★ ويُعلن أن الدفعة بدأت — لا يصمت حتى تنتهي');
+    ok(seen.indexOf(false) !== -1, 'ثم يُعلن انتهاءها');
+    W.close();
+  })());
+}
+
+/* ============ ١٤٥ · الرابط بعد النشر يُقرأ لا يُخمَّن ============ */
+describe('١٤٥ · رابط المادة الحقيقي');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'sl', email:'s@s.s' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  pending.push((async () => {
+    A.api.rest = async (path) => {
+      has(path, 'subjects?id=eq.sub-7', 'يسأل عن المادة بمعرّفها');
+      has(path, 'select=slug', 'ويطلب رابطها وحده — لا الصف كله');
+      return { ok:true, data:[{ slug:'real-slug-abc123' }] };
+    };
+    eq(await A.admin.realSlug('sub-7'), 'real-slug-abc123',
+       '★ الرابط من الخادم لا من تخمين المتصفح');
+
+    A.api.rest = async () => ({ ok:true, data:[{ slug:null }] });
+    eq(await A.admin.realSlug('sub-7'), null, 'وغيابه يُقال null لا يُختلق');
+    eq(await A.admin.realSlug(null), null, 'وبلا معرّف لا نداء أصلًا');
+    W.close();
+  })());
+}
+
+/* ============ ١٤٦ · القاعدة: كل مادة لها رابط ============ */
+describe('١٤٦ · توليد رابط المادة');
+{
+  const sql = require('fs').readFileSync(__dirname + '/../db/SUBJECT-SLUG-OWNER.sql', 'utf8');
+  has(sql, 'create trigger subjects_slug_trg',
+      '★ قادحٌ يملأ الرابط عند الإنشاء — لا يعتمد على نداءٍ لاحق قد يفشل');
+  /* ★ صار «insert or update»: الحارس الذي يحمي بابًا ويترك الآخر
+     مفتوحًا ليس حارسًا (فحص ١٥٩). */
+  has(sql, 'before insert or update on qbank.subjects', 'قبل الكتابة لا بعدها');
+  has(sql, "left(replace(p_id::text, '-', ''), 6)",
+      'وذيل المعرّف يضمن التفرّد بلا حلقة محاولات');
+  has(sql, 'ء-ي', 'ويقبل الحروف العربية — أسماء المواد عربية');
+  has(sql, 'update qbank.subjects\n   set slug = qbank.make_slug(name, id)',
+      'والمواد القائمة بلا رابط تُعالَج مرة واحدة');
+  has(sql, 'qbank.is_admin() or created_by = auth.uid()',
+      '★ والمالك يعدّل مادته — لا مواد الناس');
+  ok(sql.indexOf('using      (true)') === -1, 'ولا تُفتح المواد على مصراعيها');
+}
+
+/* ============ ١٤٧ · زرّ نشرٍ واحد لكل شيء ============ */
+/*
+  كان النسخ يطلب ثلاث خطوات — انسخ، افتح واتساب، الصق — ويسقط بعضهم في
+  كل واحدة. ونافذة النظام تفعلها بضغطة. والميزة تُبنى مرة وتُستعمل في كل
+  موضع: مادة، ملف طالب، جامعة.
+*/
+describe('١٤٧ · النشر');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const S = A.share;
+
+  // ── الروابط في موضع واحد ──
+  has(S.profileUrl('u-9'), '#/p/u-9', 'رابط الملف العام');
+  has(S.universityUrl('un-2'), '#/u/un-2', 'ورابط الجامعة');
+  ok(/^https?:\/\//.test(S.profileUrl('x')) || S.profileUrl('x').indexOf('#/p/') === 0,
+     'ومطلقٌ لا نسبي — الرابط النسبي لا يُرسَل');
+  has(S.absUrl('#/review'), '#/review', 'وأي مسار داخلي يصير رابطًا');
+  has(S.absUrl('review'), '#/review', 'ولو كُتب بلا هاش');
+
+  // ── الزرّ: نافذة النظام ثم الحافظة ──
+  const btn = S.shareButton({ url:'https://x.test/#/p/1', title:'ت', text:'ن' });
+  ok(btn, 'الزرّ يُبنى');
+  const wa = btn.querySelector('a[href*="wa.me"]');
+  ok(wa, '★ وواتساب بجانبه دائمًا — حيث تعيش مجموعات الدفعة');
+  has(decodeURIComponent(wa.getAttribute('href')), 'https://x.test/#/p/1', 'وفيه الرابط');
+  eq(wa.getAttribute('rel'), 'noopener noreferrer', 'وبلا ثغرة النافذة المفتوحة');
+
+  pending.push((async () => {
+    // نافذة النظام تُستعمل حين تتوفّر
+    let shared = null;
+    W.navigator.share = async (d) => { shared = d; };
+    const r1 = await S.sharePlain('u1', 't', 'x');
+    eq(r1.via, 'share', '★ نافذة النظام أولًا — الأقصر وتعرض تطبيقاته كلها');
+    eq(shared.url, 'u1', 'بالرابط نفسه');
+
+    // وحين تغيب: الحافظة
+    delete W.navigator.share;
+    let copied = null;
+    W.navigator.clipboard = { writeText: async t => { copied = t; } };
+    const r2 = await S.sharePlain('u2');
+    eq(r2.via, 'copy', 'وحين تغيب تُنسخ — لا نَعِد بما لا نملك');
+    eq(copied, 'u2', 'بالرابط نفسه');
+
+    // وإلغاء المستخدم ليس عطلًا
+    W.navigator.share = async () => { throw new Error('AbortError'); };
+    const r3 = await S.sharePlain('u3');
+    eq(r3.cancelled, true, '★ وإلغاؤه ليس فشلًا يُنبَّه عليه');
+    W.close();
+  })());
+}
+
+/* ============ ١٤٨ · النشر حاضر في كل موضع ============ */
+describe('١٤٨ · مواضع النشر');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, '⤴ انشر المادة', 'صفحة المادة فيها زرّ نشر');
+  has(html, '⤴ انشر ملفي', 'وحسابي فيه نشر ملفه');
+  has(html, '⤴ انشر ملفك', 'والملف العام لصاحبه');
+  has(html, '⤴ انشر الملف', 'ولزائره — سمعةُ الرافع تُبنى بمن يفتح ملفه');
+  has(html, 'QBANK.share.shareButton', 'والمكوّن واحد يُستعمل لا يُنسخ');
+  // ولم يبقَ «انسخ» وحده في المواضع الرئيسية
+  ok(html.indexOf('⎘ انسخ رابط ملفي') === -1, '★ ولم يبقَ النسخ وحده حيث كان');
+  ok(html.indexOf('⎘ نسخ الرابط') === -1, 'ولا في صفحة المادة');
+}
+
+/* ============ ١٤٩ · شريط قراءة الملف ============ */
+/*
+  «جارٍ قراءة الملف…» سطرٌ جامد لا يقول شيئًا، وقراءة ملفٍ من ستين صفحة
+  قد تبلغ دقيقتين. الطالب أمام سطرٍ لا يتحرّك يستنتج العطل ويُغلق الصفحة
+  على عملٍ يجري.
+*/
+describe('١٤٩ · تقدّم القراءة');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+
+  has(html, 'يُقرأ «', 'المرحلة الأولى تُسمّى: القراءة من الجهاز');
+  has(html, 'rd.onprogress', '★ وتقدّمها حقيقي من المتصفح لا متخيَّل');
+  has(html, 'e.lengthComputable', 'ولا نرسم نسبة لا نعرفها');
+  has(html, 'يُرفع ملفك', 'ثم مرحلة الرفع');
+  has(html, 'يُحلَّل ملفك على الخادم', 'ثم التحليل');
+  has(html, 'ثانية. ', '★ وعدّاد الثواني يفرّق بين «بطيء» و«معطّل»');
+  has(html, "rdBar.classList.add('meter--busy')",
+      'والمرحلة مجهولة الطول تتحرّك بدل أن تجمد');
+  has(html, "rdBar.removeAttribute('aria-valuenow')",
+      'ويُرفع الرقم عن قارئ الشاشة حين لا نعرفه — لا نكذب عليه بصفر');
+  has(html, 'clearInterval(tick)', 'والعدّاد يتوقف عند الانتهاء — لا يبقى يدقّ');
+  has(html, 'تعذّرت قراءة الملف من جهازك', 'وفشل القراءة يُقال لا يُترك معلّقًا');
+
+  // الشريط المتحرّك نفسه معرَّف في الأنماط
+  has(html, '.meter--busy .meter__fill', 'ونمط الحركة موجود');
+  has(html, 'prefers-reduced-motion', 'ومن طلب تقليل الحركة يُحترم طلبه');
+
+  // ولا يبقى السطر الجامد القديم
+  ok(html.indexOf("msg.textContent = 'جارٍ قراءة «'") === -1,
+     '★ ولم يبقَ السطر الجامد الذي كان');
+}
+
+/* ============ ١٥٠ · الشريط السفلي: رموز مرسومة لا محارف ============ */
+/*
+  كانت الأيقونات محارف يونيكود (▤ ⌕ ↻ ⇪ ◍): كل نظام يرسمها بخطّه فتختلف
+  أوزانها بين أندرويد وآيفون، ويسقط بعضها إلى مربّع فارغ حين لا يجد
+  الجهازُ محرفًا لها. وأكثر عنصرٍ يراه الطالب يستحق رسمًا متسقًا.
+*/
+describe('١٥٠ · شريط احترافي');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  A.router.render('#/');
+
+  const items = doc.querySelectorAll('.tabbar__item');
+  eq(items.length, 5, 'خمسة تبويبات');
+
+  // ★ كل تبويب يحمل رسمًا حقيقيًا
+  let svgs = 0, paths = 0;
+  Array.prototype.forEach.call(items, it => {
+    const svg = it.querySelector('svg');
+    if (svg) svgs++;
+    const p = it.querySelector('svg path');
+    if (p && p.getAttribute('d')) paths++;
+    // ولا محارف زخرفية باقية داخل غلاف الأيقونة
+    const box = it.querySelector('.tabbar__box');
+    ok(box, 'ولكل تبويب غلاف أيقونة مستقل');
+    eq((box.textContent || '').trim(), '',
+       '★ ولا محرف نصّي داخله — الرسم وحده');
+  });
+  eq(svgs, 5, '★ خمسة رسوم متجهية');
+  eq(paths, 5, 'لكلٍّ مساره');
+
+  // الرسم يرث لون النص فيتبع السمة والحالة معًا
+  const p0 = items[0].querySelector('svg path');
+  eq(p0.getAttribute('stroke'), 'currentColor',
+     '★ واللون موروث — يتبع السمة الليلية وحالة التحديد بلا قاعدة إضافية');
+  eq(items[0].querySelector('svg').getAttribute('aria-hidden'), 'true',
+     'والرسم مخفيّ عن قارئ الشاشة — النص وحده يُقرأ');
+  ok(items[0].querySelector('.tabbar__lbl').textContent, 'والنص موجود لقارئ الشاشة وللعين');
+
+  // التمييز يتبع الصفحة
+  A.router.render('#/review');
+  const on = doc.querySelector('.tabbar__item[aria-current="page"]');
+  ok(on, 'والصفحة الحالية معلَّمة');
+  eq(on.getAttribute('data-nav'), '#/review', 'بالمسار الصحيح');
+  eq(doc.querySelectorAll('.tabbar__item[aria-current="page"]').length, 1,
+     'وواحدة لا أكثر');
+  W.close();
+}
+
+/* ============ ١٥١ · أنماط الشريط ============ */
+describe('١٥١ · هيئة الشريط');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, '.tabbar__box{', 'غلاف الأيقونة له قاعدته');
+  has(html, 'width:46px; height:30px; border-radius:999px',
+      'حبّةٌ بيضوية تتّسع للأيقونة لا للكلمة');
+  has(html, '.tabbar__item[aria-current="page"] .tabbar__box{',
+      '★ والتمييز خلف الأيقونة وحدها — الذي يبتلع الكلمة يُثقل الشريط');
+  has(html, "stroke-width:2", 'وخطّ الأيقونة المحدَّدة أثقل قليلًا');
+  /* ★ الذهب لا الرمادي: --acc محايدٌ رمادي وتلوّنه كل مادة، فحبّةٌ به
+     تُقرأ «معطّلة» ويتبدّل لون الشريط مع كل مادة. */
+  has(html, 'background:color-mix(in srgb, var(--gold) 18%, transparent)',
+      '★ وحبّة التمييز ذهبية — لون الهوية الثابت لا الرمادي المتبدّل');
+  ok(html.indexOf('background:color-mix(in srgb, var(--acc) 16%, transparent);\n  transform:translateY(-1px)') === -1,
+     'ولم يبقَ الرمادي');
+  has(html, 'env(safe-area-inset-bottom', 'ويحترم الحافة السفلية في آيفون');
+  has(html, '@supports not ((backdrop-filter',
+      '★ ومن لا يدعم الزجاج يحصل على سطحٍ صلب — لا شفافيةٍ تُخفي النص تحته');
+  has(html, '-webkit-backdrop-filter', 'وسفاري يُخاطَب ببادئته');
+  has(html, '.tabbar__item:active .tabbar__box{ transform:scale(.9)',
+      'واللمس يستجيب فورًا');
+  has(html, '-webkit-tap-highlight-color:transparent',
+      'بلا مستطيل أزرق يقفز على أندرويد');
+  // إمكانية الوصول: الحركة تُطفأ لمن طلب
+  ok(/prefers-reduced-motion[\s\S]{0,400}\.tabbar__box\{ transition:none/.test(html),
+     'ومن طلب تقليل الحركة يُحترم طلبه');
+}
+
+/* ============ ١٥٢ · تنقّل سطح المكتب ============ */
+/*
+  ★ عطلٌ صامت عاش طويلًا: الشريط السفلي يُخفى فوق ٨٢٠ بكسل، والتعليق في
+  الأنماط يَعِد بـ«روابط أعلى» — روابط لم تُكتب قط. فمن فتح المنصة على
+  حاسوبه وجد نفسه بلا تنقّل إطلاقًا: لا استكشاف ولا رفع ولا حساب.
+*/
+describe('١٥٢ · تنقّل سطح المكتب');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  A.router.render('#/');
+
+  const top = doc.getElementById('topnav');
+  ok(top, 'الترويسة فيها موضع تنقّل');
+  const items = top.querySelectorAll('.topnav__item');
+  eq(items.length, 5, '★ وفيه التبويبات الخمسة نفسها');
+
+  // ★ مصدرٌ واحد للقائمتين: ما في الشريط هو ما في الترويسة
+  const bottom = Array.prototype.map.call(
+    doc.querySelectorAll('.tabbar__item'), a => a.getAttribute('data-nav')).join(',');
+  const upper = Array.prototype.map.call(items, a => a.getAttribute('data-nav')).join(',');
+  eq(upper, bottom, '★ والقائمتان من مصدر واحد — لا تتباعدان مع الوقت');
+
+  eq(items[0].querySelectorAll('svg').length, 1, 'ولكلٍّ رسمه');
+  ok(items[0].querySelector('.topnav__lbl').textContent, 'ونصّه');
+
+  // التمييز يتبع الصفحة هنا أيضًا
+  A.router.render('#/explore');
+  const on = top.querySelector('.topnav__item[aria-current="page"]');
+  ok(on, 'والصفحة الحالية معلَّمة في الأعلى كذلك');
+  eq(on.getAttribute('data-nav'), '#/explore', 'بالمسار الصحيح');
+
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, '.topnav{ display:none; }', 'ولا يظهر على الجوال — الشريط السفلي مكانه');
+  has(html, '@media (min-width:820px) and (max-width:960px)',
+      '★ وبين ٨٢٠ و٩٦٠ تُطوى الكلمات وتبقى الأيقونات — الترويسة تضيق');
+  has(html, '.topnav__item[aria-current="page"]{', 'وللحالية قاعدتها');
+  W.close();
+}
+
+/* ============ ١٥٣ · اسم المادة مطلوب ============ */
+/*
+  كان يُشتقّ من اسم الملف عند غيابه، فخرجت موادُّ اسمها «Document1» و
+  «WhatsApp Image» — لا يبحث بها أحد ولا يفتحها، فتُدفن مادةٌ نافعة.
+*/
+describe('١٥٣ · الاسم مطلوب');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'nm', email:'n@n.n' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  pending.push((async () => {
+    await nav(W, '#/upload');
+    await until(W, () => doc.querySelector('#subjName'), 6000);
+    const inp = doc.querySelector('#subjName');
+    ok(inp, 'حقل الاسم موجود');
+    eq(inp.getAttribute('aria-required'), 'true', '★ ومعلَّم مطلوبًا لقارئ الشاشة');
+    has(doc.getElementById('main').textContent, 'اسم المادة *', 'وبنجمة تُرى');
+
+    // ★ الضغط على منطقة الرفع بلا اسم لا يفتح المنتقي بل يشرح
+    const drop = doc.querySelector('.drop');
+    drop.dispatchEvent(new W.Event('click', { bubbles:true }));
+    has(doc.getElementById('main').textContent, 'اكتب اسم المادة أولًا',
+        '★ والطلب قبل الرفع لا بعده — بعده عقوبة على دقيقة انتظار');
+
+    // ومع اسمٍ يمضي
+    const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+    has(html, 'اسم المادة مطلوب — ارجع إلى الخطوة الأولى',
+        '★ وحارسٌ أخير عند النشر — المسوّدة تُستأنف بعد يوم وقد يُفرَّغ الحقل');
+    W.close();
+  })());
+}
+
+/* ============ ١٥٤ · كتابة الأسئلة باليد ============ */
+/*
+  الرفع بملف يفترض أن للطالب ملفًا، وكثيرٌ منهم لا ملف عنده — أسئلةٌ
+  سمعها في المحاضرة أو صوّرها زميله. كانوا خارج المنصة كلها.
+*/
+describe('١٥٤ · المحرّر اليدوي');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const M = A.manual;
+  ok(M, 'الوحدة محمّلة');
+
+  // ── الصلاحية: ما يصلح للنشر ──
+  ok(!M.valid({ q:'', options:['أ','ب'], answer:0 }), 'سؤال بلا نص لا يصلح');
+  ok(!M.valid({ q:'س', options:['أ'], answer:0 }), 'ولا بخيار واحد');
+  ok(!M.valid({ q:'س', options:['أ','ب'], answer:5 }), 'ولا بإجابة خارج النطاق');
+  ok(!M.valid({ q:'س', options:['أ',''], answer:1 }), '★ ولا بإجابة تشير إلى خيار فارغ');
+  ok(M.valid({ q:'س', options:['أ','ب'], answer:1 }), 'والمكتمل يصلح');
+
+  // ── التحويل: الخيارات الفارغة تُطرح وموضع الإجابة يُعاد حسابه ──
+  const raw = M.toRaw([
+    { q:'ما لون الدم؟', options:['', 'أحمر', '', 'أزرق'], answer:3 },
+    { q:'سؤال ثانٍ', options:['أ','ب'], answer:0 },
+    /* ★ وهذا يسقط: خيارٌ واحد بعد طرح الفارغ لا يصنع سؤالًا */
+    { q:'ناقص', options:['أ',''], answer:0 }
+  ]);
+  eq(raw.length, 2, 'الصالحان يمرّان والناقص يسقط');
+  eq(raw[0].options.length, 2, 'والخيارات الفارغة طُرحت');
+  eq(raw[0].options[raw[0].answer], 'أزرق',
+     '★ وموضع الإجابة أُعيد حسابه — لا يشير إلى خيارٍ غير الذي اختاره الكاتب');
+  eq(raw[0].has_options, true, 'وشكله شكل المقسّم — بقية المعالج لا تعرف المصدر');
+
+  // ★ والناقص يُستبعد لا يمنع الباقي
+  const some = M.toRaw([{ q:'تام', options:['أ','ب'], answer:0 },
+                        { q:'', options:['أ','ب'], answer:0 }]);
+  eq(some.length, 1, 'من كتب تسعةً وترك العاشر ناقصًا يُنشر تسعته');
+
+  // ── الحفظ التلقائي ──
+  A.store.clearAll();
+  M.save({ name:'م', items:[{ q:'سؤالي', options:['أ','ب'], answer:1 }] });
+  eq(M.load().items[0].q, 'سؤالي', '★ وما كُتب يُستعاد — نصف ساعة عملٍ لا تضيع بإغلاق عارض');
+  M.clear();
+  eq(M.load().items.length, 1, 'وبعد النشر يبدأ فارغًا');
+  eq(M.load().items[0].q, '', 'بسؤالٍ خالٍ واحد');
+
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, 'أو اكتب الأسئلة بنفسك', 'والمدخل ظاهر في شاشة الرفع');
+  has(html, 'اضغط الحرف لتحديد الصحيح', 'والتعليمة صريحة: الحرف هو زرّ التحديد');
+  has(html, 'تُحفظ في جهازك أولًا بأول', 'ويُطمأن الكاتب على عمله');
+  W.close();
+}
+
+/* ============ ١٥٥ · الخلط عند النشر ============ */
+describe('١٥٥ · ترتيب محايد');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const M = A.manual;
+
+  // ★ خلطٌ عادل لا `sort(()=>Math.random()-.5)`
+  const src = [];
+  for (let i = 0; i < 200; i++) src.push(i);
+  const out = M.shuffle(src);
+  eq(out.length, 200, 'العدد لا يتغيّر');
+  eq(out.slice().sort((a,b)=>a-b).join(','), src.join(','), 'ولا يضيع عنصر ولا يتكرّر');
+  eq(src[0], 0, 'والأصل لا يُمسّ — نسخةٌ تُعاد');
+  ok(out.join(',') !== src.join(','), 'والترتيب تبدّل فعلًا');
+
+  /* الانحياز: لو كان الخلط مغشوشًا لبقي العنصر الأول قرب أوله.
+     نقيسه بمتوسّط موضع العنصر صفر عبر مئتي خلطة. */
+  let sum = 0;
+  for (let t = 0; t < 200; t++) sum += M.shuffle(src).indexOf(0);
+  const avg = sum / 200;
+  ok(avg > 70 && avg < 130,
+     '★ وتوزيعه متّزن — الخلط المغشوش يُبقي الأول قرب أوله (المتوسّط ' + Math.round(avg) + ')');
+
+  // مولّدٌ ثابت: نتيجةٌ يمكن التنبّؤ بها للفحص
+  let n = 0;
+  const fixed = () => { n = (n * 1103515245 + 12345) % 2147483648; return n / 2147483648; };
+  eq(M.shuffle([1,2,3], fixed).length, 3, 'ويقبل مولّدًا محقونًا — يُفحص بلا عشوائية');
+
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, 'اخلط ترتيب الأسئلة عند النشر',
+      'والمفتاح ظاهر للرافع لا مخفيّ');
+  has(html, 'wizard.shuffleOnPublish !== false',
+      '★ والخلط افتراضٌ — ومن رتّب بقصدٍ يُلغيه بضغطة');
+}
+
+/* ============ ١٥٦ · لوحةٌ لا تُخرج صاحبها منها ============ */
+/*
+  المشرف يعتمد مادةً من لوحته فيُقذف بها إلى واجهة الطالب: يعود الشريط
+  السفلي، وتضيع اللوحة، وعليه أن يكتب مسارها بيده ليعود إلى عمله.
+  ولوحةٌ تُخرج صاحبها كلما أنجز شيئًا ليست لوحة.
+*/
+describe('١٥٦ · الخروج يتبع الباب');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "(QBANK.router.current || {}).path.indexOf('#/admin') === 0",
+      'الشاشة تعرف من أي باب دخلتَ');
+  has(html, '⚙ عد إلى لوحة المحتوى', '★ وللمشرف طريق عودة إلى لوحته');
+  has(html, '✎ حرّر المادة', 'وإلى محرّر مادته التي نشرها للتوّ');
+  has(html, '+ ارفع مادة أخرى', 'وإلى رفعٍ جديد بلا مغادرة');
+  has(html, 'المادة منشورة للطلاب. وهذا رابطها للمشاركة',
+      'ونصّها يخاطبه هو لا الطالب');
+  // ووجهات الطالب تبقى للطالب
+  has(html, "href:'#s/' + slug, text:'افتح صفحة المادة'", 'والطالب يبقى على وجهته');
+}
+
+/* ============ ١٥٧ · باب اللوحة الدائم ============ */
+describe('١٥٧ · زرّ اللوحة في الترويسة');
+{
+  const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'ad-1', email:'a@a.a' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.store.set('profile', { uid:'ad-1', name:'علي' });
+
+  // طالبٌ عادي: لا زرّ
+  A.store.set('is_admin_check', { uid:'ad-1', ok:false });
+  A.router.render('#/');
+  ok(!doc.querySelector('.authchip__adm'), '★ الطالب لا يرى زرّ اللوحة');
+
+  // مشرف: زرٌّ دائم في كل شاشة
+  A.store.set('is_admin_check', { uid:'ad-1', ok:true });
+  A.router.render('#/');
+  const b = doc.querySelector('.authchip__adm');
+  ok(b, '★ والمشرف يراه');
+  eq(b.getAttribute('href'), '#/admin', 'ويقود إلى لوحته');
+  A.router.render('#/explore');
+  ok(doc.querySelector('.authchip__adm'), 'ويبقى في شاشات الطالب — حيث يُحتاج فعلًا');
+
+  // صلاحيةُ غيره لا تُعيره زرًّا
+  A.store.set('is_admin_check', { uid:'someone-else', ok:true });
+  A.router.render('#/');
+  ok(!doc.querySelector('.authchip__adm'),
+     '★ وصلاحيةٌ محفوظة لحسابٍ آخر لا تفتح لوحةً لهذا');
+  W.close();
+}
+
+/* ============ ١٥٨ · «المادة غير متاحة» — الرابط يُمحى بعد توليده ============ */
+/*
+  القاعدة تولّد الرابط عند إنشاء المادة، ثم يأتي تحديثٌ من الواجهة بعده
+  بثانية يكتب null فوقه فيمحوه. فتصير المادة «غير متاحة» وهي منشورة
+  سليمة بأسئلتها كاملة.
+
+  ومتى يكون الحقل فارغًا؟ حين تُستأنف مسوّدة: الاستئناف كان يجلب الأسئلة
+  ولا يجلب الرابط. فالملفات الكبيرة — التي تُحفظ مسوّداتها وتُستأنف —
+  أكثرها عرضةً لهذا. وهذه هي المواد التي أخفقت فعلًا.
+*/
+describe('١٥٨ · لا يُمحى رابطٌ بتحديث جزئي');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'sg', email:'g@g.g' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  pending.push((async () => {
+    let sent = null;
+    A.api.rest = async (path, opt) => {
+      if (opt && opt.method === 'PATCH') sent = JSON.parse(opt.body);
+      return { ok:true, data:[] };
+    };
+    A.api.rpc = async () => ({ ok:false });
+
+    // بلا رابط معروف: الحقل لا يُرسل إطلاقًا
+    const w1 = A.admin.newWizard(); w1.slug = '';
+    await A.admin.stamp('sub-1', w1);
+    ok(!('slug' in sent),
+       '★ الحقل الفارغ يُحذف ولا يُرسل null — وnull معناها «امحُ ما هناك»');
+    has(JSON.stringify(sent), 'sanctity_mode', 'وبقية الحقول تُرسل كما كانت');
+
+    // ومع رابطٍ معروف يُرسل
+    const w2 = A.admin.newWizard(); w2.slug = 'my-subject-ab12';
+    await A.admin.stamp('sub-2', w2);
+    eq(sent.slug, 'my-subject-ab12', 'ومتى عرفناه أرسلناه');
+    W.close();
+  })());
+}
+
+/* ============ ١٥٩ · الاستئناف يستعيد الاسم ============ */
+describe('١٥٩ · استئناف المسوّدة');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, 'wizard.subjectName = wizard.subjectName || d.name',
+      '★ والاسم يعود مع الأسئلة — لا يُطلب من المشرف مرتين');
+  // والقاعدة تحرس الطرف الآخر
+  const sql = require('fs').readFileSync(__dirname + '/../db/SUBJECT-SLUG-OWNER.sql', 'utf8');
+  has(sql, 'before insert or update on qbank.subjects',
+      '★ والقادح يحرس التحديث كما يحرس الإنشاء');
+  has(sql, 'ليس حارسًا', 'والدرس مكتوب لا مُستنتَج');
+}
+
+/* ============ ١٦٠ · الحضور: أين الطالب الآن ============ */
+/*
+  كانت النبضة تُرسل مرةً عند الإقلاع، فالقائمة تقول «دخل خلال ربع ساعة»
+  لا «هو هنا». ومن فتح التطبيق ثم وضع جوّاله في جيبه ليس متصلًا بالمعنى
+  الذي يهمّ المشرف.
+*/
+describe('١٦٠ · وصف الشاشة');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const P = A.presence;
+  ok(P, 'الوحدة محمّلة');
+
+  eq(P.place({ path:'#/login', rest:[] }), 'في صفحة الدخول', 'صفحة الدخول تُسمّى');
+  eq(P.place({ path:'#/upload', rest:[] }), 'يرفع مادة', 'والرفع');
+  eq(P.place({ path:'#/review', rest:[] }), 'يراجع أسئلة اليوم', 'والمراجعة');
+  eq(P.place({ path:'#/admin/content', rest:[] }), 'في لوحة التحكم',
+     'وكل مسارات اللوحة واحدة — تفصيلها لا يعني أحدًا');
+  eq(P.place({ path:'#/nope', rest:[] }), 'يتصفّح', 'والمجهول يُقال عامًّا لا يُترك فارغًا');
+
+  // ★ المادة تُسمّى: «في اختبار» وحدها لا تقول شيئًا
+  A.store.set('pack', { subjects: [{ id:'s1', slug:'tox', name:'علم السموم' }] });
+  eq(P.place({ path:'#/exam', rest:['s1'] }), 'في اختبار تجريبي: علم السموم',
+     '★ واسم المادة مع الاختبار — «في اختبار» وحدها نصفُ خبر');
+  eq(P.place({ path:'#/subject', rest:['s1'] }), 'داخل مادة: علم السموم', 'ومع فتح المادة');
+  eq(P.place({ path:'#/s', rest:['tox'] }), 'فتح رابط مادة: علم السموم', 'ومع رابط مشترك');
+  // ومادةٌ لا نعرفها لا تُسقط الوصف
+  eq(P.place({ path:'#/exam', rest:['ghost'] }), 'في اختبار تجريبي',
+     'ومادةٌ ليست في هذا الجهاز تُترك بلا اسم لا بلا وصف');
+  W.close();
+}
+
+/* ============ ١٦١ · الجهاز والبلد ============ */
+describe('١٦١ · الجهاز والبلد');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const P = A.presence;
+
+  eq(P.kind('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)'), 'ios', 'آيفون');
+  eq(P.kind('Mozilla/5.0 (Linux; Android 14; SM-S911B)'), 'android', 'أندرويد');
+  eq(P.kind('Mozilla/5.0 (Windows NT 10.0; Win64)'), 'desktop', 'حاسوب');
+  eq(P.kind('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)', 0), 'desktop', 'وماك حاسوب');
+  /* ★ آيباد الحديث يقول عن نفسه «Macintosh» — واللمس هو الفارق الباقي */
+  eq(P.kind('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15)', 5), 'ios',
+     '★ وآيباد يكشفه اللمس لا اسمه — فاسمه يكذب');
+  eq(P.kind(''), 'desktop', 'وبلا معرّف نفترض الحاسوب');
+
+  ok(P.kindIcon('ios'), 'ولكل صنف علامة');
+  eq(P.kindName('android'), 'أندرويد', 'واسمٌ عربي لقارئ الشاشة');
+
+  // البلد: الملف أوثق من الاستنتاج
+  A.store.set('campus', { country:'sa' });
+  eq(P.country(), 'SA', '★ ما كتبه الطالب في ملفه أولًا');
+  A.store.remove('campus');
+  ok(typeof P.country() === 'string', 'وإن غاب استُنتج من المنطقة الزمنية بلا إذن ولا موقع');
+  eq(P.TZ['Asia/Riyadh'], 'SA', 'وجدول المناطق يغطي البلدان العربية');
+  eq(P.TZ['Africa/Cairo'], 'EG', 'ومصر');
+  W.close();
+}
+
+/* ============ ١٦٢ · النبضة لا تُرسل بلا جديد ============ */
+describe('١٦٢ · اقتصاد النبضة');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const P = A.presence;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'pr', email:'p@p.p' }))));
+  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+
+  pending.push((async () => {
+    const sent = [];
+    P._sendFn = async (b) => { sent.push(b); return { ok:true }; };
+    P._last = '';
+
+    A.router.render('#/login');
+    await P.beat();
+    eq(sent.length, 1, 'أول شاشة تُرسل');
+    has(sent[0].p_place, 'صفحة الدخول', 'بحالها');
+    ok('p_kind' in sent[0] && 'p_country' in sent[0], 'ومعها الجهاز والبلد');
+
+    // ★ الشاشة نفسها لا تُنادى مرتين
+    await P.beat();
+    eq(sent.length, 1, '★ ولا نداء بلا جديد — الشاشة نفسها لا تُرسل مرتين');
+
+    // وتبدّلها يُرسل
+    A.router.render('#/upload');
+    await P.beat();
+    eq(sent.length, 2, 'وتبدّل الشاشة يُرسل');
+    has(sent[1].p_place, 'يرفع مادة', 'بحالها الجديد');
+
+    // والنبضة الدورية تُرسل ولو لم يتبدّل شيء — «ما زال هنا» خبرٌ أيضًا
+    await P.beat(true);
+    eq(sent.length, 3, 'والنبضة الدورية تمرّ رغم ثبات الشاشة');
+
+    // وبلا جلسة لا نبضة
+    A.api.saveSession(null);
+    const before = sent.length;
+    await P.beat(true);
+    eq(sent.length, before, '★ والزائر لا يُتتبَّع — لا جلسة لا نبضة');
+    P._sendFn = null;
+    W.close();
+  })());
+}
+
+/* ============ ١٦٣ · حدود ما يُجمع ============ */
+describe('١٦٣ · حدود التتبّع');
+{
+  const src = require('fs').readFileSync(__dirname + '/js/63-presence.js', 'utf8');
+  // ★ لا موقع من الجهاز إطلاقًا
+  ok(src.indexOf('geolocation') === -1,
+     '★ لا موقع جغرافي من الجهاز — التقريب يكفي للتشغيل');
+  ok(src.indexOf('getCurrentPosition') === -1, 'ولا طلب إحداثيات');
+  has(src, 'شاشاتُ التطبيق فقط', 'والحدّ مكتوب لا مُستنتَج');
+  has(src, 'لا نصوصَ يكتبها الطالب', 'ولا محتوى يكتبه');
+  has(src, 'document.hidden', '★ والتبويب المخفيّ لا ينبض — ليس حضورًا');
+
+  const sql = require('fs').readFileSync(__dirname + '/../db/PRESENCE.sql', 'utf8');
+  has(sql, 'left(coalesce(p_place, \'\'), 120)', 'والخادم يقصّ ما يصله — لا يثق بطوله');
+  has(sql, 'device_label text default \'\'',
+      '★ والتوقيع القديم يبقى صالحًا — نسخةٌ لم تُحدَّث بعدُ تظل تعمل');
+  has(sql, 'distinct on (user_id)', 'وجهازٌ واحد لكل طالب في القائمة — أحدثها');
+}
+
+/* ============ ١٦٤ · تسعير المواد ============ */
+/*
+  ★ ميزةٌ نصفُها مبنيّ: العمود في القاعدة منذ البداية، والبوابةُ تقرؤه
+  وتعرض السعر للطالب، ولا شاشة واحدة في المنصة تضبطه. فكل مادة مدفوعة
+  كانت تأخذ سعرها من قيمةٍ كُتبت عند الاستيراد ولا سبيل إلى تغييرها إلا
+  بـSQL. تعمل آليّتها ولا يملك أحدٌ مفتاحها.
+*/
+describe('١٦٤ · حقل السعر');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+
+  has(html, 'السعر بالريال', 'حقل السعر في محرّر المادة');
+  has(html, "'aria-label':'سعر المادة بالريال'", 'ومعنون لقارئ الشاشة');
+  has(html, 'يدفع الطالب ', 'ويقول ما يعنيه الرقم');
+  has(html, 'صفر = مجانية للجميع', '★ والصفر يعني مجانية — لا إعدادان متناقضان');
+
+  // ★ في القائمة أيضًا: التسعير عملٌ يُقارَن
+  has(html, "el('span', { class:'ad-inline__l', text:'السعر ﷼' })",
+      '★ والسعر في قائمة المواد — المقارنة تستحيل بفتح محرّرٍ لكل مادة');
+  has(html, 'price,ord,exam_date',
+      '★ والعمود مجلوبٌ مع القائمة — بلا جلبه يبدأ كل حقلٍ بصفرٍ كاذب يُمحى به سعرٌ صحيح');
+
+  // القصّ قبل الحفظ
+  has(html, 'Math.max(0, Math.min(999, parseInt(priceIn.value', 
+      'والقيمة تُقصّ إلى نطاق معقول — حقل الرقم في المتصفح يقبل أي شيء');
+
+  // الوسم والسعر لا يتناقضان
+  has(html, 'free: price === 0', '★ والمجانية تتبع السعر لا تناقضه');
+  has(html, 'price: goFree ? 0 : (Number(sub.price) > 0 ? sub.price : 29)',
+      'وزرّ المجانية يجرّ السعر معه — ورفعُها يعيد سعرًا لا يتركه صفرًا');
+}
+
+/* ============ ١٦٥ · أكواد التفعيل ============ */
+/*
+  ★ العطل الذي بُني هذا لأجله: زرّ «اشترِ المادة» كان طريقًا مسدودًا.
+  يقود إلى /api/pay، و/api/pay يشترط TAP_SECRET_KEY، ولا مفتاح على الخادم
+  ولا حساب تجاري بعد. فالطالب يضغط في اللحظة التي قرّر فيها أن يدفع
+  فيُقال له «الدفع غير مفعَّل بعد على هذا الخادم» — رسالةُ عطلٍ في وجه
+  زبونٍ جاهز. والسعر معروضٌ فوقها، وهذا أسوأ: ثمنٌ بلا باب.
+*/
+describe('١٦٥ · التطبيع والتحقق');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const C = A.codes;
+
+  ok(!!C, 'وحدة الأكواد موجودة في البناء');
+
+  // ★ ما يصل من الطالب لصقٌ لا كتابة: مسافات وشرطات وحروف صغيرة
+  eq(C.norm('amsq-7k4d 9f2h'), 'AMSQ7K4D9F2H', '★ اللصق يُطبَّع: شرطات ومسافات وحالة الحرف');
+  eq(C.norm('  ab-12  '), 'AB12', 'والفراغ المحيط يسقط');
+  eq(C.norm(null), '', 'ولا شيء لا يكسر شيئًا');
+
+  eq(C.pretty('ABCDEFGHJK'), 'ABCD-EFGH-JK', 'والعرض بأربعات — العين تقرؤها');
+  eq(C.pretty(''), '', 'وفارغٌ يبقى فارغًا لا شرطة وحيدة');
+
+  ok(C.looksLike('ABCD-EF'), 'ستة محارف تكفي للمحاولة');
+  ok(!C.looksLike('AB-C'), '★ وأقلّ منها لا يُرسَل — رحلة شبكة نعرف جوابها');
+
+  // كل رفضٍ له نصّه
+  ['not_found','disabled','expired','used_up','already_used_by_you',
+   'already_owned','already_free'].forEach(r => {
+    ok(C.WHY[r] && C.WHY[r].length > 10, '★ سببٌ مسمّى لـ' + r + ' لا «رمز غير صحيح»');
+  });
+  ok(C.why('شيء لم نتوقعه').length > 5, 'وسببٌ لم نتوقعه له نصٌّ أيضًا');
+}
+
+describe('١٦٥ب · طريق الطلب');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const C = A.codes;
+
+  // بلا رقم في الإعدادات لا زرّ: رابط واتساب بلا رقم يفتح لا شيء
+  A.store.set('pack', { subjects: [], settings: {} });
+  eq(C.askUrl({ name:'س', price:29 }), '', '★ بلا رقم مشرف لا رابط — زرٌّ يفتح لا شيء أسوأ من غيابه');
+
+  A.store.set('pack', { subjects: [], settings: { whatsapp:'+966 58 080 5553' } });
+  const u = C.askUrl({ name:'علم السموم', price:29 });
+  ok(u.indexOf('https://wa.me/966580805553') === 0, 'والرقم يُنظَّف من الفراغ والزائد');
+  ok(decodeURIComponent(u).indexOf('علم السموم') > -1, 'والرسالة تحمل اسم المادة');
+  /* صار السعر يُكتب بالعربية كما يُعرض في الشاشة — «٢٩ ريال» لا «29»،
+     كي يقرأ المشرف الرسالة بالصيغة نفسها التي رآها الطالب. */
+  ok(decodeURIComponent(u).indexOf('٢٩ ريال') > -1, 'وثمنها — فلا يسأل المشرف عنه');
+
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  /* صار زرّين: «حوّلتُ» لمن دفع، و«عندي سؤال» لمن لم يدفع بعد */
+  has(html, 'حوّلتُ — أرسل الإيصال للمشرف', 'وللبطاقة زرّ إبلاغٍ بعد التحويل');
+  has(html, 'عندي سؤال قبل التحويل', 'وزرّ سؤالٍ قبله');
+  has(html, "!C.isApp() && s.wa", '★ ولا يظهر داخل التطبيق — قاعدة متجر آبل تمنع قناة دفع خارجية');
+  has(html, 'عندك رمز تفعيل؟', 'وصندوق الرمز في بطاقة القفل');
+  has(html, 'QBANK.gate.refresh().then', '★ والاستحقاق يُحدَّث قبل إعادة الرسم — وإلا بقي القفل بعد نجاح');
+  has(html, 'r.status === 503', '★ وبوابةٌ غير مفعَّلة تُخفي زرّها بدل أن تدعو إلى ضغطةٍ لن تنجح');
+}
+
+describe('١٦٥د · الفشل يقول سببه');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const C = A.codes;
+
+  /*
+    ★ «تعذّر التوليد» كانت كل ما يراه المشرف حين سقطت الدالة في القاعدة.
+    فأمضى وقته يعيد تنفيذ ملف SQL نجح تنفيذه أصلًا. والقاعدة كانت قد قالت
+    السبب بنصّه — وإخفاؤه اختيارُنا لا نقصُ معلومة.
+  */
+  has(C.failText({ ok:false, status:404,
+        data:{ code:'PGRST202', message:'Could not find the function' } }),
+      'CODES.sql', '★ دالة مفقودة تُقال بعلاجها — نفّذ الملف، لا «حاول مرة أخرى»');
+  has(C.failText({ ok:false, status:400, data:{ message:'permission denied for table codes' } }),
+      'permission denied', 'ونصّ القاعدة يصل كما هو حين لا نعرفه');
+  has(C.failText({ ok:false, offline:true }), 'لا اتصال', 'وانقطاعُ الشبكة يُقال انقطاعًا');
+  eq(C.failText({ ok:true, data:{ ok:false, reason:'forbidden' } }),
+     C.ADMIN_WHY.forbidden, 'وسببٌ نعرفه له نصّه العربي');
+  has(C.failText({ ok:false, status:500, data:null }), '500',
+      'وحتى المجهول يحمل رقمه — رقمٌ يُبحث به خيرٌ من صمت');
+}
+
+describe('١٦٥ج · حرّاس القاعدة');
+{
+  const sql = require('fs').readFileSync(__dirname + '/../db/CODES.sql', 'utf8');
+
+  has(sql, 'for update', '★ القفل قبل قراءة العدّاد — رمزٌ واحد في مجموعة واتساب يُضغط مرتين معًا');
+  has(sql, 'code_uses_once on qbank.code_uses (code_id, user_id)',
+      '★ وفهرسٌ فريد يمنع طالبًا من استهلاك رمزٍ جماعي وحده');
+  has(sql, "'ABCDEFGHJKMNPQRSTUVWXYZ23456789'",
+      '★ وأبجدية بلا 0 O I 1 L — الالتباس عيبُ تصميم لا خطأ مستخدم');
+  /*
+    ★ عطلٌ وقع فعلًا: كتبتُ gen_random_bytes، وهي من pgcrypto، وSupabase
+    تضعها في مخطط extensions. ودوالُّنا تُثبّت search_path = qbank, public
+    حمايةً من اختطاف المسار — فلا تراها، فتسقط الدالة كلها، ويقرأ المشرف
+    «تعذّر التوليد» بلا سبب. حارسٌ صحيح كسر ميزةً اتّكأت على جارٍ خارج سوره.
+  */
+  /* الاسم مذكور في الشرح عمدًا — المفحوص هو النداء لا ذكرُ الاسم */
+  ok(sql.indexOf('gen_random_bytes(') === -1,
+     '★ ولا نداء لـpgcrypto — امتدادٌ خارج search_path يُسقط الدالة');
+  has(sql, 'gen_random_uuid()::text', 'والعشوائية من نواة بوستجرس نفسها');
+  has(sql, "notify pgrst, 'reload schema'",
+      '★ وذاكرة PostgREST تُوقَظ — دالةٌ أُنشئت ولا تُرى من الويب تبدو كأن الملف لم يعمل');
+  has(sql, 'qbank.gen_code(10)                     as رمز_تجريبي',
+      '★ والتحقّق يُولّد رمزًا فعلًا — «أُنشئت» لا تعني «تعمل»');
+  has(sql, 'enable row level security', 'والجدولان محميّان');
+  has(sql, "reason','already_owned'",
+      '★ ولا يُستهلك رمزٌ على مادة يملكها الطالب — خسارةٌ لا يفهم سببها');
+  ok(sql.indexOf('create policy codes_') === -1,
+     '★ ولا سياسة قراءة لأحد — جدولٌ يُقرأ يعني سحب كل الأكواد بنداء واحد');
+  has(sql, 'qbank.is_admin()', 'والتوليد للمشرف وحده');
+}
+
+/* ============ ١٦٦ · من فعّل الرمز ============ */
+/*
+  ★ «استُعمل ٣ من ٥» رقمٌ لا يُجيب عن السؤال المطروح فعلًا.
+  طالبٌ يقول «دفعتُ ولم تُفتح لي المادة»، فيحتاج المشرف أن يرى أن رمزه
+  فُعِّل، ومن أي حساب، ومتى — وإلا فلا سبيل إلى الفصل بين من دفع ولم
+  يُفعّل، ومن فعّل بحسابٍ آخر ونسي، ومن أعطى رمزه لغيره.
+*/
+describe('١٦٦ · حسابات التفعيل');
+{
+  const sql = require('fs').readFileSync(__dirname + '/../db/CODES.sql', 'utf8');
+
+  has(sql, "'uses', coalesce((", '★ كل رمز يحمل معه من فعّله');
+  has(sql, "'email', au.email", 'والبريد — به يبحث الطالب عن نفسه');
+  has(sql, "'used_at', u.used_at", 'ووقت التفعيل');
+  has(sql, 'if not qbank.is_admin() then return', '★ ولا تُعرض هذه الحسابات لغير المشرف');
+  has(sql, "when 'unused' then used_count = 0 and active", 'ومرشّح «لم يُستعمل» في الخادم');
+  has(sql, "when 'used'   then used_count > 0", 'ومرشّح «مُفعَّل»');
+  has(sql, 'admin_codes_summary', 'وموجزٌ يُجيب «كم بقي أبيعه؟» بلا عدٍّ بالعين');
+
+  /*
+    ★ إضافة وسيطٍ بقيمة افتراضية لا تستبدل الدالة القديمة بل تُنشئ ثانيةً
+    بجوارها، فيردّ PostgREST «could not choose the best candidate function»
+    على كل نداء — ترقيةٌ تكسر ما كان يعمل.
+  */
+  has(sql, 'drop function if exists qbank.admin_codes(int, text);',
+      '★ والتوقيع القديم يُحذف — نسختان تعنيان فشل كل نداء');
+  has(sql, 'grant execute on function qbank.admin_codes(int, text, text)',
+      'والصلاحية على التوقيع الجديد');
+}
+
+describe('١٦٦ب · القائمة تعرضهم');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+
+  has(html, "['unused','لم يُستعمل']", 'مرشّح «لم يُستعمل» في الشاشة');
+  has(html, "['used','مُفعَّل']", 'ومرشّح «مُفعَّل»');
+  has(html, 'codeuse__e', '★ والبريد تحت رمزه — لا جدولٌ ثانٍ يُطابَق معه');
+  has(html, 'admin_codes_summary', 'والموجز يُجلب');
+  has(html, 'لا رمز غير مستعمل — ولّد دفعة جديدة',
+      '★ وفراغُ كل مرشّح يُقال بلغته — «لا أكواد» جوابٌ خاطئ لمرشّحٍ فارغ');
+  has(html, 'paintSummary(); draw();',
+      'والقائمة تتبع التوليد فورًا — لا تحديث صفحة لرؤية ما وُلّد قبل ثانية');
+  has(html, '.codeuse{', 'ولها شكلها في التنسيق');
+
+  /*
+    ★ عطلٌ رأيتُه بعيني قبل التسليم: البطاقة تُبنى ثم تُدرَج في تبويبها،
+    فكانت منفصلةً عن المستند لحظةَ النداء، وحارس isConnected يُلغي الرسم —
+    فيبقى الموجز فارغًا أبدًا. حارسٌ صحيح في موضعٍ خاطئ يُفرغ الشاشة.
+  */
+  ok(html.indexOf('if (!sum.isConnected) return;') === -1,
+     '★ ولا حارس اتصالٍ يمنع أول رسم — البطاقة تُدرَج بعد بنائها');
+  has(html, 'if (mine !== seq || !alive()) return;',
+      '★ والأحدث وحده يرسم — ردٌّ بطيء لمرشّحٍ قديم لا يدهس ما بعده');
+}
+
+/* ============ ١٦٧ · عمولة الرافع ============ */
+/*
+  ★ الرقمان اللذان يجب ألّا يُخلطا:
+  نصيب الرافع ٢٠٪ من سعر البيع، وصافي ربح المنصة ٤٠٪ من السعر — فنصيبه
+  نصفُ صافي الربح. والجملتان صحيحتان، لكن «٥٠٪» وحدها تجعل الرافع يحسب
+  نصفَ ما دفعه الطالب فيطالب به بعد شهر، ولا يُحسم الخلاف لأن كلًّا يقرأ
+  الجملة بمعنى. فيُعرض الرقمان معًا ومعهما نصيبه ريالًا صريحًا.
+*/
+describe('١٦٧ · حساب النصيب');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const E = A.earn;
+
+  ok(!!E, 'وحدة الأرباح موجودة');
+  eq(E.shareOf(29, 20), 580, 'نصيب الرافع من مادة بـ٢٩ ريالًا = ٥.٨٠ ريال');
+  eq(E.shareOf(0, 20), 0, 'ومادة بلا ثمن لا نصيب فيها');
+  eq(E.shareOf(-5, 20), 0, '★ وسعرٌ سالب لا يُنتج دَينًا على الرافع');
+
+  const d = { share_pct:20, net_pct:40, of_net_pct:50 };
+  const t = E.terms(d);
+  has(t, '٥٠', '★ نسبة صافي الربح معروضة — وهي الرقم الذي يُغري');
+  has(t, '٢٠', '★ ونسبة سعر البيع معها — وهي الرقم الذي يمنع الخلاف');
+  has(t, 'صافي الربح', 'ولكلٍّ اسمه فلا يُقرأ أحدهما مكان الآخر');
+  has(t, 'سعر البيع', 'صراحةً');
+}
+
+describe('١٦٧ب · حرّاس القاعدة');
+{
+  const sql = require('fs').readFileSync(__dirname + '/../db/PAYOUT.sql', 'utf8');
+
+  /*
+    ★ قادحٌ على entitlements لا نداءٌ داخل كل دالة دفع.
+    المال يصل من طريقين اليوم وسيأتي ثالث، وحقنُ نداءٍ في كلٍّ منها يجعل
+    إعادةَ تنفيذ ملفٍ قديم تمحوه بصمت — فيبيع الرافع ولا يُحتسب له شيء.
+  */
+  has(sql, 'after insert on qbank.entitlements',
+      '★ القيد من القادح — الطرق كلها تمرّ بصفٍّ واحد');
+  /* صارت ثلاثة مصادر بإضافة 'manual' (طلب الشراء داخل المنصة) — والمنح
+     الإداري 'admin' وفتحُ الرافع 'upload' يبقيان خارجها */
+  has(sql, "new.source not in ('web', 'code', 'manual')",
+      'والمنح الإداري وفتحُ الرافع لمادته ليسا بيعًا');
+  has(sql, 'if sub.created_by = new.user_id then return new; end if;',
+      '★ ولا يربح أحدٌ من نفسه');
+  has(sql, 'entitlement_id uuid unique',
+      '★ وقيدٌ واحد لكل استحقاق — إعادةُ التسوية لا تدفع مرتين');
+  has(sql, 'on conflict (entitlement_id) do nothing',
+      'والتكرار لا يُسقط العملية — إسقاطُها يعني طالبًا دفع ولم تُفتح له');
+  has(sql, 'share_pct',
+      '★ والنسبة تُحفظ وقتها — تغييرُها لاحقًا لا يُعيد كتابة كشف حساب');
+
+  // التحويلات
+  has(sql, 'select earn_balance into bal from qbank.profiles where id = uid for update',
+      '★ وقفلٌ على الرصيد — طلبان في لحظة يسحبان المبلغ مرتين');
+  has(sql, 'update qbank.profiles set earn_balance = earn_balance - p_amount',
+      'والخصم عند الطلب لا عند الدفع');
+  has(sql, "update qbank.profiles set earn_balance = earn_balance + p.amount_halalas",
+      '★ والرفض يُعيد المال كاملًا');
+  has(sql, "return jsonb_build_object('ok', false, 'reason','already_settled'",
+      'وطلبٌ سُوّي لا يُسوّى مرتين');
+
+  // الآيبان
+  ok(sql.indexOf('create policy payouts_') === -1,
+     '★ ولا سياسة قراءة على جدول التحويلات — فيه آيبانات الناس');
+  has(sql, 'if not qbank.is_admin() then return', 'والقراءة عبر دالةٍ تسأل عن المشرف');
+}
+
+describe('١٦٧ج · الشاشات');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+
+  has(html, 'أرباح موادي', 'بطاقة الأرباح في المحفظة');
+  has(html, 'رصيدك القابل للتحويل', 'والرصيد معنون');
+  has(html, 'اطلب تحويل رصيدك', 'وطلب التحويل منها');
+  has(html, 'الآيبان أو رقم STC Pay', 'وطريقتان للتحويل');
+  has(html, 'مادتك قد تُدرّ عليك دخلًا',
+      '★ والوعد في أول شاشة الرفع — وعدٌ قبل العمل لا مفاجأةٌ بعده');
+  has(html, "wizard.step === 1 && QBANK.views.earnPromise",
+      'وفي الخطوة الأولى وحدها');
+  has(html, 'أرباح الرافعين والتحويلات', 'ولوحة الطلبات عند المشرف');
+  has(html, 'نصيب الرافع ٪ من سعر البيع',
+      '★ والنسبة في الإعدادات باسمٍ يقول من أي شيء هي');
+  has(html, 'صافي ربحك ٪ من سعر البيع (للعرض فقط)',
+      '★ والأخرى مكتوبٌ عليها أنها للعرض — الخلط بينهما يدفع ضعف المنوي');
+  has(html, 'بقي ', '★ والحدّ الأدنى يُقال بالباقي — «كم اقتربتُ» لا «كم الحدّ»');
+  has(html, '.earnbal__n{', 'وللرصيد حجمه في التنسيق');
+}
+
+/* ============ ١٦٨ · السعر يختلف من مادة إلى مادة ============ */
+/*
+  ★ عطلان اكتشفهما سؤالُ علي «السعر متغيّر من مادة إلى مادة»:
+
+  الأول: تعليمات الدفع نصٌّ واحد في الإعدادات، فلو كتب فيها «حوّل ٢٩
+  ريالًا» لقرأها طالبُ مادةٍ ثمنها خمسون، فحوّل تسعةً وعشرين وانتظر رمزًا
+  لن يأتي — ثم اتّهم المنصة لا النص.
+
+  والثاني أسوأ: السعر كان مكتوبًا في زرّ الشراء وحده، وذلك الزرّ يُخفي
+  نفسه حين تكون البوابة غير مفعَّلة — فتبقى بطاقةٌ تقول «مادة مدفوعة» ولا
+  تقول بكم، ويُطلب من الطالب أن يُحوّل مبلغًا لا يعرفه.
+*/
+describe('١٦٨ · نائبات نصّ الدفع');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const C = A.codes;
+
+  A.store.set('pack', { subjects: [], settings: {
+    whatsapp:'966500000000',
+    pay_note:'حوّل {السعر} وأرسل الإيصال مع اسم المادة «{المادة}».' } });
+
+  const n29 = C.note({ name:'علم السموم', price:29 });
+  has(n29, '٢٩ ريال', '★ {السعر} تصير سعر المادة المفتوحة');
+  has(n29, 'علم السموم', 'و{المادة} تصير اسمها');
+  ok(n29.indexOf('{') === -1, 'ولا يبقى قوسٌ في النصّ المعروض');
+
+  const n50 = C.note({ name:'الأنسجة', price:50 });
+  has(n50, '٥٠ ريال', '★ والنصّ نفسه يصحّ في مادةٍ أخرى بسعرٍ آخر');
+  has(n50, 'الأنسجة', 'وباسمها هي');
+
+  // مادة بلا سعر: لا نكتب «صفر ريال» بل نقول ما يُفهم
+  has(C.note({ name:'س', price:0 }), 'المبلغ المطلوب',
+      '★ ومادة بلا سعر لا تُنتج «٠ ريال» — نصٌّ يقول ما لا نعرفه');
+
+  eq(C.priceText({ price:29 }), '٢٩ ريال', 'والسعر يُقرأ بالعربية');
+  eq(C.priceText({ price:0 }), '', 'ولا سعر لمن لا سعر له');
+
+  // بلا نصّ في الإعدادات لا شيء
+  A.store.set('pack', { subjects: [], settings: {} });
+  eq(C.note({ name:'س', price:29 }), '', 'وحقلٌ فارغ لا يعرض سطرًا فارغًا');
+}
+
+describe('١٦٨ب · السعر لا يختفي مع الزرّ');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  A.store.set('pack', { subjects: [], settings: { whatsapp:'966500000000' } });
+  const card = A.gate.paywallCard({ id:'s1', name:'علم السموم', price:29 });
+
+  has(card.textContent, 'سعرها ٢٩ ريال',
+      '★ السعر سطرٌ قائم بذاته — لا نصٌّ داخل زرٍّ يُخفي نفسه');
+  const p = card.querySelector('.paywall__price');
+  ok(!!p, 'وله صنفه كي يُميَّز بالحجم');
+
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, 'كيف يدفع لك الطالب؟', '★ والتسمية تسأل سؤالًا يُفهم لا تصف حقلًا');
+  has(html, 'وتُبدَّلان بقيمتَي المادة التي يفتحها', 'والنائبتان مشروحتان فوق الحقل');
+  has(html, 'placeholder: f.ph || null',
+      '★ والمثال داخل الحقل — حقلٌ فارغ يترك المشرف يخمّن الصيغة');
+}
+
+/* ============ ١٦٩ · رسالة ما بعد التحويل ============ */
+/*
+  ★ زرٌّ واحد كان لا يكفي.
+  «اطلب رمزًا» رسالةٌ صالحة لمن لم يدفع بعد، ويرسلها أيضًا من دفع — فيقرأ
+  المشرف نصًّا لا يدري من أي الحالتين هو، فيسأل «هل حوّلتَ؟». وهو سؤالٌ
+  كان يجب ألّا يُسأل: الشاشة تعرف المادة وسعرها وصاحب الحساب، وتستطيع أن
+  تقولها كلها في سطرين.
+*/
+describe('١٦٩ · ما تحمله الرسالة');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const C = A.codes;
+
+  A.store.set('session', { user:{ id:'3f9a2c11-0000-4000-8000-000000000000',
+    email:'sara@example.com' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  A.store.set('profile', { name:'سارة العتيبي' });
+  A.store.set('pack', { subjects: [], settings: { whatsapp:'966580805553' } });
+
+  const sub = { id:'s1', name:'علم السموم', price:29 };
+  const t = C.paidText(sub);
+
+  has(t, 'حوّلتُ ٢٩ ريال', '★ المبلغ في الرسالة — بلا مبلغٍ لا يُطابَق تحويل');
+  has(t, 'علم السموم', 'واسم المادة — بلا مادةٍ لا يُعرف ماذا يُفتح');
+  has(t, 'سارة العتيبي', 'واسم الطالب');
+  has(t, 'sara@example.com', '★ وحسابه — وهو ما يُفتح له لا رقم واتسابه');
+  has(t, '3F9A2C', '★ ورقمٌ مرجعي — البريد يُكتب بحرفٍ ناقص، والمرجع لا');
+  has(t, 'وسأرفق صورة الإيصال',
+      '★ «سأرفق» لا «أرفقتُ»: واتساب لا يقبل صورة مع نصٍّ من رابط، ' +
+      'ووعدٌ بما لم يحدث يجعل المشرف ينتظر صورةً لن تصل');
+
+  // الرابط سليم ويحمل النصّ
+  const u = C.paidUrl(sub);
+  ok(u.indexOf('https://wa.me/966580805553?text=') === 0, 'والرابط إلى رقم المشرف');
+  has(decodeURIComponent(u), 'علم السموم', 'والنصّ مُهيّأ فيه');
+
+  // رسالة السؤال تبقى مختلفة
+  const a = C.askText(sub);
+  has(a, 'أريد تفعيل', '★ ورسالة ما قبل التحويل تبقى مستقلّة — الحالتان مختلفتان');
+  ok(a.indexOf('حوّلتُ') === -1, 'ولا تدّعي تحويلًا لم يقع');
+
+  // بلا رقم مشرف لا رابط
+  A.store.set('pack', { subjects: [], settings: {} });
+  eq(C.paidUrl(sub), '', 'وبلا رقمٍ في الإعدادات لا رابط');
+}
+
+describe('١٦٩ب · الزرّان في البطاقة');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t',
+    expires_abs: Date.now() + 9e6 });
+  A.store.set('pack', { subjects: [], settings: { whatsapp:'966580805553',
+    pay_note:'حوّل {السعر} على الراجحي SA00.' } });
+  const card = A.gate.paywallCard({ id:'s1', name:'علم السموم', price:29 });
+
+  const links = [].slice.call(card.querySelectorAll('a[href^="https://wa.me"]'));
+  eq(links.length, 2, '★ زرّان: بعد التحويل وقبله');
+  has(links[0].textContent, 'حوّلتُ', 'والأول لمن دفع — هو الأولى بالبروز');
+  ok(links[0].className.indexOf('btn--ghost') === -1, 'وبارزٌ لا ثانوي');
+  has(links[1].textContent, 'سؤال', 'والثاني للسؤال');
+  ok(links[1].className.indexOf('btn--ghost') > -1, 'وثانويّ');
+
+  has(card.textContent, 'أرفق صورة الإيصال',
+      'وسطرٌ يقول للطالب ما يفعله بعد فتح واتساب');
+
+  // ترتيب: التعليمات قبل الأزرار
+  const txt = card.textContent;
+  ok(txt.indexOf('حوّل ٢٩ ريال على الراجحي') < txt.indexOf('حوّلتُ — أرسل'),
+     '★ وتعليمات الدفع قبل الزرّ — تُقرأ ثم يُنقر');
+}
+
+/* ============ ١٧٠ · توثيق الجوال بالواتساب ============ */
+/*
+  ★ لماذا التحقق معكوس.
+  إرسال OTP إلى الطالب يشترط WhatsApp Business API: حسابًا موثَّقًا،
+  وقالبًا معتمدًا، ورقمًا يخرج من تطبيق واتساب العادي فلا يستقبل إيصالًا
+  بعدها — وهو رقم علي نفسه الذي يستقبل عليه اليوم. والعكس يعطي الدليل
+  نفسه: الرمز يصل من رقم الطالب، فيُثبت أنه رقمه.
+*/
+describe('١٧٠ · تطبيع الرقم');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const P = A.phone;
+
+  ok(!!P, 'وحدة الجوال موجودة');
+  eq(P.norm('0501234567'), '+966501234567', 'صيغة ٠٥ تصير دولية');
+  eq(P.norm('501234567'), '+966501234567', 'وبلا صفر أيضًا');
+  eq(P.norm('+966 50 123 4567'), '+966501234567', 'والفراغ والزائد يسقطان');
+  eq(P.norm('00966501234567'), '+966501234567', 'و٠٠ تُستبدل');
+  eq(P.norm('٠٥٠١٢٣٤٥٦٧'), '+966501234567',
+     '★ والأرقام العربية تُحوَّل — لوحةٌ عربية كانت تُنتج رفضًا لرقمٍ صحيح');
+  eq(P.norm('123'), '', 'وقصيرٌ ليس رقمًا');
+  eq(P.norm(''), '', 'وفارغٌ فارغ');
+  has(P.pretty('0501234567'), '+966 50 123 4567', 'والعرض مقروء');
+
+  // الرسالة
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t',
+    expires_abs: Date.now() + 9e6 });
+  const t = P.text('K7M2XP');
+  ok(t.indexOf('K7M2XP') < 40,
+     '★ الرمز في أول الرسالة — المشرف يلتقطه بالعين بين عشرات الرسائل');
+  has(t, 'a@b.c', 'ومعه الحساب المراد توثيقه');
+
+  A.store.set('pack', { subjects: [], settings: { whatsapp:'966580805553' } });
+  ok(P.url('K7M2XP').indexOf('https://wa.me/966580805553') === 0, 'والرابط إلى المشرف');
+  A.store.set('pack', { subjects: [], settings: {} });
+  eq(P.url('K7M2XP'), '', 'وبلا رقمٍ في الإعدادات لا رابط');
+}
+
+describe('١٧٠ب · حرّاس القاعدة');
+{
+  const sql = require('fs').readFileSync(__dirname + '/../db/PHONE.sql', 'utf8');
+
+  /*
+    ★ القيد الذي يجعل التوثيق توثيقًا.
+    لو صحّ لعشرة حسابات أن تتوثّق برقمٍ واحد لما أثبت التوثيق شيئًا،
+    ولصار حقلًا مزخرفًا في ملفٍ شخصي.
+  */
+  has(sql, 'profiles_phone_unique', '★ رقمٌ موثَّق لا يتكرّر بين الحسابات');
+  has(sql, 'on qbank.profiles (phone) where phone_verified',
+      'والقيد على الموثَّق وحده — غير الموثَّق يتكرّر بلا ضرر');
+  has(sql, 'phone_claims_one_pending',
+      'وطلبٌ معلّق واحد لكل حساب — عشرة طلبات تُغرق اللوحة بلا علمٍ زائد');
+
+  has(sql, "translate(s, '٠١٢٣٤٥٦٧٨٩", '★ والأرقام العربية تُحوَّل في القاعدة أيضًا');
+  ok(sql.indexOf('gen_random_bytes(') === -1,
+     '★ ولا نداء لـpgcrypto — امتدادٌ خارج search_path يُسقط الدالة');
+  has(sql, "expires_at > now()", 'والطلب ينتهي — رمزٌ أبديّ ليس رمزًا');
+
+  // السباق عند التوثيق
+  has(sql, "note = 'الرقم موثَّق لحسابٍ آخر'",
+      '★ ويُفحص التفرّد لحظةَ التوثيق لا لحظةَ فتح اللوحة');
+  has(sql, "reason','already_settled'", 'وطلبٌ سُوّي لا يُسوّى مرتين');
+  ok(sql.indexOf('create policy phone_claims_') === -1,
+     '★ ولا سياسة قراءة — الطلبات تحمل أرقام الناس');
+  has(sql, 'if not qbank.is_admin() then return', 'والتوثيق للمشرف وحده');
+}
+
+describe('١٧٠ج · الشاشتان');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+
+  has(html, 'توثيق رقم الجوال', 'بطاقة الطالب');
+  has(html, 'أرسل الرمز على واتساب', 'وزرّ الإرسال');
+  has(html, 'يجب أن تُرسله من الرقم نفسه',
+      '★ والشرط مكتوب — الإرسال من رقمٍ آخر يُبطل الدليل كلَّه');
+  has(html, 'سيُوثَّق: ', '★ ومعاينةٌ حيّة — لا يُكتشف خطأ الرقم بعد ساعة انتظار');
+  has(html, 'رقمي خطأ — أدخله من جديد', 'وطريقُ رجوعٍ لمن أخطأ');
+
+  has(html, 'توثيق أرقام الجوال', 'ولوحة المشرف');
+  has(html, 'وتأكّد أنها وصلتك من الرقم المكتوب هنا نفسه',
+      '★ والمشرف يُذكَّر بما يفحصه — التوثيق بلا مطابقةِ المُرسِل ختمٌ فارغ');
+  has(html, 'adminPhoneCard(), box.firstChild',
+      '★ وطلبات التوثيق فوق الجميع — صاحبها ينظر إلى شاشته الآن');
+  has(html, '.phcode span{', 'وللرمز حجمه وتباعده في التنسيق');
+}
+
+/* ============ ١٧١ · طلب الشراء داخل المنصة ============ */
+/*
+  ★ البيعة بخطوتين بدل خمس.
+  كان: يحوّل ← يراسل ← يولّد المشرف رمزًا ← يرسله ← يُدخله الطالب. ورمزٌ
+  في محادثة واتساب يضيع ويُرسل للشخص الخطأ ويُكتب بحرفٍ ناقص. والسبب أن
+  المنصة لم تكن تعرف أن الطالب دفع. الآن «حوّلتُ» يُسجّل طلبًا قبل أن
+  يفتح واتساب، والمشرف يضغط «افتح له».
+*/
+describe('١٧١ · الطلب يُسجَّل ويُعرض');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t',
+    expires_abs: Date.now() + 9e6 });
+  A.store.set('pack', { subjects: [], settings: { whatsapp:'966580805553',
+    review_eta:'عادةً خلال ٣٠ دقيقة' } });
+  const O = A.orders;
+  ok(!!O, 'وحدة الطلبات موجودة');
+
+  // بلا طلب: زرّ «حوّلتُ»
+  A.store.set(O.KEY, []);
+  A.api.rpc = () => Promise.resolve({ ok:true, data:[] });
+  let card = A.gate.paywallCard({ id:'s1', name:'علم السموم', price:29 });
+  has(card.textContent, 'حوّلتُ — أرسل الإيصال', 'قبل الطلب: الزرّ الأصلي');
+  ok(card.textContent.indexOf('قيد المراجعة') === -1, 'ولا حالَ انتظار');
+
+  // بطلب معلّق: حال الانتظار لا الأزرار نفسها
+  A.store.set(O.KEY, [{ id:'r1', subject_id:'s1', status:'pending', at: new Date().toISOString() }]);
+  card = A.gate.paywallCard({ id:'s1', name:'علم السموم', price:29 });
+  has(card.textContent, 'طلبك قيد المراجعة', '★ بعد الطلب: «قيد المراجعة» — لا الزرّ نفسه فيُضغط ثانيةً');
+  has(card.textContent, 'عادةً خلال ٣٠ دقيقة', '★ والمدة المعلنة — الانتظار المعلوم يُحتمل');
+  has(card.textContent, 'أرسل الإيصال على واتساب', 'وزرّ الإيصال باقٍ لمن لم يرسله');
+  ok(card.textContent.indexOf('حوّلتُ — أرسل الإيصال') === -1, 'ولا يظهر زرّ الطلب من جديد');
+
+  // طلبٌ لمادة أخرى لا يُخفي زرّ هذه
+  card = A.gate.paywallCard({ id:'s2', name:'الأنسجة', price:50 });
+  has(card.textContent, 'حوّلتُ — أرسل الإيصال', 'والطلب لمادةٍ لا يُغلق مادةً أخرى');
+
+  eq(O.pendingFor('s1').id, 'r1', 'وpendingFor تجد الطلب');
+  eq(O.pendingFor('s9'), null, 'ولا تخترع طلبًا');
+
+  // create يُثبت محليًا فورًا — الطالب عائدٌ من واتساب بعد ثوانٍ
+  A.api.rpc = (n) => n === 'request_purchase'
+    ? Promise.resolve({ ok:true, data:{ ok:true, id:'r2', amount_halalas:5000 } })
+    : Promise.resolve({ ok:true, data:[] });
+  pending.push(O.create('s2').then(d => {
+    ok(d && d.ok, 'الطلب أُنشئ');
+    ok(!!O.pendingFor('s2'), '★ ومثبَّت في الجهاز فورًا — قبل أي جلبٍ من القاعدة');
+  }));
+}
+
+describe('١٧١ب · حرّاس القاعدة');
+{
+  const sql = require('fs').readFileSync(__dirname + '/../db/ORDERS.sql', 'utf8');
+  has(sql, 'purchase_requests_one_pending', '★ طلبٌ معلّق واحد للمادة — الضغطة الثانية من القلق لا من نيّة شراءٍ ثانٍ');
+  has(sql, "'existing', true", 'والطلب القائم يُعاد هو لا خطأ');
+  has(sql, "reason','already_owned'", 'ومن يملك المادة لا يطلبها');
+  has(sql, "'subject', 'manual',", '★ والفتح اليدوي بمصدره — يُعرف في التقارير كم بيع عبر كل باب');
+  has(sql, "not in ('web', 'code', 'manual')", '★ وقادح العمولة يعدّه بيعةً — دُفع ثمنها فعلًا');
+  has(sql, "'phone_verified', coalesce(p.phone_verified, false)",
+      '★ ومع كل طلب: هل الرقم موثَّق — مطابقةُ الإيصال يقينٌ أو ظنّ');
+  has(sql, "reason','already_settled'", 'وطلبٌ سُوّي لا يُسوّى مرتين');
+  has(sql, 'oldest_purchase', '★ و«منذ كم ينتظر أقدمهم» — أهمّ من كم ينتظرون');
+  has(sql, 'review_eta', 'والمدة المعلنة تصل الطالب');
+  ok(sql.indexOf('create policy purchase_requests_') === -1, 'ولا سياسة قراءة على الطلبات');
+
+  const payout = require('fs').readFileSync(__dirname + '/../db/PAYOUT.sql', 'utf8');
+  has(payout, "not in ('web', 'code', 'manual')",
+      '★ وPAYOUT.sql متّفق — أيُّهما نُفِّذ آخرًا لا يُرجع الآخر');
+}
+
+describe('١٧١ج · صندوق الوارد');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "if (QBANK.views.inboxPanel) box.appendChild(QBANK.views.inboxPanel());",
+      '★ الصندوق أولَ اللوحة — «ماذا ينتظرني» يسبق «من هنا»');
+  has(html, "['purchases', 'طلب شراء'", 'وطلبات الشراء فيه');
+  has(html, "['phones',    'توثيق جوال'", 'والتوثيقات');
+  has(html, "['payouts',   'تحويل أرباح'", 'والتحويلات');
+  has(html, "['drafts',    'مسوّدة'", 'والمسوّدات');
+  has(html, "['reports',   'بلاغ'", 'والبلاغات');
+  has(html, 'أقدم طلب شراء ينتظر', 'وعمرُ أقدم طلب');
+  has(html, 'طلبات الشراء', 'ولوحة الطلبات');
+  has(html, 'افتح له', 'وزرّ الفتح');
+  has(html, 'متى تفتح الطلبات؟', 'والمدة المعلنة في الإعدادات');
+  has(html, '.inbox__i.is-on{', 'والمُنتظَر يُلوَّن وحده');
+}
+
+/* ============ ١٧٢ · الأسئلة من الصور ============ */
+/*
+  ★ أكبر باب كان مغلقًا.
+  أسئلة الدفعات تعيش في لقطات شاشة وتصوير أوراق — وهذا أكثر ما يملكه
+  الطلاب، وكان أول ما نردّه بـ«صدّرها نصًّا». والنموذج يقرأ الصورة أصلًا؛
+  الناقص كان أن نمرّرها إليه.
+*/
+describe('١٧٢ · الخادم يعرف الصورة ويمرّرها');
+{
+  const X = require('../api/_lib/extract.js');
+  eq(X.imageMime('scan.JPG'), 'image/jpeg', 'الامتداد يقول إنها صورة — بأي حالة حرف');
+  eq(X.imageMime('a.png'), 'image/png', 'وpng');
+  eq(X.imageMime('a.webp'), 'image/webp', 'وwebp');
+  eq(X.imageMime('a.pdf'), null, 'وPDF ليس صورة هنا — يُقرأ نصًّا أولًا');
+  ok(X.isImage('IMG_2031.heic'), '★ وheic من آيفون مقبول — لا يُردّ لأن المتصفح لا يعرفه');
+
+  const P = require('../api/_lib/provider.js');
+  ok(typeof P.withMedia === 'function', 'ودالة الوسائط موجودة');
+  const g = P.withMedia('اقرأ', [{ mime:'image/jpeg', base64:'AAAA' }], 'gemini');
+  ok(Array.isArray(g) && g.length === 2, 'Gemini: صورة ونص');
+  ok(g[0].inline_data && g[0].inline_data.mime_type === 'image/jpeg', 'والصورة inline_data');
+  eq(g[1].text, 'اقرأ', 'والنصّ بعدها');
+  const a = P.withMedia('اقرأ', [{ mime:'application/pdf', base64:'AAAA' }], 'anthropic');
+  eq(a[0].type, 'document', '★ Anthropic: الـPDF وثيقةٌ لا صورة — النوعان مختلفان عنده');
+  const a2 = P.withMedia('اقرأ', [{ mime:'image/png', base64:'AAAA' }], 'anthropic');
+  eq(a2[0].type, 'image', 'والصورة صورة');
+  eq(P.withMedia('اقرأ', [], 'anthropic'), 'اقرأ', 'وبلا وسائط يبقى النصّ نصًّا — لا كسر لما كان يعمل');
+}
+
+describe('١٧٢ب · القارئ من الصور');
+{
+  const R = require('../api/_lib/reader.js');
+  ok(typeof R.aiReadMedia === 'function', 'دالة القراءة من الوسائط');
+  has(R.MEDIA_SYS, 'انقل الحروف كما تراها', '★ والتعليمات تقول: انقل لا تُصحّح — القداسة من الصورة أيضًا');
+  has(R.MEDIA_SYS, 'اجمع نصفيه', 'وسؤالٌ مقطوع بين لقطتين يُجمع');
+
+  const calls = [];
+  const fake = async (sys, user, opts) => {
+    calls.push(opts.media.length);
+    return { items:[
+      { q:'What is the first-line drug?', options:['A','B','C'], answer_index:1 },
+      { q:'What is the first-line drug?', options:['A','B','C'], answer_index:1 },   // مكرر
+      { q:'Define shock.', options:null, answer_text:'…' }
+    ] };
+  };
+  pending.push(R.aiReadMedia([{ mime:'image/jpeg', base64:'QUJD' }], fake).then(r => {
+    eq(r.questions.length, 2, 'المكرر يُطوى');
+    ok(r.questions.every(q => q.unverified === true), '★ وكلها «غير موثَّقة» — لا نصَّ نقارن به، فالعين هي التوثيق');
+    ok(r.questions.every(q => q.ocr === true), 'وموسومةٌ بمصدرها كي تُقال بلغتها');
+    eq(r.questions[0].num, 1, 'والترقيم من واحد');
+    eq(calls.length, 1, 'وصورةٌ واحدة نداءٌ واحد');
+  }));
+
+  // الدفعات بالحجم لا بالعدد
+  const big = 'A'.repeat(9 * 1024 * 1024);   // ≈ ٦٫٧ م.ب بعد فكّ base64
+  const calls2 = [];
+  const fake2 = async (sys, user, opts) => { calls2.push(opts.media.length); return { items:[] }; };
+  pending.push(R.aiReadMedia([
+      { mime:'image/jpeg', base64: big }, { mime:'image/jpeg', base64: big },
+      { mime:'image/jpeg', base64:'QUJD' }
+    ], fake2).then(() => {
+    ok(calls2.length >= 2, '★ والصور الثقيلة تُقسَّم دفعات بالحجم — ثلاثٌ من جوّال تفوق عشر لقطات');
+  }));
+
+  // سقوط كل الدفعات يُبلَّغ لا يُبتلع
+  const fail = async () => { throw Object.assign(new Error('نفدت الحصة'), { kind:'quota_day', status:429 }); };
+  pending.push(R.aiReadMedia([{ mime:'image/jpeg', base64:'QUJD' }], fail).then(r => {
+    eq(r.questions.length, 0, 'لا أسئلة');
+    ok(!!r.error && r.error.kind === 'quota_day', '★ والعطل يُحفظ — لا يُقال للطالب إن صورته رديئة والحصة هي التي نفدت');
+  }));
+}
+
+describe('١٧٢ج · الواجهة والمسار');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  const ing  = require('fs').readFileSync(__dirname + '/../api/ingest.js', 'utf8');
+
+  has(html, 'multiple:true', '★ عدة صور معًا — ورقةٌ واحدة تُصوَّر على ثلاث لقطات');
+  has(html, '.png,.jpg,.jpeg,.webp,.gif,.heic', 'والقبول يشمل الصور');
+  has(html, 'const MAX = 1600;', '★ والصورة تُصغَّر في الجهاز — صورة الجوّال ٥ م.ب والخادم يقبل ٤');
+  has(html, "c.toDataURL('image/jpeg', 0.82)", 'وتُصدَّر JPEG مضغوطة');
+  has(html, 'wizardIngestImages', 'ودالة رفع الصور');
+  has(html, 'النسخ من الصور قد يُخطئ في حرفٍ أو رقم',
+      '★ وسطر القراءة يقول ما يعنيه «من صورة» — لا لغة «لم نجد نصّها» التي تصف ملفًا نصّيًا');
+  has(html, 'صور (لقطات شاشة أو تصوير ورقة', '★ والصور أولَ سطر القبول — من رُدّ مرةً لا يقرأ التذييل');
+
+  has(ing, "media.push({ mime:'application/pdf'", '★ وPDF بلا نصٍّ مسحٌ ضوئي — يُرسل ملفًا للنموذج لا يُرفض');
+  has(ing, 'aiReadMedia(media, callAI)', 'ومسار الوسائط في الخادم');
+  has(ing, "kind:'no_ai'", 'وبلا مفتاح ذكاء يُقال ذلك باسمه');
+  has(ing, 'unverified: r.questions.length', '★ وكلّها تُعدّ غير موثَّقة — تُراجَع بالعين');
+  ok(ing.indexOf('صدّره نصًّا (Word أو PDF نصّي) وأعد رفعه') === -1,
+     '★ وجملة الرفض القديمة زالت — لا نطلب ما صرنا نقرؤه');
+}
+
+/* ============ ١٧٣ · إشعارات المتصفح ============ */
+/*
+  ★ لا إشعار واحد كان في المنصة كلها.
+  التكرار المتباعد يحسب «راجع اليوم» ولا أحد يخبر الطالب أن اليوم جاء.
+  Web Push مجاني: المتصفح يحمل الإشعار وخادمنا يوقّعه — لا مزوّد ولا فاتورة.
+*/
+describe('١٧٣ · نصّ الإشعار');
+{
+  const P = require('../api/push.js');
+  ok(typeof P.compose === 'function', 'دالة التأليف');
+
+  eq(P.compose({ due:0, exam:null }), null, '★ من لا شيء عنده لا يُزعَج — إشعارٌ بلا خبر يُعلّم كتم الكل');
+  const a = P.compose({ due:12, exam:null });
+  has(a.title, '١٢ سؤالًا', 'المستحقّ بالرقم — «١٢» تُفتح و«لا تنسَ» تُمسح');
+  eq(a.url, '#/review', 'ويقود إلى المراجعة');
+
+  const b = P.compose({ due:0, exam:{ name:'علم السموم', days:3 } });
+  has(b.title, 'علم السموم', 'واختبارٌ قريب يُسمّى');
+  has(b.title, '٣ أيام', 'وبعد كم يوم');
+
+  const c = P.compose({ due:5, exam:{ name:'علم السموم', days:0 } });
+  has(c.title, 'اليوم', '★ ويوم الاختبار له نبرته');
+  has(c.body, '٥ سؤالًا', 'ومعه المستحقّ');
+
+  eq(P.compose({ due:0, exam:{ name:'س', days:20 } }), null, 'واختبارٌ بعد ٢٠ يومًا ليس خبرَ اليوم');
+  ok(typeof P.riyadhDay() === 'number', 'ورقم اليوم بتوقيت الرياض');
+}
+
+describe('١٧٣ب · القاعدة والخادم والعامل');
+{
+  const sql = require('fs').readFileSync(__dirname + '/../db/PUSH.sql', 'utf8');
+  has(sql, 'endpoint   text not null unique', 'اشتراكٌ واحد لكل جهاز');
+  has(sql, "grant execute on function qbank.push_targets(int) to service_role",
+      '★ والمستهدفون لمفتاح الخدمة وحده — الطالب لا يقرأ اشتراكات غيره');
+  has(sql, "(q.value->>'d')::numeric, 0) <= p_day", '★ والمستحقّ يُحسب في القاعدة من srs — لا يُجلب تقدّم ألف طالب');
+  has(sql, 'and (s.last_sent is null or s.last_sent <', 'ولا إشعارين في يومٍ للجهاز الواحد');
+  has(sql, 'fails >= 3', 'وثلاث سقطات تحذف الاشتراك الميت — لا واحدة');
+  ok(sql.indexOf('create policy push_subs_') === -1, 'ولا سياسة قراءة على المفاتيح');
+
+  const api = require('fs').readFileSync(__dirname + '/../api/push.js', 'utf8');
+  has(api, "given !== secret) return res.status(401)", '★ والإرسال محروس بـCRON_SECRET — لا يُطلقه زائر');
+  has(api, 'TTL: 12 * 3600', 'وإشعار الصباح لا يُسلَّم مساءً');
+  has(api, 'e.statusCode === 404 || e.statusCode === 410', 'واشتراكٌ مات يُعرف من رمزه');
+
+  const vercel = JSON.parse(require('fs').readFileSync(__dirname + '/../vercel.json', 'utf8'));
+  ok(Array.isArray(vercel.crons) && vercel.crons.some(c => c.path === '/api/push'),
+     '★ والجدولة في vercel.json — ٥ UTC = ٨ صباحًا بتوقيت الرياض');
+  const pkg = JSON.parse(require('fs').readFileSync(__dirname + '/../api/package.json', 'utf8'));
+  ok(!!pkg.dependencies['web-push'], 'وحزمة web-push في الخادم — الخادم لا المتصفح');
+
+  const sw = require('fs').readFileSync(__dirname + '/../sw.js', 'utf8');
+  has(sw, "addEventListener('push'", 'والعامل يستقبل الدفع');
+  has(sw, "tag: 'amusq-daily'", '★ وإشعار اليوم يحلّ محلّ الأمس — لا يتراكم');
+  has(sw, "addEventListener('notificationclick'", 'والضغط يفتح الصفحة');
+}
+
+describe('١٧٣ج · الواجهة لا تسأل بلا سبب');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const N = A.notify;
+  ok(!!N, 'الوحدة موجودة');
+  ok(!N.shouldInvite(), 'بلا دخولٍ لا دعوة');
+
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  // jsdom بلا PushManager → غير مدعوم → لا دعوة (والرسالة تشرح آيفون)
+  has(N.WHY.unsupported, 'الشاشة الرئيسية', '★ وآيفون يُقال له كيف — الإشعارات فيه للمثبَّت وحده');
+  has(N.WHY.denied, 'إعدادات الموقع', 'والرفض في المتصفح دائم — يُقال أين يُغيَّر');
+
+  A.store.set('pack', { subjects:[{ id:'s1', name:'علم السموم', exam_date: new Date(Date.now() + 5*86400000).toISOString() }], settings:{} });
+  has(N.reason(), 'علم السموم', '★ والدعوة تقول ما ستذكّره به — لا «فعّل الإشعارات» مجرّدة');
+
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  /* الشريط صار في صفّ التذكيرات (.nudges) تحت بطل اليوم لا في الجسد مباشرة */
+  has(html, "if (QBANK.views.notifyBanner){ const nb = QBANK.views.notifyBanner(); if (nb) nudges.appendChild(nb); }",
+      'والشريط في الرئيسية — داخل صفّ التذكيرات');
+  has(html, "QBANK.views.notifyCard ? QBANK.views.notifyCard() : null", 'والبطاقة في الحساب');
+  has(html, "text:'لاحقًا'", '★ وزرّ «لاحقًا» — الدعوة تُغلق بيده ولا تُلحّ بعد مرتين');
+  has(html, 'push_dismiss', 'ويُعدّ الإغلاق');
+  has(html, "async serverGet(path)", 'وGET إلى الخادم للمفتاح العام');
+}
+
+/* ============ ١٧٤ · الصغائر الثلاث ============ */
+describe('١٧٤ · «جاء في اختبار سابق»');
+{
+  const sql = require('fs').readFileSync(__dirname + '/../db/EXAMYEAR.sql', 'utf8');
+  has(sql, "add column if not exists exam_tag text", 'العمود');
+  has(sql, 'questions_owner_tag', '★ والرافع يوسم أسئلة مادته هو — لا المشرف وحده');
+  has(sql, "'sales', (select count(*) from qbank.entitlements e", '★ و«كم اشترى منه غيري» في صفحة الرافع');
+  has(sql, "e.source in ('web','code','manual')", 'من البيوع الحقيقية لا المنح');
+  has(sql, "'phone_verified', coalesce(p.phone_verified, false)", 'والتوثيق يظهر للناس');
+
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "text:'جاء في ' + q.exam_tag", 'والشارة عند الطالب');
+  has(html, 'exam_tag: v', 'والحقل في محرّر المادة يحفظ');
+  has(html, "if (opts.scope === 'exam_tag')  pool = pool.filter(q => q.exam_tag);",
+      'والاختبار التجريبي يستطيع أن يقتصر عليها');
+  has(html, '.badge--gold{', 'وبلون الهوية لا لون المادة');
+  has(html, 'طالبًا اشتروا منه', 'وعدد المشترين في صفحة الرافع');
+  has(html, '✓ رقم جوال موثَّق', 'وشارة التوثيق');
+}
+
+describe('١٧٤ب · بنك أخطائي');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  A.progress.set ? null : null;
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "value:'wrong', text:'بنك أخطائي", 'خيار الطباعة');
+  has(html, "(wrong[b.id] || 0) - (wrong[a.id] || 0)", '★ والأكثر تعثّرًا أولًا — ما أخطأ فيه ثلاثًا يُقرأ قبل مرة');
+}
+
+/* ============ ١٧٥ · التصميم: الحبر والذهب ============ */
+describe('١٧٥ · «ورقة اليوم» — بطل الرئيسية');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  A.store.set('profile', { uid:'u1', name:'سارة العتيبي' });
+  eq(A.today.firstName(), 'سارة', 'الاسم الأول من الملف المخبَّأ — بلا انتظار الشبكة');
+  eq(A.today.greet(new Date(2026, 8, 3, 9)), 'صباح الخير', 'تحيةٌ بساعة الجهاز');
+  eq(A.today.greet(new Date(2026, 8, 3, 21)), 'سهرة موفّقة', 'ومساءً غيرها — «صباح الخير» ليلًا يفضح أن لا أحد هنا');
+
+  A.store.set('pack', { subjects:[], settings:{} });
+  eq(A.views.todayHero(), null, 'لا مواد → لا بطل (بطاقةٌ فارغة تعليمٌ ناقص)');
+
+  A.store.set('pack', { subjects:[
+    { id:'s1', name:'علم السموم', q_count:100, exam_date: new Date(Date.now() + 5*86400000).toISOString() },
+    { id:'s2', name:'التشريح', q_count:50 } ], settings:{} });
+  A.store.set('my_subjects', ['s1','s2']);
+  let st = A.today.state();
+  eq(st.pct, 0, 'لم يبدأ: صفر إتقان');
+  eq(st.exam.name, 'علم السموم', '★ أقرب اختبارٍ لم يمضِ');
+  let h = A.today.headline(st);
+  has(h.t, 'ابدأ', 'ومن لم يبدأ يُقال له «ابدأ» لا «راجع»');
+  has(h.href, '#/subject/s1', 'والزر يفتح أول مادة');
+
+  let hero = A.views.todayHero();
+  ok(hero.classList.contains('today'), 'البطل يُبنى');
+  eq(hero.querySelectorAll('.omr__b').length, 10, '★ عشر فقاعات ورقة الإجابة — التوقيع');
+  eq(hero.querySelectorAll('.omr__b.is-on').length, 0, 'كلها فارغة لمن لم يبدأ');
+  ok(/، سارة/.test(hero.textContent), 'يحيّيها باسمها');
+  has(hero.textContent, 'علم السموم', 'ويذكر أقرب اختبار');
+  ok(!!hero.querySelector('.btn'), 'وزرٌّ واحد أساسي');
+
+  /* بعد مذاكرة: مستحقّ اليوم يعلو كل شيء */
+  A.progress.markSeen('s1', 'q1'); A.progress.markSeen('s1', 'q2');
+  A.progress.review('s1', 'q1', false, new Date(Date.now() - 3*86400000));
+  st = A.today.state();
+  ok(st.due >= 1, 'سؤالٌ مستحقّ');
+  h = A.today.headline(st);
+  eq(h.href, '#/review', '★ المستحقّ يقود إلى «راجع اليوم»');
+  has(h.t, 'تنتظر مراجعتك', 'بعددٍ لا بشعار');
+
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "const hero = QBANK.views.todayHero ? QBANK.views.todayHero() : null;", 'البطل أول الرئيسية');
+  has(html, "if (!hero && QBANK.views.reviewCard) {", 'وبطاقة المراجعة القديمة لمن لا بطل له فقط');
+  has(html, "class:'nudges'", '★ والشرائط الثلاثة في صفٍّ واحد تحته لا كومة');
+  has(html, '.page__head::after{', 'وشرطة ذهبية تحت كل عنوان صفحة');
+  has(html, "if (hero) pg.classList.add('page--hero');", 'وفي الرئيسية البطل هو الرأس — العنوان يُخفى بصريًّا لا يُحذف');
+  no(html, '.today::before{', 'بلا زخرفة زوايا — الفقاعات وحدها التوقيع');
+  has(html, '[style*="--acc"] .btn', '★ الزر الذهبي يعود إلى لون المادة حيث تصبغ سياقها');
+}
+
+describe('١٧٥ب · لوحة الطالب والمشرف');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, ".pf-hero{\n  display:flex; align-items:center; gap:var(--s5);\n  background:var(--today-bg);", '★ بطل الملف بلوحة الحبر والذهب نفسها');
+  no(html, 'pf-hero__mail{ color:var(--today-fg2) !important', 'بلا !important — بالترتيب والتخصيص');
+  has(html, "const saveBtn = el('button', { class:'btn', type:'button', text:'احفظ ملفي' });", 'زر الحفظ بحجمه لا شريطًا');
+  has(html, "{ id:'profile',  label:'ملفي',   ico:'☺' }", 'تبويبات الحساب بأيقونات');
+  has(html, "background:var(--bg-soft); border:1px solid var(--line-soft);", 'والتبويبات شريحةٌ مقسّمة');
+
+  has(html, "Admin.ICONS = {", 'أيقونات اللوحة بالمعرّف');
+  has(html, "class:'tabs__n', 'data-n': t.id, hidden: true", '★ شارة عدّ في التبويب — تُملأ من admin_inbox');
+  has(html, "money:   (Number(d.purchases) || 0) + (Number(d.phones) || 0) + (Number(d.payouts) || 0)", 'المال يجمع ثلاثة صناديق');
+  has(html, '.is-admin .page__head{ display:none; }', 'وعنوان الصفحة يُخفى في اللوحة — الشريط رأسها');
+  has(html, ".ad-kpi::before{", 'والمؤشّر بخطٍّ علوي بلون الحال');
+  has(html, ".ad-kpi__l{ font-size:.74rem; color:var(--text-3); font-weight:700; order:-1; }", 'والتسمية فوق الرقم');
+
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'u1', email:'admin@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  W.location.hash = '#/admin/dash'; A.router.render('#/admin/dash');
+  const t = doc.querySelectorAll('#main .tabs--admin .tabs__btn');
+  eq(t.length, 10, 'عشرة تبويبات كما كانت');
+  ok(!!t[0].querySelector('.tabs__ico'), 'ولكلٍّ أيقونة');
+  ok(!!doc.querySelector('#main .ad-shell'), 'والشريط موجود');
+  eq(doc.querySelectorAll('#main .page__head').length, 1, 'ورأس الصفحة في الشجرة (يُخفى بـCSS لا يُحذف — الفحوص القديمة تجده)');
+}
+
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */
 Promise.all(pending).then(() => {
   const total = pass + fail;
@@ -2760,4 +7061,4 @@ Promise.all(pending).then(() => {
     console.log('النتيجة: ' + pass + '/' + total + ' ناجح ✓');
     process.exit(0);
   }
-}).catch(e => { console.error('✗ فحص غير متزامن انهار: ' + e.message); process.exit(1); });
+}).catch(e => { console.error('✗ فحص غير متزامن انهار: ' + e.message + '\n' + e.stack); process.exit(1); });

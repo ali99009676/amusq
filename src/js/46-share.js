@@ -8,8 +8,18 @@
   وسعرها وزر الشراء، ولا يُحتسب له رصيد تجربة.
 */
 function shareUrl(slug, userId){
-  const base = (typeof location !== 'undefined' && location.protocol.indexOf('http') === 0)
-    ? location.origin + location.pathname : 'https://amsuq.alsoqoor.com/';
+  /*
+    ★ typeof location !== 'undefined' لا يكفي.
+    الوصف موجود دائمًا، والذي يفشل هو القراءة منه: بعد تفكيك المستند
+    (إغلاق تبويب، أو صفحة أُخليت وطلبٌ غير متزامن ما زال يعود) يرمي
+    الوصفُ استثناءً فينهار كل ما بُني في تلك اللحظة. try هو الحارس الوحيد
+    الذي يمسك هذا، وليس فحص الوجود.
+  */
+  let base = 'https://amsuq.alsoqoor.com/';
+  try {
+    if (typeof location !== 'undefined' && location.protocol.indexOf('http') === 0)
+      base = location.origin + location.pathname;
+  } catch(e){ /* مستند مفكَّك — نبقى على العنوان الثابت */ }
   return base + '#s/' + slug + (userId ? '?ref=' + userId : '');
 }
 
@@ -80,5 +90,88 @@ const ViewShare = {
   }
 };
 
-QBANK.share = { shareUrl, copyRow };
+/* ═══════════════════════════════════════════════════════════════════
+   زرّ نشرٍ واحد لكل شيء
+   ═══════════════════════════════════════════════════════════════════
+   كان النشر مقصورًا على المادة، وبصيغةٍ واحدة: حقلٌ ونسخ. وهذا يفترض أن
+   الطالب سينسخ ثم يفتح واتساب ثم يلصق — ثلاث خطوات يسقط في كل واحدة منها
+   بعضُهم. ونافذة النظام تفعلها بضغطة واحدة وتعرض عليه تطبيقاته كلها.
+
+   ولأن كل شيء في المنصة يستحق أن يُرسَل — مادة، ملف طالب، جامعة، تحدٍّ —
+   جعلناه مكوّنًا واحدًا يقبل أي رابط. الميزة التي تُبنى مرةً وتُستعمل في
+   عشرة مواضع خيرٌ من عشر نسخ تتباعد مع الوقت.
+*/
+
+/* رابطٌ مطلق لأي مسار داخلي: الروابط النسبية لا تُرسَل */
+function absUrl(hash){
+  let base = 'https://amsuq.alsoqoor.com/';
+  try {
+    if (typeof location !== 'undefined' && location.protocol.indexOf('http') === 0)
+      base = location.origin + location.pathname;
+  } catch(e){ /* مستند مفكَّك */ }
+  return base + String(hash || '#/').replace(/^#?\/?/, '#/');
+}
+
+/* روابط الأشياء التي تُنشَر — في موضع واحد كي لا تتفرّق صيغها */
+function profileUrl(userId){ return absUrl('#/p/' + userId); }
+function universityUrl(uniId){ return absUrl('#/u/' + uniId); }
+
+/*
+  المشاركة نفسها. نافذة النظام أولًا لأنها الأقصر وتعرض تطبيقاته كلها،
+  ثم الحافظة. ولا نَعِد بما لا نملك: navigator.share غائب على أغلب
+  متصفحات سطح المكتب، فنسأل عنه ولا نفترضه.
+*/
+async function sharePlain(url, title, text){
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: title || 'مراجعة', text: text || '', url: url });
+      return { ok:true, via:'share' };
+    }
+  } catch(e){ return { ok:false, cancelled:true }; }
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(url);
+      return { ok:true, via:'copy' };
+    }
+  } catch(e){}
+  return { ok:false };
+}
+
+/*
+  زرّ النشر. opts: { url, title, text, label, block }
+  والواتساب بجانبه دائمًا: هو حيث تعيش مجموعات الدفعة فعلًا، ولا يُعتمد
+  فيه على دعم المتصفح لشيء — رابط ويب صريح يعمل في كل مكان.
+*/
+function shareButton(opts){
+  const o = opts || {};
+  const url = o.url || absUrl('#/');
+  const label = o.label || '⤴ انشر الرابط';
+
+  const b = el('button', { class:'btn btn--soft btn--sm' + (o.block ? ' btn--block' : ''),
+                           type:'button', text: label });
+  b.addEventListener('click', async () => {
+    const r = await sharePlain(url, o.title, o.text);
+    if (r.ok && r.via === 'copy') QBANK.toast('نُسخ الرابط — الصقه حيث شئت');
+    else if (!r.ok && !r.cancelled) QBANK.toast('انسخ الرابط من الحقل أدناه');
+  });
+
+  const wa = el('a', { class:'btn btn--ghost btn--sm' + (o.block ? ' btn--block' : ''),
+    href: 'https://wa.me/?text=' + encodeURIComponent((o.text ? o.text + ' — ' : '') + url),
+    target:'_blank', rel:'noopener noreferrer', text:'واتساب' });
+
+  return el('div', { class:'row sharerow' }, [ b, wa ]);
+}
+
+/* الصندوق الكامل: الزرّان ثم الرابط للنسخ اليدوي — لمن يريد أن يراه */
+function shareBox(opts){
+  const o = opts || {};
+  return el('div', { class:'stack' }, [
+    o.title ? el('p', { class:'field__label', text: o.title }) : null,
+    shareButton(o),
+    copyRow(o.url)
+  ]);
+}
+
+QBANK.share = { shareUrl, copyRow, absUrl, profileUrl, universityUrl,
+                sharePlain, shareButton, shareBox };
 QBANK.views.ViewShare = ViewShare;

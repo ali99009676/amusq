@@ -116,5 +116,12 @@ function adminDashTab(box){
   load();
 }
 
+/*
+  نُصدّر أجزاء اللوحة القديمة لا الشاشة وحدها.
+  ★ اللوحة الجديدة تُضيف القمع والمال والتحذيرات، لكن «أداء المواد» و«آخر
+  النشاط» و«توزيع النتائج» نافعة كما هي — واستبدال شاشة بأخرى يُلقي عملًا
+  صحيحًا لا لعيب فيه بل لأنه قديم. فتُدمج بدل أن تُرمى.
+*/
 QBANK.admin.dashTab = adminDashTab;
+QBANK.admin.dashParts = { dashKpis, dashPanel, dashSubjects, dashRecent, dashSkeleton };
 QBANK.views.ADMIN_TABS.unshift({ id:'dash', label:'اللوحة', fill: adminDashTab });

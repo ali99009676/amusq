@@ -1,116 +1,162 @@
 /*
   مصدر واحد للمظهر. أي لون أو مسافة في المشروع يأتي من هنا حصرًا.
 
-  هوية «مراجعة — بنك الأسئلة»: ورق ومكتبة.
-  عنّابي دافئ لون الجلد على كعب الكتاب، ورملي ذهبي لون الحرف المذهّب عليه،
-  وخلفية ورقية لا بيضاء ميتة. المرجع هنا ليس شاشة بل كتاب يُفتح على المكتب.
+  هوية AMSU — منقولة حرفيًا من مشروع علي الأول (amsu.alsoqoor.com) بطلبه:
+  «طريقة العرض خذها من هنا». نفس اللوحة، نفس الخط، نفس الأقطار والظلال،
+  والليلي هو الافتراضي كما في AMSU، والفاتح زرّ لمن يريده.
+
+  الأسماء مزدوجة عمدًا: أسماء المنصة التاريخية (--text --brand --sh1…)
+  تبقى كي لا يُعاد فتح كل ملف مكوّنات، وأسماء AMSU (--txt --acc --shadow-sm…)
+  تُعرَّف معها كي تُنقل وصفات AMSU كما هي بلا ترجمة.
 */
 :root{
-  /* ثلاثة أدوار للخط — لا خط خارجي البتة (شرط العمل بلا إنترنت):
-     العناوين خط عربي عريض له وقار الغلاف · النص أنعم للقراءة الطويلة ·
-     الأرقام أحادي المسافة كي تصطفّ في الجداول ولا ترقص عند تغيّرها */
-  --font-display: "Noto Kufi Arabic", "Tajawal", "Cairo", "Segoe UI", system-ui, sans-serif;
-  --font: "Dubai", "Segoe UI", "Noto Sans Arabic", Tahoma, system-ui, -apple-system, sans-serif;
-  --font-num: "Cascadia Mono", "Consolas", ui-monospace, "SF Mono", Menlo, monospace;
+  /* الخطوط كما في AMSU: كوفي عربي للواجهة كلها، ولاتيني نظيف للنص الأصلي.
+     لا خط خارجي — كلها أسماء نظامية تتوفر على أجهزة الطلاب أو تسقط بسلام */
+  --font: "Noto Kufi Arabic", "Dubai", "Tajawal", "Cairo", "Segoe UI", Tahoma, system-ui, sans-serif;
+  --font-display: var(--font);
+  --font-latin: "Inter", "Poppins", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  /* الأرقام: نفس اللاتيني مع أرقام جدولية ثابتة العرض كي لا ترقص العدّادات */
+  --font-num: var(--font-latin);
 
-  /* الورق: دافئ لا أبيض. العين تقرأ عليه ساعات بلا إجهاد الأبيض الصريح */
-  --bg:        #fbf7f0;
-  --bg-soft:   #f3ece0;
-  --surface:   #fffdf9;
-  --surface-2: #f8f2e8;
-  --line:      #e6dcc9;
-  --line-soft: #f0e8da;
+  /*
+    لوحة AMSU الفاتحة — مُدفّأة.
+    ★ كانت رمادية باردة (#f4f6f9 على #ffffff) فبدت الشاشة «رمادي على رمادي»:
+    البطاقات لا تنفصل عن الأرض، والأزرار الأردوازية تبدو معطَّلة. نُميلها
+    درجةً نحو الورق — ورقة الإجابة التي هي رمز المنصة بيضاءُ دافئة لا
+    زرقاء — فتبقى AMSU في العظم، وتصير البطاقة بيضاء فوق أرضٍ ورقية.
+  */
+  --bg:        #f5f3ee;
+  --bg-soft:   #ece9e1;
+  --surface:   #fffefb;
+  --surface-2: #f8f6f1;
+  --line:      #e5e1d7;
+  --line-soft: #eeebe4;
+  --line-2:    #d5d0c4;
 
-  /* الحبر: بنّي مسودّ لا أسود صريح — كحبر على ورق لا بكسل على زجاج */
-  --text:      #241a15;
-  --text-2:    #5c4a3e;
-  --text-3:    #8b7565;
+  --text:      #17161a;
+  --text-2:    #5b5a63;
+  --text-3:    #8c8b95;
 
-  /* العنّابي: لون جلد الكعب. هوية المنصة وزرّها الأساسي */
-  --brand:      #8c2f39;
-  --brand-2:    #a8434d;
-  --brand-soft: #f7e8e6;
-  --on-brand:   #fffdf9;
+  /* المِحور اللوني: رمادي أردوازي محايد في العموم، وتلوّنه كل مادة بلونها
+     عبر --acc محلّيًا — هذه فكرة AMSU المركزية: الحياد في الهيكل واللون للمادة */
+  --brand:      #4b5563;
+  --brand-2:    #374151;
+  --brand-soft: #eef1f5;
+  --on-brand:   #ffffff;
 
-  /* الرملي الذهبي: الحرف المذهّب — للتمييز والنجوم لا للأزرار الأساسية */
-  --gold:      #c9a227;
-  --gold-soft: #fbf1d6;
+  --gold:      #e8a317;
+  --gold-soft: #fdf3dd;
+  /* ★ الزر الأساسي ذهبيٌّ على حبر — لا أردوازيّ.
+     الذهبي كان في حبّة التنقّل وحدها، والزرّ الذي يُشترى به ويُراجَع به
+     بلون الهيكل المحايد فلا يُرى. ما يُضغط يستحق لون العلامة، وكل ما
+     تصبغه المادة بلونها يستعيده (انظر [style*="--acc"] في المكوّنات). */
+  --btn-bg:  var(--gold);
+  --btn-fg:  #17161a;
+  --btn-sh:  0 8px 20px -8px color-mix(in srgb, var(--gold) 70%, transparent);
+  --ink:     #17161a;
+  /* لوحة «الحبر والذهب»: بطل اليوم، بطل الملف، شريط المشرف — داكنٌ في
+     الفاتح فيقفز من الورق؛ وفي الليلي سطحٌ أفتح درجة (انظر أدناه) */
+  --today-bg:   var(--ink);
+  --today-fg:   #fffefb;
+  --today-fg2:  #b9b6ad;
+  --today-line: rgba(255,254,251,.14);
 
-  /* حالات — تُستعمل دائمًا مع أيقونة لا باللون وحده.
-     الأخضر هنا غامق زيتوني كي لا يصرخ وسط الورق الدافئ */
-  --ok:      #4a7c46; --ok-soft:   #eaf2e6;
+  --ok:      #12805c; --ok-soft:   #e6f6ef;
   --warn:    #b06d1e; --warn-soft: #fdf0dc;
-  --bad:     #a3312a; --bad-soft:  #fbeae8;
-  --star:    #c9a227;
+  --bad:     #d92020; --bad-soft:  #fdecec;
+  --star:    #e8a317;
 
-  /* سلّم مسافات أوسع نفَسًا */
+  /* سلّم المسافات */
   --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
   --s5: 22px; --s6: 30px; --s7: 44px; --s8: 68px;
 
-  /* حواف أنعم وظلال دافئة — الظل هنا بنّي لا رمادي، وإلا بدا الورق متسخًا */
-  --r1: 10px; --r2: 14px; --r3: 20px; --r4: 28px; --r-pill: 999px;
-  --sh1: 0 1px 2px rgba(60,40,25,.05), 0 2px 6px rgba(60,40,25,.06);
-  --sh2: 0 2px 4px rgba(60,40,25,.05), 0 8px 20px rgba(60,40,25,.09);
-  --sh3: 0 4px 8px rgba(60,40,25,.06), 0 20px 48px rgba(60,40,25,.14);
-  --ring: 0 0 0 3px rgba(140,47,57,.24);
+  /* أقطار AMSU وظلالها */
+  --r1: 10px; --r2: 14px; --r3: 20px; --r4: 26px; --r-pill: 999px;
+  --sh1: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06);
+  --sh2: 0 4px 12px rgba(16,24,40,.07), 0 2px 4px rgba(16,24,40,.04);
+  --sh3: 0 18px 44px rgba(16,24,40,.12), 0 4px 12px rgba(16,24,40,.06);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--acc) 18%, transparent);
 
-  /* قياسات القراءة الأكاديمية.
-     العرض ٦٤ محرفًا لأن السطر الأطول يُفقد العين موضعها عند الانتقال للسطر التالي،
-     والارتفاع ٢ لأن نصوص الأسئلة إنجليزية طبية داخل واجهة عربية وتحتاج نفَسًا. */
+  /* قياسات القراءة الأكاديمية */
   --measure: 64ch;
-  --read-lh: 2;
+  --read-lh: 1.85;
   --read-size: 1.02rem;
 
-  /* خط هامش الورقة — كخط الهامش المطبوع على كرّاسات الامتحان */
-  --rule: color-mix(in srgb, var(--brand) 30%, transparent);
-  --rule-soft: color-mix(in srgb, var(--brand) 12%, transparent);
+  --rule: color-mix(in srgb, var(--acc) 30%, transparent);
+  --rule-soft: color-mix(in srgb, var(--acc) 12%, transparent);
 
-  --wrap: 1040px;
+  --wrap: 1080px;
   --topbar-h: 60px;
-  --tabbar-h: 62px;
+  --tabbar-h: 64px;
 
   --t-fast: 140ms;
   --t: 240ms;
   --t-slow: 420ms;
   --ease: cubic-bezier(.22,.61,.36,1);
 
-  /* ألوان المواد — كعوب كتب على رفّ: كلها مكتومة من عائلة واحدة،
-     فلا تتنافر مادتان جنبًا إلى جنب كما تتنافر ألوان منتقاة عشوائيًا */
-  --subject-1: #8c2f39; --subject-2: #7a5c1f; --subject-3: #3f5f4a;
-  --subject-4: #5a4a7a; --subject-5: #a15a2b; --subject-6: #2f5a6b;
+  /* نص فوق الملوّن، وتدرّج علامة AMSU (بنفسجي ← فيروزي) */
+  --on-acc: #ffffff;
+  --mark-1: #6d5efc;
+  --mark-2: #2ec5c0;
+
+  /* ألوان المواد — حيوية مثل بطاقات AMSU: كل مادة تصبغ بطاقتها ورأسها */
+  --subject-1: #059669; --subject-2: #8b5cf6; --subject-3: #f59e0b;
+  --subject-4: #d946ef; --subject-5: #0ea5e9; --subject-6: #14b8a6;
+
+  /* ═══ أسماء AMSU كما هي — كي تُلصق وصفاتها بلا ترجمة ═══ */
+  --bg2: var(--bg-soft);
+  --surface2: var(--surface-2);
+  --txt: var(--text); --txt2: var(--text-2); --txt3: var(--text-3);
+  --line2: var(--line-2);
+  --ok-bg: var(--ok-soft); --bad-bg: var(--bad-soft);
+  --shadow-sm: var(--sh1); --shadow-md: var(--sh2); --shadow-lg: var(--sh3);
+  --r-sm: var(--r1); --r: var(--r2); --r-lg: var(--r3); --r-xl: var(--r4);
+  --maxw: var(--wrap);
+
+  /* --acc: لون السياق الحالي. افتراضه المحور المحايد، وكل بطاقة مادة أو
+     رأس مادة يضبطه محليًا style="--acc:…" فيتلوّن كل ما بداخله.
+     الغامق والناعم يُشتقّان منه آليًا — في AMSU كانت ثلاثة متغيرات تُضبط
+     يدويًا معًا، وضبطُ ثلاثة يدويًا ينسى أحدها يومًا */
+  --acc: var(--brand);
+  --acc-d: color-mix(in srgb, var(--acc) 78%, #000);
+  --acc-soft: color-mix(in srgb, var(--acc) 9%, var(--surface));
 }
 
-/* الوضع الليلي: مكتبة على ضوء مصباح — بنّي محروق لا أزرق بارد */
+/* الليلي — لوحة AMSU الليلية، وهو الافتراضي */
 :root[data-theme="dark"]{
-  --bg:        #16110e;
-  --bg-soft:   #1e1815;
-  --surface:   #221b17;
-  --surface-2: #2b221d;
-  --line:      #3a2e27;
-  --line-soft: #2f2621;
+  --bg:        #0e1117;
+  --bg-soft:   #0a0d12;
+  --surface:   #161b23;
+  --surface-2: #1c222c;
+  --line:      #252c38;
+  --line-soft: #1e2531;
+  --line-2:    #333c4b;
 
-  --text:      #f2e9dd;
-  --text-2:    #c0ac9a;
-  --text-3:    #93806f;
+  --text:      #e9edf5;
+  --text-2:    #a4aec0;
+  --text-3:    #78839a;
 
-  --brand:      #d97a83;
-  --brand-2:    #e8949c;
-  --brand-soft: #35211f;
-  --on-brand:   #1a0f10;
+  /* المحور في الليل أفتح درجة كي يبقى مقروءًا نصًّا على الأسطح الداكنة */
+  --brand:      #96a3b8;
+  --brand-2:    #b7c2d4;
+  --brand-soft: #1e2531;
+  --on-brand:   #0e1117;
 
-  --gold:      #e0bd52;
-  --gold-soft: #332a12;
+  --gold:      #f5c04e;
+  --gold-soft: #2e2410;
+  --btn-fg:    #14110a;
+  --ink:       #0e1117;
+  --today-bg:   var(--surface-2);
+  --today-fg:   var(--text);
+  --today-fg2:  var(--text-2);
+  --today-line: var(--line-2);
 
-  --ok:      #7fb06f; --ok-soft:   #1d2a17;
-  --warn:    #dda049; --warn-soft: #33260f;
-  --bad:     #e8756c; --bad-soft:  #351a18;
-  --star:    #e0bd52;
+  --ok:      #39d39a; --ok-soft:   #0f2a22;
+  --warn:    #dda049; --warn-soft: #2e2410;
+  --bad:     #ff6b6b; --bad-soft:  #33161a;
+  --star:    #f5c04e;
 
-  --sh1: 0 1px 2px rgba(0,0,0,.55);
-  --sh2: 0 6px 20px rgba(0,0,0,.55);
-  --sh3: 0 22px 54px rgba(0,0,0,.66);
-  --ring: 0 0 0 3px rgba(217,122,131,.32);
-
-  --subject-1: #d97a83; --subject-2: #d4b45e; --subject-3: #7fb08e;
-  --subject-4: #a898d8; --subject-5: #e0a06a; --subject-6: #6fa8bd;
+  --sh1: 0 1px 2px rgba(0,0,0,.4);
+  --sh2: 0 6px 18px rgba(0,0,0,.45);
+  --sh3: 0 20px 50px rgba(0,0,0,.55);
 }

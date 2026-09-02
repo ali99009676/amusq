@@ -1,22 +1,67 @@
 /* لوحة تحكم المشرف — كثافة معلومات عالية بلا فوضى بصرية */
 
+/* ═══ عالم المشرف المستقل ═══
+   على مسارات ‎#/admin يختفي غلاف الطالب: الشريط السفلي بروابطه التي كانت
+   تعيد المشرف لواجهة الطالب بلمسة سهو. التذييل يبقى — قاعدة مشروع ثابتة. */
+.is-admin .tabbar{ display:none; }
+.is-admin .main{ padding-bottom:var(--s8); }
+
+/* شريط اللوحة: هوية المنطقة ومخرجها الوحيد الصريح */
+/*
+  ★ الشريط بلوحة «الحبر والذهب» نفسها التي في بطل الطالب — لكن أنحف:
+  هو رأسُ عالمٍ كامل لا بطاقة، فلا يستحق أكثر من سطرٍ واحد.
+*/
+.ad-shell{
+  display:flex; align-items:center; gap:var(--s3);
+  padding:var(--s2) var(--s4); margin-bottom:var(--s3);
+  background:var(--today-bg); color:var(--today-fg);
+  border:1px solid var(--today-line);
+  border-radius:var(--r2); box-shadow:var(--sh2);
+}
+.ad-shell .btn--ghost{ background:transparent; color:var(--today-fg); border-color:var(--today-line); box-shadow:none; }
+.ad-shell .btn--ghost:hover{ border-color:var(--gold); color:var(--gold); }
+.ad-shell__mark{
+  font-size:1rem; line-height:1; width:32px; height:32px; border-radius:9px;
+  display:grid; place-items:center; background:var(--gold); color:var(--btn-fg);
+}
+.ad-shell__x{ display:flex; flex-direction:column; line-height:1.3; min-width:0; }
+.ad-shell__t{ font-family:var(--font-display); letter-spacing:-.01em; }
+.ad-shell__s{
+  font-size:.72rem; color:var(--today-fg2); direction:ltr; text-align:end;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:52vw;
+}
+
 /* ===== شبكة المؤشرات ===== */
 .ad-kpis{ display:grid; gap:var(--s3); grid-template-columns:repeat(2,1fr); }
 @media (min-width:700px){ .ad-kpis{ grid-template-columns:repeat(3,1fr); } }
 @media (min-width:1000px){ .ad-kpis{ grid-template-columns:repeat(6,1fr); } }
+/*
+  ★ المؤشّر: التسمية فوق الرقم، وخطٌّ علوي يحمل لون الحال.
+  كانت أرقامًا مجرّدة متساوية؛ الخطّ الملوّن يقول «هذا حيّ / هذا تحذير»
+  قبل قراءة الرقم، والتسمية أولًا لأن المشرف يبحث عن «المبيعات» لا عن «٤٢».
+*/
 .ad-kpi{
+  --kpi: var(--text-3);
   background:var(--surface); border:1px solid var(--line); border-radius:var(--r2);
-  padding:var(--s4); box-shadow:var(--sh1); position:relative; overflow:hidden;
+  padding:var(--s3) var(--s4) var(--s4); box-shadow:var(--sh1); position:relative; overflow:hidden;
+  display:flex; flex-direction:column; gap:2px;
 }
+.ad-kpi::before{ content:''; position:absolute; inset-inline:0; top:0; height:3px; background:var(--kpi); }
 .ad-kpi__n{
-  display:block; font-family:var(--font-num); font-size:1.6rem; font-weight:700;
-  line-height:1.15; color:var(--text); letter-spacing:-.02em;
+  display:block; font-family:var(--font-num); font-size:1.75rem; font-weight:700;
+  line-height:1.1; color:var(--text); letter-spacing:-.03em; font-variant-numeric:tabular-nums;
 }
-.ad-kpi__l{ font-size:.76rem; color:var(--text-3); font-weight:700; }
-.ad-kpi__s{ font-size:.7rem; color:var(--text-3); margin-top:var(--s1); display:block; }
-.ad-kpi--live .ad-kpi__n{ color:var(--brand); }
+.ad-kpi__l{ font-size:.74rem; color:var(--text-3); font-weight:700; order:-1; }
+.ad-kpi__s{ font-size:.7rem; color:var(--text-3); display:block; }
+.ad-kpi--live{ --kpi: var(--ok); }
+.ad-kpi--live .ad-kpi__n{ color:var(--ok); }
+.ad-kpi--warn{ --kpi: var(--warn); }
 .ad-kpi--warn .ad-kpi__n{ color:var(--warn); }
+.ad-kpi--bad{ --kpi: var(--bad); }
 .ad-kpi--bad .ad-kpi__n{ color:var(--bad); }
+
+/* تبويبات اللوحة: عشرة — على الجوال تنزلق أفقيًا وتُبقي المُفعَّل ظاهرًا */
+.tabs--admin .tabs__btn{ flex:0 0 auto; padding-inline:.85em; }
 
 /* ===== لوحات الرسوم ===== */
 .ad-panels{ display:grid; gap:var(--s4); grid-template-columns:1fr; margin-top:var(--s5); }
@@ -300,3 +345,103 @@
 .path__m{ font-size:.78rem; color:var(--text-3); line-height:1.7; }
 .path.is-blocked{ opacity:.55; cursor:not-allowed; }
 .path.is-blocked:hover{ border-color:var(--line); }
+
+
+/* شريط تحذير البلاغات في محرّر المادة — بابٌ لا مجرد إشعار */
+.ad-warn{
+  display:flex; align-items:center; justify-content:space-between; gap:var(--s3);
+  margin-top:var(--s4); padding:var(--s3) var(--s4);
+  background:var(--warn-soft); border:1px solid var(--warn); border-radius:var(--r1);
+  color:var(--warn); font-weight:700; font-size:.9rem; text-decoration:none;
+}
+.ad-warn:hover{ filter:brightness(.97); }
+.ad-warn__go{ font-weight:800; }
+
+/* ═══════════ لوحة الإشراف الكاملة ═══════════ */
+/* القمع: الشريط يُري الحجم، والنسبة تُري التسرّب — والاثنان معًا لا أحدهما */
+.fun{ display:flex; flex-direction:column; gap:var(--s2); }
+.fun__row{ display:flex; align-items:center; gap:var(--s3); }
+.fun__l{ min-width:7.5em; font-size:.88rem; color:var(--text-2); }
+.fun__bar{ flex:1; height:20px; background:var(--surface-2); border-radius:var(--r1); overflow:hidden; }
+.fun__fill{
+  display:block; height:100%; border-radius:var(--r1);
+  background:linear-gradient(90deg, var(--brand), var(--brand-2));
+}
+.fun__n{ min-width:3.5em; text-align:end; font-weight:700; }
+.fun__p{ min-width:3.5em; text-align:end; font-size:.8rem; color:var(--text-3); }
+/* ★ تحويلٌ دون الربع يُلوَّن: هو موضع التسرّب الذي يستحق عمل الغد */
+.fun__p.is-low{ color:var(--bad); font-weight:800; }
+
+.ad-grid2{ display:grid; gap:var(--s2); grid-template-columns:1fr; }
+@media (min-width:640px){ .ad-grid2{ grid-template-columns:repeat(2,1fr); } }
+.ad-fact{
+  display:flex; align-items:center; justify-content:space-between; gap:var(--s3);
+  padding:var(--s3) var(--s4); background:var(--surface-2);
+  border:1px solid var(--line-soft); border-radius:var(--r1);
+}
+.ad-fact__l{ color:var(--text-2); font-size:.88rem; }
+.ad-fact__v{ font-weight:700; }
+.ad-fact__v.is-out{ color:var(--bad); }
+.ad-panel--warn{ border-color:var(--warn); }
+
+/* بطاقة الطالب: العرض والتحكم في مكان واحد — لا شاشة ثانية لكل فعل */
+.stu{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r2);
+  padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3);
+}
+.stu__h{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
+.stu__av{ font-size:1.3rem; }
+.stu__x{ display:flex; flex-direction:column; flex:1; min-width:0; }
+.stu__n{ font-weight:800; }
+.stu__s{ font-size:.82rem; color:var(--text-3); }
+.stu__act{
+  display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap;
+  padding-top:var(--s3); border-top:1px solid var(--line-soft);
+}
+
+/* ═══ المتصلون الآن: الحال والجهاز والبلد ═══ */
+.ad-feed__place{
+  display:block; font-size:.82rem; font-weight:600; color:var(--gold);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+}
+.ad-feed__meta{ display:inline-flex; align-items:center; gap:6px; flex:0 0 auto; }
+.ad-feed__dev, .ad-feed__flag{ font-size:1.05rem; line-height:1; }
+
+/* ═══ الرمز ومن فعّله ═══
+   ★ الحسابات تُزاح إلى الداخل وتُربط بخطٍّ رفيع: الإزاحة وحدها تُقرأ
+   «تابعٌ لما فوقه»، فلا يحتاج المشرف عنوانًا يقول ذلك. وحجمٌ أصغر لأنها
+   تفصيلٌ يُقرأ عند الحاجة لا عند كل مرور. */
+.codeblk{ display:block; }
+.codeuse{
+  display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap;
+  padding:6px var(--s3) 6px calc(var(--s3) + 14px);
+  margin-inline-start:var(--s3);
+  border-inline-start:2px solid var(--line);
+  font-size:.78rem; color:var(--text-2);
+}
+.codeuse__i{ color:var(--text-3); }
+.codeuse__n{ font-weight:700; color:var(--text); }
+.codeuse__e{ color:var(--text-2); direction:ltr; unicode-bidi:isolate;
+             overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.codeuse__d{ margin-inline-start:auto; color:var(--text-3); white-space:nowrap; }
+
+/* ═══ صندوق الوارد ═══
+   ★ خمس خانات بعرضٍ واحد، والمُنتظَر منها يُلوَّن وحده: العين تقع على
+   الملوّن قبل أن تقرأ رقمًا. */
+.inbox{ margin-bottom:var(--s3); }
+.inbox__h{ display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s2); }
+.inbox__t{ font-weight:800; }
+.inbox__row{ display:grid; grid-template-columns:repeat(5,1fr); gap:var(--s2); }
+@media (max-width:520px){ .inbox__row{ grid-template-columns:repeat(3,1fr); } }
+.inbox__i{
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:var(--s2) var(--s1); border-radius:var(--r2);
+  background:var(--surface-2); border:1px solid var(--line);
+  color:var(--text-3); text-decoration:none; min-width:0;
+}
+.inbox__i.is-on{ color:var(--text); border-color:var(--gold);
+  background:color-mix(in srgb, var(--gold) 12%, var(--surface)); }
+.inbox__ic{ font-size:1.05rem; }
+.inbox__n{ font-size:1.25rem; font-weight:800; line-height:1; }
+.inbox__i.is-on .inbox__n{ color:var(--gold); }
+.inbox__l{ font-size:.68rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }

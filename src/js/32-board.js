@@ -6,6 +6,16 @@ const ViewBoard = {
   title:'المتصدرون',
   view(){
     const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
+    /*
+      لوحة جامعتك فوق اللوحة العامة.
+      ★ المقارنة داخل الجامعة هي المُحفِّزة: طالب نجران يقارن نفسه بزملائه
+      في المقرّر نفسه، لا بمن يذاكر مادة أخرى في بلد آخر — والمقارنة
+      الظالمة تُحبط ولا تُحفّز، فتُغلق اللوحة بدل أن تُفتح.
+    */
+    const campus = QBANK.community ? el('div', { class:'card stack' }, [
+      el('h2', { style:'margin:0', text:'متصدّرو جامعتك' }),
+      QBANK.community.boardBody()
+    ]) : null;
     QBANK.api.rpc('board', { lim: 10 }).then(r => {
       if (!body.isConnected) return;
       body.innerHTML = '';
@@ -24,7 +34,8 @@ const ViewBoard = {
         el('span', { class:'badge num', text: row.attempts + ' اختبار' })
       ]))));
     });
-    return QBANK.views.page('المتصدرون', 'أفضل النتائج — بأسماء العرض فقط.', [body]);
+    return QBANK.views.page('المتصدرون', 'أفضل النتائج — بأسماء العرض فقط.',
+      [campus, el('h2', { text:'على مستوى المنصة' }), body]);
   }
 };
 QBANK.views.ViewBoard = ViewBoard;

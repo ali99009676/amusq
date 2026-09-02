@@ -11,6 +11,19 @@ const docOf = root => root || (typeof document !== 'undefined' ? document : null
 const $  = (sel, root) => { const d = docOf(root); return d ? d.querySelector(sel) : null; };
 const $$ = (sel, root) => { const d = docOf(root); return d ? Array.prototype.slice.call(d.querySelectorAll(sel)) : []; };
 
+/*
+  ★ هل الصفحة ما زالت قائمة؟
+  وعدٌ يعود بعد إغلاق التبويب — أو بعد أن تُنهي الفحوص نافذتها — يجد
+  `document` مفقودًا، فتنهار `el` بـ«cannot read createElement of undefined»
+  ويسقط كل ما بعده في تلك السلسلة.
+
+  وحارس `isConnected` لا يصلح بديلًا عن هذا: البطاقة قد تكون مبنيّةً ولمّا
+  تُدرَج في شجرتها بعد، فيمنعها من أول رسمٍ لها ويتركها فارغةً أبدًا —
+  وهذا عطلٌ وقع فعلًا في موجز الأكواد. فالسؤالان مختلفان: «هل المستند حيّ؟»
+  غير «هل أنا معلّق فيه؟».
+*/
+const alive = () => !!docOf(null);
+
 function el(tag, attrs, children){
   const node = document.createElement(tag);
   if (attrs) Object.keys(attrs).forEach(k => {
@@ -27,6 +40,8 @@ function el(tag, attrs, children){
   });
   return node;
 }
+
+QBANK.alive = alive;
 
 /* تهريب النصوص قبل حقنها — قاعدة أمان ثابتة: أي نص من ملف أو قاعدة بيانات يمرّ من هنا */
 function esc(s){
@@ -83,6 +98,23 @@ const Store = {
         .forEach(k => localStorage.removeItem(k));
       return true;
     } catch(e){ return false; }
+  },
+
+  /*
+    ★ ما يخصّ الشخص لا الجهاز.
+    الجهاز واحد وقد يتناوب عليه شخصان: طالبٌ يخرج وزميله يدخل، أو صاحبُ
+    الجهاز نفسه بحسابٍ ثانٍ. وكان كل ما نخزّنه مفتاحًا عامًّا بلا هوية،
+    فيرث الداخلُ الجديدُ ملفَ من قبله: صورتَه ورقمَ جواله وتقدّمَه — بل
+    ومشترياته. هذا ليس خللًا في العرض، هو تسريبُ بياناتٍ بين حسابين.
+
+    القائمة صريحة لا نمطية: مفتاحٌ جديد يُنسى إضافته يبقى ظاهرًا فيُكتشف،
+    ومفتاحُ جهازٍ يُمسح خطأً (السمة، إعداد الربط) عطلٌ صامت يحيّر صاحبه.
+  */
+  PERSONAL: ['profile', 'progress', 'entitlements', 'campus', 'my_subjects',
+             'is_admin_check', 'exam_dates', 'after_login', 'ad_days', 'explore_last'],
+  clearPersonal(){
+    Store.PERSONAL.forEach(k => Store.remove(k));
+    return true;
   }
 };
 

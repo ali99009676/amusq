@@ -1,14 +1,15 @@
 /*
   صفحة الهبوط التعريفية — أول ما يراه الزائر قبل التسجيل.
   هوية «مراجعة — بنك الأسئلة»: ورق دافئ، عنّابي وذهبي، وحواف كتاب.
-  البنية من مواقع الدورات العربية: بطل ← أرقام ← مواد ← مزايا ← خطوات ← أسعار ← دعوة.
+  البنية: بطل ← كيف تعمل ← جرّب سؤالًا ← بطاقة حفظ ← مزايا ← ارفع مادتك ← نصائح ← أسعار ← دعوة.
+  ولا مادة بعينها هنا: المقررات تختلف بين الجامعات، ومكانها شاشة «استكشف».
 */
 
 .lp{ margin-inline:calc(var(--s4) * -1); }
 
 /* ===== البطل: صفحة كتاب مفتوح =====
-   التوقيع البصري للمنصة. ليس زخرفة: عرض كل كعب كتاب في الرفّ
-   مشتقّ من عدد أسئلة مادته فعلًا، فالصورة تقول ما تقوله الأرقام. */
+   التوقيع البصري للمنصة. الرفّ صورة لفكرة «بنك الأسئلة» لا عرضٌ لمخزون —
+   أوزان كعوبه ثابتة كي تبقى الصورة واحدة لكل زائر ولا تُقرأ كإحصاء. */
 .lp-hero{
   position:relative; overflow:hidden;
   padding:var(--s8) var(--s4) var(--s7);
@@ -51,8 +52,20 @@
 }
 .lp-hero__title em{ font-style:normal; color:var(--brand); }
 .lp-hero__sub{
-  max-width:54ch; margin:0 auto var(--s6);
+  max-width:54ch; margin:0 auto var(--s4);
   font-size:clamp(1rem, 2.4vw, 1.12rem); color:var(--text-2); line-height:1.95;
+}
+/*
+  سطر التوقّع: «كل جامعة موادها تخصّها».
+  أخفتُ نبرةً من الملخّص وبخطّ هامش عنّابي — كملاحظة على حاشية الورقة لا
+  كادّعاء إضافي. موضعه قبل الأزرار مقصود: يقرؤه الزائر قبل أن يقرّر أيّهما
+  يضغط، فيذهب إلى «استكشف» وهو يعرف أنه يبحث عن جامعته هو.
+*/
+.lp-hero__note{
+  max-width:52ch; margin:0 auto var(--s6);
+  padding-inline-start:var(--s3);
+  border-inline-start:2px solid var(--rule);
+  font-size:.94rem; color:var(--text-3); line-height:1.85; text-align:start;
 }
 
 /* الرفّ: الكتب تصعد واحدًا بعد آخر عند الفتح ثم تسكن */
@@ -66,39 +79,18 @@
   from{ transform:scaleY(.05); opacity:0; }
   to{ transform:scaleY(1); opacity:1; }
 }
+/*
+  كان سطر فتح هذه الكتلة مفقودًا، فطُبِّق animation:none على كل زائر
+  وتوقّفت النقطة الذهبية عن التنفّس عند الجميع لا عند من طلب تقليل الحركة.
+*/
+@media (prefers-reduced-motion: reduce){
+  .lp-shelf__book{ animation:none; }
   .lp-hero__badge .dot{ animation:none; }
 }
 
 .lp-cta{ display:flex; gap:var(--s3); justify-content:center; flex-wrap:wrap; }
 .lp-cta .btn{ padding:var(--s4) var(--s7); font-size:1.02rem; }
 .btn--lg{ min-height:54px; }
-
-/* ===== العلامات الحيوية: أرقامك كقراءة شاشة ===== */
-.lp-stats{
-  display:grid; grid-template-columns:repeat(2,1fr); gap:0;
-  max-width:720px; margin:var(--s7) auto 0;
-  background:var(--surface); border:1px solid var(--line);
-  border-radius:var(--r3); overflow:hidden; box-shadow:var(--sh2);
-}
-@media (min-width:640px){ .lp-stats{ grid-template-columns:repeat(4,1fr); } }
-.lp-stat{
-  padding:var(--s5) var(--s3); text-align:center;
-  border-inline-start:1px solid var(--line-soft);
-  border-top:1px solid var(--line-soft);
-}
-.lp-stat:nth-child(-n+2){ border-top:0; }
-@media (min-width:640px){ .lp-stat{ border-top:0; } }
-.lp-stat:first-child{ border-inline-start:0; }
-@media (max-width:639px){ .lp-stat:nth-child(odd){ border-inline-start:0; } }
-.lp-stat__n{
-  display:block; font-family:var(--font-num);
-  font-size:1.8rem; font-weight:700; color:var(--brand); line-height:1.15;
-  letter-spacing:-.02em;
-}
-.lp-stat__l{
-  font-size:.74rem; color:var(--text-3); font-weight:700;
-  letter-spacing:.03em; margin-top:var(--s1); display:block;
-}
 
 /* ===== أقسام عامة ===== */
 .lp-sec{ max-width:var(--wrap); margin-inline:auto; padding:var(--s8) var(--s4); }
@@ -117,7 +109,7 @@
 }
 .lp-sec__sub{ color:var(--text-2); max-width:52ch; margin-inline:auto; }
 
-/* ===== بطاقات المواد (العرض التعريفي) ===== */
+/* ===== شبكة البطاقات (المزايا) ===== */
 .lp-grid{ display:grid; gap:var(--s4); grid-template-columns:1fr; }
 @media (min-width:640px){ .lp-grid{ grid-template-columns:repeat(2,1fr); } }
 @media (min-width:960px){ .lp-grid--3{ grid-template-columns:repeat(3,1fr); } }
@@ -139,6 +131,35 @@
 .lp-card__text{ color:var(--text-2); font-size:.92rem; margin:0; line-height:1.85; }
 .lp-card__meta{ display:flex; gap:var(--s2); flex-wrap:wrap; margin-top:auto; padding-top:var(--s2); }
 
+/* ===== نموذجا المادة =====
+   ختم «نموذج» ظاهر في أعلى البطاقة لا في هامشها: الزائر يقرأ البطاقات
+   قبل السطر الذي تحتها، فلو خفي الختم لحسبهما مادّتين معروضتين للبيع. */
+.lp-card--sample{ padding-top:var(--s6); }
+.lp-card__row{ display:flex; align-items:center; justify-content:space-between; gap:var(--s3); }
+.lp-card__stamp{
+  background:var(--gold-soft); color:var(--warn);
+  border:1px dashed var(--gold); font-weight:800; letter-spacing:.04em;
+}
+.lp-card__tag{
+  align-self:flex-start; font-size:.76rem; font-weight:800; color:var(--brand);
+  background:var(--brand-soft); padding:2px var(--s3); border-radius:var(--r-pill);
+}
+/* المحاور: ما يجده الطالب داخل المادة — بديل عن عدد أسئلة لا وجود له */
+.lp-topics{
+  display:flex; flex-wrap:wrap; gap:var(--s2);
+  margin-top:auto; padding-top:var(--s3); border-top:1px dashed var(--line);
+}
+.lp-topic{
+  font-size:.8rem; color:var(--text-2); background:var(--surface-2);
+  border:1px solid var(--line-soft); padding:2px var(--s3); border-radius:var(--r1);
+}
+/* سطر التنبيه أسفل النموذجين */
+.lp-note{
+  max-width:56ch; margin:var(--s5) auto 0; text-align:center;
+  font-size:.88rem; color:var(--text-3); line-height:1.85;
+}
+.lp-note a{ color:var(--brand); font-weight:700; }
+
 /* ===== الخطوات ===== */
 .lp-steps{ display:grid; gap:var(--s5); grid-template-columns:1fr; counter-reset:step; }
 @media (min-width:820px){ .lp-steps{ grid-template-columns:repeat(4,1fr); } }
@@ -148,7 +169,8 @@
   display:grid; place-items:center; font-weight:700; font-size:1.05rem;
   font-family:var(--font-num);
   background:var(--brand); color:var(--on-brand);
-  box-shadow:0 4px 14px rgba(18,128,92,.3);
+  /* الظل من لون الهوية نفسه — كان أخضر طبيًّا ثابتًا وبقي بعد تحوّلها للعنّابي */
+  box-shadow:0 4px 14px color-mix(in srgb, var(--brand) 34%, transparent);
 }
 .lp-step__t{ font-weight:800; margin-bottom:var(--s1); }
 .lp-step__d{ color:var(--text-2); font-size:.9rem; margin:0; }
@@ -195,26 +217,6 @@
 /* الطباعة لا تعني صفحة الهبوط */
 @media print{ .lp{ display:none; } }
 
-/* ===== عدّاد الامتحانات القادمة — أنفع ما يراه الطالب أولًا ===== */
-.lp-exams{
-  max-width:var(--wrap); margin:var(--s6) auto 0; padding-inline:var(--s4);
-  display:grid; gap:var(--s3); grid-template-columns:1fr;
-}
-@media (min-width:640px){ .lp-exams{ grid-template-columns:repeat(3,1fr); } }
-.lp-exam{
-  display:flex; align-items:center; gap:var(--s3);
-  background:var(--surface); border:1px solid var(--line); border-radius:var(--r2);
-  padding:var(--s4); box-shadow:var(--sh1);
-}
-.lp-exam__d{
-  min-width:56px; height:56px; border-radius:var(--r2); display:grid; place-items:center;
-  background:var(--brand-soft); color:var(--brand); font-weight:800; line-height:1.1; text-align:center;
-}
-.lp-exam__d b{ display:block; font-family:var(--font-num); font-size:1.4rem; font-weight:700; }
-.lp-exam__d span{ font-size:.68rem; font-weight:700; }
-.lp-exam__n{ font-family:var(--font-display); font-weight:700; letter-spacing:-.01em; }
-.lp-exam__s{ font-size:.82rem; color:var(--text-3); }
-.lp-exam--soon .lp-exam__d{ background:var(--bad-soft); color:var(--bad); }
 
 /* ===== السؤال التجريبي ===== */
 .lp-try{
@@ -272,3 +274,8 @@
 }
 .lp-faq details[open] summary::before{ content:'−'; }
 .lp-faq p{ color:var(--text-2); font-size:.92rem; margin:var(--s3) 0 0; padding-inline-start:calc(var(--s3) + 1ch); }
+
+/* بطاقتا «أنت تبنيها»: حدّ متقطّع — مكان شاغر ينتظر من يملؤه لا محتوى جاهز */
+.lp-add{ border-style:dashed; border-color:var(--brand); background:var(--brand-soft); }
+.lp-add .lp-card__ico{ background:var(--surface); color:var(--brand); font-size:1.35rem; }
+.lp-card__text--dim{ color:var(--text-3); font-size:.86rem; }

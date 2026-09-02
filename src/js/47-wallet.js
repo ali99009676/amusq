@@ -70,4 +70,34 @@ function walletLinks(){
   ]);
 }
 
-QBANK.wallet = { body: walletBody, subjectRow: walletSubjectRow, links: walletLinks };
+/*
+  المتجر والسجل يُبنيان في 55-pay.js — نُلحقهما هنا كي تبقى المحفظة مكانًا واحدًا.
+
+  ★ وصندوق الرمز معهما، لأن رمز الفصل لا مادة له.
+  رمزُ مادةٍ يُدخله الطالب في صفحتها، أما رمز «مواد الفصل كلها» فلا صفحة
+  واحدة يخصّها — ولو لم يكن له مكان هنا لبقي بيد صاحبه بلا باب يُدخله منه.
+*/
+function walletWithShop(){
+  const codeCard = QBANK.views.redeemBox
+    ? el('div', { class:'card stack' }, [
+        el('h2', { style:'margin:0', text:'تفعيل برمز' }),
+        el('p', { class:'field__hint', style:'margin:0', text:
+          'رمزُ مادةٍ أو رمزُ الفصل كامل — أدخله هنا وتُفتح لك فورًا.' }),
+        QBANK.views.redeemBox(() => QBANK.router.render(location.hash))
+      ])
+    : null;
+  return el('div', { class:'stack' }, [
+    walletBody(),
+    /* ★ توثيق الجوال قبل المال: هو ما يربط الحساب بصاحبه، وكل ما تحته
+       — أرباحٌ وتحويلاتٌ ومشتريات — يتّكئ على أن الحساب لصاحبه فعلًا. */
+    QBANK.views.phoneCard ? QBANK.views.phoneCard() : null,
+    QBANK.views.notifyCard ? QBANK.views.notifyCard() : null,
+    /* ★ الأرباح قبل المتجر: المحفظة تُفتح لسؤال «كم لي؟» قبل «بكم أشتري؟» */
+    QBANK.views.earnCard ? QBANK.views.earnCard() : null,
+    codeCard,
+    QBANK.pay ? QBANK.pay.coinShop() : null,
+    QBANK.pay ? QBANK.pay.historyCard() : null
+  ]);
+}
+
+QBANK.wallet = { body: walletWithShop, subjectRow: walletSubjectRow, links: walletLinks };

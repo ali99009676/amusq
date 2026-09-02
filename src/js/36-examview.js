@@ -11,6 +11,9 @@ function examSetup(sub, questions){
   const scopeSel = el('select', { class:'input', id:'exScope', 'aria-label':'نطاق الاختبار' }, [
     el('option', { value:'all', text:'كل الأسئلة (' + questions.length + ')' }),
     el('option', { value:'important', text:'الأسئلة المهمة (' + questions.filter(q => q.important).length + ')' }),
+    questions.some(q => q.exam_tag)
+      ? el('option', { value:'exam_tag', text:'التي جاءت في اختبارات سابقة (' + questions.filter(q => q.exam_tag).length + ')' })
+      : null,
     el('option', { value:'wrong', text:'أخطائي السابقة (' + Object.keys(prog.wrong).length + ')' })
   ].concat(topics.map(t => el('option', { value:'topic:' + t, text:'قسم: ' + t }))));
 
@@ -75,6 +78,16 @@ function finishExam(){
   st.exam.items.forEach((it, i) => {
     if (st.exam.answers[i] && st.exam.answers[i].correct) QBANK.progress.clearWrong(st.sub.id, it.id);
   });
+  /*
+    ★ كل سؤال أُجيب عنه يدخل جدول المراجعة.
+    هنا لا في لحظة الضغط: الطالب قد يرجع ويغيّر إجابته قبل التسليم،
+    والنتيجة النهائية هي الحكم. والذي لم يُجب عنه لا يُجدوَل — عدم
+    الإجابة ليس خطأً في الاسترجاع، هو نفاد وقت أو ملل.
+  */
+  st.exam.items.forEach((it, i) => {
+    const a = st.exam.answers[i];
+    if (a) QBANK.progress.review(st.sub.id, it.id, !!a.correct);
+  });
   if (QBANK.api.user()) QBANK.api.rest('attempts', { method:'POST', body: JSON.stringify({
     user_id: QBANK.api.user().id, subject_id: st.sub.id, scope:'all', topic:'',
     correct: st.result.correct, total: st.result.total, pct: st.result.pct,
@@ -131,7 +144,20 @@ function examRunner(){
     el('div', { class:'card stack q' }, [
       el('p', { class:'ltr q__text', text: item.q }), opts,
       (answered && exam.mode === 'instant' && item.expl_ar)
-        ? el('p', { class:'field__hint', text: item.expl_ar }) : null
+        ? el('p', { class:'field__hint', text: item.expl_ar }) : null,
+      /*
+        ★ الزرّان بعد الإجابة لا قبلها.
+        قبلها يكشفان أن للسؤال جوابًا يُشرح فيقلّان من جدّية المحاولة،
+        وبعدها يقعان في اللحظة التي يريد فيها الطالب أن يفهم فعلًا.
+        و«اشرح لي» يظهر للمخطئ وحده — من أصاب لا شيء يُشرح له.
+      */
+      (answered && exam.mode === 'instant' && QBANK.explain)
+        ? QBANK.explain.button(
+            { id:item.id, q:item.q, options:item.options, answer:item.correct, topic:item.topic },
+            answered.choice) : null,
+      (answered && QBANK.shareCard)
+        ? QBANK.shareCard.button({ id:item.id, q:item.q, options:item.options,
+                                   _sid: st.sub.id }) : null
     ]),
     nav
   ]);
@@ -196,8 +222,8 @@ const ViewExam = {
   view(route){
     const sid = route.rest[0];
     const sub = (QBANK.data.pack().subjects || []).filter(s => s.id === sid)[0];
-    if (!sub) return QBANK.views.page('اختبار', null, [
-      QBANK.views.empty('؟', 'المادة غير موجودة', '', el('a', { class:'btn', href:'#/', text:'الرئيسية' })) ]);
+    // ★ نفس العلاج: رابط اختبارٍ مباشر قد يسبق قائمةَ هذا الجهاز
+    if (!sub) return refetchThenSubject(sid, 'اختبار');
 
     if (!QBANK.gate.localGuess(sub).allowed) {
       return QBANK.views.page(sub.name, null, [ QBANK.gate.paywallCard(sub) ]);

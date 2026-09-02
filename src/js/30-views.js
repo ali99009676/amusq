@@ -69,35 +69,73 @@ function subjectCard(sub){
   const done = Math.round((sub.q_count || 0) * pct / 100);
   const topics = (sub.topics && sub.topics.length) || 0;
 
-  const card = el('article', { class:'card subj' + (past ? ' is-past' : ''), tabindex:'0', role:'link',
-    'aria-label':'مادة ' + sub.name }, [
-    el('div', { class:'subj__bar', style:'background:' + color, 'aria-hidden':'true' }),
-    el('div', { class:'row' }, [
-      el('span', { class:'subj__ico', 'aria-hidden':'true', text: sub.icon || '▤' }),
-      el('div', { class:'subj__id' }, [
-        sub.course_code ? el('span', { class:'subj__code', text: sub.course_code }) : null,
-        el('h3', { class:'subj__name', text: sub.name })
+  /*
+    بطاقة AMSU: منطقة فنية بتدرّج لون المادة وأيقونتها، شارة «N سؤالًا»،
+    الاسم وتحته الإنجليزي، سطر موعد الاختبار بعدّه، شريط تقدّم، و«ابدأ المراجعة».
+    اللون يُحقن مرة واحدة في --acc فيتلوّن كل ما بالداخل من نظام التصميم.
+  */
+  const card = el('article', {
+    class:'sub-card' + (past ? ' exam-done' : ''), tabindex:'0', role:'link',
+    style:'--acc:' + color, 'aria-label':'مادة ' + sub.name }, [
+    past ? el('span', { class:'stamp', 'aria-hidden':'true', text:'تم الانتهاء' }) : null,
+    el('div', { class:'art', 'aria-hidden':'true' }, [
+      el('span', { class:'art__ico', text: sub.icon || '▤' }),
+      el('span', { class:'badge num', text: QBANK.views.arNum(sub.q_count || 0) + ' سؤالًا' })
+    ]),
+    el('div', { class:'meta' }, [
+      el('h3', { text: sub.name }),
+      sub.name_en ? el('span', { class:'qn ltr', text: sub.name_en })
+        : (sub.course_code ? el('span', { class:'qn ltr', text: sub.course_code }) : null),
+      left !== null ? el('div', { class:'examline num' }, [
+        el('span', { class:'when', text: past ? 'انتهى موعده' : 'موعد الاختبار' }),
+        past ? null : el('b', { class: left <= 2 ? 'urgent' : '',
+          text:'متبقٍ ' + QBANK.views.arNum(left) + (left === 1 ? ' يوم' : ' أيام') })
+      ]) : null,
+      el('div', { class:'prog', 'aria-label':'أنجزت ' + pct + '٪' }, [
+        el('i', { style:'width:' + pct + '%' })
       ]),
-      el('span', { class:'spacer' }),
-      past ? el('span', { class:'stamp', text:'انتهى موعده' })
-           : (left !== null ? el('span', { class:'deadline num' }, [
-               el('span', { class:'deadline__n', text: QBANK.views.arNum(left) }),
-               el('span', { class:'deadline__l', text: left === 1 ? 'يوم' : 'أيام' })
-             ]) : null),
-      sub.free ? el('span', { class:'badge badge--ok', text:'مجانية' }) : null
-    ]),
-    el('div', { class:'subj__facts num' }, [
-      el('span', { text: QBANK.views.arNum(done) + ' من ' + QBANK.views.arNum(sub.q_count || 0) + ' سؤالًا' }),
-      topics ? el('span', { text: QBANK.views.arNum(topics) + ' محاور' }) : null,
-      el('span', { class:'subj__pct', text: QBANK.views.arNum(pct) + '٪' })
-    ]),
-    el('div', { class:'subj__meter', 'aria-label':'أنجزت ' + pct + '٪' }, [
-      el('div', { style:'width:' + pct + '%;background:' + color })
+      el('div', { class:'foot num' }, [
+        el('span', { text:'راجعت ' + QBANK.views.arNum(done) + ' من ' +
+          QBANK.views.arNum(sub.q_count || 0) + ' · ' + QBANK.views.arNum(pct) + '٪' }),
+        sub.free ? el('span', { class:'badge badge--ok', text:'مجانية' }) : null,
+        el('span', { class:'cta', text:'ابدأ المراجعة ‹' })
+      ])
     ])
   ]);
   card.addEventListener('click', () => QBANK.router.go('#/subject/' + sub.id));
   card.addEventListener('keydown', e => { if (e.key === 'Enter') QBANK.router.go('#/subject/' + sub.id); });
   return card;
+}
+
+
+/* شريط جامعتي على الشاشة الأولى — يُحدَّث فور وصول الخادم بلا وميض */
+function campusBand(){
+  const wrap = el('div');
+  const draw = c => {
+    wrap.innerHTML = '';
+    if (c && c.university_id){
+      wrap.appendChild(el('a', { class:'campus-band', href: QBANK.campus.href(c.university_id) }, [
+        el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'⌂' }),
+        el('span', { class:'campus-band__x' }, [
+          el('span', { class:'campus-band__t', text: c.university }),
+          el('span', { class:'campus-band__d', text: (c.college ? c.college + ' · ' : '') + 'افتح قسم جامعتك وشاركه بدفعتك' })
+        ]),
+        el('span', { class:'campus-band__go', 'aria-hidden':'true', text:'←' })
+      ]));
+    } else {
+      wrap.appendChild(el('a', { class:'campus-band campus-band--ask', href:'#/account' }, [
+        el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'⌕' }),
+        el('span', { class:'campus-band__x' }, [
+          el('span', { class:'campus-band__t', text:'حدّد جامعتك' }),
+          el('span', { class:'campus-band__d', text:'مرة واحدة — فتفتح المنصة على بنوك جامعتك، وتُملأ خاناتها عند رفع أي مادة.' })
+        ]),
+        el('span', { class:'campus-band__go', 'aria-hidden':'true', text:'←' })
+      ]));
+    }
+  };
+  draw(QBANK.campus ? QBANK.campus.cached() : null);
+  if (QBANK.campus) QBANK.campus.load().then(c => { if (wrap.isConnected) draw(c); });
+  return wrap;
 }
 
 const ViewHome = {
@@ -111,7 +149,64 @@ const ViewHome = {
     const subjects = (pack.subjects || []).slice();
     const body = [];
 
-    // دعوة الرفع أعلى الشاشة: الطالب لا يبحث عن ميزة لا يعرف بوجودها
+    /*
+      شريط جامعتي أعلى كل شيء — أو دعوة لاختيارها.
+
+      الطالب الذي حدّد جامعته يفتح المنصة فيرى بابها لا قائمة عامة، ومن لم
+      يحدّدها يرى سببًا واضحًا ليفعل. وضعناه فوق دعوة الرفع لأن الانتماء
+      يسبق المساهمة: من لا يعرف أين يرفع لا يرفع.
+    */
+    /*
+      ★ «ورقة اليوم» أولًا (69-today.js): كم عليّ، متى اختباري، أين وصلت،
+      وزرٌّ واحد. ثم الشرائط الثلاثة (جامعتي، الجوال، الإشعارات) في صفٍّ
+      واحد مضغوط تحتها — كانت متراكمةً بوزن البطل فتُغرقه.
+    */
+    const hero = QBANK.views.todayHero ? QBANK.views.todayHero() : null;
+    if (hero) body.push(hero);
+    const nudges = el('div', { class:'nudges' });
+    body.push(nudges);
+    nudges.appendChild(campusBand());
+
+    /*
+      ★ «راجع اليوم» أعلى الرئيسية.
+      كل ما تحتها يفترض أن الطالب يعرف من أين يبدأ، وهو لا يعرف — فيؤجّل.
+      رقمٌ واحد وزرٌّ واحد يُنهيان التردّد، ويُعطيان المنصة سببًا للفتح كل
+      صباح لا عند الاختبار وحده. ومن لم يبدأ بعد لا يرى شيئًا: بطاقةٌ
+      فارغة تعليمٌ ناقص، وغيابُها أصدق.
+    */
+    /* البطل يقولها بصوتٍ أعلى؛ البطاقة تبقى لمن لا بطل له (لا مواد بعد) */
+    if (!hero && QBANK.views.reviewCard) {
+      const rc = QBANK.views.reviewCard();
+      if (rc) body.push(rc);
+    }
+
+    /*
+      ★ تذكير الجوال — إلزامٌ يُذكَّر به لا يُحاصَر.
+      الحقل مطلوب في الملف، لكن من سجّل قبل اليوم لن يفتح ملفه من تلقائه.
+      شريط واحد يظهر لمن جواله فارغ ويختفي أبدًا بعد الحفظ — ولا يحجب
+      المذاكرة: الطالب جاء ليراجع، ونحن نطلب لا نبتزّ.
+    */
+    const phoneNudge = el('div', { class:'nudges__slot' });
+    nudges.appendChild(phoneNudge);
+    QBANK.api.myProfile().then(r => {
+      if (!phoneNudge.isConnected) return;
+      const p = (r.ok && r.data) ? r.data : null;
+      if (!p || String(p.phone || '').replace(/\D/g,'').length >= 9) return;
+      phoneNudge.appendChild(el('a', { class:'campus-band campus-band--ask', href:'#/login' }, [
+        el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'☎' }),
+        el('span', { class:'campus-band__x' }, [
+          el('span', { class:'campus-band__t', text:'أكمل ملفك: رقم جوالك' }),
+          el('span', { class:'campus-band__d', text:'حقل مطلوب في ملفك — دقيقة واحدة ويختفي هذا التنبيه.' })
+        ]),
+        el('span', { class:'campus-band__go', 'aria-hidden':'true', text:'←' })
+      ]));
+    });
+
+    /* ★ دعوة الإشعارات — حين يكون لها سبب (مستحقّ اليوم أو اختبار قريب)،
+       وبزرٍّ يضغطه هو لا بنافذةٍ تقفز فتُرفض بلا قراءة. */
+    if (QBANK.views.notifyBanner){ const nb = QBANK.views.notifyBanner(); if (nb) nudges.appendChild(nb); }
+
+    // دعوة الرفع: الطالب لا يبحث عن ميزة لا يعرف بوجودها
     body.push(el('a', { class:'upsell', href:'#/upload' }, [
       el('span', { class:'upsell__ico', 'aria-hidden':'true', text:'⇪' }),
       el('span', { class:'upsell__x' }, [
@@ -132,7 +227,7 @@ const ViewHome = {
         el('div', { class:'row', style:'justify-content:center;margin-top:16px' }, [
           el('a', { class:'btn', href:'#/admin', text:'افتح لوحة التحكم' })
         ])));
-      body.push(el('div', { class:'grid grid--2', id:'subjectsGrid' }));
+      body.push(el('div', { class:'grid', id:'subjectsGrid' }));
       return page('موادي', 'اختر مادة لتبدأ المراجعة.', body);
     }
 
@@ -148,11 +243,11 @@ const ViewHome = {
 
     if (mine.length) {
       body.push(el('h2', { text:'موادي' }));
-      body.push(el('div', { class:'grid grid--2', id:'subjectsGrid' }, mine.map(subjectCard)));
+      body.push(el('div', { class:'grid', id:'subjectsGrid' }, mine.map(subjectCard)));
     }
     if (other.length) {
       body.push(el('h2', { text: mine.length ? 'مواد أخرى متاحة' : 'المواد المتاحة' }));
-      body.push(el('div', { class:'grid grid--2', id: mine.length ? null : 'subjectsGrid' }, other.map(su => {
+      body.push(el('div', { class:'grid', id: mine.length ? null : 'subjectsGrid' }, other.map(su => {
         const c = subjectCard(su);
         const add = el('button', { class:'btn btn--sm btn--soft', type:'button',
           'aria-label':'أضف ' + su.name + ' إلى موادي', text:'+ أضف إلى موادي' });
@@ -169,7 +264,9 @@ const ViewHome = {
         return c;
       })));
     }
-    return page('موادي', 'اختر مادة لتبدأ المراجعة.', body);
+    const pg = page('موادي', 'اختر مادة لتبدأ المراجعة.', body);
+    if (hero) pg.classList.add('page--hero');   // البطل هو الرأس؛ العنوان يبقى للقارئ الآلي
+    return pg;
   }
 };
 
@@ -188,27 +285,78 @@ function loginCard(opts){
     btn.setAttribute('aria-disabled','true'); btn.textContent = 'جارٍ الإرسال…';
     const r = await QBANK.api.auth.magic(val);
     btn.removeAttribute('aria-disabled'); btn.textContent = 'أرسل رابط الدخول';
-    if (r.ok) { msg.textContent = 'تم! افتح بريدك واضغط رابط الدخول.'; QBANK.toast('أُرسل رابط الدخول'); }
+    if (r.ok) {
+      msg.textContent = 'تم! افتح بريدك: اضغط رابط الدخول، أو اكتب الرمز هنا.';
+      QBANK.toast('أُرسل بريد الدخول');
+      rememberAfter();                  // رابط البريد يعود للأصل — الوجهة تنتظره هنا
+      otpBox.hidden = false;            // ★ داخل التطبيق المغلّف الرمز هو الطريق
+      otp.focus();
+    }
     else if (r.offline) msg.textContent = 'لا اتصال بالإنترنت — الدخول يحتاج اتصالًا مرة واحدة فقط.';
+    /* ★ ٤٢٩ يُسمّى باسمه: «تعذّر الإرسال» العامة أوهمت أن المنصة معطوبة،
+       والحقيقة أن حصة البريد نفدت مؤقتًا — والفرق يغيّر تصرف الطالب كليًا */
+    else if (r.status === 429) msg.textContent =
+      'طلبت الدخول مرات كثيرة خلال ساعة — انتظر قليلًا ثم حاول، أو ادخل بحساب جوجل الآن.';
     else msg.textContent = 'تعذّر الإرسال. تحقق من البريد وحاول ثانية.';
   }
   btn.addEventListener('click', send);
   email.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
 
+  /*
+    ★ الدخول بالرمز — للتطبيق المثبّت خاصة.
+    رابط البريد يفتح في متصفح الجوال لا داخل التطبيق فيبقى التطبيق زائرًا،
+    أما الرمز فيُكتب هنا فتولد الجلسة هنا. الحقل يظهر بعد الإرسال فقط —
+    لا معنى لرمز قبل أن يوجد بريد يحمله.
+  */
+  const otp = el('input', { class:'input', type:'text', inputmode:'numeric',
+    autocomplete:'one-time-code', maxlength:'6', placeholder:'••••••',
+    'aria-label':'رمز الدخول من البريد', dir:'ltr',
+    style:'text-align:center; letter-spacing:.45em; font-weight:800; font-size:1.15rem' });
+  const otpBtn = el('button', { class:'btn btn--block', type:'button', text:'ادخل بالرمز' });
+  const otpBox = el('div', { class:'stack', hidden:true }, [
+    el('span', { class:'field__hint', text:'وصلك في نفس الرسالة رمز من ٦ أرقام — اكتبه هنا وادخل مباشرة:' }),
+    otp, otpBtn
+  ]);
+  async function verify(){
+    const code = (otp.value || '').replace(/\D/g, '');
+    if (code.length < 6) { msg.textContent = 'الرمز ٦ أرقام — انسخه من رسالة البريد.'; otp.focus(); return; }
+    otpBtn.setAttribute('aria-disabled','true'); otpBtn.textContent = 'جارٍ التحقق…';
+    const r = await QBANK.api.auth.verifyOtp((email.value || '').trim(), code);
+    otpBtn.removeAttribute('aria-disabled'); otpBtn.textContent = 'ادخل بالرمز';
+    if (r.ok && QBANK.api.user()){
+      QBANK.toast('تم الدخول');
+      QBANK.data.refreshPack().finally(() => QBANK.router.go(opts.after || '#/'));
+    } else {
+      msg.textContent = 'الرمز غير صحيح أو انتهت مدته — أرسل بريدًا جديدًا وحاول خلال دقائق.';
+    }
+  }
+  otpBtn.addEventListener('click', verify);
+  otp.addEventListener('keydown', e => { if (e.key === 'Enter') verify(); });
+
+  /*
+    ★ جوجل مفعّل (OAuth «In production» منذ ٢٠٢٦/٩) — زرّه ظاهر.
+    آبل مطفأ لا محذوف: يشترط حساب Apple Developer المدفوع، والزر الظاهر
+    المعطوب أسوأ من الغائب. يوم يُفعَّل يُعاد aBtn إلى القائمة أدناه.
+  */
+  /* ★ الوجهة تُحفظ قبل مغادرة الصفحة: جوجل والرابط البريدي يعودان إلى
+     أصل الموقع (الهاش يحمله رمز الجلسة)، فمن أين نعرف أن القاصد كان
+     اللوحة؟ من هذا المفتاح — يقرؤه الإقلاع بعد التقاط الجلسة ثم يمحوه. */
+  const rememberAfter = () => { if (opts.after) QBANK.store.set('after_login', opts.after); };
   const gBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب جوجل' });
   const aBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب آبل' });
-  gBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('google'); if (u) location.href = u; else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
-  aBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('apple');  if (u) location.href = u; else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
+  gBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('google'); if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
+  aBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('apple');  if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
+  void aBtn;   // يبقى جاهزًا ليوم حساب المطوّر
 
   return el('div', { class:'card stack' }, [
     el('label', { class:'field', style:'margin:0' }, [
       el('span', { class:'field__label', text: opts.label }),
       email,
-      el('span', { class:'field__hint', text:'يصلك رابط دخول بلا كلمة مرور.' })
+      el('span', { class:'field__hint', text:'يصلك رابط دخول ورمز — بلا كلمة مرور.' })
     ]),
-    btn, msg,
+    btn, msg, otpBox,
     el('hr', { class:'divider', style:'margin:0' }),
-    gBtn, aBtn
+    gBtn
   ]);
 }
 
@@ -230,8 +378,10 @@ const ViewLogin = {
 const ViewAdminLogin = {
   title:'دخول المشرف',
   view(){
+    /* ★ after:'#/admin' — علي دخل من بوابة المشرف فهبط على واجهة الطالب.
+       من قصد اللوحة يعود إلى اللوحة، بأي طريق دخل: رمزًا أو رابطًا أو جوجل. */
     return page('دخول المشرف', 'واجهة منفصلة، والتحقق من الصلاحية في قاعدة البيانات عبر is_admin() لا في المتصفح.', [
-      loginCard({ emailId:'adminEmail', label:'بريد المشرف' })
+      loginCard({ emailId:'adminEmail', label:'بريد المشرف', after:'#/admin' })
     ]);
   }
 };
@@ -284,4 +434,4 @@ const ViewNotFound = {
   }
 };
 
-QBANK.views = { ViewHome, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects, optLetter, arNum };
+QBANK.views = { ViewHome, campusBand, ViewLogin, ViewAdminLogin, ViewSettings, ViewNotFound, page, empty, stageNote, subjectColor, daysLeft, mySubjects, optLetter, arNum, subjectCard };

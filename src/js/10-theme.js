@@ -1,9 +1,11 @@
 /*
-  الوضع الليلي اختياري لا تلقائي: نحترم اختيار المستخدم أولًا،
-  وإن لم يختر شيئًا نتبع نظام جهازه. السبب: طلاب يذاكرون ليلًا وطلاب يطبعون نهارًا.
+  الليلي هو الافتراضي — مثل AMSU تمامًا وبطلب علي.
+  اختيار المستخدم يُحترم أولًا، ومن لم يختر يفتح على الليل: الطلاب يذاكرون
+  ليلًا في الغالب، وهوية AMSU المنقولة صُمّمت على الأسود أولًا.
 */
 const Theme = {
   KEY: 'theme',
+  DEFAULT: 'dark',
   apply(mode){
     // mode: 'light' | 'dark' | 'auto'
     const root = document.documentElement;
@@ -18,7 +20,7 @@ const Theme = {
     try{ return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); }
     catch(e){ return false; }
   },
-  current(){ return QBANK.store.get(Theme.KEY, 'auto'); },
+  current(){ return QBANK.store.get(Theme.KEY, Theme.DEFAULT); },
   set(mode){ QBANK.store.set(Theme.KEY, mode); return Theme.apply(mode); },
   toggle(){
     const now = document.documentElement.getAttribute('data-theme') === 'dark';

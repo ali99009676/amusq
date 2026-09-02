@@ -8,7 +8,8 @@ function buildPrintDoc(sub, questions, opts){
   root.appendChild(el('header', { class:'print-head', style: opts.economic ? '' :
     'border-color:' + QBANK.views.subjectColor(sub.color) }, [
     el('h1', { text: sub.name }),
-    el('p', { text: { bank:'بنك الأسئلة', explain:'الشرح', memo:'بطاقات الحفظ', overview:'نظرة عامة' }[opts.what] })
+    el('p', { text: { bank:'بنك الأسئلة', explain:'الشرح', memo:'بطاقات الحفظ',
+                      overview:'نظرة عامة', full:'المادة كاملة' }[opts.what] })
   ]));
 
   let qs = questions;
@@ -17,10 +18,48 @@ function buildPrintDoc(sub, questions, opts){
     const star = QBANK.progress.forSubject(sub.id).star;
     qs = qs.filter(q => star[q.id]);
   }
+  /* ★ بنك أخطائي: كل ما تعثّر فيه، الأكثر تعثّرًا أولًا — ورقةٌ يأخذها معه
+     صباح الاختبار. الترتيب مقصود: ما أخطأ فيه ثلاثًا يُقرأ قبل ما أخطأ فيه مرة. */
+  if (opts.range === 'wrong') {
+    const wrong = QBANK.progress.forSubject(sub.id).wrong || {};
+    qs = qs.filter(q => wrong[q.id]).sort((a, b) => (wrong[b.id] || 0) - (wrong[a.id] || 0));
+  }
+  if (opts.range === 'exam_tag') qs = qs.filter(q => q.exam_tag);
 
   if (opts.what === 'overview') {
     root.appendChild(el('p', { text: sub.descr || '' }));
     (sub.topics || []).forEach(t => root.appendChild(el('p', { text:'• ' + t })));
+  } else if (opts.what === 'full') {
+    /*
+      ★ المادة كاملة — ورقة ليلة الاختبار.
+      «عن المادة» ثم كل سؤال بخياراته وإجابته وشرحه، ثم «طريقة الحفظ»
+      و«الأخطاء الشائعة» بجداولها. طالب كثيرون يذاكرون من الورق آخر ليلة،
+      وهذه الوثيقة تغنيه عن فتح الشاشة أصلًا.
+    */
+    if (opts.analysis && opts.analysis.overview){
+      root.appendChild(el('h2', { text:'عن المادة' }));
+      root.appendChild(QBANK.views.analysisHtml(opts.analysis.overview));
+    }
+    qs.forEach((q, i) => {
+      const block = el('div', { class:'q print-q' }, [
+        el('p', { class:'ltr', style:'font-weight:700', text: (i + 1) + ') ' + q.q })
+      ]);
+      q.options.forEach((o, oi) => {
+        const isAns = oi === q.answer;
+        block.appendChild(el('p', { class:'ltr print-opt' + (isAns ? ' print-ans' : ''),
+          text: String.fromCharCode(65 + oi) + ') ' + o + (isAns ? '  ✓' : '') }));
+      });
+      if (q.expl_ar) block.appendChild(el('p', { class:'print-expl', text: q.expl_ar }));
+      root.appendChild(block);
+    });
+    if (opts.analysis && opts.analysis.memorize){
+      root.appendChild(el('h2', { text:'طريقة الحفظ' }));
+      root.appendChild(QBANK.views.analysisHtml(opts.analysis.memorize));
+    }
+    if (opts.analysis && opts.analysis.mistakes){
+      root.appendChild(el('h2', { text:'الأخطاء الشائعة' }));
+      root.appendChild(QBANK.views.analysisHtml(opts.analysis.mistakes));
+    }
   } else if (opts.what === 'memo') {
     qs.forEach((q, i) => {
       const m = q.mnemonic || {};
@@ -56,6 +95,7 @@ function openPrintDialog(sub){
   if (old) old.remove();
 
   const what = el('select', { class:'input' }, [
+    el('option', { value:'full', text:'المادة كاملة — أسئلة وشرح وطريقة حفظ' }),
     el('option', { value:'bank', text:'بنك الأسئلة' }),
     el('option', { value:'explain', text:'الشرح' }),
     el('option', { value:'memo', text:'بطاقات الحفظ' }),
@@ -64,7 +104,9 @@ function openPrintDialog(sub){
   const range = el('select', { class:'input' }, [
     el('option', { value:'all', text:'كل الأسئلة' }),
     el('option', { value:'important', text:'المهمة فقط' }),
-    el('option', { value:'starred', text:'ما ميّزته بنجمة' })
+    el('option', { value:'starred', text:'ما ميّزته بنجمة' }),
+    el('option', { value:'wrong', text:'بنك أخطائي — ما تعثّرتُ فيه' }),
+    el('option', { value:'exam_tag', text:'ما جاء في اختبارات سابقة' })
   ]);
   function check(label, checked){
     const c = el('input', { type:'checkbox' });
@@ -87,8 +129,11 @@ function openPrintDialog(sub){
   cancel.addEventListener('click', () => dialog.remove());
   go.addEventListener('click', async () => {
     const r = await QBANK.data.subjectQuestions(sub.id);
+    // «المادة كاملة» تحتاج التحليل — يُجلب هنا لا مع كل فتح للحوار
+    const analysis = (what.value === 'full' && QBANK.analysis)
+      ? await QBANK.analysis.get(sub.id) : null;
     const doc = buildPrintDoc(sub, r.data, {
-      what: what.value, range: range.value,
+      what: what.value, range: range.value, analysis,
       answers: ans.input.checked, expl: expl.input.checked,
       translation: trans.input.checked, economic: eco.input.checked
     });

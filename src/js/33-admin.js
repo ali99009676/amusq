@@ -6,12 +6,15 @@
 const Admin = {
   /* هل الجلسة الحالية لمشرف؟ نسأل قاعدة البيانات مرة ونخزّن الجواب للجلسة */
   async check(){
-    if (!QBANK.api.user()) return false;
+    /* ★ نقرأ المستخدم مرة واحدة: النداء غير متزامن، والجلسة قد تُمحى
+       أثناءه (خروج، انتهاء صلاحية) — فقراءة ثانية بعد await تنفجر على null */
+    const u0 = QBANK.api.user();
+    if (!u0) return false;
     const cached = QBANK.store.get('is_admin_check', null);
-    if (cached && cached.uid === QBANK.api.user().id) return cached.ok;
+    if (cached && cached.uid === u0.id) return cached.ok;
     const r = await QBANK.api.myProfile();
     const ok = !!(r.ok && r.data && r.data.is_admin);
-    QBANK.store.set('is_admin_check', { uid: QBANK.api.user().id, ok });
+    QBANK.store.set('is_admin_check', { uid: u0.id, ok });
     return ok;
   },
 
@@ -35,6 +38,18 @@ const Admin = {
     } catch(e){ return { ok:false, offline:true, err:e.message }; }
   },
 
+  /* GET إلى الخادم — للمفتاح العام ونحوه مما لا جسم له */
+  async serverGet(path){
+    const base = Admin.apiBase();
+    const f = QBANK.api.fetchFn();
+    if (base === null || !f) return { ok:false, offline:true };
+    try{
+      const res = await f(base + path, { method:'GET' });
+      const data = await res.json().catch(() => null);
+      return { ok: res.ok, status: res.status, data };
+    } catch(e){ return { ok:false, offline:true, err:e.message }; }
+  },
+
   /* ===== معالج الرفع — أربع خطوات، حالته قابلة للفحص بمعزل عن الواجهة ===== */
   // ٤٠ لا ٢٥: تعليمات النظام تُرسل مرة لكل دفعة، فالدفعة الأكبر توزّع كلفتها
   // على أسئلة أكثر. والسقف يبقى دون مهلة الخادم ويسمح باستئناف الرفع.
@@ -46,21 +61,92 @@ const Admin = {
   },
   newWizard(){
     // strict افتراضًا: قاعدة القداسة هي الأصل، والتحسين اختيار صريح من الرافع
-    // enrich=false افتراضًا: المسار المجاني هو الأصل، والإثراء اختيار واعٍ يُدفع ثمنه
-    return { step:1, filename:'', subjectName:'', slug:'', mode:'strict', enrich:false,
-             country:'', university:'', college:'', courseCode:'',
-             raw:[], enriched:[], draftId:null, done:0, total:0, error:'' };
+    /* ★ enrich=true افتراضًا: المادة الكاملة هي ما يريده الطالب فعلًا —
+       رفع ليذاكر لا ليخزّن نصًّا. ومن أراد المجاني يختاره بضغطة واحدة،
+       والافتراض يجب أن يكون أفضل مخرَج لا أرخصه. */
+    const w = { step:1, filename:'', subjectName:'', slug:'', mode:'strict', enrich:true,
+                country:'', university:'', college:'', courseCode:'',
+                raw:[], enriched:[], draftId:null, done:0, total:0, error:'' };
+    /*
+      ★ يرث انتماء الطالب عند الإنشاء لا عند الرسم.
+      عند الرسم كان يُملأ في الخطوة الأولى وحدها، فمن استأنف مسوّدة أو قفز
+      خطوة وجد الخانات فارغة. وإعادة كتابة اسم الجامعة ليست إزعاجًا فحسب:
+      هي المصدر الأول لتهجئات مختلفة تفتّت الجامعة الواحدة إلى عدّة.
+    */
+    const mine = QBANK.campus ? QBANK.campus.cached() : null;
+    if (mine && mine.university_id){
+      w.country    = mine.country || '';
+      w.university = mine.university || '';
+      w.college    = mine.college || '';
+    }
+    return w;
   },
   // تقدير التكلفة قبل التشغيل: عدد الأسئلة والدفعات — يقرّر المشرف على بيّنة
   estimate(w){
     return { questions: w.raw.length, batches: Admin.chunk(w.raw, Admin.BATCH).length };
   },
 
-  async wizardIngest(w, filename, base64){
-    const r = await Admin.server('/api/ingest', { filename, content_base64: base64,
+  /*
+    forceAi: «أعد القراءة بالذكاء» — طريقُ نجاةٍ بيد الرافع نفسه.
+    الخادم يقرّر وحده في الحالة العادية، لكن قراره تقديرٌ قد يخطئ: ملفٌ
+    تلتقط منه القواعدُ عشرين سؤالًا من ثمانين تبدو «سليمة» فلا يُستدعى
+    الذكاء. فمن رأى العدد أقلّ مما يعرف عن ملفه، له أن يأمر بالقراءة ثانية.
+  */
+  /*
+    الصور: تُرسل مصفوفةً في طلبٍ واحد — لا صورةً صورة. ورقةٌ صُوِّرت على
+    ثلاث لقطات قد يقع سؤالٌ على حدّ اثنتين، والنموذج الذي يراهما معًا
+    يقرؤه كاملًا. والنتيجة بشكل المعالج نفسه فلا يعرف ما بعده المصدر.
+  */
+  async wizardIngestImages(w, images){
+    const r = await Admin.server('/api/ingest', { images,
       subject_name: w.subjectName || '', sanctity_mode: w.mode || 'strict' });
     if (!r.ok) { w.error = (r.data && r.data.error) || 'تعذّر الاتصال بالخادم'; return w; }
-    w.filename = filename; w.raw = r.data.questions; w.total = r.data.total;
+    const got = Array.isArray(r.data.questions) ? r.data.questions : [];
+    if (!got.length) {
+      w.error = 'لم نقرأ سؤالًا واحدًا من الصور. تأكّد أنها واضحة ومضاءة وغير مقلوبة، ' +
+                'أو صوّرها أقرب — وجرّب صورةً واحدة أولًا.';
+      w.raw = []; w.total = 0;
+      return w;
+    }
+    w.filename = (images[0] && images[0].filename) || 'صور';
+    w.raw = got; w.total = r.data.total;
+    w.readBy = 'ai';
+    w.fromImages = r.data.from_images || images.length;
+    w.unverified = r.data.unverified || 0;
+    w.fileB64 = null;           // لا «أعد القراءة» — الصور لا تُعاد قراءتها بالقواعد
+    w.subjectName = w.subjectName || r.data.subject_name || '';
+    w.slug = w.slug || r.data.slug || '';
+    w.step = 2;
+    return w;
+  },
+
+  async wizardIngest(w, filename, base64, forceAi){
+    const r = await Admin.server('/api/ingest', { filename, content_base64: base64,
+      subject_name: w.subjectName || '', sanctity_mode: w.mode || 'strict',
+      force_ai: forceAi === true });
+    if (!r.ok) { w.error = (r.data && r.data.error) || 'تعذّر الاتصال بالخادم'; return w; }
+
+    /*
+      ★ الحارس الذي كان ناقصًا.
+      كان المعالج يتقدّم مهما كان عدد الأسئلة — حتى صفرًا. فملفٌ لم يتعرّف
+      عليه المحلّل يمرّ بصمت إلى «راجع» فيراها الطالب فارغة، ثم يضغط «انشر»
+      فتُنشأ مادة بصفر أسئلة تظهر في «استكشف» ولا يفتحها أحد.
+      وقع هذا فعلًا. الصمت هنا أسوأ من الفشل: الفشل يُصلَح، والصمت يُنشر.
+    */
+    const got = Array.isArray(r.data.questions) ? r.data.questions : [];
+    if (!got.length) {
+      w.error = 'لم نتعرّف على سؤال واحد في هذا الملف — وقد جرّبنا القواعد والذكاء معًا. ' +
+                'الأرجح أن الأسئلة صورٌ ممسوحة ضوئيًا لا نصّ؛ صدّرها نصًّا وأعد الرفع، ' +
+                'وانظر «قالب بنك الأسئلة» أسفل الصفحة.';
+      w.raw = []; w.total = 0;
+      return w;
+    }
+
+    w.filename = filename; w.raw = got; w.total = r.data.total;
+    // كيف قُرئ؟ وكم سؤالًا لم نجد نصّه حرفًا بحرف؟ — يُعرضان للرافع لا يُخبآن
+    w.readBy = r.data.read_by || 'rules';
+    w.unverified = r.data.unverified || 0;
+    w.fileB64 = base64;          // نحتفظ به لإعادة القراءة بلا رفعٍ ثانٍ
     w.subjectName = w.subjectName || r.data.subject_name || '';
     w.slug = r.data.slug || '';
     w.step = 2; w.error = '';
@@ -74,6 +160,15 @@ const Admin = {
     يبقى بلا إجابة، فنوسمه ليصحّحه صاحبه بيده في المحرر.
   */
   plainEnrich(w){
+    /*
+      ★ حتى المسار المجاني لا يتقدّم بلا سؤال.
+      «مجاني» يصف الثمن لا المحتوى: مادة بلا أسئلة ليست بنكًا مجانيًا،
+      هي عطل. وبدون هذا السطر كانت raw الفارغة تمرّ إلى الخطوة ٣ صامتة.
+    */
+    if (!Array.isArray(w.raw) || !w.raw.length) {
+      w.error = 'لا أسئلة في هذه المسوّدة — أعد رفع الملف من الخطوة الأولى.';
+      return w;
+    }
     w.enriched = w.raw.map(q => ({
       q: q.q, q_original: q.q, sanctity_mode: 'strict',
       options: q.has_options ? q.options.slice() : [String(q.answer_text || '—')],
@@ -87,27 +182,54 @@ const Admin = {
     return w;
   },
 
-  /* كم كوينًا يلزم لإثراء هذا الملف */
+  /*
+    كم كوينًا يلزم لإثراء هذا الملف.
+    ★ `costPerQ || 1` كان يبتلع الصفر: الصفر قيمةٌ كاذبة في جافاسكربت،
+    فمنصةٌ قرّرت أن تجعل الإثراء مجانيًا كانت تُحاسِب بكوين للسؤال رغمًا
+    عنها. الصفر هنا قرارٌ لا نقصان بيانات، فنميّزه صراحةً.
+  */
+  costPerQ(credits){
+    const c = credits && credits.cost_per_q;
+    return (typeof c === 'number' && c >= 0) ? c : 1;
+  },
   creditsNeeded(w, costPerQ){
-    return Math.max(0, (w.raw.length - w.done)) * Math.max(0, costPerQ || 1);
+    const c = (typeof costPerQ === 'number' && costPerQ >= 0) ? costPerQ : 1;
+    return Math.max(0, (w.raw.length - w.done)) * c;
   },
 
   async wizardEnrich(w, onProgress){
     // المسار المجاني لا يمرّ بالخادم إطلاقًا — لا تكلفة ولا انتظار
-    if (!w.enrich) { const r = Admin.plainEnrich(w); await Admin.saveDraft(r); return r; }
+    if (!w.enrich) {
+      const r = Admin.plainEnrich(w);
+      if (r.error) return r;
+      await Admin.saveDraft(r);
+      return r;
+    }
 
     const batches = Admin.chunk(w.raw, Admin.BATCH);
     for (let i = 0; i < batches.length; i++) {
       // لا إعادة معالجة لما اكتمل — الاستئناف يبدأ من حيث توقّف
       if (w.done >= (i + 1) * Admin.BATCH) continue;
+      /* ★ نُعلن بدء الدفعة لا نهايتها وحدها: بين النهايتين دقائق يظنّها
+         الطالب تعليقًا، فيُغلق الصفحة على عملٍ يجري فعلًا. */
+      if (onProgress) onProgress(w.done, w.total, { batch: i + 1,
+                                                    batches: batches.length, running: true });
 
       /*
         الحسم قبل النداء لا بعده. لو حسمنا بعده لكان كل انقطاع إثراءً مجانيًا،
         ولو تعطّل الخادم بعد الحسم رددنا الرصيد في السطر التالي.
       */
-      const need = batches[i].length * (w.costPerQ || 1);
-      const pay = await QBANK.api.rpc('spend_credits',
-        { n: need, p_reason: 'إثراء ' + batches[i].length + ' سؤالًا', p_draft: w.draftId });
+      const cpq = (typeof w.costPerQ === 'number' && w.costPerQ >= 0) ? w.costPerQ : 1;
+      const need = batches[i].length * cpq;
+      /*
+        ★ حين يكون الإثراء مجانيًا لا نمرّ بالمحفظة أصلًا.
+        نداءُ حسمٍ بصفرٍ نجاحُه محقّق، لكنه رحلةُ شبكةٍ لكل دفعة، وأسوأ منها
+        أنه يجعل عطلًا في المحفظة يوقف إثراءً لا علاقة له بها.
+      */
+      const pay = need > 0
+        ? await QBANK.api.rpc('spend_credits',
+            { n: need, p_reason: 'إثراء ' + batches[i].length + ' سؤالًا', p_draft: w.draftId })
+        : { ok:true, data:{ ok:true, spent:0 } };
       if (!pay.ok || !pay.data || !pay.data.ok) {
         const d = (pay.data) || {};
         w.error = d.reason === 'insufficient'
@@ -119,16 +241,30 @@ const Admin = {
 
       const r = await Admin.server('/api/ai', { questions: batches[i], sanctity_mode: w.mode || 'strict' });
       if (!r.ok) {
-        // الطالب لا يدفع ثمن عطل عندنا
-        await QBANK.api.rpc('refund_credits', { n: need, p_reason: 'تعذّرت الدفعة', p_draft: w.draftId });
+        // الطالب لا يدفع ثمن عطل عندنا — ومن لم يدفع شيئًا لا يُردّ له شيء
+        if (need > 0)
+          await QBANK.api.rpc('refund_credits', { n: need, p_reason: 'تعذّرت الدفعة', p_draft: w.draftId });
         w.error = (r.data && r.data.error) || 'انقطعت الدفعة ' + (i + 1) + ' — رُدّ رصيدها';
+        /* نوع العطل يرافق نصّه: على أساسه تقرّر الشاشة أتعرض «أعد المحاولة»
+           وحدها أم تفتح للطالب باب النشر بلا إثراء. */
+        w.errorKind = (r.data && r.data.kind) || 'other';
         return w;
       }
-      w.enriched = w.enriched.concat(r.data.questions);
-      w.done = Math.min(w.enriched.length, w.total);
+      /*
+        ★ الكتابة بموضعها لا بالإلحاق.
+        كان `concat` يُلحق نتيجة كل دفعة بآخر ما عنده، فإن أُعيد التشغيل
+        بعد انقطاع (أو أعاد الرافع القراءة) تضاعفت الأسئلة: ملفٌ من ٦٥
+        سؤالًا خرج بـ٢٥٩ — نُسخًا مكرّرة يظنّها الطالب مادته. والموضع
+        يجعل إعادة التشغيل تكتب فوق نفسها لا بجانبها.
+      */
+      const at = i * Admin.BATCH;
+      const got = r.data.questions || [];
+      for (let k = 0; k < got.length; k++) w.enriched[at + k] = got[k];
+      w.done = Math.min(w.enriched.filter(Boolean).length, w.total);
       if (r.data.usage) w.usage = r.data.usage;
       await Admin.saveDraft(w);
-      if (onProgress) onProgress(w.done, w.total);
+      if (onProgress) onProgress(w.done, w.total, { batch: i + 1,
+                                                    batches: batches.length, running: false });
     }
     if (w.done >= w.total) { w.step = 3; w.error = ''; }
     return w;
@@ -151,12 +287,37 @@ const Admin = {
       headers: Object.assign(QBANK.api.headers(), { 'Prefer':'return=representation' }),
       body: JSON.stringify(body)
     });
-    if (r.ok && r.data && r.data[0]) w.draftId = r.data[0].id;
+    if (r.ok && r.data && r.data[0]) { w.draftId = r.data[0].id; w.draftError = ''; }
+    else {
+      /*
+        ★ فشل الحفظ يُسجَّل ولا يُبتلع.
+        كان يُهمَل تمامًا، فيمضي المعالج إلى «راجع» ثم «انشر» بمسوّدة لم
+        تُنشأ قط — والأسئلة كلها في المتصفح فتبدو الشاشة سليمة. ثم يضغط
+        الطالب «انشر» فيُقال له «المسوّدة غير موجودة»: جملة صادقة لا تدلّ
+        على السبب، بعد أن أنفق دقائق وانتظر الذكاء.
+      */
+      w.draftError = (r.data && (r.data.message || r.data.error)) ||
+                     (r.offline ? 'لا اتصال بالخادم' : 'تعذّر حفظ المسوّدة');
+    }
     return r;
   },
 
-  // الاعتماد: نداء واحد ذرّي في قاعدة البيانات — إما كل شيء أو لا شيء
-  approve(w, publish){
+  /*
+    الاعتماد: نداء واحد ذرّي في قاعدة البيانات — إما كل شيء أو لا شيء.
+
+    ★ ومحاولةُ إنقاذٍ قبله: إن لم تُحفظ المسوّدة (انقطاع، أو صلاحية كانت
+    ناقصة) فالأسئلة ما زالت في المتصفح كاملة، فنحاول حفظها الآن بدل أن
+    نردّ الطالب خائبًا. ما دام ما يلزم موجودًا فالفشل اختيارٌ لا قدر.
+  */
+  async approve(w, publish){
+    if (!w.draftId) {
+      await Admin.saveDraft(w);
+      if (!w.draftId) {
+        return { ok:false, data:{ message:
+          'تعذّر حفظ مادتك على الخادم' + (w.draftError ? ' — ' + w.draftError : '') +
+          '. تحقق من اتصالك وأعد المحاولة؛ أسئلتك لم تضِع.' } };
+      }
+    }
     return QBANK.api.rpc('approve_draft', { draft_id: w.draftId, publish });
   },
 
@@ -165,16 +326,42 @@ const Admin = {
     نداء منفصل عن approve_draft عمدًا كي لا نغيّر توقيع دالة معتمدة تعمل،
     وفشله لا يُبطل مادة أُنشئت — يبقى المشرف قادرًا على ضبط الباقي بيده.
   */
+  /*
+    ★ الرابط يُقرأ من الخادم لا يُخمَّن.
+    كنّا نبني رابط المشاركة من `w.slug` الذي حسبه ‎/api/ingest‎ في المتصفح،
+    ثم نفترض أنه كُتب في الصف. وحين تفشل كتابته (صلاحية، أو تصادم اسم)
+    يبقى الصفّ بلا slug فيفتح الرابطُ «المادة غير متاحة» — وهي متاحة،
+    والرافع هو من أنشأها قبل ثانية. أسوأ لحظة تكذب فيها المنصة على صاحبها.
+  */
+  async realSlug(subjectId){
+    if (!subjectId) return null;
+    const r = await QBANK.api.rest('subjects?id=eq.' + subjectId + '&select=slug');
+    return (r.ok && r.data && r.data[0] && r.data[0].slug) || null;
+  },
+
   async stamp(subjectId, w){
     if (!subjectId) return { ok:false };
     const u = QBANK.api.user() || {};
     const body = {
       created_by: u.id || null,
       sanctity_mode: w.mode === 'enhanced' ? 'enhanced' : 'strict',
-      slug: w.slug || null,
       status: 'published',
       course_code: w.courseCode || ''
     };
+    /*
+      ★ الحقل الفارغ يُحذف ولا يُرسل صفرًا.
+      كان يُرسل `slug: w.slug || null` دائمًا. والقاعدة تولّد الرابط عند
+      الإنشاء، فيأتي هذا التحديث بعده بثانية ويكتب null فوقه فيمحوه —
+      وتصير المادة «غير متاحة» وهي منشورة سليمة.
+
+      ومتى يكون فارغًا؟ حين تُستأنف مسوّدة: الاستئناف يجلب الأسئلة ولا
+      يجلب الرابط، فيبدأ المعالج بحقلٍ خالٍ. فالملفات الكبيرة — التي
+      تُحفظ مسوّداتها وتُستأنف — كانت أكثرها عرضةً لهذا.
+
+      والقاعدة العامة: PATCH جزئيٌّ يرسل ما يعرفه فقط. وإرسال null معناه
+      «امحُ ما هناك»، وهذا ليس ما نقصد حين لا نعرف.
+    */
+    if (w.slug) body.slug = w.slug;
     // الجامعة والكلية تُنشآن في الخادم إن لم تكونا موجودتين — والتطبيع يمنع التكرار
     if (w.country && w.university){
       const r = await QBANK.api.rpc('ensure_university', { p_country: w.country, p_name: w.university });
@@ -276,7 +463,9 @@ function adminContentTab(box){
   listBox.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
 
   Promise.all([
-    QBANK.api.rest('subjects?select=id,name,color,icon,q_count,published,free,ord,exam_date&order=ord'),
+    /* ★ السعر في الجلب: بلا العمود يبدأ كل حقلٍ في القائمة بصفرٍ كاذب،
+       فيحفظه المشرف بلا قصدٍ ويُمحى سعرُ مادةٍ كان صحيحًا. */
+    QBANK.api.rest('subjects?select=id,name,color,icon,q_count,published,free,price,ord,exam_date&order=ord'),
     // قوائم المسوّدات بلا payload — الحمولة كبيرة ولا تلزم القائمة
     QBANK.api.rest('drafts?select=id,name,status,total,done,updated_at&order=updated_at.desc')
   ]).then(([subs, drs]) => {
@@ -326,9 +515,43 @@ function adminContentTab(box){
       const freeBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button',
         text: sub.free ? '★ مجانية' : 'اجعلها مجانية' });
       freeBtn.addEventListener('click', async () => {
-        await QBANK.api.rest('subjects?id=eq.' + sub.id,
-          { method:'PATCH', body: JSON.stringify({ free: !sub.free }) });
+        // الوسم يجرّ السعر: مجانيةٌ بسعرٍ تناقضٌ يراه الطالب في مكانين
+        const goFree = !sub.free;
+        await QBANK.api.rest('subjects?id=eq.' + sub.id, { method:'PATCH',
+          body: JSON.stringify({ free: goFree,
+            price: goFree ? 0 : (Number(sub.price) > 0 ? sub.price : 29) }) });
         QBANK.router.render('#/admin/content');
+      });
+
+      /*
+        ★ السعر في القائمة لا في المحرّر وحده.
+        التسعير عملٌ يُقارَن: المشرف يمرّ على عشرين مادة فيرفع هذه ويخفض
+        تلك. وفتحُ محرّرٍ كامل لكل واحدة ثم العودة يجعل المقارنة مستحيلة.
+      */
+      const priceIn = el('input', { class:'input num', type:'number', min:'0', max:'999',
+        inputmode:'numeric', style:'width:86px', value: String(sub.price == null ? 0 : sub.price),
+        'aria-label':'سعر «' + sub.name + '» بالريال' });
+      priceIn.addEventListener('change', async () => {
+        const price = Math.max(0, Math.min(999, parseInt(priceIn.value || '0', 10) || 0));
+        priceIn.value = String(price);
+        const r = await QBANK.api.rest('subjects?id=eq.' + sub.id, { method:'PATCH',
+          body: JSON.stringify({ price: price, free: price === 0 }) });
+        QBANK.toast(r.ok ? (price ? 'السعر ' + QBANK.views.arNum(price) + ' ريالًا'
+                                  : 'صارت مجانية') : 'تعذّر الحفظ');
+        if (r.ok) QBANK.router.render('#/admin/content');
+      });
+      const priceWrap = el('label', { class:'ad-inline' }, [
+        el('span', { class:'ad-inline__l', text:'السعر ﷼' }), priceIn ]);
+      /* ★ صلاحية جديدة: إعادة توليد التحليل الشامل لأي مادة بضغطة —
+         بعد تصحيح أسئلة أو ضم مادة قديمة، بدل انتظار قادح البُطلان */
+      const anaBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'⟳ حلّل' });
+      anaBtn.addEventListener('click', async () => {
+        if (!QBANK.analysis) return QBANK.toast('التحليل غير محمّل');
+        anaBtn.setAttribute('aria-disabled','true'); anaBtn.textContent = '… يحلَّل';
+        const r = await QBANK.analysis.generate(sub.id, 'ar');
+        anaBtn.removeAttribute('aria-disabled'); anaBtn.textContent = '⟳ حلّل';
+        QBANK.toast(r && r.ok ? 'اكتمل التحليل: ' + ((r.data && r.data.topics) || []).length + ' محاور'
+                              : 'تعذّر التحليل — ' + ((r && r.data && r.data.error) || 'حاول ثانية'));
       });
       subTable.appendChild(el('div', { class:'ad-row', style:'cursor:default;flex-wrap:wrap' }, [
         el('span', { text: sub.icon || '▤' }),
@@ -343,7 +566,7 @@ function adminContentTab(box){
         el('span', { class:'ad-sub', style:'flex:1 0 100%' }, [
           el('label', { class:'ad-inline' }, [
             el('span', { class:'ad-inline__l', text:'موعد الاختبار' }), dateIn ]),
-          freeBtn
+          priceWrap, freeBtn, anaBtn
         ])
       ]));
     });
@@ -411,6 +634,12 @@ const ADMIN_TABS = [
   { id:'settings', label:'الإعدادات', fill: adminSettingsTab }
 ];
 
+/* أيقونة كل تبويب — بالمعرّف لا بالموضع، فالملفات اللاحقة تُدخل تبويباتها حيث تشاء */
+Admin.ICONS = {
+  dash:'◫', students:'☺', content:'▤', ugc:'⇪', reports:'⚑', quality:'✓',
+  money:'◎', campus:'⌂', audit:'≡', settings:'⚙'
+};
+
 const AdminView = {
   title:'لوحة التحكم',
   view(route){
@@ -419,17 +648,83 @@ const AdminView = {
     if (!u && route.rest[0] !== 'settings') return QBANK.views.ViewAdminLogin.view();
 
     const active = ADMIN_TABS.some(t => t.id === route.rest[0]) ? route.rest[0] : ADMIN_TABS[0].id;
-    const tabs = el('div', { class:'tabs', role:'tablist' },
+
+    /*
+      ★ شريط اللوحة — رأس عالم المشرف المستقل.
+      غلاف الطالب مخفيّ هنا (is-admin على الجسد)، فهذا الشريط هو التنقّل
+      كله: هوية اللوحة، وكل التبويبات، ومخرج واحد صريح «افتح المنصة»
+      يفتح واجهة الطالب في تبويب جديد — فلا يفقد المشرف مكانه أبدًا.
+    */
+    /* رأسٌ واحد مضغوط: كان فوقه عنوان الصفحة «لوحة التحكم» وشرحه، ثم هذا
+       الشريط يقول الشيء نفسه — شاشةٌ كاملة على الجوال قبل أول رقم. عنوان
+       الصفحة يُخفى على مسارات اللوحة (CSS)، والشريط يحمل الهوية والمخرج. */
+    const head = el('div', { class:'ad-shell' }, [
+      el('span', { class:'ad-shell__mark', 'aria-hidden':'true', text:'⛨' }),
+      el('div', { class:'ad-shell__x' }, [
+        el('strong', { class:'ad-shell__t', text:'لوحة المشرف' }),
+        el('span', { class:'ad-shell__s', text: (u && u.email) || '' })
+      ]),
+      el('span', { class:'spacer' }),
+      el('a', { class:'btn btn--ghost btn--sm', href:'#/', target:'_blank', rel:'noopener',
+        text:'افتح المنصة ↗' })
+    ]);
+
+    /*
+      ★ التبويبات بأيقونة وشارة عدّ.
+      عشرة تبويبات نصّية متساوية لا تقول أيّها ينتظر. الأيقونة تُقرأ قبل
+      الكلمة، والشارة الذهبية تقول «هنا ثلاثة ينتظرون» قبل أن يفتح
+      المشرف صندوق الوارد أصلًا — الأرقام من admin_inbox نفسه.
+    */
+    const tabs = el('div', { class:'tabs tabs--admin', role:'tablist' },
       ADMIN_TABS.map(t => el('button', {
         class:'tabs__btn', type:'button', role:'tab', 'data-tab':t.id,
-        'aria-selected': t.id === active ? 'true' : 'false', text: t.label })));
+        'aria-selected': t.id === active ? 'true' : 'false' }, [
+        el('span', { class:'tabs__ico', 'aria-hidden':'true', text: Admin.ICONS[t.id] || '▪' }),
+        el('span', { text: t.label }),
+        el('span', { class:'tabs__n', 'data-n': t.id, hidden: true })
+      ])));
+    if (u && QBANK.api.rpc) QBANK.api.rpc('admin_inbox').then(r => {
+      const d = (r && r.ok && r.data && !r.data.error) ? r.data : null;
+      if (!d || !alive()) return;
+      const counts = {
+        money:   (Number(d.purchases) || 0) + (Number(d.phones) || 0) + (Number(d.payouts) || 0),
+        content: Number(d.drafts) || 0,
+        quality: Number(d.reports) || 0
+      };
+      Object.keys(counts).forEach(id => {
+        const b = tabs.querySelector('[data-n="' + id + '"]');
+        if (!b || !counts[id]) return;
+        b.textContent = QBANK.views.arNum(counts[id]); b.hidden = false;
+      });
+    }).catch(() => {});
     tabs.addEventListener('click', e => {
       const b = e.target.closest('[data-tab]');
       if (b) QBANK.router.go('#/admin/' + b.getAttribute('data-tab'));
     });
     const body = el('div', { class:'stack', id:'adminBody' });
     ADMIN_TABS.filter(t => t.id === active)[0].fill(body);
-    return QBANK.views.page('لوحة التحكم', 'كل ما يظهر للطالب يمرّ من هنا أولًا.', [tabs, body]);
+
+    /*
+      ★ حارس الصلاحية — يظهر لا يصمت.
+      RLS تحمي البيانات فعلًا، لكن طالبًا فتح ‎#/admin كان يرى هيكل لوحةٍ
+      فارغة «معطوبة» في ظنّه. نسأل القاعدة، فإن لم يكن مشرفًا استبدلنا
+      اللوحة برسالة تسمّي الحال وبابًا يعيده لعالمه.
+    */
+    /* الطرد عند جوابٍ صريح فقط (is_admin === false): فشلُ الجلب أو انقطاعه
+       لا يطرد — RLS تحمي البيانات أصلًا، وطردُ مشرفٍ لعطل شبكة عابر أسوأ
+       من ترك هيكلٍ فارغ لطالبٍ فضولي لحظة. */
+    if (u) QBANK.api.myProfile().then(r => {
+      const notAdmin = r && r.ok && r.data && r.data.is_admin === false;
+      if (!notAdmin || !body.isConnected) return;
+      const page0 = body.closest('.page');
+      if (!page0) return;
+      page0.innerHTML = '';
+      page0.appendChild(QBANK.views.empty('⛨', 'هذه اللوحة للمشرف',
+        'حسابك مسجَّل لكنه بلا صلاحية إشراف. إن كنت المشرف فادخل بالبريد الصحيح.',
+        el('a', { class:'btn', href:'#/', text:'العودة إلى المنصة' })));
+    });
+
+    return QBANK.views.page('لوحة التحكم', 'كل ما يظهر للطالب يمرّ من هنا أولًا.', [head, tabs, body]);
   }
 };
 

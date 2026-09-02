@@ -81,15 +81,32 @@ const Trial = {
     return bar;
   },
 
-  /* شاشة انتهاء التجربة — تفتح الشراء لا تتركه في فراغ */
+  /*
+    شاشة انتهاء التجربة — تفتح الشراء لا تتركه في فراغ.
+    ★ وتحمل طرق الفتح نفسها التي تحملها بطاقة القفل. طالبٌ أنفق عشر دقائق
+    في المادة هو أقربُ الناس إلى الدفع، ولا يليق أن يكون طريقه أضيق من
+    طريق من لم يفتحها بعد.
+  */
   expiredCard(sub){
-    return el('div', { class:'card', style:'text-align:center' }, [
+    const kids = [
       el('span', { class:'empty__ico', 'aria-hidden':'true', text:'◷' }),
       el('p', { class:'empty__title', text:'انتهت تجربتك المجانية' }),
       el('p', { class:'empty__text',
         text:'استفدت من عشر دقائق كاملة في «' + sub.name + '». افتحها الآن حتى نهاية الفصل.' }),
       QBANK.gate.buyButton(sub)
-    ]);
+    ];
+    const C = QBANK.codes;
+    if (C){
+      kids.push(QBANK.views.redeemBox(QBANK.gate.reopen));
+      const s = C.support();
+      if (!C.isApp() && s.wa){
+        kids.push(el('a', { class:'btn btn--block', target:'_blank',
+          rel:'noopener', href: C.paidUrl(sub), text:'حوّلتُ — أرسل الإيصال للمشرف' }));
+        kids.push(el('a', { class:'btn btn--ghost btn--block', target:'_blank',
+          rel:'noopener', href: C.askUrl(sub), text:'عندي سؤال قبل التحويل' }));
+      }
+    }
+    return el('div', { class:'card', style:'text-align:center' }, kids);
   }
 };
 QBANK.trial = Trial;

@@ -4,8 +4,9 @@ html{ -webkit-text-size-adjust:100%; }
 body{
   margin:0;
   font-family:var(--font);
-  font-size:16.5px;
-  line-height:1.8;
+  /* مقياس AMSU: يتنفّس مع عرض الشاشة بين ١٥ و١٧ */
+  font-size:clamp(15px, 1.7vw + 10px, 17px);
+  line-height:1.85;
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   text-rendering:optimizeLegibility;                 /* سطر مريح للعربية، فحروفها متصلة وتحتاج تنفّسًا */
@@ -20,12 +21,12 @@ body{
 /* العناوين بالخط الكوفي الهندسي — هو شخصية الصفحة، والنص بخط أنعم للقراءة */
 h1,h2,h3,h4{
   font-family:var(--font-display);
-  margin:0 0 var(--s3); line-height:1.45; font-weight:700;
-  letter-spacing:-.015em;
+  margin:0 0 var(--s3); line-height:1.45; font-weight:800;
+  letter-spacing:-.01em;
 }
 h1{ font-size:1.6rem; } h2{ font-size:1.3rem; } h3{ font-size:1.06rem; }
 p{ margin:0 0 var(--s3); }
-a{ color:var(--brand); text-decoration:none; }
+a{ color:var(--acc); text-decoration:none; }
 a:hover{ text-decoration:underline; }
 ul,ol{ margin:0 0 var(--s3); padding-inline-start:var(--s5); }
 button,input,select,textarea{ font:inherit; color:inherit; }
@@ -33,8 +34,9 @@ img,svg{ max-width:100%; height:auto; }
 
 /* الأرقام تبقى لاتينية داخل النصوص العربية لسهولة قراءة النتائج والنسب */
 .num,[data-num]{ font-family:var(--font-num); font-variant-numeric:tabular-nums; direction:ltr; unicode-bidi:isolate; }
-/* نصوص الأسئلة تبقى بلغتها الأصلية واتجاهها */
-.ltr{ direction:ltr; text-align:left; unicode-bidi:isolate; }
+/* نصوص الأسئلة تبقى بلغتها الأصلية واتجاهها — وبخط لاتيني نظيف كما في AMSU */
+.ltr{ direction:ltr; text-align:left; unicode-bidi:isolate; font-family:var(--font-latin); letter-spacing:0; }
+::selection{ background:var(--acc); color:#fff; }
 
 /* حلقة تركيز ناعمة بدل الخط الحاد — أوضح للوحة المفاتيح وأجمل */
 :focus-visible{ outline:none; box-shadow:var(--ring); border-radius:var(--r1); }

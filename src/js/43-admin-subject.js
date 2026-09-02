@@ -1,10 +1,10 @@
 /*
-  محرر المادة — كل ما يخصّ مادة واحدة في شاشة واحدة: هويتها، محاورها، وأسئلتها.
+  محرر المادة — كل ما يخصّ مادة واحدة في شاشة واحدة: هويتها، محاورها،
+  محتواها التحليلي، وأسئلتها.
 
-  قرار جوهري: نصّ السؤال وخياراته لا يُعدَّلان هنا ولا في أي مكان (قاعدة القداسة).
-  ما يملك المشرف تعديله هو ما أضفناه نحن حول النص: موضع الإجابة، المحور، الشرح،
-  الترجمة، بطاقة الحفظ، علامة الأهمية، والترتيب. الخطأ في نصّ الدكتور يُصلَح
-  برفع الملف من جديد لا بالكتابة فوقه.
+  قاعدة القداسة تخصّ الآلة: لا يجوز لنموذجٍ أو خط معالجة أن يغيّر حرفًا من
+  نص الدكتور. أما المشرف البشري فمالك القرار — يحرّر النص والخيارات بوعي،
+  خلف بابٍ صريح يذكّره أن ما يكتبه يصبح هو «الأصل» الذي يذاكر منه الجميع.
 */
 const SUBJ_COLORS = ['subject-1','subject-2','subject-3','subject-4','subject-5','subject-6'];
 const SUBJ_ICONS  = ['▤','☤','✚','♥','◈','⚕','☣','◐','⌁','⚗'];
@@ -18,6 +18,17 @@ const SubjEditor = {
   },
   delQuestion(id){
     return QBANK.api.rest('questions?id=eq.' + id, { method:'DELETE' });
+  },
+  /* ★ سؤال جديد يدويًا: المشرف مؤلّف أيضًا لا ناقلًا فقط.
+     يُوسم أنه من تأليف المنصة (derived=false، بلا وسم قداسة) وq_count
+     يتزامن بقادح القاعدة فلا نلمسه. */
+  addQuestion(subjectId, ord){
+    return QBANK.api.rest('questions', { method:'POST', body: JSON.stringify({
+      subject_id: subjectId, ord: ord,
+      q: 'سؤال جديد — حرّر نصّه', options: ['الخيار الأول','الخيار الثاني','الخيار الثالث','الخيار الرابع'],
+      answer: 0, derived: false, important: false,
+      expl_ar:'', expl_en:'', translation:'', mnemonic:{}, topic:''
+    }) });
   },
   /* تصفية محلية: البحث في مادة واحدة لا يستحق ذهابًا إلى الخادم مع كل حرف */
   filter(list, q, topic, only){
@@ -68,11 +79,41 @@ function subjIdentity(sub, refresh){
       return b;
     }));
 
+  /*
+    ★ السعر — حقلٌ كان ناقصًا تمامًا.
+    العمود في القاعدة منذ البداية، والبوابةُ تقرؤه وتعرضه للطالب، ولا شاشة
+    واحدة في المنصة تضبطه. فكل مادة مدفوعة كانت تأخذ سعرها من قيمةٍ كُتبت
+    عند الاستيراد ولا سبيل إلى تغييرها إلا بـSQL. ميزةٌ نصفُها مبنيّ: تعمل
+    آليّتها ولا يملك أحدٌ مفتاحها.
+
+    والصفر يعني «مجانية» — فالسعر والمجانية وجهان لرقمٍ واحد، ولا نجعلهما
+    إعدادين متناقضين يسأل المشرف أيهما يغلب.
+  */
+  const priceIn = el('input', { class:'input num', type:'number', min:'0', max:'999', step:'1',
+    inputmode:'numeric', value: String(sub.price == null ? 0 : sub.price),
+    'aria-label':'سعر المادة بالريال' });
+  const priceHint = el('p', { class:'field__hint', style:'margin:4px 0 0' });
+  const paintPrice = () => {
+    const v = parseInt(priceIn.value || '0', 10) || 0;
+    priceHint.textContent = v > 0
+      ? 'يدفع الطالب ' + QBANK.views.arNum(v) + ' ريالًا لفتحها.'
+      : 'صفر = مجانية للجميع.';
+  };
+  priceIn.addEventListener('input', paintPrice);
+  paintPrice();
+
   const save = el('button', { class:'btn', type:'button', text:'احفظ الهوية' });
   save.addEventListener('click', async () => {
+    /* السعر يُقصّ إلى نطاقٍ معقول قبل الحفظ: حقلُ رقمٍ في متصفح يقبل
+       أي شيء، والقيمة السالبة أو الخيالية تُفسد البوابة لا الحقل. */
+    const price = Math.max(0, Math.min(999, parseInt(priceIn.value || '0', 10) || 0));
+    priceIn.value = String(price); paintPrice();
     const r = await SubjEditor.patchSubject(sub.id, {
       name: nameIn.value.trim() || sub.name, descr: descrIn.value, color, icon,
-      ord: parseInt(ordIn.value || '0', 10), exam_date: dateIn.value || null
+      ord: parseInt(ordIn.value || '0', 10), exam_date: dateIn.value || null,
+      price: price,
+      /* والمجانية تتبع السعر لا تناقضه: صفرٌ يعني مجانية، وأكثرُ منه مدفوعة */
+      free: price === 0
     });
     QBANK.toast(r.ok ? 'حُفظت هوية المادة' : 'تعذّر الحفظ');
     if (r.ok && refresh) refresh();
@@ -85,17 +126,53 @@ function subjIdentity(sub, refresh){
     QBANK.toast(r.ok ? (sub.published ? 'أُخفيت المادة' : 'نُشرت المادة') : 'تعذّر التعديل');
     if (r.ok && refresh) refresh();
   });
+  /* ★ الزرّ يضبط الرقم لا وسمًا بجانبه: كانا إعدادين مستقلّين، فمادةٌ
+     «مجانية» بسعر ٢٩ تخرج لصاحبها بلا أن يعرف أيّهما يغلب. */
   const free = el('button', { class:'btn btn--sm btn--ghost', type:'button',
     text: sub.free ? '★ مجانية للتجربة' : 'اجعلها مجانية' });
   free.addEventListener('click', async () => {
-    const r = await SubjEditor.patchSubject(sub.id, { free: !sub.free });
+    /* والوسم يجرّ السعر معه: مجانيةٌ بسعر ٢٩ تناقضٌ يراه الطالب في مكانين
+       مختلفين. ورفعُ المجانية يعيد السعر الافتراضي لا يتركه صفرًا. */
+    const goFree = !sub.free;
+    const r = await SubjEditor.patchSubject(sub.id, {
+      free: goFree,
+      price: goFree ? 0 : (Number(sub.price) > 0 ? sub.price : 29)
+    });
+    QBANK.toast(r.ok ? (goFree ? 'صارت مجانية' : 'صارت مدفوعة') : 'تعذّر التعديل');
     if (r.ok && refresh) refresh();
+  });
+
+
+  /*
+    ★ التوثيق قرار إنسان لا نتيجة حساب.
+    لو مُنح تلقائيًا بعدد تقييمات لصار وسمًا يُشترى بحسابات وهمية. فالمشرف
+    يفتح المادة، يقرأ عيّنة منها، ثم يسمها بيده — والوسم يقول للطالب:
+    «نظر فيها إنسان» لا «أعجبت كثيرين».
+  */
+  const verify = el('button', { class:'btn btn--sm ' + (sub.verified ? 'btn--soft' : 'btn--ghost'), type:'button',
+    text: sub.verified ? '✓ موثّقة — أزل التوثيق' : 'وثّق هذه المادة' });
+  verify.addEventListener('click', async () => {
+    // ★ تحذير لا منع: البلاغ قد يكون خاطئًا، لكن توثيق مادة عليها بلاغ مفتوح
+    //   يمنح خطأً محتملًا ختمَ المراجعة — وهو أسوأ ما تفعله طبقة الثقة بنفسها.
+    if (!sub.verified && Number(sub.reports_open) > 0 &&
+        !confirm('على هذه المادة ' + sub.reports_open + ' بلاغًا مفتوحًا لم يُبتّ فيه.\nتوثيقها الآن يمنح خطأً محتملًا ختمَ المراجعة. أتريد المتابعة؟'))
+      return;
+    verify.disabled = true;
+    const r = await QBANK.api.rpc('set_verified', { p_subject: sub.id, p_on: !sub.verified });
+    verify.disabled = false;
+    const ok = r.ok && r.data && r.data.ok !== false;
+    QBANK.toast(ok ? (sub.verified ? 'أُزيل التوثيق' : 'وُثّقت المادة') : 'تعذّر — تأكد من صلاحيتك');
+    if (ok) refresh();
   });
 
   return el('div', { class:'ad-panel' }, [
     el('div', { class:'ad-panel__h' }, [
       el('h2', { class:'ad-panel__t', text:'هوية المادة' }),
-      el('span', { class:'ad-panel__s', text: sub.q_count + ' سؤالًا' })
+      el('span', { class:'ad-panel__s', text: sub.q_count + ' سؤالًا' }),
+      sub.verified ? el('span', { class:'badge badge--ok', text:'✓ موثّقة' }) : null,
+      Number(sub.rating_n) > 0 && QBANK.trust
+        ? el('span', { class:'badge badge--star num', text: QBANK.trust.starsText(sub.rating_avg, sub.rating_n) })
+        : null
     ]),
     el('div', { class:'ad-edit ad-edit--2' }, [
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الاسم' }), nameIn ]),
@@ -103,9 +180,19 @@ function subjIdentity(sub, refresh){
       el('label', { class:'field', style:'margin:0;grid-column:1/-1' }, [ el('span', { class:'field__label', text:'الوصف — يظهر للطالب على البطاقة' }), descrIn ]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'اللون' }), swatches ]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الأيقونة' }), icons ]),
-      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترتيب' }), ordIn ])
+      el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترتيب' }), ordIn ]),
+      el('label', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'السعر بالريال' }), priceIn, priceHint ])
     ]),
-    el('div', { class:'ad-bar', style:'margin:16px 0 0' }, [ save, pub, free ])
+    el('div', { class:'ad-bar', style:'margin:16px 0 0' }, [ save, pub, free, verify ]),
+    /* بابٌ من المادة إلى بلاغاتها: المشرف الذي يفتحها ليوثّقها يرى أولًا ما عليها */
+    Number(sub.reports_open) > 0
+      ? el('a', { class:'ad-warn', href:'#/admin/reports' }, [
+          el('span', { text:'⚑ عليها ' + QBANK.views.arNum(sub.reports_open) +
+            (Number(sub.reports_open) === 1 ? ' بلاغ مفتوح' : ' بلاغات مفتوحة') }),
+          el('span', { class:'ad-warn__go', text:'افتح الطابور ←' })
+        ])
+      : null
   ]);
 }
 
@@ -185,6 +272,24 @@ function qCard(q, sub, refresh){
   });
   head.appendChild(star);
 
+  /*
+    ★ «جاء في اختبار سابق» — حقلٌ صغير في رأس السؤال لا في نافذة التحرير.
+    الوسم عملٌ يُفعل لعشرين سؤالًا متتابعة بعد الاختبار مباشرة، ونافذةٌ
+    تُفتح وتُغلق لكلٍّ منها تجعله لا يُفعل. حقلٌ في الصفّ يُكتب ويُغادَر.
+  */
+  const tagIn = el('input', { class:'input input--sm num', type:'text', maxlength:'16',
+    value: q.exam_tag || '', placeholder:'اختبار ٢٠٢٥ ف١',
+    'aria-label':'جاء في اختبار سابق — اكتب السنة والفصل' });
+  tagIn.addEventListener('change', async () => {
+    const v = tagIn.value.trim().slice(0, 16);
+    const r = await SubjEditor.patchQuestion(q.id, { exam_tag: v });
+    if (!r.ok) return QBANK.toast('تعذّر الحفظ');
+    q.exam_tag = v;
+    QBANK.toast(v ? 'وُسم: ' + v : 'أُزيل الوسم');
+  });
+  head.appendChild(el('label', { class:'ad-inline' }, [
+    el('span', { class:'ad-inline__l', text:'اختبار سابق' }), tagIn ]));
+
   const more = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'حرّر' });
   head.appendChild(more);
   box.appendChild(head);
@@ -231,11 +336,20 @@ function qCard(q, sub, refresh){
 
     const save = el('button', { class:'btn btn--sm', type:'button', text:'احفظ' });
     save.addEventListener('click', async () => {
-      const r = await SubjEditor.patchQuestion(q.id, {
+      const patch = {
         topic: topicSel.value, expl_ar: ar.value, expl_en: en.value, translation: tr.value,
         mnemonic: { cue: cue.value, key: key.value, link: link.value, strike: m.strike || '' },
         ord: parseInt(ordQ.value || String(q.ord), 10)
-      });
+      };
+      /* النص والخيارات يُرفقان فقط إن فُتح بابهما — الإغلاق يعني «لم أقصد» */
+      if (textDetails.open){
+        const newOpts = optInputs.map(i2 => i2.value);
+        if (!String(qTxt.value).trim()) return QBANK.toast('السؤال بلا نص لا يُحفظ');
+        if (newOpts.some(o => !String(o).trim())) return QBANK.toast('خيار فارغ — املأه أو احذفه');
+        patch.q = qTxt.value; patch.options = newOpts;
+        patch.answer = Math.min(q.answer, newOpts.length - 1);
+      }
+      const r = await SubjEditor.patchQuestion(q.id, patch);
       QBANK.toast(r.ok ? 'حُفظ السؤال' : 'تعذّر الحفظ');
       if (r.ok && refresh) refresh();
     });
@@ -250,7 +364,45 @@ function qCard(q, sub, refresh){
       if (r.ok){ if (refresh) refresh(); else box.remove(); }
     });
 
+    /*
+      ★ تحرير النص والخيارات — باب التأليف الواعي.
+      خلف مطوية صريحة لا حقلًا مكشوفًا: تعديل نص الدكتور قرارٌ يُتّخذ لا
+      حركةُ سهو. ما يُحفظ هنا يصبح الأصل الذي يذاكر منه كل طالب.
+    */
+    const qTxt = el('textarea', { class:'input ltr', rows:'3' }); qTxt.value = q.q || '';
+    const optWrap = el('div', { class:'stack', style:'gap:6px' });
+    const optInputs = [];
+    const drawOpts = () => {
+      optWrap.innerHTML = ''; optInputs.length = 0;
+      (q.options || []).forEach((o, i) => {
+        const inp = el('input', { class:'input ltr', value: o, 'aria-label':'الخيار ' + (i + 1) });
+        optInputs.push(inp);
+        const rm = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'✕', 'aria-label':'احذف الخيار ' + (i + 1) });
+        rm.addEventListener('click', () => {
+          if ((q.options || []).length <= 2) return QBANK.toast('سؤال بلا خيارين ليس سؤالًا');
+          q.options.splice(i, 1);
+          if (q.answer >= q.options.length) q.answer = 0;
+          drawOpts();
+        });
+        optWrap.appendChild(el('div', { class:'row', style:'flex-wrap:nowrap' }, [
+          el('span', { class:'badge' + (i === q.answer ? ' badge--ok' : ''), text: QBANK.views.optLetter(i) }), inp, rm ]));
+      });
+      const addOpt = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'+ خيار' });
+      addOpt.addEventListener('click', () => { q.options.push(''); drawOpts(); });
+      optWrap.appendChild(addOpt);
+    };
+    const textDetails = el('details', { class:'fold' }, [
+      el('summary', { text:'تحرير النص والخيارات — ما تحفظه يصبح الأصل' }),
+      el('div', { class:'stack', style:'margin-top:8px' }, [
+        el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'نص السؤال' }), qTxt ]),
+        el('span', { class:'field__label', text:'الخيارات (احذف وأضف كما تشاء — الإجابة تُختار من العرض أعلاه)' }),
+        optWrap
+      ])
+    ]);
+    textDetails.addEventListener('toggle', () => { if (textDetails.open) drawOpts(); });
+
     panel = el('div', { class:'ad-edit ad-edit--2', style:'margin-top:12px' }, [
+      el('div', { style:'grid-column:1/-1' }, [textDetails]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'المحور' }), topicSel ]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترتيب' }), ordQ ]),
       el('label', { class:'field', style:'margin:0;grid-column:1/-1' }, [ el('span', { class:'field__label', text:'الشرح بالعربية' }), ar ]),
@@ -299,14 +451,85 @@ function subjQuestions(sub, questions, refresh){
     x.addEventListener('input', () => { shown = 40; draw(); }));
   draw();
 
+  /* ★ التأليف اليدوي: سؤال جديد من الصفر يظهر أول القائمة جاهزًا للتحرير */
+  const addBtn = el('button', { class:'btn btn--sm', type:'button', text:'+ أضف سؤالًا' });
+  addBtn.addEventListener('click', async () => {
+    const maxOrd = questions.reduce((n, x) => Math.max(n, x.ord || 0), -1);
+    const r = await SubjEditor.addQuestion(sub.id, maxOrd + 1);
+    QBANK.toast(r.ok ? 'أُضيف — حرّر نصّه الآن' : 'تعذّرت الإضافة');
+    if (r.ok && refresh) refresh();
+  });
+
   return el('div', { class:'ad-panel' }, [
     el('div', { class:'ad-panel__h' }, [
-      el('h2', { class:'ad-panel__t', text:'الأسئلة' }), count
+      el('h2', { class:'ad-panel__t', text:'الأسئلة' }), count, el('span', { class:'spacer' }), addBtn
     ]),
     el('p', { class:'page__sub', style:'margin-top:0',
-      text:'نصّ السؤال وخياراته لا يُعدَّلان — يُصحَّح الخطأ برفع الملف من جديد. اضغط خيارًا لتجعله الإجابة الصحيحة.' }),
+      text:'اضغط خيارًا لتجعله الإجابة الصحيحة. تحرير النص نفسه خلف «حرّر» — بوعي: ما تحفظه يصبح الأصل.' }),
     el('div', { class:'ad-bar' }, [ search, topicSel, onlySel ]),
     list
+  ]);
+}
+
+/* ===== محرر المحتوى التحليلي — تأليف يدوي فوق ما ولّده الذكاء ===== */
+function subjContent(sub, refresh){
+  const mk = (label, val, rows) => {
+    const t = el('textarea', { class:'input ltr', rows: String(rows || 6), dir:'rtl',
+      style:'direction:rtl;text-align:right;font-family:var(--font-num);font-size:.85rem' });
+    t.value = val || '';
+    return { t, box: el('label', { class:'field', style:'margin:0' }, [
+      el('span', { class:'field__label', text: label }), t ]) };
+  };
+  const ov  = mk('عن المادة (HTML: p, strong, h3, table…)', sub.overview, 7);
+  const mem = mk('طريقة الحفظ', sub.memorize, 10);
+  const mis = mk('الأخطاء الشائعة', sub.mistakes, 7);
+
+  const prev = el('div', { class:'card', hidden:true });
+  const prevBtn = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'عاين' });
+  prevBtn.addEventListener('click', () => {
+    prev.hidden = !prev.hidden;
+    if (!prev.hidden){
+      prev.innerHTML = '';
+      /* المعاينة بنفس معقّم العرض — ما يمرّ هنا هو ما يصل الطالب حرفيًا */
+      prev.appendChild(QBANK.views.analysisHtml(ov.t.value));
+      prev.appendChild(QBANK.views.analysisHtml(mem.t.value));
+      prev.appendChild(QBANK.views.analysisHtml(mis.t.value));
+    }
+  });
+
+  const save = el('button', { class:'btn btn--sm', type:'button', text:'احفظ المحتوى' });
+  save.addEventListener('click', async () => {
+    /*
+      ★ analyzed_at تُختم مع الحفظ اليدوي — وإلا بقيت المادة «باطلة»
+      فأعاد التوليد التلقائي الكتابة فوق تأليف علي أول ما تُفتح صفحتها.
+      الختم يقول للقادح: هذا المحتوى مقصود، لا تلمسه حتى تتغير الأسئلة.
+    */
+    const r = await SubjEditor.patchSubject(sub.id, {
+      overview: ov.t.value, memorize: mem.t.value, mistakes: mis.t.value,
+      analyzed_at: new Date().toISOString()
+    });
+    QBANK.toast(r.ok ? 'حُفظ المحتوى — وهو الآن ما يراه الطالب' : 'تعذّر الحفظ');
+    if (r.ok && refresh) refresh();
+  });
+
+  const regen = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'⟳ ولّده بالذكاء من جديد' });
+  regen.addEventListener('click', async () => {
+    if (!QBANK.analysis) return;
+    regen.setAttribute('aria-disabled','true'); regen.textContent = '… يولَّد';
+    const r = await QBANK.analysis.generate(sub.id, sub.analysis_lang || 'ar');
+    regen.removeAttribute('aria-disabled'); regen.textContent = '⟳ ولّده بالذكاء من جديد';
+    QBANK.toast(r && r.ok ? 'اكتمل التوليد' : 'تعذّر التوليد');
+    if (r && r.ok && refresh) refresh();
+  });
+
+  return el('div', { class:'ad-panel' }, [
+    el('div', { class:'ad-panel__h' }, [
+      el('h2', { class:'ad-panel__t', text:'المحتوى التحليلي' }),
+      el('span', { class:'ad-panel__s', text:'ما يظهر في «نظرة عامة» و«طريقة الحفظ» و«الأخطاء الشائعة»' })
+    ]),
+    el('div', { class:'stack' }, [ ov.box, mem.box, mis.box,
+      el('div', { class:'ad-bar', style:'margin:0' }, [ save, prevBtn, el('span', { class:'spacer' }), regen ]),
+      prev ])
   ]);
 }
 
@@ -333,6 +556,7 @@ const AdminSubjectView = {
         }
         const questions = (qr.ok && Array.isArray(qr.data)) ? qr.data : [];
         body.appendChild(subjIdentity(sub, load));
+        body.appendChild(subjContent(sub, load));
         body.appendChild(subjTopics(sub, questions, load));
         body.appendChild(subjQuestions(sub, questions, load));
       });
@@ -346,3 +570,4 @@ const AdminSubjectView = {
 
 QBANK.admin.subject = SubjEditor;
 QBANK.views.ViewAdminSubject = AdminSubjectView;
+QBANK.views.subjIdentity = subjIdentity;

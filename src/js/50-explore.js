@@ -79,7 +79,7 @@ function exCard(r){
       r.course_code ? el('span', { class:'badge', text: r.course_code }) : null,
       r.free ? el('span', { class:'badge badge--ok', text:'مجانية' })
              : (r.price ? el('span', { class:'badge num', text: r.price + ' ريال' }) : null)
-    ])
+    ].concat(QBANK.trust ? QBANK.trust.badges(r) : []))
   ]);
   return card;
 }

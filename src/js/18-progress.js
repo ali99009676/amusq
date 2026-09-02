@@ -15,13 +15,100 @@ const Progress = {
 
   forSubject(sid){
     const p = Progress.all();
-    return p[sid] || { seen:{}, wrong:{}, star:{}, exams:0, best:0 };
+    return p[sid] || { seen:{}, wrong:{}, star:{}, srs:{}, exams:0, best:0 };
   },
   _update(sid, fn){
     const p = Progress.all();
-    const s = p[sid] || { seen:{}, wrong:{}, star:{}, exams:0, best:0 };
+    const s = p[sid] || { seen:{}, wrong:{}, star:{}, srs:{}, exams:0, best:0 };
     fn(s); p[sid] = s; Progress.save(p);
     return s;
+  },
+
+  /* ═══════════════════════════════════════════════════════════
+     التكرار المتباعد
+     ═══════════════════════════════════════════════════════════
+     المذاكرة بالإعادة الفورية وهمُ إتقان: تقرأ الشرح فتشعر أنك حفظت،
+     ثم يذوب بعد يومين. الذي يثبّت المعلومة هو استرجاعُها بعد أن تكاد
+     تنساها — والفارق بين الطريقتين ليس تحسينًا هامشيًا بل أضعافًا.
+
+     ولمَ سُلَّمٌ ثابت لا SM-2؟ لأن SM-2 يقوم على تقدير الطالب لصعوبة
+     تذكّره من ستّ درجات، ونحن لا نملك إلا نعم/لا. سُلَّمٌ صادق بمدخلٍ
+     ثنائي خيرٌ من خوارزمية دقيقة تُغذَّى بتخمين.
+
+     الفترات: يوم ← ٣ ← ٧ ← ١٦ ← ٣٥ ← ٦٠. والخطأ يُعيده إلى يومٍ واحد
+     مهما بلغ — فالنسيان لا يُجامَل، لكن عدّاد التعثّر يُحفظ لأن سؤالًا
+     تعثّر فيه خمس مرات يستحق عنايةً غير الذي تعثّر مرة.
+  */
+  LADDER: [1, 3, 7, 16, 35, 60],
+
+  /* رقم اليوم منذ ١٩٧٠ بالتوقيت المحلي: صحيحٌ صغير يُقارَن ويُجمع بلا
+     مناطق زمنية ولا ساعات — والمراجعة تُقاس بالأيام لا بالثواني. */
+  today(now){
+    const d = now ? new Date(now) : new Date();
+    return Math.floor((d - d.getTimezoneOffset() * 60000) / 86400000);
+  },
+
+  /* الفترة التالية: نصعد درجةً عند الإصابة، ونهبط إلى القاع عند الخطأ */
+  nextInterval(cur, ok){
+    const L = Progress.LADDER;
+    if (!ok) return L[0];
+    const i = L.indexOf(cur);
+    if (i === -1) return L[0];                 // فترة غير معروفة: نبدأ من أول السلّم
+    return L[Math.min(i + 1, L.length - 1)];
+  },
+
+  /* تسجيل مراجعة سؤال. ok=true أصاب، false أخطأ. */
+  review(sid, qid, ok, now){
+    const t = Progress.today(now);
+    return Progress._update(sid, s => {
+      s.srs = s.srs || {};
+      const prev = s.srs[qid] || { i: 0, e: 0 };
+      const iv = Progress.nextInterval(prev.i, ok);
+      s.srs[qid] = {
+        i: iv,                                  // الفترة الحالية بالأيام
+        d: t + iv,                              // موعد المراجعة القادمة
+        e: (prev.e || 0) + (ok ? 0 : 1),        // كم مرة تعثّر فيه
+        t: t                                    // آخر مراجعة — عليه يقوم الدمج
+      };
+    });
+  },
+
+  /* المستحقّ اليوم في مادة: معرّفات الأسئلة التي حان موعدها */
+  dueIn(sid, now){
+    const t = Progress.today(now);
+    const srs = (Progress.forSubject(sid).srs) || {};
+    return Object.keys(srs).filter(qid => (srs[qid].d || 0) <= t);
+  },
+
+  /* المستحقّ في كل المواد — ترتيبها بالأكثر تعثّرًا أولًا:
+     ما تعثّرت فيه مرارًا هو ما يُسقطك في الاختبار. */
+  dueAll(now){
+    const t = Progress.today(now);
+    const p = Progress.all();
+    const out = [];
+    Object.keys(p).forEach(sid => {
+      const srs = (p[sid] && p[sid].srs) || {};
+      Object.keys(srs).forEach(qid => {
+        if ((srs[qid].d || 0) <= t) out.push({ sid, qid, e: srs[qid].e || 0, d: srs[qid].d || 0 });
+      });
+    });
+    out.sort((a, b) => (b.e - a.e) || (a.d - b.d));
+    return out;
+  },
+
+  /* أقرب موعدٍ قادم — لمن أنهى مراجعة اليوم: «عد بعد يومين» خيرٌ من فراغ */
+  nextDue(now){
+    const t = Progress.today(now);
+    const p = Progress.all();
+    let best = null;
+    Object.keys(p).forEach(sid => {
+      const srs = (p[sid] && p[sid].srs) || {};
+      Object.keys(srs).forEach(qid => {
+        const d = srs[qid].d || 0;
+        if (d > t && (best === null || d < best)) best = d;
+      });
+    });
+    return best === null ? null : best - t;      // بعد كم يوم
   },
 
   markSeen(sid, qid){ return Progress._update(sid, s => { s.seen[qid] = 1; }); },
@@ -46,8 +133,8 @@ const Progress = {
     const out = {};
     const sids = new Set(Object.keys(local || {}).concat(Object.keys(remote || {})));
     sids.forEach(sid => {
-      const a = (local  || {})[sid] || { seen:{}, wrong:{}, star:{}, exams:0, best:0 };
-      const b = (remote || {})[sid] || { seen:{}, wrong:{}, star:{}, exams:0, best:0 };
+      const a = (local  || {})[sid] || { seen:{}, wrong:{}, star:{}, srs:{}, exams:0, best:0 };
+      const b = (remote || {})[sid] || { seen:{}, wrong:{}, star:{}, srs:{}, exams:0, best:0 };
       out[sid] = {
         seen:  Object.assign({}, b.seen,  a.seen),
         star:  Object.assign({}, b.star,  a.star),
@@ -58,7 +145,20 @@ const Progress = {
           return w;
         })(),
         exams: (a.exams || 0) + (b.exams || 0),
-        best:  Math.max(a.best || 0, b.best || 0)
+        best:  Math.max(a.best || 0, b.best || 0),
+        /*
+          ★ جدول المراجعة: الأحدث مراجعةً يفوز — لا الأطول فترةً.
+          لو أخذنا الأطول لضاع تعثّرٌ حدث على الجهاز الآخر: الخطأ يُنزل
+          الفترة إلى يوم، فيبدو «أقلّ تقدّمًا» وهو الحقيقة الأحدث.
+        */
+        srs: (function(){
+          const m = Object.assign({}, b.srs || {});
+          Object.keys(a.srs || {}).forEach(qid => {
+            const x = a.srs[qid], y = m[qid];
+            if (!y || (x.t || 0) >= (y.t || 0)) m[qid] = x;
+          });
+          return m;
+        })()
       };
     });
     return out;
