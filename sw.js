@@ -4,7 +4,7 @@
   المنصة ملف واحد، فالتخزين بسيط: نسخة من الصفحة تُقدَّم عند انقطاع الشبكة.
   لا يُسجَّل إلا على https — فتح file:// لا يمر من هنا أصلًا.
 */
-const CACHE = 'qbank-v3';   /* ★ v3: جوّال علي بقي على نسخة قديمة رغم رفع الجديدة — الرقم الجديد يمحو كل كاش سابق */
+const CACHE = 'qbank-v4';   /* ★ الرقم يتغيّر مع كل إصلاح في هذا الملف — وإلا بقي الجهاز على عاملٍ قديم فلا يصله الإصلاح. v3 كان لنسخة علي العالقة، وv4 لحارس المخطّط أدناه */
 const ASSETS = ['./', './index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', e => {
@@ -19,6 +19,14 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
+  /*
+    ★ ما ليس http(s) لا يُعترض أصلًا.
+    إضافات المتصفح تطلب من مخطّط chrome-extension، وCache API ترفضه فترمي
+    «Request scheme is unsupported» عند كل طلب منها — خمس مرات في فتحةٍ
+    واحدة على جهاز فيه إضافات. الخطأ ليس من المنصة، لكنه يملأ سجلّ الأخطاء
+    فتختفي أخطاؤنا الحقيقية تحته، وسجلٌّ أحمر دائمًا لا يُقرأ.
+  */
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
   // نداءات Supabase وواجهة الخادم تمر للشبكة دائمًا — البيانات الحية لا تُخبَّأ هنا
   if (url.pathname.indexOf('/api/') === 0 || url.hostname.indexOf('supabase') !== -1) return;
   if (e.request.method !== 'GET') return;
@@ -34,8 +42,11 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     fetch(req)
       .then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy));
+        // ردٌّ فاشل أو مبهم لا يُخزَّن: وإلا قدّمنا ٤٠٤ محفوظًا بدل الصفحة عند الانقطاع
+        if (res && res.ok && res.type !== 'opaque') {
+          const copy = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+        }
         return res;
       })
       .catch(() => caches.match(e.request).then(m => m || caches.match('./index.html')))
