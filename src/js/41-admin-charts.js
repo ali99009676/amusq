@@ -74,12 +74,51 @@ function chartBuckets(buckets){
   }));
 }
 
-/* بطاقة مؤشر */
-function kpi(n, label, sub, tone){
+/*
+  ★ خطّ النبض (sparkline): المدة كلها في ٦٠×١٨ بكسل.
+  الرقم وحده يقول «كم»، والخط يقول «إلى أين» — ٤٠ اختبارًا في مدةٍ صاعدة
+  غير ٤٠ في مدةٍ تهبط. مساحةٌ مملوءة لا خطٌّ وحده كي يُقرأ على الجوال.
+*/
+function spark(vals){
+  const v = (vals || []).map(Number).filter(x => !isNaN(x));
+  if (v.length < 2) return null;
+  const W = 64, H = 20, max = Math.max.apply(null, v) || 1;
+  const pts = v.map((x, i) => [ (i / (v.length - 1)) * W, H - (x / max) * (H - 2) - 1 ]);
+  const d = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const svg = svgEl('svg', { class:'ad-spark', viewBox:'0 0 ' + W + ' ' + H, 'aria-hidden':'true' });
+  svg.appendChild(svgEl('path', { class:'ad-spark__a', d: d + ' L' + W + ' ' + H + ' L0 ' + H + ' Z' }));
+  svg.appendChild(svgEl('path', { class:'ad-spark__l', d }));
+  return svg;
+}
+
+/*
+  الفرق عن المدة السابقة: النصف الثاني من السلسلة مقابل نصفها الأول.
+  لا نطلب من القاعدة مدةً ثانية — السلسلة نفسها تحمل الجواب.
+*/
+function delta(vals){
+  const v = (vals || []).map(Number).filter(x => !isNaN(x));
+  if (v.length < 4) return null;
+  const h = Math.floor(v.length / 2);
+  const a = v.slice(0, h).reduce((t, x) => t + x, 0), b = v.slice(v.length - h).reduce((t, x) => t + x, 0);
+  if (!a && !b) return null;
+  if (!a) return { pct: 100, up: true };
+  const pct = Math.round((b - a) / a * 100);
+  return { pct: Math.abs(pct), up: pct >= 0, flat: pct === 0 };
+}
+
+/* بطاقة مؤشر — بخطّ نبضٍ وفرقٍ اختياريين (opts: { spark:[…], deltaOf:[…] }) */
+function kpi(n, label, sub, tone, opts){
+  const o = opts || {};
+  const dl = o.deltaOf ? delta(o.deltaOf) : null;
   return el('div', { class:'ad-kpi' + (tone ? ' ad-kpi--' + tone : '') }, [
     el('span', { class:'ad-kpi__n', text: String(n) }),
     el('span', { class:'ad-kpi__l', text: label }),
-    sub ? el('span', { class:'ad-kpi__s', text: sub }) : null
+    sub ? el('span', { class:'ad-kpi__s', text: sub }) : null,
+    (o.spark || dl) ? el('span', { class:'ad-kpi__f' }, [
+      o.spark ? spark(o.spark) : null,
+      dl ? el('span', { class:'ad-kpi__d ' + (dl.flat ? '' : dl.up ? 'is-up' : 'is-down'),
+        text: (dl.flat ? '=' : dl.up ? '▲' : '▼') + ' ' + QBANK.views.arNum(dl.pct) + '٪' }) : null
+    ]) : null
   ]);
 }
 
@@ -93,4 +132,4 @@ function ago(iso){
 }
 
 QBANK.admin = QBANK.admin || {};
-QBANK.admin.charts = { chartActivity, chartBuckets, kpi, ago, svgEl };
+QBANK.admin.charts = { chartActivity, chartBuckets, kpi, ago, svgEl, spark, delta };

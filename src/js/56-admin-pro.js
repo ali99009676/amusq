@@ -72,26 +72,49 @@ function funnelPanel(f){
 /* ═══ الشاشة الأولى ═══ */
 function proDashTab(box){
   let days = 30;
-  const head = el('div', { class:'ad-bar' });
   const body = el('div', { class:'stack' });
   const onlineBox = el('div', {});
-  /* المتصلون فوق كل شيء: أول ما يريد المشرف معرفته «من هنا الآن؟» —
-     وخارج body كي لا يمحوه تبديل المدى الزمني */
+
+  /*
+    ★ رأس اللوحة: تحيةٌ وتاريخ ومدّةٌ وأفعالٌ سريعة — في صفٍّ واحد.
+    كانت المدة (٧/٣٠/٩٠) رقائق عائمة بلا سياق. الآن تجاور التحية فيُفهم
+    أنها مدةُ كل ما تحتها، وبجانبها الأفعال التي يأتي المشرف لأجلها كل
+    يوم: مادة جديدة، أكواد، إعدادات — دون أن يبحث عنها في عشرة تبويبات.
+  */
+  const T = QBANK.today;
+  const range = el('div', { class:'ad-range', role:'group', 'aria-label':'المدة' });
+  const head = el('div', { class:'ad-dash-head' }, [
+    el('div', { class:'ad-dash-head__x' }, [
+      el('span', { class:'ad-dash-head__hi', text: (T ? T.greet() : 'أهلًا') + ' — ' + (T ? T.dateLine() : '') }),
+      el('span', { class:'ad-dash-head__s', text:'حال المنصة في ' }),
+    ]),
+    range,
+    el('div', { class:'ad-quick' }, [
+      el('a', { class:'btn btn--sm', href:'#/admin/content', text:'+ مادة' }),
+      el('a', { class:'btn btn--sm btn--ghost', href:'#/admin/money', text:'أكواد' }),
+      el('a', { class:'btn btn--sm btn--ghost', href:'#/admin/settings', text:'إعدادات' })
+    ])
+  ]);
+  const rangeLbl = head.querySelector('.ad-dash-head__s');
+
   /* ★ صندوق الوارد قبل كل شيء — «ماذا ينتظرني» يسبق «من هنا» و«كم بعنا» */
+  box.appendChild(head);
   if (QBANK.views.inboxPanel) box.appendChild(QBANK.views.inboxPanel());
-  box.appendChild(head); box.appendChild(onlineBox); box.appendChild(body);
+  box.appendChild(onlineBox); box.appendChild(body);
 
   [7, 30, 90].forEach(d => {
     const b = el('button', { class:'chip' + (d === days ? ' is-on' : ''), type:'button',
       'data-d': String(d), text: Pro.n(d) + ' يومًا' });
     b.addEventListener('click', () => {
       days = d;
-      head.querySelectorAll('.chip').forEach(x =>
+      range.querySelectorAll('.chip').forEach(x =>
         x.classList.toggle('is-on', x.getAttribute('data-d') === String(d)));
+      rangeLbl.textContent = 'حال المنصة في آخر ' + Pro.n(d) + ' يومًا';
       load();
     });
-    head.appendChild(b);
+    range.appendChild(b);
   });
+  rangeLbl.textContent = 'حال المنصة في آخر ' + Pro.n(days) + ' يومًا';
 
   const legacy = el('div', { class:'ad-legacy' });
 
@@ -170,10 +193,16 @@ function proDashTab(box){
       const C = QBANK.admin.charts;
       const m = d.money, a = d.activity, c = d.content, q = d.quality;
 
+      /* ★ خطّ النبض والفرق من السلسلة اليومية نفسها — الرقم يقول «كم»، والخط «إلى أين» */
+      const S0 = Array.isArray(d.series) ? d.series : [];
+      const ser = key => S0.map(x => Number(x[key]) || 0);
       body.appendChild(el('div', { class:'ad-kpis' }, [
-        C.kpi(Pro.money(m.revenue), 'دخل المدة', Pro.n(m.paid_n) + ' عملية', m.revenue > 0 ? 'live' : null),
-        C.kpi(Pro.n(a.active), 'طالبًا نشطًا', Pro.n(a.new_users) + ' جديد'),
-        C.kpi(Pro.n(a.attempts), 'اختبارًا', 'متوسط ' + Pro.n(a.avg_pct) + '٪'),
+        C.kpi(Pro.money(m.revenue), 'دخل المدة', Pro.n(m.paid_n) + ' عملية', m.revenue > 0 ? 'live' : null,
+              { spark: ser('revenue'), deltaOf: ser('revenue') }),
+        C.kpi(Pro.n(a.active), 'طالبًا نشطًا', Pro.n(a.new_users) + ' جديد', null,
+              { spark: ser('users'), deltaOf: ser('users') }),
+        C.kpi(Pro.n(a.attempts), 'اختبارًا', 'متوسط ' + Pro.n(a.avg_pct) + '٪', null,
+              { spark: ser('attempts'), deltaOf: ser('attempts') }),
         C.kpi(Pro.n(c.published), 'مادة منشورة', Pro.n(c.verified) + ' موثّقة'),
         C.kpi(Pro.n(q.reports_open), 'بلاغًا مفتوحًا',
           q.reports_open ? 'تحتاج بتًّا' : 'الطابور نظيف', q.reports_open ? 'warn' : 'live'),

@@ -48,8 +48,9 @@
 }
 .ad-kpi::before{ content:''; position:absolute; inset-inline:0; top:0; height:3px; background:var(--kpi); }
 .ad-kpi__n{
-  display:block; font-family:var(--font-num); font-size:1.75rem; font-weight:700;
+  display:block; font-family:var(--font-num); font-size:clamp(1.25rem, 1rem + 1vw, 1.7rem); font-weight:700;
   line-height:1.1; color:var(--text); letter-spacing:-.03em; font-variant-numeric:tabular-nums;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;   /* «١٢٩٠ ريال» لا يلتفّ سطرين */
 }
 .ad-kpi__l{ font-size:.74rem; color:var(--text-3); font-weight:700; order:-1; }
 .ad-kpi__s{ font-size:.7rem; color:var(--text-3); display:block; }
@@ -61,7 +62,40 @@
 .ad-kpi--bad .ad-kpi__n{ color:var(--bad); }
 
 /* تبويبات اللوحة: عشرة — على الجوال تنزلق أفقيًا وتُبقي المُفعَّل ظاهرًا */
+/*
+  ═══ هيكل اللوحة ═══
+  الجوال: تبويبات أفقية تنزلق وتلتصق تحت الشريط العلوي — الانتقال بين
+  الأقسام لا يحتاج صعودًا لأعلى الصفحة.
+  الحاسوب (≥ 900): الشريط نفسه عمودٌ ثابت على اليمين والمحتوى بجانبه؛
+  عشرة تبويبات أفقية كانت تُقرأ صفًّا واحدًا مزدحمًا، وعموديًّا تصير قائمة.
+*/
+.ad-layout{ display:grid; grid-template-columns:1fr; gap:var(--s4); align-items:start; min-width:0; }
+.ad-side{ min-width:0; }
+.ad-main{ min-width:0; }
+.tabs--admin{ margin-bottom:0; position:sticky; top:calc(var(--topbar-h) + var(--s2)); z-index:6; box-shadow:var(--sh1);
+  background:color-mix(in srgb, var(--bg-soft) 92%, transparent); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
 .tabs--admin .tabs__btn{ flex:0 0 auto; padding-inline:.85em; }
+@media (min-width:900px){
+  .ad-layout{ grid-template-columns:200px minmax(0,1fr); gap:var(--s5); }
+  .ad-side{ position:sticky; top:calc(var(--topbar-h) + var(--s3)); }
+  .tabs--admin{ flex-direction:column; align-items:stretch; overflow:visible; position:static; padding:6px; backdrop-filter:none; }
+  .tabs--admin .tabs__btn{ justify-content:flex-start; padding:.6em .9em; text-align:start; }
+  .tabs--admin .tabs__ico{ width:1.4em; text-align:center; }
+  .tabs--admin .tabs__n{ margin-inline-start:auto; }
+}
+
+/*
+  ★ الجوال لا يفيض أفقيًّا.
+  بريد المشرف وبريد الطالب في سطرٍ لا يلتفّ كانا يدفعان عرض الصفحة إلى
+  ما وراء الشاشة، فيُقصّ الشريط العلوي وتبدو اللوحة «مكسورة». القاعدة
+  العامة: كل شيء يلتفّ أو يُقصّ بنقاط — ولا شيء يوسّع الصفحة.
+*/
+.is-admin .main, .is-admin .page{ overflow-x:clip; }
+.is-admin .card, .is-admin .ad-panel{ min-width:0; max-width:100%; }
+.stu__mail{ display:block; }
+.ad-shell__s{ max-width:min(52vw, 260px); }
+.is-admin .ad-table{ max-width:100%; }
+.is-admin svg.ad-chart{ max-width:100%; }
 
 /* ===== لوحات الرسوم ===== */
 .ad-panels{ display:grid; gap:var(--s4); grid-template-columns:1fr; margin-top:var(--s5); }
@@ -428,20 +462,51 @@
 /* ═══ صندوق الوارد ═══
    ★ خمس خانات بعرضٍ واحد، والمُنتظَر منها يُلوَّن وحده: العين تقع على
    الملوّن قبل أن تقرأ رقمًا. */
-.inbox{ margin-bottom:var(--s3); }
+.inbox{ margin-bottom:var(--s2); }
 .inbox__h{ display:flex; align-items:center; gap:var(--s2); margin-bottom:var(--s2); }
 .inbox__t{ font-weight:800; }
-.inbox__row{ display:grid; grid-template-columns:repeat(5,1fr); gap:var(--s2); }
-@media (max-width:520px){ .inbox__row{ grid-template-columns:repeat(3,1fr); } }
+.inbox__ok{ font-size:.8rem; color:var(--ok); font-weight:700; }
+.inbox__list{ display:grid; gap:6px; }
+@media (min-width:760px){ .inbox__list{ grid-template-columns:repeat(2,1fr); } }
 .inbox__i{
-  display:flex; flex-direction:column; align-items:center; gap:2px;
-  padding:var(--s2) var(--s1); border-radius:var(--r2);
-  background:var(--surface-2); border:1px solid var(--line);
-  color:var(--text-3); text-decoration:none; min-width:0;
+  display:flex; align-items:center; gap:var(--s3); min-width:0;
+  padding:var(--s3) var(--s4); border-radius:var(--r2); text-decoration:none;
+  background:var(--surface); border:1px solid var(--line); color:var(--text);
+  border-inline-start:4px solid var(--gold); box-shadow:var(--sh1);
+  transition:transform .16s var(--ease), box-shadow .16s;
 }
-.inbox__i.is-on{ color:var(--text); border-color:var(--gold);
-  background:color-mix(in srgb, var(--gold) 12%, var(--surface)); }
-.inbox__ic{ font-size:1.05rem; }
-.inbox__n{ font-size:1.25rem; font-weight:800; line-height:1; }
-.inbox__i.is-on .inbox__n{ color:var(--gold); }
-.inbox__l{ font-size:.68rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.inbox__i:hover{ transform:translateY(-1px); box-shadow:var(--sh2); text-decoration:none; }
+.inbox__i.is-on{ color:var(--text); }
+.inbox__ic{ font-size:1.15rem; width:34px; height:34px; flex:0 0 34px; display:grid; place-items:center;
+  border-radius:10px; background:var(--gold-soft); }
+.inbox__x{ display:flex; flex-direction:column; gap:1px; min-width:0; flex:1; }
+.inbox__l{ font-weight:800; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.inbox__d{ font-size:.75rem; color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.inbox__n{ font-family:var(--font-num); font-size:1.15rem; font-weight:800; color:var(--gold); }
+.inbox__go{ color:var(--text-3); }
+
+/* ═══ رأس اللوحة ═══ */
+.ad-dash-head{
+  display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap;
+  padding:var(--s3) 0 var(--s4); margin-bottom:var(--s2); border-bottom:1px solid var(--line);
+}
+.ad-dash-head__x{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1 1 220px; }
+.ad-dash-head__hi{ font-family:var(--font-display); font-weight:800; font-size:1.05rem; letter-spacing:-.01em; }
+.ad-dash-head__s{ font-size:.8rem; color:var(--text-3); }
+.ad-range{ display:inline-flex; gap:4px; padding:3px; border-radius:var(--r-pill); background:var(--bg-soft); border:1px solid var(--line-soft); }
+.ad-range .chip{ border:0; background:transparent; box-shadow:none; }
+.ad-range .chip.is-on{ background:var(--surface); color:var(--text); box-shadow:var(--sh1); }
+.ad-quick{ display:flex; gap:var(--s2); flex-wrap:wrap; }
+@media (max-width:640px){ .ad-quick{ width:100%; } .ad-quick .btn{ flex:1 1 auto; } }
+
+/* خطّ النبض والفرق داخل المؤشّر */
+.ad-kpi__f{ display:flex; align-items:center; justify-content:space-between; gap:var(--s2); margin-top:var(--s2); }
+.ad-spark{ width:64px; height:20px; display:block; overflow:visible; }
+.ad-spark__l{ fill:none; stroke:var(--kpi); stroke-width:1.5; stroke-linejoin:round; }
+.ad-spark__a{ fill:var(--kpi); opacity:.12; }
+.ad-kpi__d{ font-family:var(--font-num); font-size:.72rem; font-weight:800; color:var(--text-3); }
+.ad-kpi__d.is-up{ color:var(--ok); }
+.ad-kpi__d.is-down{ color:var(--bad); }
+.ad-kpi{ --kpi: var(--text-3); }
+.ad-kpi:not([class*="ad-kpi--"]) .ad-spark__l{ stroke:var(--brand); }
+.ad-kpi:not([class*="ad-kpi--"]) .ad-spark__a{ fill:var(--brand); }

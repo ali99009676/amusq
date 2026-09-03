@@ -6760,7 +6760,7 @@ describe('١٧١ج · صندوق الوارد');
   has(html, "['payouts',   'تحويل أرباح'", 'والتحويلات');
   has(html, "['drafts',    'مسوّدة'", 'والمسوّدات');
   has(html, "['reports',   'بلاغ'", 'والبلاغات');
-  has(html, 'أقدم طلب شراء ينتظر', 'وعمرُ أقدم طلب');
+  has(html, "'أقدمها منذ ' + QBANK.admin.charts.ago(d.oldest_purchase)", 'وعمرُ أقدم طلب — في صفّه هو');
   has(html, 'طلبات الشراء', 'ولوحة الطلبات');
   has(html, 'افتح له', 'وزرّ الفتح');
   has(html, 'متى تفتح الطلبات؟', 'والمدة المعلنة في الإعدادات');
@@ -7065,6 +7065,49 @@ describe('١٧٦ · نداء الخادم يحمل هوية الطالب');
   has(html, "headers: Object.assign({ 'Content-Type':'application/json' }, await Admin.authHeader())", 'في POST');
   has(html, "{ method:'GET', headers: await Admin.authHeader() }", 'وفي GET');
   has(html, "Date.now() > s.expires_abs - 60000", 'ويجدّد الجلسة إن شارفت على الانتهاء قبل الإرسال');
+}
+
+/* ============ ١٧٧ · لوحة المشرف القوية ============ */
+describe('١٧٧ · هيكل اللوحة والجوال');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "class:'ad-layout'", '★ هيكل: شريط جانبي على الحاسوب والتبويبات نفسها صفٌّ على الجوال');
+  has(html, "@media (min-width:900px){\n  .ad-layout{ grid-template-columns:200px minmax(0,1fr);", 'العمود الجانبي ٢٠٠ بكسل من ٩٠٠');
+  has(html, ".tabs--admin{ margin-bottom:0; position:sticky;", 'وعلى الجوال تلتصق التبويبات تحت الشريط');
+  has(html, ".stu__mail{ display:block; }", '★ البريد كتلة لا سطر: كان يفيض فيوسّع الصفحة على الجوال');
+  has(html, ".is-admin .main, .is-admin .page{ overflow-x:clip; }", 'ولا فيض أفقي في اللوحة مهما حدث');
+
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'u1', email:'admin@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  W.location.hash = '#/admin/dash'; A.router.render('#/admin/dash');
+  ok(!!doc.querySelector('#main .ad-layout > .ad-side .tabs--admin'), 'التبويبات داخل الجانب');
+  ok(!!doc.querySelector('#main .ad-layout > .ad-main #adminBody'), 'والمحتوى بجانبها');
+  ok(!!doc.querySelector('#main .ad-dash-head'), '★ رأس اللوحة: تحية وتاريخ ومدة وأفعال');
+  eq(doc.querySelectorAll('#main .ad-range .chip').length, 3, 'ثلاث مدد في الرأس');
+  ok(doc.querySelector('#main .ad-dash-head__s').textContent.indexOf('٣٠') !== -1, 'والمدة تُذكر بالكلمات');
+  eq(doc.querySelectorAll('#main .ad-quick .btn').length, 3, 'وثلاثة أفعال سريعة');
+}
+
+describe('١٧٧ب · «ينتظرك» قائمة أفعال + نبض المؤشّرات');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, ".filter(x => x[1] > 0)", '★ الأصفار تُخفى — بلاطة «٠ بلاغ» تُقرأ «لا شيء» وتشغل مكانًا');
+  has(html, ".sort((a, b) => b[1] - a[1])", 'والأكثر أولًا');
+  has(html, "text:'الطابور نظيف ✓'", 'والفراغ سطرٌ واحد');
+  has(html, "class:'inbox__d', text: age", 'وكل صفٍّ يقول منذ متى أو لماذا');
+
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const C = A.admin.charts;
+  ok(C.spark([1,2,3]) && C.spark([1,2,3]).tagName.toLowerCase() === 'svg', 'خطّ النبض SVG');
+  eq(C.spark([5]), null, 'ولا خطّ لقيمة واحدة');
+  const d = C.delta([1,1,1,1,2,2,2,2]);
+  ok(d && d.up && d.pct === 100, '★ الفرق: النصف الثاني مقابل الأول — ضعفٌ = ▲ ١٠٠٪');
+  const d2 = C.delta([4,4,2,2]);
+  ok(d2 && !d2.up && d2.pct === 50, 'وهبوطٌ ٥٠٪');
+  eq(C.delta([0,0,0,0]), null, 'وصفرٌ على صفر لا فرق');
+  const k = C.kpi('٤٠', 'اختبارًا', 'x', null, { spark:[1,2,3,4], deltaOf:[1,2,3,4] });
+  ok(!!k.querySelector('.ad-spark') && !!k.querySelector('.ad-kpi__d.is-up'), 'والمؤشّر يحمل النبض والفرق معًا');
+  has(html, "{ spark: ser('attempts'), deltaOf: ser('attempts') }", 'والاختبارات في اللوحة بنبضها');
 }
 
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */

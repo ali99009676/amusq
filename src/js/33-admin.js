@@ -741,7 +741,13 @@ const AdminView = {
         el('a', { class:'btn', href:'#/', text:'العودة إلى المنصة' })));
     });
 
-    return QBANK.views.page('لوحة التحكم', 'كل ما يظهر للطالب يمرّ من هنا أولًا.', [head, tabs, body]);
+    /*
+      ★ هيكل اللوحة: على الحاسوب شريطٌ جانبي ثابت والمحتوى بجانبه، وعلى
+      الجوال الشريطُ نفسه صفٌّ أفقي يلتصق تحت الشريط العلوي. عنصرٌ واحد
+      (tabs) بمظهرين — لا قائمتين تُصانان معًا.
+    */
+    const layout = el('div', { class:'ad-layout' }, [ el('aside', { class:'ad-side' }, [tabs]), el('div', { class:'ad-main' }, [body]) ]);
+    return QBANK.views.page('لوحة التحكم', 'كل ما يظهر للطالب يمرّ من هنا أولًا.', [head, layout]);
   }
 };
 

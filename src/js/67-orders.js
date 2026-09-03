@@ -191,14 +191,20 @@ QBANK.views.adminOrdersCard = adminOrdersCard;
   فيفتح «المال» ليكتشف أن الطلبات في «المال» أصلًا لكنه لم يكن يعلم أن
   فيه شيئًا. وصفٌّ واحد بعدّادات يُنهي الجولة.
 */
+/*
+  ★ «ينتظرك» قائمةُ أفعالٍ لا بلاطات.
+  خمس بلاطات متساوية بأرقام أصفار كانت تُقرأ «لا شيء» ولا تقول ما الأعجل.
+  الآن: صفٌّ لكل نوعٍ فيه شيء (الأصفار تُخفى)، مرتَّبٌ بالأكثر، وكل صفٍّ
+  يقول ماذا وكم ومنذ متى ويفتح مكان المعالجة بضغطة. والفراغ سطرٌ واحد.
+*/
 function inboxPanel(){
-  const box = el('div', { class:'inbox' });
+  const box = el('section', { class:'inbox', 'aria-label':'ينتظرك' });
   const items = [
-    ['purchases', 'طلب شراء',   '#/admin/money',    '💳'],
-    ['phones',    'توثيق جوال', '#/admin/money',    '☎'],
-    ['payouts',   'تحويل أرباح','#/admin/money',    '⇄'],
-    ['drafts',    'مسوّدة',     '#/admin/content',  '✎'],
-    ['reports',   'بلاغ',       '#/admin/quality',  '⚑']
+    ['purchases', 'طلب شراء',   '#/admin/money',    '💳', 'يدفع الطالب ولا يُفتح له حتى تعتمد'],
+    ['phones',    'توثيق جوال', '#/admin/money',    '☎',  'رسالة واتساب وصلت وتنتظر ضغطة'],
+    ['payouts',   'تحويل أرباح','#/admin/money',    '⇄',  'رافعٌ طلب ماله'],
+    ['drafts',    'مسوّدة',     '#/admin/content',  '✎',  'مادة رفعها طالب ولم تُنشر بعد'],
+    ['reports',   'بلاغ',       '#/admin/quality',  '⚑',  'سؤالٌ أبلغ عنه طالب']
   ];
   box.appendChild(el('p', { class:'field__hint', style:'margin:0', text:'جارٍ العدّ…' }));
 
@@ -211,27 +217,37 @@ function inboxPanel(){
         text:'صندوق الوارد يحتاج db/ORDERS.sql.' }));
       return;
     }
-    const total = items.reduce((n, it) => n + (Number(d[it[0]]) || 0), 0);
+    const N = QBANK.views.arNum;
+    const live = items.map(it => [it, Number(d[it[0]]) || 0]).filter(x => x[1] > 0)
+                      .sort((a, b) => b[1] - a[1]);
+    const total = live.reduce((n, x) => n + x[1], 0);
     box.appendChild(el('div', { class:'inbox__h' }, [
       el('span', { class:'inbox__t', text: total ? 'ينتظرك' : 'لا شيء ينتظرك' }),
-      total ? el('span', { class:'badge badge--warn num', text: QBANK.views.arNum(total) }) : null
+      total ? el('span', { class:'badge badge--warn num', text: N(total) }) : null,
+      el('span', { class:'spacer' }),
+      total ? null : el('span', { class:'inbox__ok', text:'الطابور نظيف ✓' })
     ]));
-    const row = el('div', { class:'inbox__row' });
-    items.forEach(it => {
-      const n = Number(d[it[0]]) || 0;
-      row.appendChild(el('a', { class:'inbox__i' + (n ? ' is-on' : ''), href: it[2] }, [
+    if (!total) return;
+    const list = el('div', { class:'inbox__list' });
+    live.forEach(x => {
+      const it = x[0], n = x[1];
+      /* عمر أقدم طلب شراء يظهر في صفّه هو — «منذ كم ينتظر» أهمّ من «كم ينتظرون» */
+      const age = it[0] === 'purchases' && d.oldest_purchase
+        ? 'أقدمها منذ ' + QBANK.admin.charts.ago(d.oldest_purchase) : it[4];
+      list.appendChild(el('a', { class:'inbox__i is-on', href: it[2] }, [
         el('span', { class:'inbox__ic', 'aria-hidden':'true', text: it[3] }),
-        el('span', { class:'inbox__n num', text: QBANK.views.arNum(n) }),
-        el('span', { class:'inbox__l', text: it[1] })
+        el('span', { class:'inbox__x' }, [
+          el('span', { class:'inbox__l', text: N(n) + ' ' + it[1] }),
+          el('span', { class:'inbox__d', text: age })
+        ]),
+        el('span', { class:'inbox__n num', text: N(n) }),
+        el('span', { class:'inbox__go', 'aria-hidden':'true', text:'←' })
       ]));
     });
-    box.appendChild(row);
-    /* ★ «منذ كم ينتظر أقدمهم» أهمّ من «كم ينتظرون»: عشرة انتظروا دقيقة
-       أهون من واحدٍ انتظر ليلة. */
-    if (d.oldest_purchase)
+    box.appendChild(list);
+    if (d.oldest_purchase && d.review_eta)
       box.appendChild(el('p', { class:'field__hint', style:'margin:6px 0 0', text:
-        'أقدم طلب شراء ينتظر ' + QBANK.admin.charts.ago(d.oldest_purchase) +
-        ' — وعدتَ الطلاب: ' + (d.review_eta || '') }));
+        'وعدتَ الطلاب: ' + d.review_eta }));
   });
   return box;
 }
