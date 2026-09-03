@@ -24,13 +24,30 @@ const Admin = {
     if (c) return c.replace(/\/+$/,'');
     return (typeof location !== 'undefined' && location.protocol.indexOf('http') === 0) ? '' : null;
   },
+  /*
+    ★ هوية الطالب تُرفق مع كل نداء للخادم.
+    كان النداء بلا Authorization، فيردّ /api/pay بـ٤٠١ «جلسة غير صالحة»
+    قبل أن يصل إلى حال البوابة (٥٠٣) — والطالب المسجَّل يقرأ أن جلسته
+    فاسدة وهي سليمة. والجلسة تُجدَّد قبل الإرسال إن شارفت على الانتهاء،
+    كما تفعل QBANK.api.raw، وإلا حمل الطلب رمزًا منتهيًا فعاد الخطأ نفسه.
+  */
+  async authHeader(){
+    const A = QBANK.api;
+    let s = A.session();
+    if (s && s.refresh_token && s.expires_abs && Date.now() > s.expires_abs - 60000 && A.auth && A.auth.refresh){
+      try { await A.auth.refresh(); } catch(e){}
+      s = A.session();
+    }
+    return (s && s.access_token) ? { 'Authorization': 'Bearer ' + s.access_token } : {};
+  },
   async server(path, body){
     const base = Admin.apiBase();
     const f = QBANK.api.fetchFn();
     if (base === null || !f) return { ok:false, offline:true };
     try{
       const res = await f(base + path, {
-        method:'POST', headers:{ 'Content-Type':'application/json' },
+        method:'POST',
+        headers: Object.assign({ 'Content-Type':'application/json' }, await Admin.authHeader()),
         body: JSON.stringify(body || {})
       });
       const data = await res.json().catch(() => null);
@@ -44,7 +61,7 @@ const Admin = {
     const f = QBANK.api.fetchFn();
     if (base === null || !f) return { ok:false, offline:true };
     try{
-      const res = await f(base + path, { method:'GET' });
+      const res = await f(base + path, { method:'GET', headers: await Admin.authHeader() });
       const data = await res.json().catch(() => null);
       return { ok: res.ok, status: res.status, data };
     } catch(e){ return { ok:false, offline:true, err:e.message }; }

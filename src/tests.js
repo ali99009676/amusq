@@ -7048,6 +7048,25 @@ describe('١٧٥ب · لوحة الطالب والمشرف');
   eq(doc.querySelectorAll('#main .page__head').length, 1, 'ورأس الصفحة في الشجرة (يُخفى بـCSS لا يُحذف — الفحوص القديمة تجده)');
 }
 
+/* ============ ١٧٦ · «جلسة غير صالحة» عند الشراء ============ */
+describe('١٧٦ · نداء الخادم يحمل هوية الطالب');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'TOK123', refresh_token:'r', expires_abs: Date.now() + 9e6 });
+  let seen = null;
+  A.api._fetch = (url, opts) => { seen = { url, opts }; return Promise.resolve({ ok:false, status:503, json: () => Promise.resolve({ error:'off' }) }); };
+  A.admin.apiBase = () => '';
+  pending.push(A.admin.server('/api/pay', { kind:'subject' }).then(r => {
+    ok(!!seen, 'النداء خرج');
+    eq(seen.opts.headers.Authorization, 'Bearer TOK123', '★ Authorization مع رمز الطالب — كان غائبًا فيردّ الخادم «جلسة غير صالحة»');
+    eq(r.status, 503, 'ويصل ردّ البوابة الحقيقي (٥٠٣) لا ٤٠١');
+  }));
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "headers: Object.assign({ 'Content-Type':'application/json' }, await Admin.authHeader())", 'في POST');
+  has(html, "{ method:'GET', headers: await Admin.authHeader() }", 'وفي GET');
+  has(html, "Date.now() > s.expires_abs - 60000", 'ويجدّد الجلسة إن شارفت على الانتهاء قبل الإرسال');
+}
+
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */
 Promise.all(pending).then(() => {
   const total = pass + fail;
