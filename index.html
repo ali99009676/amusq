@@ -7,8 +7,7 @@
 <meta name="color-scheme" content="light dark">
 <meta name="description" content="مراجعة — بنك الأسئلة · بنوك أسئلة لكل التخصصات، يرفعها طلاب الجامعات العربية ويراجعون منها">
 <meta name="theme-color" content="#0e1117">
-<link rel="icon" href="icon-192.png">
-  <link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest">
 <title>مراجعة · بنك الأسئلة</title>
 <script>
 /* الوضع قبل أول رسم — وإلا ومض الفاتح لحظة ثم أظلم. الليلي هو الافتراضي (هوية AMSU) */
@@ -1005,7 +1004,7 @@ img,svg{ max-width:100%; height:auto; }
   padding:var(--s3) var(--s4); background:var(--surface-2);
   border:1px solid var(--line-soft); border-radius:var(--r1);
 }
-.payrow__t{ font-weight:700; flex:1; min-width:0; }
+.payrow__t{ font-weight:700; flex:1; min-width:0; overflow-wrap:anywhere; }   /* نصٌّ طويل يلتفّ ولا يدفع الصف */
 .payrow__d{ font-size:.78rem; color:var(--text-3); }
 
 /* شريط مالك المادة — تمييزٌ هادئ لا تنبيه: هذه حالة طيّبة لا تحذير */
@@ -2227,6 +2226,15 @@ a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
 .ad-kpi:not([class*="ad-kpi--"]) .ad-spark__l{ stroke:var(--brand); }
 .ad-kpi:not([class*="ad-kpi--"]) .ad-spark__a{ fill:var(--brand); }
 
+/* ═══ السجل: رأسٌ وشرائح تفاصيل تلتفّ — لا JSON يدهس الشارات على الجوال ═══ */
+.audit{ padding:var(--s3) var(--s4); border-radius:var(--r2); background:var(--surface); border:1px solid var(--line); display:flex; flex-direction:column; gap:var(--s2); min-width:0; }
+.audit__h{ display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }
+.audit__who{ font-size:.78rem; font-weight:700; color:var(--text-2); }
+.audit__d{ font-size:.74rem; color:var(--text-3); }
+.audit__x{ display:flex; flex-wrap:wrap; gap:6px; }
+.audit__k{ font-size:.78rem; padding:.25em .6em; border-radius:var(--r-pill); background:var(--surface-2); border:1px solid var(--line-soft); color:var(--text-2); max-width:100%; overflow-wrap:anywhere; }
+.audit__k b{ color:var(--text-3); font-weight:700; }
+
 
 /* ===== 70-polish.css ===== */
 /*
@@ -2672,29 +2680,17 @@ const Api = {
   },
   user(){ const s = Api.session(); return s && s.user ? s.user : null; },
 
-  /*
-    ★ رمزٌ انتهى وقتُه لا يُرسل — يُرسل مفتاح الزائر مكانه.
-    كان الرمز الميت يُرسل كما هو، فترجع كل الاستدعاءات ٤٠١ ولا يرى الزائر
-    حتى المادة المجانية المفتوحة له. سقوطُنا إلى الزائر أنفع من سقوطنا إلى
-    لا شيء: يذاكر المتاح ويُدعى للدخول، لا يواجه صفحةً فارغة بلا سبب.
-  */
-  usableToken(){
-    const s = Api.session();
-    if (!s || !s.access_token) return null;
-    if (s.expires_abs && Date.now() > s.expires_abs) return null;
-    return s.access_token;
-  },
-
   headers(){
     const c = QBANK.config.get() || {};
+    const s = Api.session();
     return {
       'apikey': c.anonKey || '',
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + (Api.usableToken() || c.anonKey || '')
+      'Authorization': 'Bearer ' + (s && s.access_token ? s.access_token : (c.anonKey || ''))
     };
   },
 
-  async raw(path, opts, retried){
+  async raw(path, opts){
     const c = QBANK.config.get();
     const f = Api.fetchFn();
     if (!c || !f) return { ok:false, offline:true, data:null };
@@ -2708,21 +2704,6 @@ const Api = {
       const text = await res.text();
       let data = null;
       try{ data = text ? JSON.parse(text) : null; } catch(e){ data = text; }
-
-      /*
-        ★ التجديد الاستباقي وحده لا يكفي.
-        هو يقيس الوقت، والرمز قد يموت قبل وقته: مفتاحٌ دُوِّر في Supabase،
-        أو حسابٌ حُذف، أو ساعةُ الجهاز مائلة. عندها يُرسل رمزٌ يراه الجهاز
-        حيًّا ويراه الخادم ميتًا، فترجع ٤٠١ إلى الأبد — كل فتحةٍ سبعة نداءات
-        فاشلة، ولا شيء يُصلح نفسه لأن لا أحد ينظر إلى الرمز إلا الساعة.
-        فنجرّب التجديد مرةً واحدة. وإن مات رمز التجديد أيضًا فقد مسحته
-        refresh، ونعيد الطلب زائرًا: المجاني يُرى، والباقي يدعو للدخول.
-      */
-      if ((res.status === 401 || res.status === 403) && !retried
-          && path.indexOf('/auth/') === -1 && Api.session()) {
-        await Api.auth.refresh();
-        return Api.raw(path, opts, true);
-      }
       return { ok: res.ok, status: res.status, data };
     } catch(e){
       return { ok:false, offline:true, data:null, err: e.message };
@@ -4946,15 +4927,21 @@ const Admin = {
     return (r.ok && r.data && r.data[0] && r.data[0].slug) || null;
   },
 
-  async stamp(subjectId, w){
+  async stamp(subjectId, w, publish){
     if (!subjectId) return { ok:false };
     const u = QBANK.api.user() || {};
     const body = {
       created_by: u.id || null,
       sanctity_mode: w.mode === 'enhanced' ? 'enhanced' : 'strict',
-      status: 'published',
       course_code: w.courseCode || ''
     };
+    /*
+      ★ الحالة لا تُكتب هنا إلا عند النشر.
+      كان الختم يكتب 'published' دائمًا — فمن ضغط «احفظ مخفية» وجد مادته
+      منشورة بعد ثانية: approve_draft أوقفتها، والختم أعادها. الآن الختم
+      يؤكّد النشر إن نُشرت، ويترك المخفية كما تركتها القاعدة.
+    */
+    if (publish !== false) body.status = 'published';
     /*
       ★ الحقل الفارغ يُحذف ولا يُرسل صفرًا.
       كان يُرسل `slug: w.slug || null` دائمًا. والقاعدة تولّد الرابط عند
@@ -6154,7 +6141,7 @@ function stepPublish(box){
     // approve_draft تُرجع معرّف المادة — نختمها بهوية رافعها ونمطه ومساره
     const newId = (typeof r.data === 'string') ? r.data : (r.data && r.data.id) || null;
     const w = wizard;
-    await QBANK.admin.stamp(newId, w);
+    await QBANK.admin.stamp(newId, w, publish);
     /*
       ★ نُجدّد قائمة المواد قبل أن نُري الرابط.
       القائمة تُجلب مرة عند الإقلاع وتعيش في التخزين المحلي، فالمادة التي
@@ -6172,7 +6159,9 @@ function stepPublish(box){
       return void showShare(box, realSlug || w.slug, w.subjectName, newId, w.analysisLang || 'ar');
     }
     wizard = null;
-    QBANK.router.go(QBANK.store.get('is_admin_check', {}).ok ? '#/admin/content' : '#/account');
+    /* المخفية تُفتح في محرّرها مباشرة: من أخفاها يريد أن يكملها لا أن يبحث عنها */
+    QBANK.router.go(newId && QBANK.store.get('is_admin_check', {}).ok ? '#/admin/subject/' + newId
+                  : QBANK.store.get('is_admin_check', {}).ok ? '#/admin/content' : '#/account/uploads');
   }
   pub.addEventListener('click', () => fire(true));
   hide.addEventListener('click', () => fire(false));
@@ -11543,11 +11532,31 @@ function proAuditTab(box){
       body.appendChild(QBANK.views.empty('◷', 'لا أفعال بعد', 'سيظهر هنا كل تدخّل إداري.'));
       return;
     }
-    rows.forEach(x => body.appendChild(el('div', { class:'payrow' }, [
-      el('span', { class:'badge', text: AR[x.action] || x.action }),
-      el('span', { class:'payrow__t', text: JSON.stringify(x.detail) }),
-      el('span', { class:'badge num', text: x.actor || 'مشرف' }),
-      el('span', { class:'payrow__d num', text: new Date(x.created_at).toLocaleString('ar') })
+    /*
+      ★ التفاصيل بالعربية لا JSON خامًا.
+      «{"amount":100,"balance":500}» كان يُلقى نصًّا واحدًا لا يلتفّ فيدهس
+      الشارات على الجوال. الآن كل مفتاحٍ معروف يُقال بكلمته، والمجهول
+      يُعرض مفتاح: قيمة — كلٌّ في شريحته الصغيرة تلتفّ حيث تشاء.
+    */
+    const K = { amount:'المبلغ', balance:'الرصيد بعده', note:'ملاحظة', user:'الطالب', user_id:'الطالب',
+                phone:'الجوال', claim:'الطلب', subject:'المادة', subject_id:'المادة', days:'أيام',
+                admin:'مشرف', status:'الحالة', from:'من', to:'إلى', reason:'السبب', id:'المعرّف' };
+    const short = v => { const t = String(v); return /^[0-9a-f-]{20,}$/i.test(t) ? t.slice(0, 8) + '…' : t; };
+    const detailChips = d => {
+      if (!d || typeof d !== 'object') return [ el('span', { class:'audit__k', text: d == null ? '—' : short(d) }) ];
+      return Object.keys(d).map(k => el('span', { class:'audit__k' }, [
+        el('b', { text: (K[k] || k) + ': ' }),
+        el('span', { class: /phone|id|claim|user/.test(k) ? 'num ltr' : '', text: short(typeof d[k] === 'object' ? JSON.stringify(d[k]) : d[k]) })
+      ]));
+    };
+    rows.forEach(x => body.appendChild(el('div', { class:'audit' }, [
+      el('div', { class:'audit__h' }, [
+        el('span', { class:'badge', text: AR[x.action] || x.action }),
+        el('span', { class:'spacer' }),
+        el('span', { class:'audit__who', text: x.actor || 'مشرف' }),
+        el('span', { class:'audit__d num', text: new Date(x.created_at).toLocaleString('ar-SA-u-nu-arab', { dateStyle:'short', timeStyle:'short' }) })
+      ]),
+      el('div', { class:'audit__x' }, detailChips(x.detail))
     ])));
   });
 }
