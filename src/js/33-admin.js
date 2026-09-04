@@ -558,6 +558,8 @@ function adminContentTab(box){
     upBtn,
     el('a', { class:'btn btn--ghost', href:'#/explore', text:'⌕ اعرض ما يراه الطالب' })
   ]));
+  /* ★ طابور «ارفعها عنّي» أول ما يُرى: طالبٌ ينتظر عملًا مني لا مني ومنه */
+  if (QBANK.views.adminRequestsPanel) box.appendChild(QBANK.views.adminRequestsPanel());
   const listBox = el('div', { class:'ad-panels' });
   box.appendChild(listBox);
   listBox.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
@@ -750,6 +752,9 @@ function adminSettingsTab(box){
     saveCfg
   ]));
 
+  /* ما المفعَّل من طرق الدخول الآن — وبابٌ إلى Supabase لتفعيل غيره */
+  if (QBANK.views.providersAdminCard) box.appendChild(QBANK.views.providersAdminCard());
+
   // إعدادات المنصة من قاعدة البيانات
   const setBox = el('div', { class:'card stack' }, [ el('h2', { text:'إعدادات المنصة' }),
     el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
@@ -844,7 +849,8 @@ const AdminView = {
       if (!d || !alive()) return;
       const counts = {
         money:   (Number(d.purchases) || 0) + (Number(d.phones) || 0) + (Number(d.payouts) || 0),
-        content: Number(d.drafts) || 0,
+        /* طلبات الرفع مع المسوّدات: كلاهما محتوًى ينتظر يدَ المشرف في التبويب نفسه */
+        content: (Number(d.drafts) || 0) + (Number(d.requests) || 0),
         quality: Number(d.reports) || 0
       };
       Object.keys(counts).forEach(id => {

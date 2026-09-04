@@ -357,10 +357,15 @@ function loginCard(opts){
      اللوحة؟ من هذا المفتاح — يقرؤه الإقلاع بعد التقاط الجلسة ثم يمحوه. */
   const rememberAfter = () => { if (opts.after) QBANK.store.set('after_login', opts.after); };
   const gBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب جوجل' });
-  const aBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب آبل' });
   gBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('google'); if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
-  aBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('apple');  if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
-  void aBtn;   // يبقى جاهزًا ليوم حساب المطوّر
+
+  /*
+    ★ الأزرار الاجتماعية صارت صفًّا يُكتشف لا زرًّا واحدًا مكتوبًا.
+    كان جوجل وحده ظاهرًا وآبل معلَّقًا في الكود ينتظر يومًا. الآن كل مزوّد
+    يُفعَّل في Supabase يظهر زرّه من نفسه — ومن لا مزوّد عنده يبقى له
+    رابط البريد. وgBtn يبقى شبكةَ أمانٍ لو تعذّر بناء الصفّ.
+  */
+  const social = QBANK.views.oauthRow ? QBANK.views.oauthRow({ after: opts.after }) : gBtn;
 
   return el('div', { class:'card stack' }, [
     el('label', { class:'field', style:'margin:0' }, [
@@ -370,7 +375,7 @@ function loginCard(opts){
     ]),
     btn, msg, otpBox,
     el('hr', { class:'divider', style:'margin:0' }),
-    gBtn
+    social
   ]);
 }
 

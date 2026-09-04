@@ -247,3 +247,37 @@ select.input{ appearance:none; -webkit-appearance:none; padding-inline-end:2.4em
 /* صفّ المادة المرفوعة صار حاويةً: الرابط داخله لا هو نفسه — ليتّسع لزرّ التحرير */
 a.up-row__x{ color:inherit; text-decoration:none; }
 a.up-row__x:hover .up-row__t{ color:var(--acc); }
+
+/* ═══ ١٤) «ارفعها عنّي» — دعوة الخيار الثاني ولافتة الطلب ═══ */
+.reqinvite{ border-inline-start:4px solid var(--acc, var(--gold)); gap:var(--s2); }
+.reqbanner{ border-inline-start:4px solid var(--gold); gap:var(--s2); }
+.reqbanner h3{ font-size:var(--fs-md); }
+
+/* ═══ ١٥) أزرار الدخول الاجتماعي — أقراصٌ بشعاراتها ═══
+   ★ الشعار يُعرف قبل أن يُقرأ الاسم: قرصٌ بلون المنصة وشعارٌ يقابله. ولون
+   القرص يأتي من JS في --tile (ألوان علاماتٍ لا ألوان منصّتنا)، وكل ما
+   عداه من متغيّراتنا. والقرص ٥٤ بكسل — فوق حدّ اللمس بمريح. */
+.oauth{ display:flex; flex-direction:column; gap:var(--s3); }
+.oauth__h{ text-align:center; }
+.oauth__grid{ display:grid; grid-template-columns:1fr; gap:var(--s2); }
+.oauth__b{ display:flex; align-items:center; justify-content:center; gap:var(--s2);
+  min-height:46px; width:100%; padding-inline:var(--s3); }
+.oauth__ico{ display:inline-grid; place-items:center; flex:0 0 auto; }
+.oauth__l{ font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ico--brand{ display:block; }
+
+.oauth__tiles{ display:flex; flex-wrap:wrap; justify-content:center; gap:var(--s3); }
+.oauth__tile{
+  width:54px; height:54px; flex:0 0 54px; display:grid; place-items:center;
+  border-radius:50%; border:0; cursor:pointer; padding:0;
+  background:var(--tile); color:inherit;
+  box-shadow:0 6px 16px -10px black, 0 0 0 1px color-mix(in srgb, var(--line) 70%, transparent);
+  transition:transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
+}
+/* الأبيض والأصفر يحتاجان حدًّا يفصلهما عن الورقة البيضاء خلفهما */
+.oauth__tile.is-pale{ box-shadow:0 6px 16px -10px black, 0 0 0 1px var(--line-2); }
+.oauth__tile:hover{ transform:translateY(-2px); box-shadow:0 12px 22px -12px black, 0 0 0 2px var(--gold); }
+.oauth__tile:focus-visible{ outline:3px solid var(--gold); outline-offset:3px; }
+.oauth__mark{ display:grid; place-items:center; }
+.prov-badge{ display:inline-flex; align-items:center; gap:4px; }
+@media (prefers-reduced-motion: reduce){ .oauth__tile, .oauth__tile:hover{ transition:none; transform:none; } }

@@ -26,10 +26,24 @@ const supa = require('./_lib/supa.js');
   مساره، والخادم يجلبه بمفتاح الخدمة. المسار يبدأ بمعرّف الرافع، والحارس
   الوحيد الذي نحتاجه هنا: أن يكون الطالب المسجَّل هو صاحب المجلد.
 */
-async function fetchFromStorage(storagePath, userId){
+/*
+  ★ ومنذ «ارفعها عنّي» لم يعد المجلد وحده هو الحكم.
+  المشرف يرفع بنكًا أرسله له طالب، فالملف في مجلد الطالب لا في مجلده. لكن
+  «هل هو مشرف؟» سؤالٌ لا يُصدَّق فيه العميل — نسأله القاعدةَ برمز صاحب
+  الجلسة نفسه (can_read_upload تقرأ auth.uid من الرمز، فلا تُزوَّر).
+  وإن لم تكن الدالة منشورة بعد بقي الحكم القديم كما هو: مجلده وحده.
+*/
+async function canReadUpload(clean, userId, token){
+  if (userId && clean.indexOf(userId + '/') === 0) return true;
+  try { return (await supa.rpc('can_read_upload', { p_path: clean }, token)) === true; }
+  catch(e){ return false; }
+}
+
+async function fetchFromStorage(storagePath, userId, token){
   const { url, key } = supa.creds();
   const clean = String(storagePath || '').replace(/^\/+/, '');
-  if (!userId || clean.indexOf(userId + '/') !== 0) throw new Error('مسار الملف ليس لصاحب الجلسة');
+  if (!clean || !(await canReadUpload(clean, userId, token)))
+    throw new Error('مسار الملف ليس لصاحب الجلسة');
   const r = await fetch(url + '/storage/v1/object/uploads/' + clean.split('/').map(encodeURIComponent).join('/'), {
     headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
   });
@@ -68,9 +82,10 @@ module.exports = async function handler(req, res){
 
     /* ملفٌ في المخزن بدل الجسم — يحتاج جلسةً صالحة ليُعرف صاحب المجلد */
     if (storage_path && !content_base64){
-      const user = await supa.userFromToken(supa.bearer(req));
+      const token = supa.bearer(req);
+      const user = await supa.userFromToken(token);
       if (!user) return res.status(401).json({ error:'جلسة غير صالحة' });
-      const buf0 = await fetchFromStorage(storage_path, user.id);
+      const buf0 = await fetchFromStorage(storage_path, user.id, token);
       content_base64 = buf0.toString('base64');
     }
 

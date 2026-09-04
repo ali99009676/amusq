@@ -2755,6 +2755,40 @@ select.input{ appearance:none; -webkit-appearance:none; padding-inline-end:2.4em
 a.up-row__x{ color:inherit; text-decoration:none; }
 a.up-row__x:hover .up-row__t{ color:var(--acc); }
 
+/* ═══ ١٤) «ارفعها عنّي» — دعوة الخيار الثاني ولافتة الطلب ═══ */
+.reqinvite{ border-inline-start:4px solid var(--acc, var(--gold)); gap:var(--s2); }
+.reqbanner{ border-inline-start:4px solid var(--gold); gap:var(--s2); }
+.reqbanner h3{ font-size:var(--fs-md); }
+
+/* ═══ ١٥) أزرار الدخول الاجتماعي — أقراصٌ بشعاراتها ═══
+   ★ الشعار يُعرف قبل أن يُقرأ الاسم: قرصٌ بلون المنصة وشعارٌ يقابله. ولون
+   القرص يأتي من JS في --tile (ألوان علاماتٍ لا ألوان منصّتنا)، وكل ما
+   عداه من متغيّراتنا. والقرص ٥٤ بكسل — فوق حدّ اللمس بمريح. */
+.oauth{ display:flex; flex-direction:column; gap:var(--s3); }
+.oauth__h{ text-align:center; }
+.oauth__grid{ display:grid; grid-template-columns:1fr; gap:var(--s2); }
+.oauth__b{ display:flex; align-items:center; justify-content:center; gap:var(--s2);
+  min-height:46px; width:100%; padding-inline:var(--s3); }
+.oauth__ico{ display:inline-grid; place-items:center; flex:0 0 auto; }
+.oauth__l{ font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ico--brand{ display:block; }
+
+.oauth__tiles{ display:flex; flex-wrap:wrap; justify-content:center; gap:var(--s3); }
+.oauth__tile{
+  width:54px; height:54px; flex:0 0 54px; display:grid; place-items:center;
+  border-radius:50%; border:0; cursor:pointer; padding:0;
+  background:var(--tile); color:inherit;
+  box-shadow:0 6px 16px -10px black, 0 0 0 1px color-mix(in srgb, var(--line) 70%, transparent);
+  transition:transform var(--t) var(--ease), box-shadow var(--t) var(--ease);
+}
+/* الأبيض والأصفر يحتاجان حدًّا يفصلهما عن الورقة البيضاء خلفهما */
+.oauth__tile.is-pale{ box-shadow:0 6px 16px -10px black, 0 0 0 1px var(--line-2); }
+.oauth__tile:hover{ transform:translateY(-2px); box-shadow:0 12px 22px -12px black, 0 0 0 2px var(--gold); }
+.oauth__tile:focus-visible{ outline:3px solid var(--gold); outline-offset:3px; }
+.oauth__mark{ display:grid; place-items:center; }
+.prov-badge{ display:inline-flex; align-items:center; gap:4px; }
+@media (prefers-reduced-motion: reduce){ .oauth__tile, .oauth__tile:hover{ transition:none; transform:none; } }
+
 
 /* ===== 90-print.css ===== */
 /*
@@ -3066,6 +3100,68 @@ function ico(name, opts){
   svg.appendChild(path);
   return svg;
 }
+/*
+  ═══ علامات مزوّدي الدخول ═══
+  ★ مرسومةٌ بالمسارات لا بصورٍ من الشبكة: المنصة تعمل من الملف بلا إنترنت،
+  وشعارٌ لا يُحمَّل يترك زرًّا أعمى.
+
+  ★ وبألوانها الحقيقية.
+  هذه الألوان ليست من نظام تصميمنا حتى تُشتقّ من متغيّراته — هي علاماتٌ
+  تجارية يعرفها الطالب بلونها قبل شكلها، وأزرقُ فيسبوك المُقارَب خطأٌ لا
+  اجتهاد. فتُكتب صريحةً هنا وحدها (لا في CSS)، ولا تدخل لوحة المنصة أبدًا.
+
+  الشكل: إمّا مسارٌ واحد يأخذ اللون المطلوب، أو عدّة مسارات لكلٍّ لونه
+  (جوجل ومايكروسوفت) — والشعار متعدّد الألوان لا يُختصر إلى لونٍ واحد.
+*/
+const BRAND_MARKS = {
+  google: [
+    { d:'M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.7 3-4.3 3-7.4z', c:'#4285F4' },
+    { d:'M12 22c2.7 0 5-.9 6.6-2.4l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22z', c:'#34A853' },
+    { d:'M6.4 14c-.2-.6-.3-1.3-.3-2s.1-1.4.3-2V7.4H3.1a10 10 0 0 0 0 9.2z', c:'#FBBC05' },
+    { d:'M12 5.9c1.5 0 2.8.5 3.8 1.5l2.8-2.8C16.9 2.9 14.7 2 12 2a10 10 0 0 0-8.9 5.4L6.4 10c.8-2.3 3-4.1 5.6-4.1z', c:'#EA4335' }
+  ],
+  microsoft: [
+    { d:'M3 3h8.4v8.4H3z',       c:'#F25022' },
+    { d:'M12.6 3H21v8.4h-8.4z',  c:'#7FBA00' },
+    { d:'M3 12.6h8.4V21H3z',     c:'#00A4EF' },
+    { d:'M12.6 12.6H21V21h-8.4z',c:'#FFB900' }
+  ],
+  apple:     [{ d:'M17.05 12.5c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.8-3.5.8-.7 0-1.9-.8-3.1-.8-1.6 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.3 0 2.1-1.1 2.8-2.2.9-1.3 1.3-2.5 1.3-2.6-.1 0-2.4-.9-2.4-3.8zM14.7 5.3c.6-.8 1-1.9.9-3-.9 0-2 .6-2.7 1.4-.6.7-1.1 1.8-.9 2.9 1 .1 2-.5 2.7-1.3z' }],
+  facebook:  [{ d:'M13 22v-8h2.7l.4-3H13V9.1c0-.9.2-1.5 1.5-1.5H16V5c-.3 0-1.2-.1-2.3-.1-2.3 0-3.7 1.4-3.7 3.9V11H7.5v3H10v8z' }],
+  x:         [{ d:'M18.2 2h3.3l-7.2 8.3L22.8 22h-6.6l-5.2-6.8L5.1 22H1.8l7.7-8.8L1.2 2h6.8l4.7 6.2zM17 20h1.8L7.1 3.9H5.1z' }],
+  github:    [{ d:'M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.4-3.4-1.4-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.3-1.1.6-1.3-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.7 1a9.4 9.4 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .5 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.4 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10 10 0 0 0 12 2z' }],
+  snapchat:  [{ d:'M12 2c2.8 0 5 2.2 5 5v2.2c.6-.3 1.2-.4 1.6-.1.5.3.5.9.1 1.3-.4.4-1.2.7-1.7 1-.3.2-.4.4-.3.7.5 1.3 1.6 2.6 3 3 .4.1.6.5.5.9-.2.6-1.2.9-2.2 1-.2 0-.3.2-.4.5-.1.4-.2.8-.7.8-.6 0-1.2-.2-1.9-.1-.8.1-1.4.6-2 1-.6.4-1.3.8-2 .8s-1.4-.4-2-.8c-.6-.4-1.2-.9-2-1-.7-.1-1.3.1-1.9.1-.5 0-.6-.4-.7-.8-.1-.3-.2-.5-.4-.5-1-.1-2-.4-2.2-1-.1-.4.1-.8.5-.9 1.4-.4 2.5-1.7 3-3 .1-.3 0-.5-.3-.7-.5-.3-1.3-.6-1.7-1-.4-.4-.4-1 .1-1.3.4-.3 1-.2 1.6.1V7c0-2.8 2.2-5 5-5z' }],
+  linkedin:  [{ d:'M5 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9.5h4V21H3zM10 9.5h3.8v1.6c.5-1 1.8-2 3.7-2 4 0 4.5 2.5 4.5 5.8V21h-4v-5.5c0-1.3 0-3-1.9-3s-2.1 1.4-2.1 2.9V21h-4z' }]
+};
+/* الأسماء القديمة تبقى مسارًا واحدًا لمن كان يقرؤها */
+const BRAND_PATHS = Object.keys(BRAND_MARKS).reduce((o, k) => {
+  o[k] = BRAND_MARKS[k].map(p => p.d).join(''); return o;
+}, {});
+
+/*
+  شعارٌ ممتلئ لا خطّي: الشعارات تُعرف بكتلتها، ورسمُها بخطٍّ رفيع يُشوّهها.
+  fill: لونُ الشعار الأحادي (أبيض على قرصٍ ملوّن مثلًا)؛ ومتعدّدُ الألوان
+  يحتفظ بألوانه إلا أن يُطلب mono صراحةً — كما في شارةٍ صغيرة داخل نص.
+*/
+function brand(name, opts){
+  const o = opts || {};
+  const NS = 'http://www.w3.org/2000/svg';
+  const size = o.size || 20;
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', String(size)); svg.setAttribute('height', String(size));
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('class', 'ico ico--brand' + (o.cls ? ' ' + o.cls : ''));
+  const marks = BRAND_MARKS[name] || [{ d: ICON_PATHS.user }];
+  marks.forEach(m => {
+    const path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', m.d);
+    path.setAttribute('fill', o.mono ? 'currentColor' : (m.c || o.fill || 'currentColor'));
+    svg.appendChild(path);
+  });
+  return svg;
+}
+
 /* أيقونة مادة من رمزها: SVG إن عُرف الرمز، وإلا النص كما هو (رمزٌ جديد لا نعرفه لا يُخفى) */
 function subjIcon(glyph, size){
   const name = GLYPH_ICON[String(glyph || '').trim()];
@@ -3074,8 +3170,11 @@ function subjIcon(glyph, size){
   return s;
 }
 QBANK.ico = ico;
+QBANK.brand = brand;
 QBANK.subjIcon = subjIcon;
 QBANK.ICON_PATHS = ICON_PATHS;
+QBANK.BRAND_PATHS = BRAND_PATHS;
+QBANK.BRAND_MARKS = BRAND_MARKS;
 QBANK.GLYPH_ICON = GLYPH_ICON;
 
 
@@ -4479,10 +4578,15 @@ function loginCard(opts){
      اللوحة؟ من هذا المفتاح — يقرؤه الإقلاع بعد التقاط الجلسة ثم يمحوه. */
   const rememberAfter = () => { if (opts.after) QBANK.store.set('after_login', opts.after); };
   const gBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب جوجل' });
-  const aBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب آبل' });
   gBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('google'); if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
-  aBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('apple');  if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
-  void aBtn;   // يبقى جاهزًا ليوم حساب المطوّر
+
+  /*
+    ★ الأزرار الاجتماعية صارت صفًّا يُكتشف لا زرًّا واحدًا مكتوبًا.
+    كان جوجل وحده ظاهرًا وآبل معلَّقًا في الكود ينتظر يومًا. الآن كل مزوّد
+    يُفعَّل في Supabase يظهر زرّه من نفسه — ومن لا مزوّد عنده يبقى له
+    رابط البريد. وgBtn يبقى شبكةَ أمانٍ لو تعذّر بناء الصفّ.
+  */
+  const social = QBANK.views.oauthRow ? QBANK.views.oauthRow({ after: opts.after }) : gBtn;
 
   return el('div', { class:'card stack' }, [
     el('label', { class:'field', style:'margin:0' }, [
@@ -4492,7 +4596,7 @@ function loginCard(opts){
     ]),
     btn, msg, otpBox,
     el('hr', { class:'divider', style:'margin:0' }),
-    gBtn
+    social
   ]);
 }
 
@@ -5008,6 +5112,8 @@ const ViewAccount = {
     } else if (active === 'uploads'){
       /* ما توقّف رفعه قبل ما اكتمل: المسوّدة تُستأنف من هنا لا من ذاكرة صاحبها */
       if (QBANK.views.myDraftsCard) body.appendChild(QBANK.views.myDraftsCard());
+      /* وما أرسله للمشرف ليرفعه عنه: حاله يُرى هنا لا يُسأل عنه في واتساب */
+      if (QBANK.views.myRequestsCard) body.appendChild(QBANK.views.myRequestsCard());
       body.appendChild(myUploadsCard());
       const wallet = (QBANK.wallet && QBANK.wallet.body) ? QBANK.wallet.body() : null;
       if (wallet) body.appendChild(wallet);
@@ -6047,6 +6153,8 @@ function adminContentTab(box){
     upBtn,
     el('a', { class:'btn btn--ghost', href:'#/explore', text:'⌕ اعرض ما يراه الطالب' })
   ]));
+  /* ★ طابور «ارفعها عنّي» أول ما يُرى: طالبٌ ينتظر عملًا مني لا مني ومنه */
+  if (QBANK.views.adminRequestsPanel) box.appendChild(QBANK.views.adminRequestsPanel());
   const listBox = el('div', { class:'ad-panels' });
   box.appendChild(listBox);
   listBox.appendChild(el('p', { class:'page__sub', text:'جارٍ الجلب…' }));
@@ -6239,6 +6347,9 @@ function adminSettingsTab(box){
     saveCfg
   ]));
 
+  /* ما المفعَّل من طرق الدخول الآن — وبابٌ إلى Supabase لتفعيل غيره */
+  if (QBANK.views.providersAdminCard) box.appendChild(QBANK.views.providersAdminCard());
+
   // إعدادات المنصة من قاعدة البيانات
   const setBox = el('div', { class:'card stack' }, [ el('h2', { text:'إعدادات المنصة' }),
     el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
@@ -6333,7 +6444,8 @@ const AdminView = {
       if (!d || !alive()) return;
       const counts = {
         money:   (Number(d.purchases) || 0) + (Number(d.phones) || 0) + (Number(d.payouts) || 0),
-        content: Number(d.drafts) || 0,
+        /* طلبات الرفع مع المسوّدات: كلاهما محتوًى ينتظر يدَ المشرف في التبويب نفسه */
+        content: (Number(d.drafts) || 0) + (Number(d.requests) || 0),
         quality: Number(d.reports) || 0
       };
       Object.keys(counts).forEach(id => {
@@ -6613,8 +6725,40 @@ function stepRead(box, rerender){
     return;
   }
 
+  /*
+    ★ الطريق الثاني للطالب: يرسل ولا يرفع.
+    من لا يريد أن يصير محرّرًا يكتب اسم المادة ويرفق ملفه، والمشرف يتولّى
+    الباقي. الشاشة قائمة بذاتها كالكتابة اليدوية — مزاحمتها لمنطقة الرفع
+    تُربك الاثنين.
+  */
+  if (wizard.requestMode && QBANK.views.requestForm){
+    box.appendChild(QBANK.views.requestForm(() => { wizard.requestMode = false; rerender(); }));
+    return;
+  }
+
   /* ★ العودة قبل البداية: مسوّدةٌ لم تكتمل تُعرض أولًا كي لا يبدأ صاحبها من الصفر */
   if (QBANK.views.resumeBanner) box.appendChild(QBANK.views.resumeBanner());
+
+  /*
+    ★ طلبٌ من طالب: المشرف لا يعيد كتابة شيء.
+    الاسم جاء مع الطلب، والرافع هو صاحبه، والملف في المخزن — فالضغطة
+    الواحدة تقرؤه وتمضي إلى المراجعة. وحال الطلب تصير «قيد الرفع» لحظتها
+    كي يرى صاحبه أن أحدًا بدأ، ولا يظنّ طلبه ضائعًا.
+  */
+  if (wizard.reqPath && !(wizard.raw || []).length){
+    const goRead = el('button', { class:'btn btn--block', type:'button', text:'⇣ اقرأ ملف الطالب الآن' });
+    goRead.addEventListener('click', () => { goRead.disabled = true; runStored(); });
+    box.appendChild(el('div', { class:'card stack reqbanner' }, [
+      el('h3', { style:'margin:0', text:'طلب رفع من ' + (wizard.reqStudent || 'طالب') }),
+      el('p', { class:'field__hint', style:'margin:0', text:
+        'المادة: ' + (wizard.subjectName || '—') +
+        (wizard.reqFile ? ' · الملف: ' + wizard.reqFile : '') +
+        ' — ستُنشر باسمه هو.' }),
+      wizard.reqNote ? el('p', { class:'field__hint', style:'margin:0', text:'ملاحظته: ' + wizard.reqNote }) : null,
+      goRead
+    ]));
+  }
+
   box.appendChild(subjectMeta());
 
   /*
@@ -6756,6 +6900,31 @@ function stepRead(box, rerender){
     rerender();
   }
 
+  /* قراءة ملفٍ في المخزن — طلبُ طالبٍ يرفعه المشرف. لا اختيار ملف ولا رفع ثانٍ */
+  async function runStored(){
+    msg.textContent = '';
+    if (wizard.requestId && QBANK.requests)
+      QBANK.requests.setStatus(wizard.requestId, 'doing').catch(() => {});
+    const t0 = Date.now();
+    let tick = setInterval(() => {
+      phase('يُقرأ ملف الطالب على الخادم',
+        'استخراج النص ثم التعرّف على الأسئلة — ' + Math.round((Date.now() - t0) / 1000) + ' ثانية.');
+    }, 1000);
+    phase('يُجلب الملف من المخزن', wizard.reqFile || '');
+    /* الشريط أسفل الشاشة والزرّ أعلاها — نُنزل المشرف إليه كي لا يظنّ أن شيئًا لم يحدث */
+    try { rdCard.scrollIntoView({ block:'center', behavior:'smooth' }); } catch(e){}
+    wizard = await QBANK.admin.wizardIngest(wizard, wizard.reqFile || 'ملف الطالب', null, false, {
+      storagePath: wizard.reqPath,
+      onPart: (done, total) => { clearInterval(tick); tick = null;
+        phase('يقرأ الذكاءُ الملف على أجزاء', 'قُرئ ' + QBANK.views.arNum(done) + ' من ' +
+          QBANK.views.arNum(total) + ' أجزاء', Math.round(done / total * 100)); }
+    });
+    if (tick) clearInterval(tick);
+    rdCard.hidden = true; rdBar.classList.remove('meter--busy');
+    if (wizard.error) { msg.textContent = '⚠ ' + wizard.error; return; }
+    rerender();
+  }
+
   async function handle(file){
     if (!file) return;
     msg.textContent = '';
@@ -6841,6 +7010,15 @@ function stepRead(box, rerender){
   box.appendChild(el('p', { class:'field__hint', style:'text-align:center;margin:2px 0',
                             text:'— أو —' }));
   box.appendChild(manualBtn);
+
+  /*
+    ★ الخيار الثاني يُعرض هنا لا في صفحة أخرى.
+    مكانه الطبيعي حيث يقف الطالب متردّدًا أمام معالجٍ من أربع خطوات. ولا
+    يُعرض للمشرف (يرفع بنفسه أصلًا) ولا وهو ينفّذ طلبًا قائمًا.
+  */
+  const isAdmin = !!(QBANK.uploader && QBANK.uploader.isAdmin());
+  if (!isAdmin && !wizard.reqPath && QBANK.views.requestInvite)
+    box.appendChild(QBANK.views.requestInvite(() => { wizard.requestMode = true; rerender(); }));
 }
 
 /* الخطوة ٢: التقدير ثم التشغيل بدفعات مع شريط «٨٠ من ٣٠٠» */
@@ -7230,6 +7408,14 @@ function stepPublish(box){
     const w = wizard;
     await QBANK.admin.stamp(newId, w, publish);
     /*
+      ★ الطلب يُختم بمادته لا بكلمة «تمّ».
+      صاحبه يفتح «طلباتي» فيجد رابط مادته — وهذه هي اللحظة التي يتأكد فيها
+      أن إرساله لم يضِع. وفشل الختم لا يُبطل مادةً أُنشئت: نمضي ونترك
+      الطلب في الطابور ليُغلق بيد المشرف.
+    */
+    if (w.requestId && QBANK.requests)
+      await QBANK.requests.setStatus(w.requestId, publish ? 'done' : 'doing', newId).catch(() => {});
+    /*
       ★ نُجدّد قائمة المواد قبل أن نُري الرابط.
       القائمة تُجلب مرة عند الإقلاع وتعيش في التخزين المحلي، فالمادة التي
       نُشرت قبل ثانية ليست فيها. وكنّا نعطي الرافع زر «افتح المادة» يقوده
@@ -7357,6 +7543,29 @@ const ViewUpload = {
     // الرفع مفتوح لكل مسجَّل لا للمشرف وحده — هذه هي ميزة مواد الطلاب
     if (!QBANK.api.user()) return QBANK.views.ViewLogin.view();
     if (!wizard) wizard = QBANK.admin.newWizard();
+
+    /*
+      ★ تنفيذ طلبٍ من طالب: المعالج يبدأ ممتلئًا.
+      الاسم من الطلب، والرافع صاحبه، والملف مساره في المخزن — فلا يُطلب من
+      المشرف أن يكتب ما كُتب ولا أن يرفع ما رُفع. وهذا هو الفرق بين طابور
+      يعمل وطابور يُهمَل.
+    */
+    if (route.query.req && wizard.requestId !== route.query.req && QBANK.requests) {
+      wizard = QBANK.admin.newWizard();
+      wizard.requestId = route.query.req;
+      QBANK.requests.one(route.query.req).then(r => {
+        const q = r.data;
+        if (!q || !wizard || wizard.requestId !== route.query.req) return;
+        wizard.subjectName = q.name || '';
+        wizard.uploader    = { id: q.user_id, name: q.student || 'طالب' };
+        wizard.reqPath     = q.storage_path;
+        wizard.reqFile     = q.filename || 'ملف الطالب';
+        wizard.reqNote     = q.note || '';
+        wizard.reqStudent  = q.student || 'طالب';
+        QBANK.router.render(location.hash);
+      });
+    }
+
     // استئناف مسوّدة من القائمة: نجلبها بحمولتها ونقفز للخطوة الصحيحة
     if (route.query.draft && wizard.draftId !== route.query.draft) {
       wizard = QBANK.admin.newWizard();
@@ -15595,6 +15804,8 @@ function inboxPanel(){
     ['purchases', 'طلب شراء',   '#/admin/money',    'card',  'يدفع الطالب ولا يُفتح له حتى تعتمد'],
     ['phones',    'توثيق جوال', '#/admin/money',    'phone', 'رسالة واتساب وصلت وتنتظر ضغطة'],
     ['payouts',   'تحويل أرباح','#/admin/money',    'swap',  'رافعٌ طلب ماله'],
+    /* «ارفعها عنّي»: طالبٌ أرسل ملفه وينتظر أن أرفعه أنا — أثقل ما في الطابور */
+    ['requests',  'طلب رفع مادة','#/admin/content', 'upload','طالب أرسل ملفه لترفعه عنه'],
     ['drafts',    'مسوّدة',     '#/admin/content',  'edit',  'مادة رفعها طالب ولم تُنشر بعد'],
     ['reports',   'بلاغ',       '#/admin/quality',  'flag',  'سؤالٌ أبلغ عنه طالب']
   ];
@@ -15625,7 +15836,9 @@ function inboxPanel(){
       const it = x[0], n = x[1];
       /* عمر أقدم طلب شراء يظهر في صفّه هو — «منذ كم ينتظر» أهمّ من «كم ينتظرون» */
       const age = it[0] === 'purchases' && d.oldest_purchase
-        ? 'أقدمها منذ ' + QBANK.admin.charts.ago(d.oldest_purchase) : it[4];
+        ? 'أقدمها منذ ' + QBANK.admin.charts.ago(d.oldest_purchase)
+        : it[0] === 'requests' && d.oldest_request
+          ? 'أقدمها منذ ' + QBANK.admin.charts.ago(d.oldest_request) : it[4];
       list.appendChild(el('a', { class:'inbox__i is-on', href: it[2] }, [
         el('span', { class:'inbox__ic', 'aria-hidden':'true' }, [ QBANK.ico(it[3], { size:18 }) ]),
         el('span', { class:'inbox__x' }, [
@@ -16588,6 +16801,466 @@ const ViewAdminPreview = {
 QBANK.router.add('#/admin/preview', ViewAdminPreview);
 QBANK.views.ViewAdminPreview = ViewAdminPreview;
 QBANK.views.previewBar = previewBar;
+
+
+/* ===== 74-requests.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  «ارفعها عنّي» — طلب رفع مادة من المشرف
+  ═══════════════════════════════════════════════════════════════════
+  معالج الرفع أربع خطوات: اسم وجامعة وكلية، ثم ملف، ثم مراجعةُ كل سؤال،
+  ثم قرار الإثراء والنشر. وهو طريقٌ جيّد لمن يريده — لكن أكثر الطلاب لا
+  يريدون أن يصيروا محرّرين، إنما عندهم ملفٌ ويريدونه في المنصة.
+
+  والخطأ في ذلك الطريق لا يقع على صاحبه وحده: إجابةٌ خاطئة اعتُمدت بلا
+  انتباه يذاكرها بعده عشرون. وكل ضغطة «أثرِ بالذكاء» فاتورةٌ تدفعها
+  المنصة لا الطالب.
+
+  ★ فالخيار الثاني: اسم المادة وملفها — وينتهي دوره. يصل الطلب لوحة
+  المشرف، فيرفعه بيده ويراجعه ويقرّر متى يستدعي الذكاء. والمادة تُنشر
+  باسم صاحبها لا باسم من رفعها: هو رافعها في كل شاشة، وله مدّتها وعائدها.
+*/
+const Requests = {
+  /* حال الطلب كما يقرؤها صاحبه — لا بأسماء القاعدة */
+  LABEL: {
+    new:      ['badge--warn', 'في الطابور',        'وصل طلبك — سيرفعها المشرف ويظهر اسمك عليها.'],
+    doing:    ['badge',       'يرفعها المشرف الآن', 'بدأ العمل على ملفك.'],
+    done:     ['badge--ok',   'رُفعت ونُشرت',        'صارت مادتك على المنصة باسمك.'],
+    rejected: ['badge--bad',  'لم تُقبل',           'راجع ملاحظة المشرف وأعد الإرسال.']
+  },
+  status(s){ return Requests.LABEL[s] || ['', s || '—', '']; },
+
+  sizeText(bytes){
+    const n = Number(bytes) || 0;
+    const N = QBANK.views.arNum;
+    if (n >= 1024 * 1024) return N((n / 1024 / 1024).toFixed(1)) + ' م.ب';
+    return N(Math.max(1, Math.round(n / 1024))) + ' ك.ب';
+  },
+
+  /*
+    الطلب سطرٌ في القاعدة ومسارٌ في المخزن. نرفع الملف أولًا: لو أُنشئ
+    الصفّ ثم سقط الرفع لبقي طلبٌ بلا ملف يفتحه المشرف فلا يجد شيئًا.
+  */
+  async create(opts){
+    const o = opts || {};
+    const u = QBANK.api.user();
+    if (!u) return { ok:false, error:'سجّل دخولك أولًا' };
+    const name = String(o.name || '').trim();
+    if (!name) return { ok:false, error:'اكتب اسم المادة' };
+    if (!o.file) return { ok:false, error:'اختر ملف الأسئلة' };
+
+    const up = await QBANK.admin.storageUpload(o.file);
+    if (!up.ok) return { ok:false, error: up.error };
+
+    const r = await QBANK.api.rest('upload_requests?select=id', {
+      method:'POST',
+      headers: Object.assign(QBANK.api.headers(), { 'Prefer':'return=representation' }),
+      body: JSON.stringify({
+        user_id: u.id, name, note: String(o.note || '').trim(),
+        storage_path: up.path, filename: o.file.name || '',
+        size_bytes: o.file.size || 0, status:'new'
+      })
+    });
+    if (r.ok && r.data && r.data[0]) return { ok:true, id: r.data[0].id };
+    return { ok:false, error: (r.data && (r.data.message || r.data.error)) ||
+      (r.offline ? 'لا اتصال بالخادم' : 'تعذّر إرسال الطلب — نفّذ db/REQUESTS.sql') };
+  },
+
+  mine(){
+    const u = QBANK.api.user();
+    if (!u) return Promise.resolve({ ok:false, data:[] });
+    return QBANK.api.rest('upload_requests?user_id=eq.' + u.id + '&select=*&order=created_at.desc');
+  },
+  cancel(id){ return QBANK.api.rest('upload_requests?id=eq.' + id, { method:'DELETE' }); },
+
+  adminList(status){ return QBANK.api.rpc('admin_upload_requests', { p_status: status || '' }); },
+  setStatus(id, status, subjectId, note){
+    return QBANK.api.rpc('admin_request_status',
+      { p_id: id, p_status: status, p_subject: subjectId || null, p_note: note || null });
+  },
+  one(id){ return QBANK.api.rpc('admin_upload_requests', { p_status: '' })
+    .then(r => ({ ok: r.ok, data: ((r.ok && Array.isArray(r.data)) ? r.data : []).filter(x => x.id === id)[0] || null })); }
+};
+QBANK.requests = Requests;
+
+/* ═══ نموذج الطالب: اسم المادة وملفها — لا أكثر ═══ */
+function requestForm(onBack){
+  const box = el('div', { class:'card stack' });
+  const nameIn = el('input', { class:'input', required:'', 'aria-required':'true',
+    placeholder:'مثال: فيزيولوجيا الجهاز التنفسي' });
+  const noteIn = el('textarea', { class:'input', rows:'2',
+    placeholder:'اختياري: اسم الدكتور، الفصل، أي شيء يفيد المشرف' });
+  const fileIn = el('input', { type:'file', style:'display:none', 'aria-hidden':'true',
+    accept:'.pdf,.docx,.pptx,.txt,.text,.md,.csv,.tsv,.rtf,.html,.htm,.png,.jpg,.jpeg,.webp,.gif,.heic,image/*' });
+  const pick = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'اختر ملف الأسئلة' });
+  const fileLine = el('p', { class:'field__hint', style:'margin:0', text:'لم يُختر ملف بعد.' });
+  const msg = el('p', { class:'field__hint', role:'status' });
+  const send = el('button', { class:'btn btn--block', type:'button', text:'أرسل الطلب للمشرف' });
+
+  let file = null;
+  pick.addEventListener('click', () => fileIn.click());
+  fileIn.addEventListener('change', () => {
+    file = fileIn.files && fileIn.files[0];
+    fileLine.textContent = file ? (file.name + ' · ' + Requests.sizeText(file.size)) : 'لم يُختر ملف بعد.';
+    pick.textContent = file ? 'اختر ملفًا آخر' : 'اختر ملف الأسئلة';
+  });
+
+  send.addEventListener('click', async () => {
+    msg.className = 'field__hint';
+    if (!nameIn.value.trim()){ msg.className = 'field__hint is-bad'; msg.textContent = '⚠ اكتب اسم المادة أولًا.'; nameIn.focus(); return; }
+    if (!file){ msg.className = 'field__hint is-bad'; msg.textContent = '⚠ اختر ملف الأسئلة.'; return; }
+    send.disabled = true; msg.textContent = '… يُرفع الملف ويُسجَّل طلبك';
+    const r = await Requests.create({ name: nameIn.value, note: noteIn.value, file });
+    send.disabled = false;
+    if (!r.ok){ msg.className = 'field__hint is-bad'; msg.textContent = '⚠ ' + r.error; return; }
+    box.innerHTML = '';
+    /* ★ الشكر يقول ماذا يحدث بعده: «وصل» وحدها تترك صاحبها ينتظر بلا علم */
+    box.appendChild(el('div', { style:'text-align:center' }, [
+      el('span', { class:'empty__ico', 'aria-hidden':'true' }, [ QBANK.ico('checkCircle', { size:40, weight:1.6 }) ]),
+      el('p', { class:'empty__title', text:'وصل طلبك' }),
+      el('p', { class:'empty__text', text:'سيرفعها المشرف بنفسه ويراجع أسئلتها، وتُنشر باسمك أنت — تجدها في «موادي» حين تجهز.' }),
+      el('a', { class:'btn btn--block', href:'#/account/uploads', text:'تابع طلبك في موادي' })
+    ]));
+  });
+
+  box.appendChild(el('h2', { style:'margin:0', text:'أرسلها للمشرف يرفعها عنك' }));
+  box.appendChild(el('p', { class:'field__hint', style:'margin:0',
+    text:'شيئان فقط: اسم المادة وملفها. المشرف يقرأ الملف ويراجع الأسئلة وينشرها باسمك.' }));
+  box.appendChild(el('label', { class:'field', style:'margin:0' }, [
+    el('span', { class:'field__label', text:'اسم المادة *' }), nameIn ]));
+  box.appendChild(el('label', { class:'field', style:'margin:0' }, [
+    el('span', { class:'field__label', text:'ملف الأسئلة * — PDF أو Word أو نص أو صور' }), pick, fileLine ]));
+  box.appendChild(fileIn);
+  box.appendChild(el('label', { class:'field', style:'margin:0' }, [
+    el('span', { class:'field__label', text:'ملاحظة للمشرف' }), noteIn ]));
+  box.appendChild(send);
+  box.appendChild(msg);
+  if (onBack){
+    const back = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'← أرفعها بنفسي' });
+    back.addEventListener('click', onBack);
+    box.appendChild(back);
+  }
+  return box;
+}
+
+/* ═══ دعوة الخيار الثاني — تظهر في معالج الرفع ═══ */
+function requestInvite(onPick){
+  const b = el('button', { class:'btn btn--soft btn--block', type:'button',
+    text:'✉ أو أرسلها للمشرف يرفعها عنك' });
+  b.addEventListener('click', onPick);
+  return el('div', { class:'card stack reqinvite' }, [
+    el('p', { style:'margin:0', text:'لا وقت للمراجعة؟' }),
+    el('p', { class:'field__hint', style:'margin:0',
+      text:'أرسل اسم المادة وملفها، والمشرف يرفعها ويراجعها بنفسه — وتبقى المادة باسمك ولك عائدها.' }),
+    b
+  ]);
+}
+
+/* ═══ «طلباتي» في حساب الطالب ═══ */
+function myRequestsCard(){
+  const box = el('div', { class:'card stack', hidden:true }, [
+    el('h2', { style:'margin:0', text:'طلباتي عند المشرف' })
+  ]);
+  Requests.mine().then(r => {
+    if (!alive() || !box.isConnected) return;
+    const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+    if (!rows.length) return;
+    box.hidden = false;
+    rows.forEach(q => {
+      const st = Requests.status(q.status);
+      const row = el('div', { class:'up-row' }, [
+        el('span', { class:'up-row__ico', 'aria-hidden':'true' }, [ QBANK.ico('message', { size:18 }) ]),
+        el('span', { class:'up-row__x' }, [
+          el('span', { class:'up-row__t', text: q.name }),
+          el('span', { class:'up-row__s', text: st[2] + (q.admin_note ? ' — ' + q.admin_note : '') })
+        ]),
+        el('span', { class:'badge ' + st[0], text: st[1] }),
+        (q.status === 'done' && q.subject_id)
+          ? el('a', { class:'btn btn--sm btn--soft', href:'#/subject/' + q.subject_id, text:'افتحها' })
+          : null
+      ]);
+      /* الإلغاء ما دام في الطابور: من أرسل ملفًا خطأً لا يُترك ينتظر رفضه */
+      if (q.status === 'new'){
+        const x = el('button', { class:'btn btn--sm btn--ghost', type:'button',
+          text:'ألغِ', 'aria-label':'ألغِ طلب ' + q.name });
+        let armed = false;
+        x.addEventListener('click', async () => {
+          if (!armed){ armed = true; x.textContent = 'اضغط ثانيةً للإلغاء'; x.className = 'btn btn--sm btn--danger'; return; }
+          const d = await Requests.cancel(q.id);
+          QBANK.toast(d.ok ? 'أُلغي الطلب' : 'تعذّر الإلغاء');
+          if (d.ok) row.remove();
+        });
+        row.appendChild(x);
+      }
+      box.appendChild(row);
+    });
+  });
+  return box;
+}
+
+/* ═══ طابور الطلبات في اللوحة ═══ */
+function adminRequestsPanel(){
+  const box = el('div', { class:'ad-panel', hidden:true });
+  const head = el('div', { class:'ad-panel__h' }, [
+    el('h2', { class:'ad-panel__t', text:'طلبات رفع مادة' }),
+    el('span', { class:'ad-panel__s', text:'طلاب أرسلوا ملفاتهم ليرفعها المشرف' })
+  ]);
+  const list = el('div', { class:'ad-table' });
+  box.appendChild(head); box.appendChild(list);
+
+  function load(){
+    Requests.adminList('').then(r => {
+      if (!alive() || !box.isConnected) return;
+      const all = (r.ok && Array.isArray(r.data)) ? r.data : [];
+      /* المنتهية لا تزاحم: الطابور هو ما ينتظر عملًا */
+      const rows = all.filter(x => x.status === 'new' || x.status === 'doing');
+      if (!rows.length){ box.hidden = true; return; }
+      box.hidden = false;
+      head.querySelector('.ad-panel__s').textContent =
+        QBANK.views.arNum(rows.length) + ' ينتظر — الملف عند المشرف والمادة باسم صاحبها';
+      list.innerHTML = '';
+      rows.forEach(q => list.appendChild(requestRow(q, load)));
+    });
+  }
+  load();
+  return box;
+}
+
+function requestRow(q, refresh){
+  const st = Requests.status(q.status);
+  const who = q.student || 'طالب بلا اسم';
+  const meta = [ who, q.university, q.filename ? q.filename + ' · ' + Requests.sizeText(q.size_bytes) : null,
+                 'منذ ' + QBANK.admin.charts.ago(q.created_at) ].filter(Boolean).join(' · ');
+
+  const msg = el('p', { class:'field__hint', style:'margin:0', role:'status' });
+  /* ★ «ارفعها الآن» يفتح المعالج جاهزًا: الاسم والرافع والملف — بلا إعادة كتابة */
+  const go = el('a', { class:'btn btn--sm', href:'#/admin/upload?req=' + q.id, text:'⇪ ارفعها الآن' });
+
+  const rej = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'ارفض' });
+  let armed = false;
+  rej.addEventListener('click', async () => {
+    if (!armed){ armed = true; rej.textContent = 'اضغط ثانيةً للرفض'; rej.className = 'btn btn--sm btn--danger'; return; }
+    const note = (typeof prompt === 'function' ? prompt('سبب الرفض — يراه صاحب الطلب:', 'الملف غير واضح') : '') || '';
+    const r = await Requests.setStatus(q.id, 'rejected', null, note);
+    QBANK.toast(r.ok ? 'رُفض الطلب' : 'تعذّر التعديل');
+    if (r.ok && refresh) refresh();
+  });
+
+  return el('div', { class:'ad-row', style:'cursor:default;flex-wrap:wrap' }, [
+    el('span', { class:'ad-row__main' }, [
+      el('span', { class:'ad-row__t', text: q.name }),
+      el('span', { class:'ad-row__s', text: meta })
+    ]),
+    el('span', { class:'badge ' + st[0], text: q.status === 'new' ? 'جديد' : 'قيد الرفع' }),
+    go, rej,
+    q.note ? el('span', { class:'ad-sub', style:'flex:1 0 100%' }, [
+      el('span', { class:'field__hint', text:'ملاحظته: ' + q.note }) ]) : null,
+    msg
+  ]);
+}
+
+QBANK.views.requestForm    = requestForm;
+QBANK.views.requestInvite  = requestInvite;
+QBANK.views.myRequestsCard = myRequestsCard;
+QBANK.views.adminRequestsPanel = adminRequestsPanel;
+
+
+/* ===== 75-auth-providers.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  مزوّدو الدخول — أكثر من جوجل
+  ═══════════════════════════════════════════════════════════════════
+  كان الدخول بابين: رابط البريد، وجوجل. ومن لا بريد جوجل عنده — وكثيرٌ من
+  الطلاب بريدهم الجامعي مايكروسوفت، وكثيرٌ منهم لا يفتح بريده أصلًا — كان
+  أمامه الرابط البريدي وحده: ينتظر رسالةً قد تتأخر أو تقع في المهملات.
+
+  ★ والأزرار تُكتشف ولا تُكتب.
+  كلّ مزوّد يحتاج مفتاحًا وسرًّا يُضبطان في لوحة Supabase، وزرٌّ لمزوّدٍ غير
+  مضبوط يقود الطالب إلى صفحة خطأ إنجليزية — أسوأ من ألّا يكون. فنسأل
+  الخادمَ نفسه (‎/auth/v1/settings‎ عامّةٌ بالمفتاح العام) عمّا هو مفعَّل،
+  ونرسم أزرار المفعَّل وحده. يفعّل علي مزوّدًا من لوحة Supabase فيظهر زرّه
+  في المنصة بلا نشرٍ جديد ولا سطر كود.
+
+  والقائمة المخبّأة تُرسم فورًا (لا وميض ولا انتظار)، ثم تُصحّح حين يصل الرد.
+*/
+const AuthProviders = {
+  KEY: 'auth_providers',
+  TTL: 6 * 3600 * 1000,     // ست ساعات: التفعيل حدثٌ نادر، والسؤال مع كل فتح إسراف
+
+  /*
+    ما نعرف رسمه ونثق أن طلابنا يملكونه. الترتيب هو ترتيب العرض:
+    جوجل أولًا لأنه الأكثر، ثم آبل ومايكروسوفت (البريد الجامعي غالبًا
+    مايكروسوفت)، ثم سناب شات — وهو عند طلابنا أكثر من فيسبوك.
+    (ديسكورد مرفوع من القائمة بطلب علي: ليس من منصات طلابنا.)
+  */
+  /*
+    لكلٍّ قرصُه بلون علامته وشعارٌ يقابله. والقرص الأبيض لجوجل ومايكروسوفت
+    (شعاراهما متعدّدا الألوان ولا يُقلبان أبيض)، والأصفر لسناب شات كما هو
+    في تطبيقه. bg/fg ألوانُ علاماتٍ لا ألوانُ منصّتنا — لذلك تُكتب هنا لا
+    في CSS، ولا تدخل نظام التصميم.
+  */
+  LIST: [
+    { id:'google',        label:'جوجل',       brand:'google',    bg:'#ffffff', fg:null,      pale:true },
+    { id:'apple',         label:'آبل',        brand:'apple',     bg:'#000000', fg:'#ffffff' },
+    { id:'azure',         label:'مايكروسوفت', brand:'microsoft', bg:'#ffffff', fg:null,      pale:true },
+    { id:'snapchat',      label:'سناب شات',   brand:'snapchat',  bg:'#FFFC00', fg:'#111111', pale:true },
+    { id:'facebook',      label:'فيسبوك',     brand:'facebook',  bg:'#1877F2', fg:'#ffffff' },
+    { id:'twitter',       label:'X',          brand:'x',         bg:'#000000', fg:'#ffffff' },
+    { id:'github',        label:'جِتهَب',      brand:'github',    bg:'#181717', fg:'#ffffff' },
+    { id:'linkedin_oidc', label:'لينكدإن',    brand:'linkedin',  bg:'#0A66C2', fg:'#ffffff' },
+    { id:'linkedin',      label:'لينكدإن',    brand:'linkedin',  bg:'#0A66C2', fg:'#ffffff' }
+  ],
+  meta(id){ return AuthProviders.LIST.filter(p => p.id === id)[0] || null; },
+
+  /* المخبّأ — ولو قديمًا: زرٌّ ظهر أمس أولى من صفٍّ فارغ اليوم */
+  cached(){
+    const c = QBANK.store.get(AuthProviders.KEY, null);
+    return (c && Array.isArray(c.list)) ? c.list : null;
+  },
+  fresh(){
+    const c = QBANK.store.get(AuthProviders.KEY, null);
+    return !!(c && Array.isArray(c.list) && (Date.now() - (c.at || 0)) < AuthProviders.TTL);
+  },
+
+  /*
+    الرد شكله { external: { google:true, azure:false, … } }.
+    ونحن نأخذ منه ما نعرف رسمه فقط — مزوّدٌ مفعَّل بلا شعارٍ عندنا يبقى
+    مخفيًّا حتى نرسمه، لا يظهر بزرٍّ مجهول.
+  */
+  async load(){
+    const c = QBANK.config.get();
+    const f = QBANK.api.fetchFn();
+    if (!c || !f) return null;
+    try {
+      const res = await f(c.url + '/auth/v1/settings', { headers:{ 'apikey': c.anonKey } });
+      if (!res.ok) return null;
+      const d = await res.json();
+      const ext = (d && d.external) || {};
+      const list = AuthProviders.LIST.filter(p => ext[p.id] === true).map(p => p.id);
+      QBANK.store.set(AuthProviders.KEY, { at: Date.now(), list });
+      return list;
+    } catch(e){ return null; }
+  },
+
+  /* المزوّد الواحد يظهر مرة: لينكدإن له معرّفان في Supabase (القديم والـOIDC) */
+  dedupe(ids){
+    const seen = {}, out = [];
+    (ids || []).forEach(id => {
+      const m = AuthProviders.meta(id);
+      if (!m || seen[m.brand]) return;
+      seen[m.brand] = 1; out.push(m);
+    });
+    return out;
+  }
+};
+QBANK.authProviders = AuthProviders;
+
+/*
+  صفّ أزرار الدخول. يُرسم من المخبّأ فورًا ثم يُصحَّح من الخادم.
+  ★ والوجهة تُحفظ قبل المغادرة: جوجل وأخواته يعودون إلى أصل الموقع (الهاش
+  يحمله رمز الجلسة)، فمن أين نعرف أن القاصد كان اللوحة؟ من هذا المفتاح.
+*/
+function oauthRow(opts){
+  const o = opts || {};
+  const box = el('div', { class:'oauth' });
+  const head = el('p', { class:'field__hint oauth__h', style:'margin:0' });
+  const grid = el('div', { class:'oauth__grid' });
+  box.appendChild(head); box.appendChild(grid);
+
+  function go(p){
+    const u = QBANK.api.auth.oauthUrl(p.id);
+    if (!u) return void QBANK.toast('المنصة غير موصولة بالخادم بعد');
+    if (o.after) QBANK.store.set('after_login', o.after);
+    location.href = u;
+  }
+
+  function paint(ids){
+    /* الافتراض جوجل: هو المفعَّل منذ اليوم الأول، ولو تعذّر السؤال فالزرّ يعمل */
+    const list = AuthProviders.dedupe((ids && ids.length) ? ids : ['google']);
+    grid.innerHTML = '';
+
+    /*
+      ★ الشكل يتبع العدد.
+      مزوّدٌ واحد قرصًا وحيدًا في وسط الشاشة يبدو زينةً لا زرًّا — فيبقى
+      زرًّا عريضًا باسمه. وستةُ أزرارٍ عريضة تُطيل الشاشة وتُغرق حقل البريد،
+      فتصير أقراصًا بشعاراتها: الشعار يُعرف قبل أن يُقرأ الاسم، والاسم باقٍ
+      في aria-label وtitle لمن يقرأ بالصوت أو يتردّد.
+    */
+    if (list.length === 1){
+      const p = list[0];
+      head.textContent = 'أو ادخل مباشرة:';
+      grid.className = 'oauth__grid';
+      const b = el('button', { class:'btn btn--ghost oauth__b', type:'button',
+        'data-provider': p.id, 'aria-label':'الدخول بحساب ' + p.label }, [
+        el('span', { class:'oauth__ico', 'aria-hidden':'true' }, [ QBANK.brand(p.brand, { size:18 }) ]),
+        el('span', { class:'oauth__l', text:'الدخول بحساب ' + p.label })
+      ]);
+      b.addEventListener('click', () => go(p));
+      grid.appendChild(b);
+      return;
+    }
+
+    head.textContent = 'أو ادخل بحسابك في:';
+    grid.className = 'oauth__grid oauth__tiles';
+    list.forEach(p => {
+      const t = el('button', { class:'oauth__tile' + (p.pale ? ' is-pale' : ''), type:'button',
+        'data-provider': p.id, title:'الدخول بحساب ' + p.label,
+        'aria-label':'الدخول بحساب ' + p.label,
+        style:'--tile:' + p.bg }, [
+        el('span', { class:'oauth__mark', 'aria-hidden':'true' },
+          [ QBANK.brand(p.brand, { size:26, fill: p.fg || undefined }) ])
+      ]);
+      t.addEventListener('click', () => go(p));
+      grid.appendChild(t);
+    });
+  }
+
+  paint(AuthProviders.cached());
+  if (!AuthProviders.fresh())
+    AuthProviders.load().then(list => { if (list && grid.isConnected) paint(list); });
+  return box;
+}
+
+/*
+  ═══ في إعدادات المشرف: ما المفعَّل الآن وكيف يُفعَّل غيره ═══
+  السؤال الذي سيُسأل حتمًا: «أضفتُ الأزرار فأين هي؟» — الجواب أن التفعيل
+  في Supabase لا في الكود، فنقوله في المكان الذي يُسأل فيه.
+*/
+function providersAdminCard(){
+  const box = el('div', { class:'card stack' }, [
+    el('h2', { style:'margin:0', text:'طرق الدخول' }),
+    el('p', { class:'field__hint', style:'margin:0', text:'جارٍ سؤال الخادم…' })
+  ]);
+  const show = list => {
+    if (!alive() || !box.isConnected) return;
+    box.innerHTML = '';
+    box.appendChild(el('h2', { style:'margin:0', text:'طرق الدخول' }));
+    const on = AuthProviders.dedupe(list || []);
+    box.appendChild(el('div', { class:'row' }, [
+      el('span', { class:'badge badge--ok', text:'رابط البريد + الرمز' })
+    ].concat(on.map(p => el('span', { class:'badge badge--ok prov-badge' }, [
+      /* الشعار بلونه هنا أيضًا: الشارة تُقرأ لمحًا، واللون هو ما يُلمح */
+      QBANK.brand(p.brand, { size:14, fill: p.pale ? undefined : p.bg }),
+      el('span', { text:' ' + p.label }) ])))
+     .concat(on.length ? [] : [ el('span', { class:'badge badge--warn', text:'لا مزوّد اجتماعي مفعَّل' }) ])));
+    const off = AuthProviders.LIST.filter(p => (list || []).indexOf(p.id) === -1 && p.id !== 'linkedin');
+    box.appendChild(el('p', { class:'field__hint', style:'margin:0', text:
+      'الأزرار تظهر للطالب تلقائيًا لكل مزوّد تُفعّله في Supabase — بلا نشر جديد. ' +
+      'المتاح للتفعيل عندنا: ' + off.map(p => p.label).join('، ') + '.' }));
+    const c = QBANK.config.get();
+    const ref = c && c.url ? String(c.url).replace(/^https?:\/\//, '').split('.')[0] : '';
+    if (ref) box.appendChild(el('a', { class:'btn btn--sm btn--ghost', target:'_blank', rel:'noopener',
+      href:'https://supabase.com/dashboard/project/' + ref + '/auth/providers',
+      text:'افتح مزوّدي الدخول في Supabase ↗' }));
+  };
+  const cached = AuthProviders.cached();
+  if (cached) show(cached);
+  AuthProviders.load().then(l => { if (l) show(l); });
+  return box;
+}
+
+QBANK.views.oauthRow = oauthRow;
+QBANK.views.providersAdminCard = providersAdminCard;
 
 })();
 

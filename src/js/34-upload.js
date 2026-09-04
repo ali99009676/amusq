@@ -225,8 +225,40 @@ function stepRead(box, rerender){
     return;
   }
 
+  /*
+    ★ الطريق الثاني للطالب: يرسل ولا يرفع.
+    من لا يريد أن يصير محرّرًا يكتب اسم المادة ويرفق ملفه، والمشرف يتولّى
+    الباقي. الشاشة قائمة بذاتها كالكتابة اليدوية — مزاحمتها لمنطقة الرفع
+    تُربك الاثنين.
+  */
+  if (wizard.requestMode && QBANK.views.requestForm){
+    box.appendChild(QBANK.views.requestForm(() => { wizard.requestMode = false; rerender(); }));
+    return;
+  }
+
   /* ★ العودة قبل البداية: مسوّدةٌ لم تكتمل تُعرض أولًا كي لا يبدأ صاحبها من الصفر */
   if (QBANK.views.resumeBanner) box.appendChild(QBANK.views.resumeBanner());
+
+  /*
+    ★ طلبٌ من طالب: المشرف لا يعيد كتابة شيء.
+    الاسم جاء مع الطلب، والرافع هو صاحبه، والملف في المخزن — فالضغطة
+    الواحدة تقرؤه وتمضي إلى المراجعة. وحال الطلب تصير «قيد الرفع» لحظتها
+    كي يرى صاحبه أن أحدًا بدأ، ولا يظنّ طلبه ضائعًا.
+  */
+  if (wizard.reqPath && !(wizard.raw || []).length){
+    const goRead = el('button', { class:'btn btn--block', type:'button', text:'⇣ اقرأ ملف الطالب الآن' });
+    goRead.addEventListener('click', () => { goRead.disabled = true; runStored(); });
+    box.appendChild(el('div', { class:'card stack reqbanner' }, [
+      el('h3', { style:'margin:0', text:'طلب رفع من ' + (wizard.reqStudent || 'طالب') }),
+      el('p', { class:'field__hint', style:'margin:0', text:
+        'المادة: ' + (wizard.subjectName || '—') +
+        (wizard.reqFile ? ' · الملف: ' + wizard.reqFile : '') +
+        ' — ستُنشر باسمه هو.' }),
+      wizard.reqNote ? el('p', { class:'field__hint', style:'margin:0', text:'ملاحظته: ' + wizard.reqNote }) : null,
+      goRead
+    ]));
+  }
+
   box.appendChild(subjectMeta());
 
   /*
@@ -368,6 +400,31 @@ function stepRead(box, rerender){
     rerender();
   }
 
+  /* قراءة ملفٍ في المخزن — طلبُ طالبٍ يرفعه المشرف. لا اختيار ملف ولا رفع ثانٍ */
+  async function runStored(){
+    msg.textContent = '';
+    if (wizard.requestId && QBANK.requests)
+      QBANK.requests.setStatus(wizard.requestId, 'doing').catch(() => {});
+    const t0 = Date.now();
+    let tick = setInterval(() => {
+      phase('يُقرأ ملف الطالب على الخادم',
+        'استخراج النص ثم التعرّف على الأسئلة — ' + Math.round((Date.now() - t0) / 1000) + ' ثانية.');
+    }, 1000);
+    phase('يُجلب الملف من المخزن', wizard.reqFile || '');
+    /* الشريط أسفل الشاشة والزرّ أعلاها — نُنزل المشرف إليه كي لا يظنّ أن شيئًا لم يحدث */
+    try { rdCard.scrollIntoView({ block:'center', behavior:'smooth' }); } catch(e){}
+    wizard = await QBANK.admin.wizardIngest(wizard, wizard.reqFile || 'ملف الطالب', null, false, {
+      storagePath: wizard.reqPath,
+      onPart: (done, total) => { clearInterval(tick); tick = null;
+        phase('يقرأ الذكاءُ الملف على أجزاء', 'قُرئ ' + QBANK.views.arNum(done) + ' من ' +
+          QBANK.views.arNum(total) + ' أجزاء', Math.round(done / total * 100)); }
+    });
+    if (tick) clearInterval(tick);
+    rdCard.hidden = true; rdBar.classList.remove('meter--busy');
+    if (wizard.error) { msg.textContent = '⚠ ' + wizard.error; return; }
+    rerender();
+  }
+
   async function handle(file){
     if (!file) return;
     msg.textContent = '';
@@ -453,6 +510,15 @@ function stepRead(box, rerender){
   box.appendChild(el('p', { class:'field__hint', style:'text-align:center;margin:2px 0',
                             text:'— أو —' }));
   box.appendChild(manualBtn);
+
+  /*
+    ★ الخيار الثاني يُعرض هنا لا في صفحة أخرى.
+    مكانه الطبيعي حيث يقف الطالب متردّدًا أمام معالجٍ من أربع خطوات. ولا
+    يُعرض للمشرف (يرفع بنفسه أصلًا) ولا وهو ينفّذ طلبًا قائمًا.
+  */
+  const isAdmin = !!(QBANK.uploader && QBANK.uploader.isAdmin());
+  if (!isAdmin && !wizard.reqPath && QBANK.views.requestInvite)
+    box.appendChild(QBANK.views.requestInvite(() => { wizard.requestMode = true; rerender(); }));
 }
 
 /* الخطوة ٢: التقدير ثم التشغيل بدفعات مع شريط «٨٠ من ٣٠٠» */
@@ -842,6 +908,14 @@ function stepPublish(box){
     const w = wizard;
     await QBANK.admin.stamp(newId, w, publish);
     /*
+      ★ الطلب يُختم بمادته لا بكلمة «تمّ».
+      صاحبه يفتح «طلباتي» فيجد رابط مادته — وهذه هي اللحظة التي يتأكد فيها
+      أن إرساله لم يضِع. وفشل الختم لا يُبطل مادةً أُنشئت: نمضي ونترك
+      الطلب في الطابور ليُغلق بيد المشرف.
+    */
+    if (w.requestId && QBANK.requests)
+      await QBANK.requests.setStatus(w.requestId, publish ? 'done' : 'doing', newId).catch(() => {});
+    /*
       ★ نُجدّد قائمة المواد قبل أن نُري الرابط.
       القائمة تُجلب مرة عند الإقلاع وتعيش في التخزين المحلي، فالمادة التي
       نُشرت قبل ثانية ليست فيها. وكنّا نعطي الرافع زر «افتح المادة» يقوده
@@ -969,6 +1043,29 @@ const ViewUpload = {
     // الرفع مفتوح لكل مسجَّل لا للمشرف وحده — هذه هي ميزة مواد الطلاب
     if (!QBANK.api.user()) return QBANK.views.ViewLogin.view();
     if (!wizard) wizard = QBANK.admin.newWizard();
+
+    /*
+      ★ تنفيذ طلبٍ من طالب: المعالج يبدأ ممتلئًا.
+      الاسم من الطلب، والرافع صاحبه، والملف مساره في المخزن — فلا يُطلب من
+      المشرف أن يكتب ما كُتب ولا أن يرفع ما رُفع. وهذا هو الفرق بين طابور
+      يعمل وطابور يُهمَل.
+    */
+    if (route.query.req && wizard.requestId !== route.query.req && QBANK.requests) {
+      wizard = QBANK.admin.newWizard();
+      wizard.requestId = route.query.req;
+      QBANK.requests.one(route.query.req).then(r => {
+        const q = r.data;
+        if (!q || !wizard || wizard.requestId !== route.query.req) return;
+        wizard.subjectName = q.name || '';
+        wizard.uploader    = { id: q.user_id, name: q.student || 'طالب' };
+        wizard.reqPath     = q.storage_path;
+        wizard.reqFile     = q.filename || 'ملف الطالب';
+        wizard.reqNote     = q.note || '';
+        wizard.reqStudent  = q.student || 'طالب';
+        QBANK.router.render(location.hash);
+      });
+    }
+
     // استئناف مسوّدة من القائمة: نجلبها بحمولتها ونقفز للخطوة الصحيحة
     if (route.query.draft && wizard.draftId !== route.query.draft) {
       wizard = QBANK.admin.newWizard();

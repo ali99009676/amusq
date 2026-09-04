@@ -432,6 +432,8 @@ const ViewAccount = {
     } else if (active === 'uploads'){
       /* ما توقّف رفعه قبل ما اكتمل: المسوّدة تُستأنف من هنا لا من ذاكرة صاحبها */
       if (QBANK.views.myDraftsCard) body.appendChild(QBANK.views.myDraftsCard());
+      /* وما أرسله للمشرف ليرفعه عنه: حاله يُرى هنا لا يُسأل عنه في واتساب */
+      if (QBANK.views.myRequestsCard) body.appendChild(QBANK.views.myRequestsCard());
       body.appendChild(myUploadsCard());
       const wallet = (QBANK.wallet && QBANK.wallet.body) ? QBANK.wallet.body() : null;
       if (wallet) body.appendChild(wallet);
