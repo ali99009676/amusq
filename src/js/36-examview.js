@@ -95,11 +95,67 @@ function finishExam(){
   QBANK.router.render(location.hash);
 }
 
+/*
+  ═══ لوحة التغذية الراجعة بعد الإجابة ═══
+  كان الشرح سطرَ تلميحٍ رمادي تحت الخيارات. الآن لوحة: حكمٌ واضح (أصبت /
+  أخطأت — والصحيح هو ب)، ثم تبويبات لما وُجد: شرح عربي، English، ترجمة،
+  بطاقة حفظ. لا تبويب لما لا محتوى له — والسؤال بلا شرح لا يُظهر لوحةً
+  فارغة، بل الحكم وحده.
+*/
+function examFeedback(item, answered, st){
+  const right = answered.choice === item.correct;
+  const N = QBANK.views.arNum;
+  const panes = [];
+  if (item.expl_ar) panes.push(['شرح', el('p', { class:'exfb__p', text: item.expl_ar })]);
+  if (item.expl_en) panes.push(['English', el('p', { class:'exfb__p ltr', text: item.expl_en })]);
+  if (item.translation) panes.push(['ترجمة', el('p', { class:'exfb__p', text: item.translation })]);
+  const m = item.mnemonic;
+  if (m && (m.cue || m.key)) panes.push(['بطاقة حفظ', el('div', { class:'exfb__memo' }, [
+    el('span', { class:'badge', text:'الكلمة الدالة' }), el('b', { class:'ltr', text: m.cue || '—' }),
+    el('span', { 'aria-hidden':'true', text:'←' }),
+    el('span', { class:'badge badge--ok', text:'المفتاح' }), el('b', { class:'ltr', text: m.key || '—' }),
+    m.link ? el('p', { class:'exfb__p', text:'🔗 ' + m.link }) : null ])]);
+
+  const box = el('section', { class:'exfb ' + (right ? 'exfb--ok' : 'exfb--bad'), 'aria-live':'polite' });
+  box.appendChild(el('div', { class:'exfb__h' }, [
+    el('span', { class:'exfb__ico', 'aria-hidden':'true', text: right ? '✓' : '✗' }),
+    el('div', { class:'exfb__x' }, [
+      el('b', { class:'exfb__t', text: right ? 'أصبت' : 'أخطأت' }),
+      el('span', { class:'exfb__s', text: right
+        ? 'إجابتك (' + QBANK.views.optLetter(item.correct) + ') صحيحة. أحسنت.'
+        : 'الإجابة الصحيحة: (' + QBANK.views.optLetter(item.correct) + '). اقرأ لماذا كي لا يتكرّر.' })
+    ])
+  ]));
+  if (panes.length){
+    const tabs = el('div', { class:'exfb__tabs', role:'tablist' });
+    const body = el('div', { class:'exfb__body' });
+    panes.forEach((pn, i) => {
+      const b = el('button', { class:'exfb__tab', type:'button', role:'tab', 'aria-selected': i === 0 ? 'true' : 'false', text: pn[0] });
+      b.addEventListener('click', () => {
+        tabs.querySelectorAll('.exfb__tab').forEach(x => x.setAttribute('aria-selected', 'false'));
+        b.setAttribute('aria-selected', 'true');
+        body.innerHTML = ''; body.appendChild(pn[1]);
+      });
+      tabs.appendChild(b);
+    });
+    body.appendChild(panes[0][1]);
+    box.appendChild(tabs); box.appendChild(body);
+  }
+  const acts = el('div', { class:'exfb__acts' }, [
+    (!right && QBANK.explain)
+      ? QBANK.explain.button({ id:item.id, q:item.q, options:item.options, answer:item.correct, topic:item.topic }, answered.choice) : null,
+    QBANK.shareCard ? QBANK.shareCard.button({ id:item.id, q:item.q, options:item.options, _sid: st.sub.id }) : null
+  ]);
+  if (acts.children.length) box.appendChild(acts);
+  return box;
+}
+
 function examRunner(){
   const st = examState;
   const exam = st.exam;
   const item = exam.items[exam.i];
   const answered = exam.answers[exam.i];
+  const N = QBANK.views.arNum;
 
   const opts = el('div', { class:'stack q__opts' }, item.options.map((opt, oi) => {
     let cls = 'opt', mark = '';
@@ -110,7 +166,7 @@ function examRunner(){
     } else if (answered && answered.choice === oi) { cls += ' is-answer'; mark = '●'; }
     const b = el('button', { class: cls, type:'button', disabled: answered ? true : null }, [
       el('span', { class:'opt__l', 'aria-hidden':'true', text: QBANK.views.optLetter(oi) }),
-      el('span', { class:'ltr', text: opt }),
+      el('span', { class:'ltr opt__t', text: opt }),
       el('span', { class:'opt__mark', 'aria-hidden':'true', text: mark })
     ]);
     b.addEventListener('click', () => {
@@ -121,18 +177,35 @@ function examRunner(){
   }));
 
   const answeredCount = exam.answers.filter(a => a !== null).length;
-  const nav = el('div', { class:'row' }, [
+  const total = exam.items.length;
+  /*
+    ★ رأس الاختبار: شريط تقدّم بعرض البطاقة، ثم «سؤال ٣ من ٢٠» والمحور
+    والمؤقّت في سطرٍ واحد. كانت هذه المعلومات مبعثرة في شريط التنقّل
+    أسفل الصفحة — والطالب ينظر إلى أعلى السؤال لا إلى ما تحته.
+  */
+  const head = el('header', { class:'exam__top' }, [
+    el('div', { class:'exam__bar', role:'progressbar', 'aria-valuemin':'0', 'aria-valuemax': String(total), 'aria-valuenow': String(answeredCount) }, [
+      el('i', { style:'width:' + Math.round(answeredCount / total * 100) + '%' }) ]),
+    el('div', { class:'exam__meta' }, [
+      el('span', { class:'exam__n' }, [ el('b', { class:'num', text: N(exam.i + 1) }), el('span', { text:' من ' + N(total) }) ]),
+      item.topic ? el('span', { class:'badge', text: item.topic }) : null,
+      item.important ? el('span', { class:'badge badge--warn', text:'مهم' }) : null,
+      el('span', { class:'spacer' }),
+      st.secondsLeft ? el('span', { class:'timer badge num exam__clock', id:'exClock',
+        text: Math.floor(st.secondsLeft / 60) + ':' + String(st.secondsLeft % 60).padStart(2,'0') }) : null
+    ])
+  ]);
+
+  const nav = el('div', { class:'row exam__nav' }, [
     el('button', { class:'btn btn--ghost btn--sm', type:'button', id:'exPrev',
       disabled: exam.i === 0 ? true : null, text:'→ السابق' }),
     el('span', { class:'spacer' }),
-    el('span', { class:'badge num', text: (exam.i + 1) + ' / ' + exam.items.length }),
-    st.secondsLeft ? el('span', { class:'timer badge num', id:'exClock',
-      text: Math.floor(st.secondsLeft / 60) + ':' + String(st.secondsLeft % 60).padStart(2,'0') }) : null,
+    el('span', { class:'badge num', text: (exam.i + 1) + ' / ' + total }),
     el('span', { class:'spacer' }),
-    exam.i < exam.items.length - 1
+    exam.i < total - 1
       ? el('button', { class:'btn btn--sm', type:'button', id:'exNext', text:'التالي ←' })
       : el('button', { class:'btn btn--sm', type:'button', id:'exFinish',
-          text:'أنهِ الاختبار (' + answeredCount + '/' + exam.items.length + ')' })
+          text:'أنهِ الاختبار (' + answeredCount + '/' + total + ')' })
   ]);
   nav.addEventListener('click', e => {
     if (e.target.id === 'exPrev') { QBANK.exam.prev(exam); QBANK.router.render(location.hash); }
@@ -140,24 +213,13 @@ function examRunner(){
     if (e.target.id === 'exFinish') finishExam();
   });
 
-  return el('div', { class:'stack' }, [
-    el('div', { class:'card stack q' }, [
+  return el('div', { class:'stack exam' }, [
+    head,
+    el('div', { class:'card stack q exam__q' }, [
       el('p', { class:'ltr q__text', text: item.q }), opts,
-      (answered && exam.mode === 'instant' && item.expl_ar)
-        ? el('p', { class:'field__hint', text: item.expl_ar }) : null,
-      /*
-        ★ الزرّان بعد الإجابة لا قبلها.
-        قبلها يكشفان أن للسؤال جوابًا يُشرح فيقلّان من جدّية المحاولة،
-        وبعدها يقعان في اللحظة التي يريد فيها الطالب أن يفهم فعلًا.
-        و«اشرح لي» يظهر للمخطئ وحده — من أصاب لا شيء يُشرح له.
-      */
-      (answered && exam.mode === 'instant' && QBANK.explain)
-        ? QBANK.explain.button(
-            { id:item.id, q:item.q, options:item.options, answer:item.correct, topic:item.topic },
-            answered.choice) : null,
-      (answered && QBANK.shareCard)
-        ? QBANK.shareCard.button({ id:item.id, q:item.q, options:item.options,
-                                   _sid: st.sub.id }) : null
+      (answered && exam.mode === 'instant') ? examFeedback(item, answered, st) : null,
+      (answered && exam.mode !== 'instant' && QBANK.shareCard)
+        ? QBANK.shareCard.button({ id:item.id, q:item.q, options:item.options, _sid: st.sub.id }) : null
     ]),
     nav
   ]);
@@ -249,3 +311,4 @@ const ViewExam = {
   _finish: finishExam
 };
 QBANK.views.ViewExam = ViewExam;
+QBANK.views.examFeedback = examFeedback;   /* للفحوص والمعاينة */

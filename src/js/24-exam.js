@@ -44,7 +44,10 @@ const Exam = {
         id: q.id, q: q.q, topic: q.topic || '',
         options: order.map(i => q.options[i]),
         correct: order.indexOf(q.answer),   // الموضع الجديد للإجابة الصحيحة
-        translation: q.translation || '', expl_ar: q.expl_ar || ''
+        translation: q.translation || '', expl_ar: q.expl_ar || '',
+        /* الشرح الإنجليزي وبطاقة الحفظ يرافقان السؤال: لوحة التغذية الراجعة تعرضهما تبويبات */
+        expl_en: q.expl_en || '', mnemonic: (q.mnemonic && typeof q.mnemonic === 'object') ? q.mnemonic : null,
+        important: !!q.important
       };
     });
     return {

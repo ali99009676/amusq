@@ -1,0 +1,183 @@
+/*
+  ═══════════════════════════════════════════════════════════════════
+  الطبقة الاحترافية — الاختبار، البنك، الشرح، ملف الطالب، النماذج
+  ═══════════════════════════════════════════════════════════════════
+  بطلب علي: «تغيير كامل بشكل احترافي للغاية». ما هنا يُعيد رسم ما يقرؤه
+  الطالب أكثر من غيره — السؤال وخياراته وشرحه — وما يعرّف به نفسه: ملفه.
+  المبدأ: تسلسلٌ طباعيٌّ صريح (ما يُقرأ أولًا أكبر)، ومسافاتٌ من سلّم
+  واحد، ولونٌ واحد له معنى في كل شاشة (الذهبي = افعل، الأخضر = صواب،
+  الأحمر = خطأ، لون المادة = هويتها). لا لون صريح: كل شيء من 00-tokens.
+*/
+
+/* ═══ ١) النماذج: حقلٌ يُقرأ عنوانه قبل أن يُلمس ═══ */
+.field__label{ font-size:var(--fs-sm); font-weight:700; color:var(--text-2); letter-spacing:.01em; margin-bottom:6px; }
+.input{
+  min-height:48px; border-radius:var(--r2); border:1.5px solid var(--line-2);
+  background:var(--surface); padding:var(--s3) var(--s4); font-size:var(--fs-md);
+  transition:border-color .15s var(--ease), box-shadow .15s var(--ease), background .15s;
+}
+.input:hover{ border-color:color-mix(in srgb, var(--text-3) 60%, var(--line-2)); }
+.input:focus{ border-color:var(--gold); box-shadow:0 0 0 4px color-mix(in srgb, var(--gold) 22%, transparent); outline:none; }
+.input::placeholder{ color:var(--text-3); opacity:.9; }
+textarea.input{ line-height:var(--lh-body); resize:vertical; }
+select.input{ appearance:none; -webkit-appearance:none; padding-inline-end:2.4em;
+  background-image:linear-gradient(45deg, transparent 50%, var(--text-3) 50%), linear-gradient(135deg, var(--text-3) 50%, transparent 50%);
+  background-position:calc(1.1em + 5px) 50%, 1.1em 50%; background-size:5px 5px; background-repeat:no-repeat; }
+.field__hint{ font-size:var(--fs-sm); color:var(--text-3); line-height:1.6; }
+.field__hint.is-bad{ color:var(--bad); font-weight:600; }
+
+/* ═══ ٢) الشارات: أنحف وأوضح ═══ */
+.badge{ font-size:var(--fs-xs); font-weight:700; padding:.28em .75em; line-height:1.6; letter-spacing:.01em;
+  border:1px solid color-mix(in srgb, var(--acc) 22%, transparent); }
+.badge--ok{ background:var(--ok-soft); color:var(--ok); border-color:color-mix(in srgb, var(--ok) 30%, transparent); }
+.badge--bad{ background:var(--bad-soft); color:var(--bad); border-color:color-mix(in srgb, var(--bad) 30%, transparent); }
+.badge--warn{ background:var(--warn-soft); color:var(--warn); border-color:color-mix(in srgb, var(--warn) 30%, transparent); }
+.badge--gold{ background:var(--gold-soft); color:var(--warn); border-color:color-mix(in srgb, var(--gold) 45%, transparent); }
+:root[data-theme="dark"] .badge--gold{ color:var(--gold); }
+
+/* ═══ ٣) الاختبار ═══ */
+.exam{ gap:var(--s4); }
+.exam__top{ display:flex; flex-direction:column; gap:var(--s3); }
+.exam__bar{ height:6px; border-radius:var(--r-pill); background:var(--bg-soft); overflow:hidden; }
+.exam__bar > i{ display:block; height:100%; border-radius:inherit; background:var(--gold); transition:width .4s var(--ease); }
+.exam__meta{ display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }
+.exam__n{ display:inline-flex; align-items:baseline; gap:.3em; font-weight:700; color:var(--text-2); font-size:var(--fs-sm); }
+.exam__n b{ font-size:var(--fs-xl); color:var(--text); line-height:1; }
+.exam__clock{ background:var(--surface); border:1px solid var(--line-2); color:var(--text); font-weight:800; padding:.35em .8em; }
+.exam__clock.is-low{ color:var(--bad); border-color:var(--bad); animation:urgentblink 1.2s ease-in-out infinite; }
+
+/* بطاقة السؤال: نصٌّ أكبر وأهدأ، ومساحةٌ تتنفّس */
+.exam__q{ padding:clamp(var(--s4), 3vw, var(--s6)); gap:var(--s5); border-radius:var(--r4); }
+.exam__q .q__text{
+  font-size:clamp(1.05rem, 1rem + .5vw, 1.25rem); line-height:1.75; font-weight:600;
+  color:var(--text); margin:0;
+}
+/* الخيار: حرفٌ في مربّع، نصٌّ يلتفّ، وحالةٌ واحدة لكل معنى */
+.q__opts{ gap:var(--s2); }
+.exam__q .q__opts{ max-width:none; }   /* الخيارات بعرض البطاقة: القياس ٦٤ محرفًا للنص لا للأزرار */
+.opt{
+  padding:var(--s3) var(--s4); border-radius:var(--r2); min-height:52px; gap:var(--s3);
+  border:1.5px solid var(--line); background:var(--surface); line-height:1.7; cursor:pointer;
+  transition:border-color .15s var(--ease), background .15s var(--ease), transform .15s var(--ease), box-shadow .15s;
+}
+.opt:not([disabled]):hover{ border-color:var(--gold); background:color-mix(in srgb, var(--gold) 6%, var(--surface)); transform:translateX(-2px); }
+.opt:not([disabled]):hover .opt__l{ background:var(--gold); color:var(--btn-fg); border-color:var(--gold); }
+.opt[disabled]{ cursor:default; opacity:1; }
+.opt__l{ width:30px; height:30px; border-radius:9px; font-size:var(--fs-sm); font-weight:800; margin-top:2px;
+  background:var(--bg-soft); border:1px solid var(--line-2); color:var(--text-2); transition:background .15s, color .15s; }
+.opt__t{ flex:1 1 auto; min-width:0; font-size:var(--fs-md); }
+.opt__mark{ font-size:1.05rem; }
+.opt.is-answer{ background:color-mix(in srgb, var(--ok) 10%, var(--surface)); border-color:var(--ok); box-shadow:0 0 0 3px color-mix(in srgb, var(--ok) 16%, transparent); }
+.opt.is-wrong{ background:color-mix(in srgb, var(--bad) 8%, var(--surface)); border-color:var(--bad); }
+.opt.is-wrong .opt__t{ text-decoration:line-through; text-decoration-color:color-mix(in srgb, var(--bad) 60%, transparent); }
+.opt.is-answer .opt__l, .opt.is-wrong .opt__l{ border-radius:50%; }
+
+/* لوحة التغذية الراجعة */
+.exfb{
+  border-radius:var(--r3); padding:var(--s4); display:flex; flex-direction:column; gap:var(--s3);
+  border:1px solid var(--line); background:var(--surface-2);
+  border-inline-start:4px solid var(--ok);
+}
+.exfb--bad{ border-inline-start-color:var(--bad); }
+.exfb__h{ display:flex; align-items:center; gap:var(--s3); }
+.exfb__ico{ width:38px; height:38px; flex:0 0 38px; border-radius:50%; display:grid; place-items:center; font-size:1.1rem; font-weight:900;
+  background:var(--ok); color:var(--on-brand); }
+.exfb--bad .exfb__ico{ background:var(--bad); }
+.exfb__x{ display:flex; flex-direction:column; gap:1px; min-width:0; }
+.exfb__t{ font-size:var(--fs-lg); font-family:var(--font-display); }
+.exfb__s{ font-size:var(--fs-sm); color:var(--text-2); }
+.exfb__tabs{ display:flex; gap:4px; flex-wrap:wrap; }
+.exfb__tab{ background:transparent; border:1px solid var(--line-2); color:var(--text-2); border-radius:var(--r-pill);
+  padding:.35em .9em; font-size:var(--fs-sm); font-weight:700; cursor:pointer; transition:background .15s, color .15s; }
+.exfb__tab:hover{ color:var(--text); }
+.exfb__tab[aria-selected="true"]{ background:var(--text); color:var(--bg); border-color:var(--text); }
+.exfb__body{ font-size:var(--fs-md); line-height:var(--lh-loose); }
+.exfb__p{ margin:0; }
+.exfb__memo{ display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }
+.exfb__acts{ display:flex; gap:var(--s2); flex-wrap:wrap; padding-top:var(--s2); border-top:1px dashed var(--line); }
+.exam__nav{ padding-top:var(--s2); }
+
+/* ═══ ٤) بنك الأسئلة في صفحة المادة ═══ */
+.qitem{ padding-inline-start:var(--s7); border-inline-start:2px solid var(--rule); }
+.qitem__n{ font-size:var(--fs-sm); opacity:1; top:14px; color:var(--acc); }
+.qitem > .row{ align-items:flex-start; gap:var(--s2); }
+.qitem .rowbtn{
+  flex:1 1 auto; min-width:0; border:0; border-radius:var(--r2); padding:var(--s3) var(--s4);
+  background:var(--surface); box-shadow:var(--sh1); transition:box-shadow .15s, background .15s;
+}
+.qitem .rowbtn:hover{ box-shadow:var(--sh2); background:var(--surface); }
+.qitem .rowbtn[aria-expanded="true"]{ border-end-start-radius:0; border-end-end-radius:0; box-shadow:none; border:1px solid var(--line); border-bottom:0; }
+.qitem .rowbtn .q__text{ margin:0; font-size:var(--fs-md); font-weight:600; line-height:1.7; }
+.qitem .q__opts{ background:var(--surface); border:1px solid var(--line); border-top:0; padding:var(--s3) var(--s4) var(--s4);
+  border-radius:0 0 var(--r2) var(--r2); box-shadow:var(--sh1); }
+.qitem .q__opts .opt{ min-height:44px; padding:var(--s2) var(--s3); background:var(--surface-2); cursor:default; }
+.qitem .q__opts .opt:hover{ transform:none; border-color:var(--line); background:var(--surface-2); }
+.qitem .q__opts .opt:hover .opt__l{ background:var(--bg-soft); color:var(--text-2); border-color:var(--line-2); }
+.qitem .q__opts .opt.is-answer{ background:color-mix(in srgb, var(--ok) 10%, var(--surface)); border-color:var(--ok); }
+.qitem .q__opts .opt.is-answer:hover .opt__l{ background:var(--ok); color:var(--on-brand); border-color:var(--ok); }
+
+/* ═══ ٥) تبويب الشرح وبطاقات الحفظ ═══ */
+.fold.card{ padding:0 var(--s4); border-radius:var(--r2); }
+.fold > summary{ display:flex; align-items:center; gap:var(--s2); padding:var(--s3) 0; font-weight:600; font-size:var(--fs-md); }
+.fold > summary::before{ content:'›'; font-size:1.2em; color:var(--text-3); transition:transform .2s var(--ease); }
+.fold[open] > summary::before{ transform:rotate(-90deg); }
+.fold[open] > summary{ border-bottom:1px solid var(--line-soft); }
+.fold > .stack{ padding:var(--s3) 0 var(--s4); }
+.fold .ltr{ line-height:1.7; }
+
+/* ═══ ٦) نص التحليل («عن المادة» و«طريقة الحفظ» و«الأخطاء الشائعة») ═══ */
+.analysis{ line-height:var(--lh-loose); font-size:var(--fs-md); color:var(--text); }
+.analysis p{ margin:0 0 .8em; max-width:70ch; }
+.analysis h3{
+  margin:1.5em 0 .5em; font-size:var(--fs-lg); color:var(--text); padding-inline-start:.6em;
+  border-inline-start:4px solid var(--acc); line-height:1.35;
+}
+.analysis h3:first-child{ margin-top:0; }
+.analysis h4{ margin:1.1em 0 .35em; font-size:var(--fs-md); color:var(--acc-d); }
+:root[data-theme="dark"] .analysis h4{ color:var(--acc); }
+.analysis ul, .analysis ol{ margin:.4em 0 1em; padding-inline-start:1.3em; }
+.analysis li{ margin-bottom:.45em; padding-inline-start:.2em; }
+.analysis li::marker{ color:var(--acc); font-weight:800; }
+.analysis strong{ font-weight:800; color:var(--text); background:linear-gradient(transparent 62%, color-mix(in srgb, var(--gold) 35%, transparent) 62%); }
+.analysis em{ font-style:normal; color:var(--acc-d); font-weight:600; }
+.analysis table{ width:100%; border-collapse:separate; border-spacing:0; margin:.8em 0 1.2em; font-size:var(--fs-sm);
+  border:1px solid var(--line); border-radius:var(--r2); overflow:hidden; }
+.analysis th{ background:var(--surface-2); font-weight:800; color:var(--text-2); }
+.analysis th, .analysis td{ padding:.65em .85em; border-bottom:1px solid var(--line-soft); }
+.analysis tr:last-child td{ border-bottom:0; }
+.analysis blockquote{ margin:.8em 0; padding:.7em 1em; border-inline-start:4px solid var(--gold); background:var(--gold-soft); border-radius:0 var(--r1) var(--r1) 0; }
+.analysis code{ font-family:var(--font-num); font-size:.9em; background:var(--bg-soft); padding:.1em .4em; border-radius:6px; }
+
+/* ═══ ٧) رأس المادة: أهدأ وأثبت ═══ */
+.sub-hero h2{ font-family:var(--font-display); letter-spacing:-.02em; }
+.sub-hero .sub{ font-size:var(--fs-sm); opacity:.9; }
+.sub-hero .stat{ font-size:var(--fs-xs); font-weight:700; }
+
+/* ═══ ٨) ملف الطالب ═══ */
+.acc-grid{ display:grid; gap:var(--s4); grid-template-columns:1fr; align-items:start; }
+@media (min-width:900px){ .acc-grid{ grid-template-columns:minmax(0,1fr) 300px; } .acc-grid__side{ position:sticky; top:calc(var(--topbar-h) + var(--s3)); } }
+.acc-sec{ display:flex; flex-direction:column; gap:var(--s4); }
+.acc-sec__h{ display:flex; align-items:center; gap:var(--s2); }
+.acc-sec__ico{ width:34px; height:34px; border-radius:10px; display:grid; place-items:center; background:var(--gold-soft); color:var(--warn); font-size:1rem; }
+:root[data-theme="dark"] .acc-sec__ico{ color:var(--gold); }
+.acc-sec__t{ margin:0; font-size:var(--fs-lg); }
+.acc-sec__s{ font-size:var(--fs-sm); color:var(--text-3); margin:0; }
+.acc-grid2{ display:grid; gap:var(--s3); grid-template-columns:1fr; }
+@media (min-width:640px){ .acc-grid2{ grid-template-columns:1fr 1fr; } }
+.acc-grid2 .field{ margin:0; }
+.acc-grid2 .field--wide{ grid-column:1 / -1; }
+.pf-hero{ border-radius:var(--r4); padding:var(--s5); }
+.pf-hero .pf-hero__n{ font-size:var(--fs-xl); letter-spacing:-.02em; }
+.pf-hero .pf-hero__mail{ font-size:var(--fs-sm); }
+.pf-hero .pf-hero__bio{ font-size:var(--fs-md); }
+/* أرقام الطالب الثلاثة في البطل: ما يُسأل عنه أول ما يُفتح الملف */
+.pf-hero__stats{ display:flex; gap:var(--s4); flex-wrap:wrap; margin-top:var(--s3); }
+.pf-hero__stat{ display:flex; flex-direction:column; line-height:1.2; }
+.pf-hero__stat b{ font-family:var(--font-num); font-size:var(--fs-xl); color:var(--today-fg); }
+.pf-hero__stat span{ font-size:var(--fs-xs); color:var(--today-fg2); font-weight:700; }
+.avpick .iconbtn{ width:44px; height:44px; border-radius:12px; border:1.5px solid var(--line); background:var(--surface); }
+.avpick .iconbtn[aria-checked="true"]{ border-color:var(--gold); background:var(--gold-soft); box-shadow:0 0 0 3px color-mix(in srgb, var(--gold) 22%, transparent); }
+
+/* ═══ ٩) العناوين الثانوية داخل البطاقات: أصغر وأوضح تسلسلًا ═══ */
+.card > h2, .card > .stack > h2{ font-size:var(--fs-lg); }
+.card h2 + .field__hint{ margin-top:-4px; }

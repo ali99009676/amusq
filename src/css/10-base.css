@@ -6,7 +6,7 @@ body{
   font-family:var(--font);
   /* مقياس AMSU: يتنفّس مع عرض الشاشة بين ١٥ و١٧ */
   font-size:clamp(15px, 1.7vw + 10px, 17px);
-  line-height:1.85;
+  line-height:var(--lh-body);
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   text-rendering:optimizeLegibility;                 /* سطر مريح للعربية، فحروفها متصلة وتحتاج تنفّسًا */
@@ -21,11 +21,12 @@ body{
 /* العناوين بالخط الكوفي الهندسي — هو شخصية الصفحة، والنص بخط أنعم للقراءة */
 h1,h2,h3,h4{
   font-family:var(--font-display);
-  margin:0 0 var(--s3); line-height:1.45; font-weight:800;
-  letter-spacing:-.01em;
+  margin:0 0 var(--s3); line-height:var(--lh-tight); font-weight:800;
+  letter-spacing:-.015em; text-wrap:balance;
 }
-h1{ font-size:1.6rem; } h2{ font-size:1.3rem; } h3{ font-size:1.06rem; }
-p{ margin:0 0 var(--s3); }
+h1{ font-size:var(--fs-2xl); } h2{ font-size:var(--fs-xl); } h3{ font-size:var(--fs-lg); } h4{ font-size:var(--fs-md); }
+p{ margin:0 0 var(--s3); text-wrap:pretty; }
+small{ font-size:var(--fs-sm); }
 a{ color:var(--acc); text-decoration:none; }
 a:hover{ text-decoration:underline; }
 ul,ol{ margin:0 0 var(--s3); padding-inline-start:var(--s5); }

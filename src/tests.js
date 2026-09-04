@@ -7419,6 +7419,44 @@ describe('١٨٠ج · جامعة المادة من اللوحة');
   has(html, 'لن يجدها أحد في «استكشف» حتى تُحدَّد', 'والمشرف يُنبَّه لماذا يهمّ');
 }
 
+/* ============ ١٨١ · الطبقة الاحترافية ============ */
+describe('١٨١ · الطباعة والاختبار وملف الطالب');
+{
+  const tokens = fs.readFileSync(path.join(__dirname,'css','00-tokens.css'), 'utf8');
+  has(tokens, '--font: "Dubai", "SF Arabic"', '★ خطُّ القراءة إنساني نظيف — الكوفي للعناوين وحدها');
+  has(tokens, '--font-display: "Noto Kufi Arabic"', 'والكوفي يبقى شخصية العناوين');
+  has(tokens, '--fs-xs: .74rem;', 'وسلّم أحجام واحد');
+  const pro = fs.readFileSync(path.join(__dirname,'css','80-pro.css'), 'utf8');
+  ok(!/#[0-9a-fA-F]{3,6}\b/.test(pro), '80-pro.css بلا لون صريح — كله من المتغيّرات');
+  has(pro, '.exfb--bad{', 'لوحة التغذية الراجعة بحالتيها');
+  has(pro, '.acc-grid{', 'وشبكة الملف');
+  has(pro, '.analysis h3{', 'وتسلسل نص التحليل');
+
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "expl_en: q.expl_en || '', mnemonic:", '★ الشرح الإنجليزي وبطاقة الحفظ يرافقان سؤال الاختبار');
+  has(html, "function examFeedback(item, answered, st){", 'ولوحة تغذية راجعة بدل سطر تلميح');
+  has(html, "text: right ? 'أصبت' : 'أخطأت'", 'تقول الحكم بكلمة');
+  has(html, "if (item.expl_en) panes.push(['English'", 'وتبويب لكل محتوى موجود فقط');
+
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  const item = { id:'q1', q:'Which?', options:['a','b','c'], correct:1, topic:'ت', expl_ar:'شرح', expl_en:'expl', translation:'ترجمة', mnemonic:{ cue:'x', key:'y' }, important:true };
+  const fb = A.views.examFeedback(item, { choice:2 }, { sub:{ id:'s1' } });
+  ok(fb.classList.contains('exfb--bad'), 'الخطأ يُلوَّن خطأً');
+  has(fb.textContent, 'الإجابة الصحيحة: (ب)', 'ويُقال الصحيح بحرفه');
+  eq(fb.querySelectorAll('.exfb__tab').length, 4, 'أربعة تبويبات: شرح وEnglish وترجمة وبطاقة حفظ');
+  const fb2 = A.views.examFeedback({ id:'q2', q:'?', options:['a','b'], correct:0 }, { choice:0 }, { sub:{ id:'s1' } });
+  ok(fb2.classList.contains('exfb--ok') && !fb2.querySelector('.exfb__tabs'), 'والإصابة بلا محتوى: حكمٌ بلا تبويبات فارغة');
+
+  A.store.set('my_subjects', ['s1','s2']);
+  A.store.set('progress', { s1:{ seen:{}, wrong:{}, star:{}, exams:3, best:80 }, s2:{ seen:{}, wrong:{}, star:{}, exams:1, best:60 } });
+  W.location.hash = '#/account'; A.router.render('#/account');
+  ok(!!doc.querySelector('#main .acc-grid'), '★ الملف في شبكة');
+  has(doc.querySelector('#main .pf-hero__stats').textContent, '٤', 'وأرقام البطل: ٤ اختبارات');
+  has(doc.querySelector('#main .pf-hero__stats').textContent, '٨٠٪', 'وأفضل نتيجة');
+  eq(doc.querySelectorAll('#main .acc-sec').length, 2, 'وقسمان بعنوان وأيقونة');
+}
+
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */
 Promise.all(pending).then(() => {
   const total = pass + fail;

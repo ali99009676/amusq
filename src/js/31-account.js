@@ -75,12 +75,27 @@ function accountBody(){
     QBANK.toast('صورتك الجديدة في كل مكان الآن');
   });
 
+  /*
+    ★ ثلاثة أرقام في البطل: ما يُسأل عنه أول ما يُفتح الملف — كم اختبارًا،
+    وأفضل نتيجة، وكم مادة. من التقدّم المحلي فتظهر فورًا بلا انتظار.
+  */
+  const P = QBANK.progress.all ? QBANK.progress.all() : {};
+  let exams = 0, best = 0;
+  Object.keys(P).forEach(sid => { exams += Number(P[sid] && P[sid].exams) || 0; best = Math.max(best, Number(P[sid] && P[sid].best) || 0); });
+  const nSubs = (QBANK.store.get('my_subjects', []) || []).length;
+  const N = QBANK.views.arNum;
+  const stats = el('div', { class:'pf-hero__stats' }, [
+    el('span', { class:'pf-hero__stat' }, [ el('b', { text: N(exams) }), el('span', { text:'اختبارًا' }) ]),
+    el('span', { class:'pf-hero__stat' }, [ el('b', { text: N(best) + '٪' }), el('span', { text:'أفضل نتيجة' }) ]),
+    el('span', { class:'pf-hero__stat' }, [ el('b', { text: N(nSubs) }), el('span', { text:'مادة في قائمتي' }) ])
+  ]);
   const hero = el('div', { class:'card pf-hero' }, [
     el('div', { class:'pf-hero__avwrap' }, [avImg, avEmoji, camBtn, file]),
     el('div', { class:'pf-hero__x' }, [
       el('strong', { class:'pf-hero__n', id:'pfName', text: prof.name || 'طالب مراجعة' }),
       el('span', { class:'pf-hero__mail ltr', text: u.email || '' }),
-      el('p', { class:'pf-hero__bio', id:'pfBio', text: prof.bio || '' })
+      el('p', { class:'pf-hero__bio', id:'pfBio', text: prof.bio || '' }),
+      stats
     ])
   ]);
 
@@ -189,24 +204,33 @@ function accountBody(){
     });
   });
 
+  /*
+    ★ الملف في عمودين على الحاسوب: النموذج عن اليمين، وما يعرّفه للناس
+    (تقييماته) عن اليسار ثابتًا. وعلى الجوال يتراصّان. ورأسُ كل قسم
+    بأيقونة وسطرٍ يقول لماذا: الحقل الذي يُفهم سببه يُملأ.
+  */
+  const sec = (ico, t, sub, body) => el('section', { class:'card acc-sec' }, [
+    el('div', { class:'acc-sec__h' }, [
+      el('span', { class:'acc-sec__ico', 'aria-hidden':'true', text: ico }),
+      el('div', {}, [ el('h2', { class:'acc-sec__t', text: t }), sub ? el('p', { class:'acc-sec__s', text: sub }) : null ])
+    ])
+  ].concat(body));
   return el('div', { class:'stack' }, [
     hero,
-    el('div', { class:'card stack' }, [
-      el('label', { class:'field', style:'margin:0' }, [
-        el('span', { class:'field__label', text:'الاسم' }), nameInput
+    el('div', { class:'acc-grid' }, [
+      el('div', { class:'acc-grid__main stack' }, [
+        sec('☺', 'هويتك', 'ما يراه زملاؤك على اللوحة وفي مادتك', [
+          el('div', { class:'acc-grid2' }, [
+            el('label', { class:'field' }, [ el('span', { class:'field__label', text:'الاسم' }), nameInput ]),
+            el('label', { class:'field' }, [ el('span', { class:'field__label', text:'رقم الجوال *' }), phoneInput, phoneMsg ]),
+            el('label', { class:'field field--wide' }, [ el('span', { class:'field__label', text:'نبذة عني' }), bioInput ])
+          ])
+        ]),
+        sec('🎭', 'رمز مؤقّت — يظهر حتى ترفع صورتك', 'اضغط الكاميرا في الأعلى لرفع صورتك الحقيقية', [ avatarRow ]),
+        el('div', { class:'row' }, [ saveBtn ])
       ]),
-      el('label', { class:'field', style:'margin:0' }, [
-        el('span', { class:'field__label', text:'رقم الجوال *' }), phoneInput, phoneMsg
-      ]),
-      el('label', { class:'field', style:'margin:0' }, [
-        el('span', { class:'field__label', text:'نبذة عني' }), bioInput
-      ]),
-      el('div', { class:'field', style:'margin:0' }, [
-        el('span', { class:'field__label', text:'رمز مؤقّت — يظهر حتى ترفع صورتك' }), avatarRow
-      ]),
-      saveBtn
-    ]),
-    ratesBox
+      el('aside', { class:'acc-grid__side stack' }, [ ratesBox ])
+    ])
   ]);
 }
 

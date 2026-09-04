@@ -12,11 +12,26 @@
 :root{
   /* الخطوط كما في AMSU: كوفي عربي للواجهة كلها، ولاتيني نظيف للنص الأصلي.
      لا خط خارجي — كلها أسماء نظامية تتوفر على أجهزة الطلاب أو تسقط بسلام */
-  --font: "Noto Kufi Arabic", "Dubai", "Tajawal", "Cairo", "Segoe UI", Tahoma, system-ui, sans-serif;
-  --font-display: var(--font);
-  --font-latin: "Inter", "Poppins", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
+  /*
+    ★ الطباعة (بطلب علي: «تنسيق الخطوط»). القاعدة ثابتة: لا خط خارجي.
+    لكن ترتيب الأسماء قرارٌ تصميمي: كان الكوفي الهندسي أوّل القائمة فيُختار
+    على كل جهازٍ فيه، وهو خطُّ عناوين لا خطُّ قراءة — ثقيل في الفقرات
+    والخيارات. الآن للنص خطٌّ إنسانيٌّ نظيف («دبي» يأتي مع ويندوز، و«SF
+    Arabic» مع آبل، و«Noto Sans Arabic» مع أندرويد)، وللعناوين الكوفيُّ
+    حيث يليق: ثقلُه شخصيةٌ في سطرٍ واحد وعبءٌ في عشرة.
+    ملاحظة: لإضافة خطٍّ محلّي لاحقًا (IBM Plex Sans Arabic مثلًا) يكفي
+    @font-face يشير إلى fonts/ داخل المستودع — يعمل على file:// وبلا شبكة.
+  */
+  --font: "Dubai", "SF Arabic", "Segoe UI Variable Text", "Segoe UI", "Noto Sans Arabic", "Noto Kufi Arabic", "Tajawal", "Cairo", system-ui, sans-serif;
+  --font-display: "Noto Kufi Arabic", "Dubai", "SF Arabic", "Segoe UI", "Tajawal", "Cairo", system-ui, sans-serif;
+  --font-latin: "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", sans-serif;
   /* الأرقام: نفس اللاتيني مع أرقام جدولية ثابتة العرض كي لا ترقص العدّادات */
   --font-num: var(--font-latin);
+
+  /* سلّم الأحجام: سبع درجات لا أرقامٌ متناثرة في كل ملف */
+  --fs-xs: .74rem; --fs-sm: .85rem; --fs-md: 1rem; --fs-lg: 1.15rem;
+  --fs-xl: 1.4rem; --fs-2xl: 1.8rem; --fs-3xl: 2.3rem;
+  --lh-tight: 1.25; --lh-body: 1.75; --lh-loose: 1.9;
 
   /*
     لوحة AMSU الفاتحة — مُدفّأة.
