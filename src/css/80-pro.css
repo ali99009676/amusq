@@ -210,3 +210,40 @@ select.input{ appearance:none; -webkit-appearance:none; padding-inline-end:2.4em
 .pf-hero__stat{ min-width:96px; padding:var(--s2) var(--s3); border-radius:var(--r2); background:color-mix(in srgb, var(--surface) 55%, transparent);
   border:1px solid var(--today-line); align-items:center; text-align:center; }
 .pf-hero__stat b{ font-size:var(--fs-lg); }
+
+/* ═══ ١٣) الرافع: منتقي الطالب، لافتة الاستئناف، شريط حال المالك ═══
+   المنتقي حقلٌ ونتائج تحته لا قائمة منسدلة — المشرف يكتب حرفين فيرى الطالب.
+   والألوان كلها من المتغيّرات كي يعمل في الوضعين بلا استثناء. */
+.spick{ display:flex; flex-direction:column; gap:var(--s2); }
+.spick__head{ display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }
+.spick__l{ color:var(--text-3); font-size:var(--fs-sm); }
+.spick__cur{ font-weight:800; font-family:var(--font-display); padding:4px 10px; border-radius:999px;
+  background:color-mix(in srgb, var(--gold) 18%, var(--surface-2)); border:1px solid color-mix(in srgb, var(--gold) 45%, var(--line)); }
+.spick__pane{ display:flex; flex-direction:column; gap:var(--s2); }
+.spick__list{ display:flex; flex-direction:column; gap:4px; max-height:280px; overflow:auto;
+  border:1px solid var(--line); border-radius:var(--r2); padding:4px; background:var(--surface); }
+.spick__list:empty{ display:none; }
+.spick__row{ display:flex; align-items:center; gap:var(--s2); width:100%; text-align:start;
+  padding:8px 10px; border:0; border-radius:var(--r1); background:transparent; color:inherit; cursor:pointer;
+  font:inherit; min-height:44px; }
+.spick__row:hover, .spick__row:focus-visible{ background:var(--bg-soft); outline:none; }
+.spick__av{ width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:var(--surface-2); flex:0 0 30px; }
+.spick__x{ display:flex; flex-direction:column; min-width:0; }
+.spick__n{ font-weight:700; }
+.spick__s{ font-size:var(--fs-xs); color:var(--text-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:ltr; text-align:end; }
+.spick__empty{ margin:6px 8px; }
+
+.resume{ border-inline-start:4px solid var(--gold); }
+.resume__t{ margin:0; font-size:var(--fs-md); }
+.resume__row{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
+.resume__x{ display:flex; flex-direction:column; min-width:0; flex:1; }
+.resume__n{ font-weight:700; }
+.resume__s{ font-size:var(--fs-xs); color:var(--text-3); }
+
+.ownerbar{ border-inline-start:4px solid var(--ok); }
+.ownerbar.is-locked{ border-inline-start-color:var(--warn); }
+.uploader-note{ padding:8px 12px; border-radius:var(--r2); background:color-mix(in srgb, var(--gold) 14%, var(--surface-2)); }
+
+/* صفّ المادة المرفوعة صار حاويةً: الرابط داخله لا هو نفسه — ليتّسع لزرّ التحرير */
+a.up-row__x{ color:inherit; text-decoration:none; }
+a.up-row__x:hover .up-row__t{ color:var(--acc); }

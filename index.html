@@ -2695,6 +2695,43 @@ select.input{ appearance:none; -webkit-appearance:none; padding-inline-end:2.4em
   border:1px solid var(--today-line); align-items:center; text-align:center; }
 .pf-hero__stat b{ font-size:var(--fs-lg); }
 
+/* ═══ ١٣) الرافع: منتقي الطالب، لافتة الاستئناف، شريط حال المالك ═══
+   المنتقي حقلٌ ونتائج تحته لا قائمة منسدلة — المشرف يكتب حرفين فيرى الطالب.
+   والألوان كلها من المتغيّرات كي يعمل في الوضعين بلا استثناء. */
+.spick{ display:flex; flex-direction:column; gap:var(--s2); }
+.spick__head{ display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; }
+.spick__l{ color:var(--text-3); font-size:var(--fs-sm); }
+.spick__cur{ font-weight:800; font-family:var(--font-display); padding:4px 10px; border-radius:999px;
+  background:color-mix(in srgb, var(--gold) 18%, var(--surface-2)); border:1px solid color-mix(in srgb, var(--gold) 45%, var(--line)); }
+.spick__pane{ display:flex; flex-direction:column; gap:var(--s2); }
+.spick__list{ display:flex; flex-direction:column; gap:4px; max-height:280px; overflow:auto;
+  border:1px solid var(--line); border-radius:var(--r2); padding:4px; background:var(--surface); }
+.spick__list:empty{ display:none; }
+.spick__row{ display:flex; align-items:center; gap:var(--s2); width:100%; text-align:start;
+  padding:8px 10px; border:0; border-radius:var(--r1); background:transparent; color:inherit; cursor:pointer;
+  font:inherit; min-height:44px; }
+.spick__row:hover, .spick__row:focus-visible{ background:var(--bg-soft); outline:none; }
+.spick__av{ width:30px; height:30px; display:grid; place-items:center; border-radius:50%; background:var(--surface-2); flex:0 0 30px; }
+.spick__x{ display:flex; flex-direction:column; min-width:0; }
+.spick__n{ font-weight:700; }
+.spick__s{ font-size:var(--fs-xs); color:var(--text-3); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:ltr; text-align:end; }
+.spick__empty{ margin:6px 8px; }
+
+.resume{ border-inline-start:4px solid var(--gold); }
+.resume__t{ margin:0; font-size:var(--fs-md); }
+.resume__row{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
+.resume__x{ display:flex; flex-direction:column; min-width:0; flex:1; }
+.resume__n{ font-weight:700; }
+.resume__s{ font-size:var(--fs-xs); color:var(--text-3); }
+
+.ownerbar{ border-inline-start:4px solid var(--ok); }
+.ownerbar.is-locked{ border-inline-start-color:var(--warn); }
+.uploader-note{ padding:8px 12px; border-radius:var(--r2); background:color-mix(in srgb, var(--gold) 14%, var(--surface-2)); }
+
+/* صفّ المادة المرفوعة صار حاويةً: الرابط داخله لا هو نفسه — ليتّسع لزرّ التحرير */
+a.up-row__x{ color:inherit; text-decoration:none; }
+a.up-row__x:hover .up-row__t{ color:var(--acc); }
+
 
 /* ===== 90-print.css ===== */
 /*
@@ -4837,7 +4874,7 @@ function myUploadsCard(){
     el('p', { class:'field__hint', style:'margin:0', text:'جارٍ الجلب…' }) ]);
   if (!u) return box;
   QBANK.api.rest('subjects?created_by=eq.' + u.id +
-    '&select=id,name,icon,color,q_count,published,status,price,free,rating_avg,rating_n&order=created_at.desc')
+    '&select=id,name,icon,color,q_count,published,status,price,free,rating_avg,rating_n,owner_edit&order=created_at.desc')
     .then(r => {
       if (!box.isConnected) return;
       box.innerHTML = ''; box.appendChild(el('h2', { style:'margin:0', text:'موادي المرفوعة' }));
@@ -4848,19 +4885,29 @@ function myUploadsCard(){
         box.appendChild(el('a', { class:'btn btn--soft btn--block', href:'#/upload', text:'⇪ ارفع مادتك الأولى' }));
         return;
       }
+      /*
+        ★ المخفية بابها محرّرها لا صفحتها.
+        كانت تُسمّى «قيد المراجعة» وتقود إلى صفحة المادة — وهي ليست في
+        قائمة المواد أصلًا فيُقال «لم نجد المادة». لا أحد يراجعها غير
+        صاحبها: يفتحها في محرّره، يصحّح، ثم ينشر. والمنشورة تُفتح في صفحتها،
+        ومعها زرّ تحرير إن فتح المشرف التعديل بعد النشر.
+      */
       rows.forEach(s => {
+        const editable = !s.published || !!s.owner_edit;
         const st = s.published ? el('span', { class:'badge badge--ok', text:'منشورة' })
-                 : el('span', { class:'badge badge--warn', text:'قيد المراجعة' });
-        box.appendChild(el('a', { class:'up-row', href:'#/subject/' + s.id }, [
+                 : el('span', { class:'badge badge--warn', text:'مخفية — راجعها وانشرها' });
+        box.appendChild(el('div', { class:'up-row' }, [
           el('span', { class:'up-row__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(s.icon, 18) ]),
-          el('span', { class:'up-row__x' }, [
+          el('a', { class:'up-row__x', href: s.published ? '#/subject/' + s.id : '#/edit/' + s.id }, [
             el('span', { class:'up-row__t', text: s.name }),
             el('span', { class:'up-row__s num', text:
               QBANK.views.arNum(s.q_count || 0) + ' سؤالًا' +
               (Number(s.rating_n) ? ' · ★ ' + Number(s.rating_avg).toFixed(1) +
                 ' (' + QBANK.views.arNum(s.rating_n) + ')' : ' · بلا تقييم بعد') })
           ]),
-          st
+          st,
+          editable ? el('a', { class:'btn btn--sm btn--soft', href:'#/edit/' + s.id,
+            'aria-label':'حرّر ' + s.name, text: s.published ? 'حرّر' : 'راجع وانشر' }) : null
         ]));
       });
       box.appendChild(el('a', { class:'btn btn--ghost btn--block', href:'#/upload', text:'+ ارفع مادة أخرى' }));
@@ -4936,6 +4983,8 @@ const ViewAccount = {
       body.appendChild(accountBody());
       body.appendChild(campusCard());
     } else if (active === 'uploads'){
+      /* ما توقّف رفعه قبل ما اكتمل: المسوّدة تُستأنف من هنا لا من ذاكرة صاحبها */
+      if (QBANK.views.myDraftsCard) body.appendChild(QBANK.views.myDraftsCard());
       body.appendChild(myUploadsCard());
       const wallet = (QBANK.wallet && QBANK.wallet.body) ? QBANK.wallet.body() : null;
       if (wallet) body.appendChild(wallet);
@@ -5767,6 +5816,18 @@ const Admin = {
     return w;
   },
 
+  /*
+    ★ من صاحب المسوّدة؟ الرافع الذي اختاره المشرف، وإلا من يرفع.
+    المشرف يرفع بنكًا أرسله له طالب ويُسنده إليه — فتُكتب المسوّدة باسم
+    الطالب من أولها: يراها في «مسوّداتي» ويستأنفها إن شاء، وapprove_draft
+    تكتب المادة والمدّة له لا للمشرف. الطالب لا يملك هذا الحقل — السياسة
+    تمنعه من كتابة اسم غيره.
+  */
+  ownerOf(w){
+    const u = QBANK.api.user() || {};
+    return (w && w.uploader && w.uploader.id) || u.id || null;
+  },
+
   async saveDraft(w){
     const body = {
       name: w.subjectName || w.filename.replace(/\.[^.]+$/, ''),
@@ -5776,9 +5837,11 @@ const Admin = {
       updated_at: new Date().toISOString()
     };
     if (w.draftId) {
+      /* المشرف قد يغيّر الرافع بعد إنشاء المسوّدة — يُكتب مع كل حفظ */
+      if (w.uploader && QBANK.store.get('is_admin_check', {}).ok) body.created_by = Admin.ownerOf(w);
       return QBANK.api.rest('drafts?id=eq.' + w.draftId, { method:'PATCH', body: JSON.stringify(body) });
     }
-    body.created_by = (QBANK.api.user() || {}).id;
+    body.created_by = Admin.ownerOf(w);
     const r = await QBANK.api.rest('drafts?select=id', {
       method:'POST',
       headers: Object.assign(QBANK.api.headers(), { 'Prefer':'return=representation' }),
@@ -5838,9 +5901,9 @@ const Admin = {
 
   async stamp(subjectId, w, publish){
     if (!subjectId) return { ok:false };
-    const u = QBANK.api.user() || {};
     const body = {
-      created_by: u.id || null,
+      /* الرافع المختار لا من ضغط الزرّ — وإلا عادت المادة إلى المشرف بعد أن كتبتها القاعدة للطالب */
+      created_by: Admin.ownerOf(w),
       sanctity_mode: w.mode === 'enhanced' ? 'enhanced' : 'strict',
       course_code: w.courseCode || ''
     };
@@ -5968,14 +6031,34 @@ function adminContentTab(box){
   Promise.all([
     /* ★ السعر في الجلب: بلا العمود يبدأ كل حقلٍ في القائمة بصفرٍ كاذب،
        فيحفظه المشرف بلا قصدٍ ويُمحى سعرُ مادةٍ كان صحيحًا. */
-    QBANK.api.rest('subjects?select=id,name,color,icon,q_count,published,free,price,ord,exam_date&order=ord'),
+    QBANK.api.rest('subjects?select=id,name,color,icon,q_count,published,free,price,ord,exam_date,created_by,owner_edit&order=ord'),
     // قوائم المسوّدات بلا payload — الحمولة كبيرة ولا تلزم القائمة
-    QBANK.api.rest('drafts?select=id,name,status,total,done,updated_at&order=updated_at.desc')
-  ]).then(([subs, drs]) => {
+    QBANK.api.rest('drafts?select=id,name,status,total,done,updated_at,created_by&order=updated_at.desc')
+  ]).then(async ([subs, drs]) => {
     if (!listBox.isConnected) return;
-    listBox.innerHTML = '';
     const subjects = (subs.ok && subs.data) || [];
     const drafts = (drs.ok && drs.data) || [];
+
+    /*
+      ★ «رفعها فلان» في القائمة.
+      بعد أن صار الإسناد ممكنًا يجب أن يُرى: المشرف يمرّ على الصفوف فيعرف
+      أيّها مواد الطلاب وأيّها مواده. جلبٌ واحد لأسماء كل الرافعين — لا نداء
+      لكل صف. وفشله لا يُعطّل القائمة: تُرسم بلا أسماء.
+    */
+    const names = {};
+    const me = (QBANK.api.user() || {}).id;
+    const ids = {};
+    subjects.concat(drafts).forEach(x => { if (x.created_by && x.created_by !== me) ids[x.created_by] = 1; });
+    const idList = Object.keys(ids);
+    if (idList.length){
+      try {
+        const pr = await QBANK.api.rest('profiles?select=id,name&id=in.(' + idList.join(',') + ')');
+        ((pr.ok && Array.isArray(pr.data)) ? pr.data : []).forEach(p => { names[p.id] = String(p.name || '').trim() || 'طالب بلا اسم'; });
+      } catch(e){ /* القائمة تُرسم بلا أسماء */ }
+    }
+    const by = x => !x.created_by ? '' : (x.created_by === me ? 'أنا' : (names[x.created_by] || 'طالب'));
+    if (!listBox.isConnected) return;
+    listBox.innerHTML = '';
 
     /*
       ★ زرّ حذفٍ لكل مسوّدة ولكل مادة (بطلب علي).
@@ -6005,9 +6088,10 @@ function adminContentTab(box){
             el('span', { class:'ad-row__main' }, [
               el('span', { class:'ad-row__t', text: d.name || 'بلا اسم' }),
               el('span', { class:'ad-row__s', text:
-                d.status === 'reviewing' ? 'اكتملت المعالجة — بانتظار مراجعتك'
+                (d.status === 'reviewing' ? 'اكتملت المعالجة — بانتظار مراجعتك'
                   : (stale(d) ? 'عالقة منذ ' + QBANK.admin.charts.ago(d.updated_at) + ' — '
-                              : 'قيد المعالجة: ') + d.done + ' من ' + d.total })
+                              : 'قيد المعالجة: ') + d.done + ' من ' + d.total)
+                + (by(d) && by(d) !== 'أنا' ? ' · رفعها ' + by(d) : '') })
             ]),
             el('span', { class:'badge ' + (d.status === 'reviewing' ? 'badge--warn' : (stale(d) ? 'badge--bad' : '')),
               text: d.status === 'reviewing' ? 'راجِعها' : (stale(d) ? 'عالقة' : 'تُعالَج') }),
@@ -6086,10 +6170,12 @@ function adminContentTab(box){
         el('span', { text: sub.icon || '▤' }),
         el('span', { class:'ad-row__main' }, [
           el('span', { class:'ad-row__t', text: sub.name }),
-          el('span', { class:'ad-row__s', text: sub.q_count + ' سؤالًا' })
+          el('span', { class:'ad-row__s', text: sub.q_count + ' سؤالًا' + (by(sub) ? ' · رفعها ' + by(sub) : '') })
         ]),
         sub.published ? el('span', { class:'badge badge--ok', text:'منشورة' })
                       : el('span', { class:'badge', text:'مخفية' }),
+        /* الرافع يعدّل بعد النشر؟ — يُرى هنا كي لا يُفتح المفتاح ويُنسى */
+        (sub.published && sub.owner_edit) ? el('span', { class:'badge badge--warn', text:'الرافع يعدّل' }) : null,
         el('a', { class:'btn btn--sm btn--soft', href:'#/admin/subject/' + sub.id, text:'حرّر' }),
         pubBtn,
         el('span', { class:'ad-sub', style:'flex:1 0 100%' }, [
@@ -6365,6 +6451,23 @@ function subjectMeta(){
     placeholder:'EMS 301' });
   codeIn.addEventListener('input', () => { wizard.courseCode = codeIn.value; });
 
+  /*
+    ★ «رفعها» — للمشرف وحده.
+    علي يرفع بنوكًا أرسلها له الطلاب، فيختار هنا اسم الطالب لتُكتب المادة
+    باسمه من أول المسوّدة. «أنا» هو الافتراض فلا يتغيّر شيء لمن يرفع لنفسه.
+  */
+  let uploaderRow = null;
+  if (QBANK.views.uploaderPick && QBANK.uploader && QBANK.uploader.isAdmin()){
+    const u = QBANK.api.user() || {};
+    uploaderRow = el('div', { class:'field', style:'margin:0;grid-column:1/-1' }, [
+      el('span', { class:'field__label', text:'رفعها — تُنسب المادة إليه ويُحسب له عائدها' }),
+      QBANK.views.uploaderPick({
+        value: wizard.uploader || null, me: { id: u.id, name:'أنا (المشرف)' }, collapsed: true,
+        onPick: v => { wizard.uploader = (v && v.id !== u.id) ? v : null; }
+      })
+    ]);
+  }
+
   return el('div', { class:'card stack' }, [
     el('label', { class:'field', style:'margin:0' }, [
       el('span', { class:'field__label', text:'اسم المادة *' }), nameIn, nameMsg ]),
@@ -6376,7 +6479,8 @@ function subjectMeta(){
       el('label', { class:'field', style:'margin:0' }, [
         el('span', { class:'field__label', text:'الكلية' }), colIn ]),
       el('label', { class:'field', style:'margin:0' }, [
-        el('span', { class:'field__label', text:'رمز المقرر — اختياري' }), codeIn ])
+        el('span', { class:'field__label', text:'رمز المقرر — اختياري' }), codeIn ]),
+      uploaderRow
     ]),
     el('p', { class:'field__hint', style:'margin:0',
       text:'هذه البيانات هي ما يجعل زميلك في جامعتك يجد مادتك. اكتبها ولو تقريبية.' }),
@@ -6484,6 +6588,8 @@ function stepRead(box, rerender){
     return;
   }
 
+  /* ★ العودة قبل البداية: مسوّدةٌ لم تكتمل تُعرض أولًا كي لا يبدأ صاحبها من الصفر */
+  if (QBANK.views.resumeBanner) box.appendChild(QBANK.views.resumeBanner());
   box.appendChild(subjectMeta());
 
   /*
@@ -7115,9 +7221,11 @@ function stepPublish(box){
       return void showShare(box, realSlug || w.slug, w.subjectName, newId, w.analysisLang || 'ar');
     }
     wizard = null;
-    /* المخفية تُفتح في محرّرها مباشرة: من أخفاها يريد أن يكملها لا أن يبحث عنها */
-    QBANK.router.go(newId && QBANK.store.get('is_admin_check', {}).ok ? '#/admin/subject/' + newId
-                  : QBANK.store.get('is_admin_check', {}).ok ? '#/admin/content' : '#/account/uploads');
+    /* المخفية تُفتح في محرّرها مباشرة: من أخفاها يريد أن يكملها لا أن يبحث عنها —
+       المشرف في محرّر اللوحة، والطالب في محرّر مادته (#/edit) */
+    const adm = QBANK.store.get('is_admin_check', {}).ok;
+    QBANK.router.go(newId ? (adm ? '#/admin/subject/' : '#/edit/') + newId
+                  : adm ? '#/admin/content' : '#/account/uploads');
   }
   pub.addEventListener('click', () => fire(true));
   hide.addEventListener('click', () => fire(false));
@@ -7153,6 +7261,9 @@ function stepPublish(box){
     el('p', { class:'page__sub num', text: wizard.total + ' سؤالًا جاهزًا' +
       (derived ? ' — منها ' + derived + ' بإجابة مستنتجة راجعتَها' : '') }),
     el('p', { class:'field__hint', text:'الاعتماد عملية ذرّية: إما تُنشأ المادة وكل أسئلتها أو لا يتغير شيء.' }),
+    /* الإسناد يُقال قبل الضغط لا بعده: المشرف يرى باسم من ستُكتب */
+    wizard.uploader ? el('p', { class:'field__hint uploader-note', text:
+      'ستُنسب المادة إلى ' + (wizard.uploader.name || 'الطالب المختار') + ' — اسمه عليها ومدّة الرافع وعائدها له.' }) : null,
     langRow, shufWrap, pub, hide, msg
   ]));
 }
@@ -7235,6 +7346,9 @@ const ViewUpload = {
              الرابط الذي ولّدته القاعدة عند النشر. */
           wizard.subjectName = wizard.subjectName || d.name || '';
           wizard.total = d.total; wizard.done = d.done;
+          /* المسوّدة المُسندة إلى طالب تعود بإسنادها — وإلا أعادها الختم إلى المشرف عند النشر */
+          const me = (QBANK.api.user() || {}).id;
+          wizard.uploader = (d.created_by && d.created_by !== me) ? { id: d.created_by, name:'' } : null;
           wizard.step = d.done >= d.total ? 3 : 2;
           QBANK.router.render(location.hash);
         }
@@ -9225,7 +9339,14 @@ const SubjEditor = {
 };
 
 /* ===== بطاقة هوية المادة ===== */
-function subjIdentity(sub, refresh){
+/*
+  ★ بطاقةٌ واحدة للمشرف وللرافع (opts.owner).
+  الرافع يعدّل مادته قبل النشر من محرّره هو، بالمكوّن نفسه لا بنسخةٍ ثانية
+  تتباعد مع الوقت — فقط بلا ما لا يملكه: السعر والمجانية والتوثيق والإسناد.
+  والقاعدة تحرس ذلك أيضًا؛ الإخفاء هنا كي لا تعِد الشاشة بما سيُرفض.
+*/
+function subjIdentity(sub, refresh, opts){
+  const owner = !!(opts && opts.owner);
   const nameIn  = el('input', { class:'input', value: sub.name || '' });
   const descrIn = el('textarea', { class:'input', rows:'2' }); descrIn.value = sub.descr || '';
   const ordIn   = el('input', { class:'input', type:'number', value: String(sub.ord || 0), 'aria-label':'ترتيب المادة' });
@@ -9355,15 +9476,20 @@ function subjIdentity(sub, refresh){
        أي شيء، والقيمة السالبة أو الخيالية تُفسد البوابة لا الحقل. */
     const price = Math.max(0, Math.min(999, parseInt(priceIn.value || '0', 10) || 0));
     priceIn.value = String(price); paintPrice();
-    const r = await SubjEditor.patchSubject(sub.id, {
+    const body = {
       name: nameIn.value.trim() || sub.name, descr: descrIn.value, color, icon,
       ord: parseInt(ordIn.value || '0', 10), exam_date: dateIn.value || null,
-      price: price,
-      /* والمجانية تتبع السعر لا تناقضه: صفرٌ يعني مجانية، وأكثرُ منه مدفوعة */
-      free: price === 0,
       university_id: campus.university_id, college_id: campus.college_id
-    });
-    QBANK.toast(r.ok ? 'حُفظت هوية المادة' : 'تعذّر الحفظ');
+    };
+    /* السعر للمشرف وحده — الرافع لا يرسله أصلًا، والقاعدة تعيده لو أُرسل */
+    if (!owner){
+      body.price = price;
+      /* والمجانية تتبع السعر لا تناقضه: صفرٌ يعني مجانية، وأكثرُ منه مدفوعة */
+      body.free = price === 0;
+    }
+    const r = await SubjEditor.patchSubject(sub.id, body);
+    QBANK.toast(r.ok ? 'حُفظت هوية المادة'
+      : '⚠ ' + ((r.data && r.data.message) || 'تعذّر الحفظ'));
     if (r.ok && refresh) refresh();
   });
 
@@ -9429,16 +9555,19 @@ function subjIdentity(sub, refresh){
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'اللون' }), swatches ]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الأيقونة' }), icons ]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترتيب' }), ordIn ]),
-      el('label', { class:'field', style:'margin:0' }, [
+      owner ? null : el('label', { class:'field', style:'margin:0' }, [
         el('span', { class:'field__label', text:'السعر بالريال' }), priceIn, priceHint ]),
       el('div', { class:'field', style:'margin:0' }, [
         el('span', { class:'field__label', text:'الجامعة — تظهر المادة في قسمها بـ«استكشف»' }), uniSel, uniCountry, uniNew, campusHint ]),
       el('div', { class:'field', style:'margin:0' }, [
-        el('span', { class:'field__label', text:'الكلية (اختياري)' }), colSel, colNew ])
+        el('span', { class:'field__label', text:'الكلية (اختياري)' }), colSel, colNew ]),
+      /* الرافع: المشرف يختار من رفعها ويقرّر إن كان يعدّل بعد النشر */
+      (!owner && QBANK.views.uploaderField) ? QBANK.views.uploaderField(sub, refresh) : null
     ]),
-    el('div', { class:'ad-bar', style:'margin:16px 0 0' }, [ save, pub, free, verify ]),
+    /* الرافع ينشر ويُخفي من شريط الحال فوق المحرّر — زرّ واحد لا اثنان */
+    el('div', { class:'ad-bar', style:'margin:16px 0 0' }, owner ? [ save ] : [ save, pub, free, verify ]),
     /* بابٌ من المادة إلى بلاغاتها: المشرف الذي يفتحها ليوثّقها يرى أولًا ما عليها */
-    Number(sub.reports_open) > 0
+    (!owner && Number(sub.reports_open) > 0)
       ? el('a', { class:'ad-warn', href:'#/admin/reports' }, [
           el('span', { text:'⚑ عليها ' + QBANK.views.arNum(sub.reports_open) +
             (Number(sub.reports_open) === 1 ? ' بلاغ مفتوح' : ' بلاغات مفتوحة') }),
@@ -9823,6 +9952,10 @@ const AdminSubjectView = {
 QBANK.admin.subject = SubjEditor;
 QBANK.views.ViewAdminSubject = AdminSubjectView;
 QBANK.views.subjIdentity = subjIdentity;
+/* اللوحات نفسها يستعملها محرّر المالك (#/edit) — مكوّن واحد لا نسختان */
+QBANK.views.subjContent   = subjContent;
+QBANK.views.subjTopics    = subjTopics;
+QBANK.views.subjQuestions = subjQuestions;
 
 
 /* ===== 44-admin-settings.js ===== */
@@ -16001,6 +16134,330 @@ function boardMini(opts){
   return box;
 }
 QBANK.views.boardMini = boardMini;
+
+
+/* ===== 72-uploader.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  الرافع — إسناد المادة لطالب، والعودة إليها قبل النشر
+  ═══════════════════════════════════════════════════════════════════
+  علي يستلم بنوك الأسئلة من الطلاب على واتساب ويرفعها بنفسه. فكانت كل
+  مادة تُنسب إليه: اسمه عليها، ومدّة الرافع له، وعائدها له — والطالب الذي
+  جمع الأسئلة لا أثر له. هنا يختار المشرف اسم الطالب فتُكتب المادة باسمه
+  كما لو رفعها بيده.
+
+  والرفع لم يكن طريقًا ذا عودة: من أغلق الصفحة في منتصفه لم يجد مسوّدته
+  إلا إن كان مشرفًا، ومن ضغط «احفظ مخفية» لم يجد بابًا يعود منه ليراجع
+  أسئلته وينشرها. فصار لكلٍّ بابه: «مسوّداتي» تُستأنف، والمخفية تُفتح في
+  محرّرها.
+
+  ★ الحكم في القاعدة لا هنا: من يعدّل ومتى تقرّره سياسات UPLOADER.sql
+  وقادحاه. الواجهة تُخفي ما لا يُسمح به كي لا تعِد بما سيُرفض.
+*/
+const Uploader = {
+  isAdmin(){ return !!(QBANK.store.get('is_admin_check', {}) || {}).ok; },
+
+  /* بحث الطلاب بالاسم أو الإيميل — الدالة نفسها ترفض غير المشرف */
+  search(q){ return QBANK.api.rpc('admin_students_pro', { p_search: String(q || '').trim(), p_limit: 12 }); },
+
+  /* اسم صاحب المادة — public_profile عامة، فتصلح للمشرف والطالب والزائر */
+  async nameOf(uid){
+    if (!uid) return '';
+    const r = await QBANK.api.rpc('public_profile', { p_user: uid });
+    return (r.ok && r.data && r.data.name) ? String(r.data.name) : '';
+  },
+
+  /* الإسناد يمنح ما يمنحه الرفع: المالك ومدّته معًا (دالة القاعدة) */
+  setUploader(subjectId, userId){
+    return QBANK.api.rpc('admin_set_uploader', { p_subject: subjectId, p_user: userId });
+  },
+
+  /* المسوّدات غير المعتمدة: لي — أو كلها للمشرف إن لم يُطلب «لي» فقط */
+  myDrafts(onlyMine){
+    const u = QBANK.api.user();
+    if (!u) return Promise.resolve({ ok:false, data:[] });
+    let path = 'drafts?select=id,name,status,total,done,updated_at,created_by&status=neq.approved&order=updated_at.desc';
+    if (onlyMine || !Uploader.isAdmin()) path += '&created_by=eq.' + u.id;
+    return QBANK.api.rest(path);
+  },
+
+  /*
+    هل يملك هذا المستخدم تعديل هذه المادة الآن؟ — الحكم نفسه الذي تحكم
+    به القاعدة (subjects_owner_guard): المشرف دائمًا، والمالك قبل النشر،
+    وبعده إن فتح له المشرف المفتاح.
+  */
+  canEdit(sub, u){
+    if (Uploader.isAdmin()) return true;
+    if (!u || !sub || sub.created_by !== u.id) return false;
+    return !sub.published || !!sub.owner_edit;
+  },
+  LOCK_TEXT: 'المادة منشورة — التعديل بعد النشر بإذن المشرف',
+
+  /* سطر حال المسوّدة كما يقرؤه صاحبها */
+  draftLine(d){
+    const N = QBANK.views.arNum;
+    if (d.status === 'reviewing') return 'جاهزة للمراجعة والنشر — ' + N(d.total || 0) + ' سؤالًا';
+    if (d.status === 'hidden')    return 'حُفظت مخفية';
+    return 'قُرئ ' + N(d.done || 0) + ' من ' + N(d.total || 0) + ' — أكمل من حيث توقفت';
+  }
+};
+QBANK.uploader = Uploader;
+
+/* ═══ منتقي الطالب ═══
+   حقل بحث واحد ونتائج تحته — لا قائمة منسدلة بمئات الأسماء. المختار يظهر
+   شريحةً فوق الحقل، و«أنا» صفٌّ أول دائمًا كي لا يحتاج المشرف بحثًا ليعود
+   إلى نفسه. */
+function uploaderPick(opts){
+  const o = opts || {};
+  const me = o.me || null;
+  let value = o.value || null;
+
+  const box  = el('div', { class:'spick' });
+  const cur  = el('span', { class:'spick__cur', text: value ? (value.name || '…') : (me ? me.name : 'بلا رافع') });
+  const chg  = el('button', { class:'btn btn--sm btn--ghost', type:'button', text: o.collapsed ? 'غيّر' : 'اختر طالبًا' });
+  const head = el('div', { class:'spick__head' }, [ el('span', { class:'spick__l', text:'رفعها:' }), cur, chg ]);
+  const inp  = el('input', { class:'input', type:'search', placeholder:'ابحث باسم الطالب أو إيميله…',
+    'aria-label':'ابحث عن الطالب الرافع' });
+  const list = el('div', { class:'spick__list', role:'listbox', 'aria-label':'نتائج البحث' });
+  const pane = el('div', { class:'spick__pane', hidden: !!o.collapsed }, [ inp, list ]);
+  box.appendChild(head); box.appendChild(pane);
+
+  /* الاسم يُجلب إن جاء المعرّف وحده — كما عند استئناف مسوّدة مُسندة */
+  if (value && !value.name) Uploader.nameOf(value.id).then(n => { if (alive()){ value.name = n || 'طالب'; cur.textContent = value.name; } });
+
+  const pick = v => {
+    value = v;
+    cur.textContent = v ? (v.name || 'طالب') : (me ? me.name : 'بلا رافع');
+    pane.hidden = true; chg.textContent = 'غيّر';
+    if (o.onPick) o.onPick(v);
+  };
+  chg.addEventListener('click', () => { pane.hidden = !pane.hidden; if (!pane.hidden) inp.focus(); });
+
+  function row(x, isMe){
+    const b = el('button', { class:'spick__row', type:'button', role:'option', 'data-uid': x.id }, [
+      el('span', { class:'spick__av', 'aria-hidden':'true', text: x.avatar || '👤' }),
+      el('span', { class:'spick__x' }, [
+        el('span', { class:'spick__n', text: isMe ? x.name : (x.name || 'طالب بلا اسم') }),
+        isMe ? null : el('span', { class:'spick__s', text: [x.email, x.university].filter(Boolean).join(' · ') })
+      ])
+    ]);
+    b.addEventListener('click', () => pick(isMe ? null : { id: x.id, name: x.name || 'طالب بلا اسم' }));
+    return b;
+  }
+  function draw(rows, q){
+    list.innerHTML = '';
+    if (me) list.appendChild(row(me, true));
+    rows.forEach(x => { if (!me || x.id !== me.id) list.appendChild(row(x, false)); });
+    if (!rows.length && q) list.appendChild(el('p', { class:'field__hint spick__empty', text:'لا طالب بهذا الاسم — جرّب جزءًا من الإيميل.' }));
+  }
+  let t = null, seq = 0;
+  const run = () => {
+    const q = inp.value.trim();
+    const mine = ++seq;
+    Uploader.search(q).then(r => {
+      if (mine !== seq || !alive()) return;
+      const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+      draw(rows, q);
+    });
+  };
+  inp.addEventListener('input', () => { clearTimeout(t); t = setTimeout(run, 250); });
+  draw([], '');
+  /* أول فتح: أحدث الطلاب بلا كتابة — غالبًا من أرسل بنكه هو آخر من سجّل */
+  run();
+  return box;
+}
+
+/* ═══ حقل الرافع في محرّر المشرف ═══ */
+function uploaderField(sub, refresh){
+  const u = QBANK.api.user() || {};
+  const box = el('div', { class:'field spick-field', style:'margin:0;grid-column:1/-1' });
+  box.appendChild(el('span', { class:'field__label', text:'الرافع — يظهر اسمه على المادة، وله مدّة الرافع وعائدها' }));
+
+  const value = sub.created_by ? { id: sub.created_by, name: sub.created_by === u.id ? 'أنا (المشرف)' : '' } : null;
+  const msg = el('p', { class:'field__hint', role:'status', style:'margin:4px 0 0' });
+  box.appendChild(uploaderPick({
+    value, collapsed:true, me: { id: u.id, name:'أنا (المشرف)' },
+    onPick: async v => {
+      const target = v ? v.id : u.id;
+      if (target === sub.created_by) return;
+      msg.textContent = '… يُسند';
+      const r = await Uploader.setUploader(sub.id, target);
+      const ok = r.ok && r.data && r.data.ok;
+      msg.textContent = ok ? '' : '⚠ ' + ((r.data && (r.data.message || r.data.error)) || 'تعذّر الإسناد');
+      QBANK.toast(ok ? 'أُسندت المادة إلى ' + (v ? v.name : 'حسابك') : 'تعذّر الإسناد');
+      if (ok && refresh) refresh();
+    }
+  }));
+
+  /*
+    ★ مفتاح ما بعد النشر بيد المشرف.
+    قبل النشر يعدّل الرافع مادته بحرّية — هي مسوّدته. وبعد النشر يذاكر منها
+    آخرون، فتغييرُ إجابةٍ يغيّر ما حفظوه. فالافتراض قفلٌ، والمشرف يفتحه لمن
+    يثق به — والقاعدة تحرس المفتاح لا الواجهة.
+  */
+  const tog = el('button', { class:'btn btn--sm ' + (sub.owner_edit ? 'btn--soft' : 'btn--ghost'), type:'button',
+    'aria-pressed': sub.owner_edit ? 'true' : 'false',
+    text: sub.owner_edit ? '✓ الرافع يعدّل بعد النشر — أقفله' : 'اسمح للرافع بالتعديل بعد النشر' });
+  tog.addEventListener('click', async () => {
+    const r = await QBANK.admin.subject.patchSubject(sub.id, { owner_edit: !sub.owner_edit });
+    QBANK.toast(r.ok ? (sub.owner_edit ? 'أُقفل التعديل على الرافع' : 'فُتح التعديل للرافع') : 'تعذّر التعديل');
+    if (r.ok && refresh) refresh();
+  });
+  box.appendChild(el('div', { class:'row', style:'margin-top:8px' }, [ tog ]));
+  box.appendChild(el('p', { class:'field__hint', style:'margin:4px 0 0', text:
+    !sub.published ? 'قبل النشر: الرافع يعدّل مادته بحرّية من «موادي» في حسابه.'
+    : sub.owner_edit ? 'الرافع يستطيع الآن تعديل الأسئلة والهوية وإخفاء المادة.'
+    : 'التعديل الآن للمشرف وحده — الرافع يرى مادته ولا يعدّلها.' }));
+  box.appendChild(msg);
+  return box;
+}
+
+/* ═══ لافتة الاستئناف في أول المعالج ═══
+   من عاد إلى «ارفع» ومعه مسوّدة لم تكتمل يجدها قبل أن يبدأ من الصفر. */
+function resumeBanner(){
+  const box = el('div', { class:'card stack resume', hidden:true });
+  const cur = QBANK.views.ViewUpload && QBANK.views.ViewUpload._get ? QBANK.views.ViewUpload._get() : null;
+  const base = (typeof location !== 'undefined' && String(location.hash).indexOf('#/admin') === 0) ? '#/admin/upload' : '#/upload';
+  Uploader.myDrafts(true).then(r => {
+    if (!alive() || !box.isConnected) return;
+    const rows = ((r.ok && Array.isArray(r.data)) ? r.data : []).filter(d => !cur || d.id !== cur.draftId);
+    if (!rows.length) return;
+    box.hidden = false;
+    box.appendChild(el('h3', { class:'resume__t', text: rows.length === 1 ? 'لديك مسوّدة لم تكتمل' : 'لديك مسوّدات لم تكتمل' }));
+    rows.slice(0, 5).forEach(d => box.appendChild(el('div', { class:'resume__row' }, [
+      el('span', { class:'resume__x' }, [
+        el('span', { class:'resume__n', text: d.name || 'بلا اسم' }),
+        el('span', { class:'resume__s', text: Uploader.draftLine(d) + ' · ' + QBANK.admin.charts.ago(d.updated_at) })
+      ]),
+      el('a', { class:'btn btn--sm btn--soft', href: base + '?draft=' + d.id, text:'أكمل' })
+    ])));
+  });
+  return box;
+}
+
+/* ═══ «مسوّداتي» في حساب الطالب ═══ */
+function myDraftsCard(){
+  const box = el('div', { class:'card stack', hidden:true }, [
+    el('h2', { style:'margin:0', text:'مسوّداتي — لم تُنشر بعد' }),
+    el('p', { class:'field__hint', style:'margin:0', text:'ما توقّف رفعه محفوظ هنا — أكمله متى شئت.' })
+  ]);
+  Uploader.myDrafts(true).then(r => {
+    if (!alive() || !box.isConnected) return;
+    const rows = (r.ok && Array.isArray(r.data)) ? r.data : [];
+    if (!rows.length) return;
+    box.hidden = false;
+    rows.forEach(d => box.appendChild(el('div', { class:'up-row' }, [
+      el('span', { class:'up-row__ico', 'aria-hidden':'true' }, [ QBANK.ico('upload', { size:18 }) ]),
+      el('span', { class:'up-row__x' }, [
+        el('span', { class:'up-row__t', text: d.name || 'بلا اسم' }),
+        el('span', { class:'up-row__s', text: Uploader.draftLine(d) })
+      ]),
+      el('a', { class:'btn btn--sm btn--soft', href:'#/upload?draft=' + d.id, text:'أكمل' })
+    ])));
+  });
+  return box;
+}
+
+/* ═══ شريط حال المادة في محرّر المالك ═══ */
+function ownerStatus(sub, refresh){
+  const u = QBANK.api.user() || {};
+  const can = Uploader.canEdit(sub, u);
+  const N = QBANK.views.arNum;
+  const msg = el('p', { class:'field__hint', role:'status', style:'margin:0' });
+  const acts = el('div', { class:'row' });
+
+  if (!sub.published){
+    const pub = el('button', { class:'btn', type:'button', text:'انشر للطلاب' });
+    pub.addEventListener('click', async () => {
+      if (!Number(sub.q_count)) return void (msg.textContent = '⚠ المادة بلا أسئلة — لا يُنشر بنك فارغ.');
+      pub.disabled = true; msg.textContent = '… يُنشر';
+      const r = await QBANK.admin.subject.patchSubject(sub.id, { published: true });
+      pub.disabled = false;
+      if (!r.ok) return void (msg.textContent = '⚠ ' + ((r.data && r.data.message) || 'تعذّر النشر'));
+      try { await QBANK.data.refreshPack(); } catch(e){ /* القائمة تُجدَّد لاحقًا */ }
+      QBANK.toast('نُشرت «' + sub.name + '»');
+      if (refresh) refresh();
+    });
+    acts.appendChild(pub);
+  } else {
+    acts.appendChild(el('a', { class:'btn btn--sm btn--soft', href:'#/subject/' + sub.id, text:'افتح صفحة المادة' }));
+    if (can){
+      const hide = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'أخفِها عن الطلاب' });
+      hide.addEventListener('click', async () => {
+        const r = await QBANK.admin.subject.patchSubject(sub.id, { published: false });
+        QBANK.toast(r.ok ? 'أُخفيت المادة' : 'تعذّر الإخفاء');
+        if (r.ok) { try { await QBANK.data.refreshPack(); } catch(e){} if (refresh) refresh(); }
+      });
+      acts.appendChild(hide);
+    }
+  }
+
+  return el('div', { class:'card stack ownerbar' + (can ? '' : ' is-locked') }, [
+    el('div', { class:'row' }, [
+      sub.published ? el('span', { class:'badge badge--ok', text:'منشورة' })
+                    : el('span', { class:'badge badge--warn', text:'مخفية — لا يراها أحد غيرك' }),
+      el('span', { class:'badge num', text: N(sub.q_count || 0) + ' سؤالًا' }),
+      can ? null : el('span', { class:'badge', text:'🔒 مقفلة' })
+    ]),
+    el('p', { style:'margin:0', text:
+      !sub.published ? 'راجع الأسئلة وصحّح ما يلزم، ثم انشر. قبل النشر كل شيء بيدك.'
+      : can ? 'المشرف فتح لك التعديل بعد النشر — ما تحفظه يصل الطلاب فورًا.'
+      : Uploader.LOCK_TEXT + '. تستطيع وسم الأسئلة بـ«اختبار سابق» من صفحة المادة، ولطلب تعديلٍ تواصل مع المشرف.' }),
+    acts, msg
+  ]);
+}
+
+/* ═══ محرّر المالك: #/edit/<id> ═══
+   محرّر المشرف نفسه (الهوية، التحليل، المحاور، الأسئلة) بلا ما لا يملكه
+   الرافع: السعر والتوثيق والإسناد. مكوّنات واحدة لا نسختان تتباعدان. */
+const ViewOwnerEdit = {
+  title:'محرّر مادتي',
+  view(route){
+    const u = QBANK.api.user();
+    if (!u) return QBANK.views.ViewLogin.view();
+    const id = route.rest[0];
+    if (!id) return QBANK.views.ViewNotFound.view();
+
+    const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
+    function load(){
+      Promise.all([
+        QBANK.api.rest('subjects?id=eq.' + id + '&select=*'),
+        QBANK.api.rest('questions?subject_id=eq.' + id + '&select=*&order=ord')
+      ]).then(([sr, qr]) => {
+        if (!body.isConnected) return;
+        const sub = (sr.ok && sr.data && sr.data[0]) || null;
+        body.innerHTML = '';
+        if (!sub){
+          body.appendChild(QBANK.views.empty('⚠', 'لم نجد المادة', 'ربما حُذفت، أو ليست من رفعك.'));
+          return;
+        }
+        if (sub.created_by !== u.id && !Uploader.isAdmin()){
+          body.appendChild(QBANK.views.empty('⚠', 'هذه ليست مادتك', 'لا يعدّل المادة إلا من رفعها أو المشرف.'));
+          return;
+        }
+        const questions = (qr.ok && Array.isArray(qr.data)) ? qr.data : [];
+        body.appendChild(ownerStatus(sub, load));
+        if (!Uploader.canEdit(sub, u)) return;
+        body.appendChild(QBANK.views.subjIdentity(sub, load, { owner:true }));
+        body.appendChild(QBANK.views.subjContent(sub, load));
+        body.appendChild(QBANK.views.subjTopics(sub, questions, load));
+        body.appendChild(QBANK.views.subjQuestions(sub, questions, load));
+      });
+    }
+    load();
+    const back = el('a', { class:'btn btn--sm btn--ghost', href:'#/account/uploads', text:'→ موادي' });
+    return QBANK.views.page('محرّر مادتي', 'راجع أسئلتك وصحّح إجاباتها ثم انشر.', [back, body]);
+  }
+};
+
+/* المسار يُسجَّل هنا لا في 40-app: الملف مستقلّ، والموجّه يقبل الإضافة في أي وقت قبل أول رسم */
+QBANK.router.add('#/edit', ViewOwnerEdit);
+QBANK.views.ViewOwnerEdit = ViewOwnerEdit;
+QBANK.views.uploaderPick  = uploaderPick;
+QBANK.views.uploaderField = uploaderField;
+QBANK.views.resumeBanner  = resumeBanner;
+QBANK.views.myDraftsCard  = myDraftsCard;
+QBANK.views.ownerStatus   = ownerStatus;
 
 })();
 

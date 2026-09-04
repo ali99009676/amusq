@@ -88,6 +88,23 @@ function subjectMeta(){
     placeholder:'EMS 301' });
   codeIn.addEventListener('input', () => { wizard.courseCode = codeIn.value; });
 
+  /*
+    ★ «رفعها» — للمشرف وحده.
+    علي يرفع بنوكًا أرسلها له الطلاب، فيختار هنا اسم الطالب لتُكتب المادة
+    باسمه من أول المسوّدة. «أنا» هو الافتراض فلا يتغيّر شيء لمن يرفع لنفسه.
+  */
+  let uploaderRow = null;
+  if (QBANK.views.uploaderPick && QBANK.uploader && QBANK.uploader.isAdmin()){
+    const u = QBANK.api.user() || {};
+    uploaderRow = el('div', { class:'field', style:'margin:0;grid-column:1/-1' }, [
+      el('span', { class:'field__label', text:'رفعها — تُنسب المادة إليه ويُحسب له عائدها' }),
+      QBANK.views.uploaderPick({
+        value: wizard.uploader || null, me: { id: u.id, name:'أنا (المشرف)' }, collapsed: true,
+        onPick: v => { wizard.uploader = (v && v.id !== u.id) ? v : null; }
+      })
+    ]);
+  }
+
   return el('div', { class:'card stack' }, [
     el('label', { class:'field', style:'margin:0' }, [
       el('span', { class:'field__label', text:'اسم المادة *' }), nameIn, nameMsg ]),
@@ -99,7 +116,8 @@ function subjectMeta(){
       el('label', { class:'field', style:'margin:0' }, [
         el('span', { class:'field__label', text:'الكلية' }), colIn ]),
       el('label', { class:'field', style:'margin:0' }, [
-        el('span', { class:'field__label', text:'رمز المقرر — اختياري' }), codeIn ])
+        el('span', { class:'field__label', text:'رمز المقرر — اختياري' }), codeIn ]),
+      uploaderRow
     ]),
     el('p', { class:'field__hint', style:'margin:0',
       text:'هذه البيانات هي ما يجعل زميلك في جامعتك يجد مادتك. اكتبها ولو تقريبية.' }),
@@ -207,6 +225,8 @@ function stepRead(box, rerender){
     return;
   }
 
+  /* ★ العودة قبل البداية: مسوّدةٌ لم تكتمل تُعرض أولًا كي لا يبدأ صاحبها من الصفر */
+  if (QBANK.views.resumeBanner) box.appendChild(QBANK.views.resumeBanner());
   box.appendChild(subjectMeta());
 
   /*
@@ -838,9 +858,11 @@ function stepPublish(box){
       return void showShare(box, realSlug || w.slug, w.subjectName, newId, w.analysisLang || 'ar');
     }
     wizard = null;
-    /* المخفية تُفتح في محرّرها مباشرة: من أخفاها يريد أن يكملها لا أن يبحث عنها */
-    QBANK.router.go(newId && QBANK.store.get('is_admin_check', {}).ok ? '#/admin/subject/' + newId
-                  : QBANK.store.get('is_admin_check', {}).ok ? '#/admin/content' : '#/account/uploads');
+    /* المخفية تُفتح في محرّرها مباشرة: من أخفاها يريد أن يكملها لا أن يبحث عنها —
+       المشرف في محرّر اللوحة، والطالب في محرّر مادته (#/edit) */
+    const adm = QBANK.store.get('is_admin_check', {}).ok;
+    QBANK.router.go(newId ? (adm ? '#/admin/subject/' : '#/edit/') + newId
+                  : adm ? '#/admin/content' : '#/account/uploads');
   }
   pub.addEventListener('click', () => fire(true));
   hide.addEventListener('click', () => fire(false));
@@ -876,6 +898,9 @@ function stepPublish(box){
     el('p', { class:'page__sub num', text: wizard.total + ' سؤالًا جاهزًا' +
       (derived ? ' — منها ' + derived + ' بإجابة مستنتجة راجعتَها' : '') }),
     el('p', { class:'field__hint', text:'الاعتماد عملية ذرّية: إما تُنشأ المادة وكل أسئلتها أو لا يتغير شيء.' }),
+    /* الإسناد يُقال قبل الضغط لا بعده: المشرف يرى باسم من ستُكتب */
+    wizard.uploader ? el('p', { class:'field__hint uploader-note', text:
+      'ستُنسب المادة إلى ' + (wizard.uploader.name || 'الطالب المختار') + ' — اسمه عليها ومدّة الرافع وعائدها له.' }) : null,
     langRow, shufWrap, pub, hide, msg
   ]));
 }
@@ -958,6 +983,9 @@ const ViewUpload = {
              الرابط الذي ولّدته القاعدة عند النشر. */
           wizard.subjectName = wizard.subjectName || d.name || '';
           wizard.total = d.total; wizard.done = d.done;
+          /* المسوّدة المُسندة إلى طالب تعود بإسنادها — وإلا أعادها الختم إلى المشرف عند النشر */
+          const me = (QBANK.api.user() || {}).id;
+          wizard.uploader = (d.created_by && d.created_by !== me) ? { id: d.created_by, name:'' } : null;
           wizard.step = d.done >= d.total ? 3 : 2;
           QBANK.router.render(location.hash);
         }

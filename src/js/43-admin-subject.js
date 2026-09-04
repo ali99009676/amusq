@@ -45,7 +45,14 @@ const SubjEditor = {
 };
 
 /* ===== بطاقة هوية المادة ===== */
-function subjIdentity(sub, refresh){
+/*
+  ★ بطاقةٌ واحدة للمشرف وللرافع (opts.owner).
+  الرافع يعدّل مادته قبل النشر من محرّره هو، بالمكوّن نفسه لا بنسخةٍ ثانية
+  تتباعد مع الوقت — فقط بلا ما لا يملكه: السعر والمجانية والتوثيق والإسناد.
+  والقاعدة تحرس ذلك أيضًا؛ الإخفاء هنا كي لا تعِد الشاشة بما سيُرفض.
+*/
+function subjIdentity(sub, refresh, opts){
+  const owner = !!(opts && opts.owner);
   const nameIn  = el('input', { class:'input', value: sub.name || '' });
   const descrIn = el('textarea', { class:'input', rows:'2' }); descrIn.value = sub.descr || '';
   const ordIn   = el('input', { class:'input', type:'number', value: String(sub.ord || 0), 'aria-label':'ترتيب المادة' });
@@ -175,15 +182,20 @@ function subjIdentity(sub, refresh){
        أي شيء، والقيمة السالبة أو الخيالية تُفسد البوابة لا الحقل. */
     const price = Math.max(0, Math.min(999, parseInt(priceIn.value || '0', 10) || 0));
     priceIn.value = String(price); paintPrice();
-    const r = await SubjEditor.patchSubject(sub.id, {
+    const body = {
       name: nameIn.value.trim() || sub.name, descr: descrIn.value, color, icon,
       ord: parseInt(ordIn.value || '0', 10), exam_date: dateIn.value || null,
-      price: price,
-      /* والمجانية تتبع السعر لا تناقضه: صفرٌ يعني مجانية، وأكثرُ منه مدفوعة */
-      free: price === 0,
       university_id: campus.university_id, college_id: campus.college_id
-    });
-    QBANK.toast(r.ok ? 'حُفظت هوية المادة' : 'تعذّر الحفظ');
+    };
+    /* السعر للمشرف وحده — الرافع لا يرسله أصلًا، والقاعدة تعيده لو أُرسل */
+    if (!owner){
+      body.price = price;
+      /* والمجانية تتبع السعر لا تناقضه: صفرٌ يعني مجانية، وأكثرُ منه مدفوعة */
+      body.free = price === 0;
+    }
+    const r = await SubjEditor.patchSubject(sub.id, body);
+    QBANK.toast(r.ok ? 'حُفظت هوية المادة'
+      : '⚠ ' + ((r.data && r.data.message) || 'تعذّر الحفظ'));
     if (r.ok && refresh) refresh();
   });
 
@@ -249,16 +261,19 @@ function subjIdentity(sub, refresh){
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'اللون' }), swatches ]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الأيقونة' }), icons ]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترتيب' }), ordIn ]),
-      el('label', { class:'field', style:'margin:0' }, [
+      owner ? null : el('label', { class:'field', style:'margin:0' }, [
         el('span', { class:'field__label', text:'السعر بالريال' }), priceIn, priceHint ]),
       el('div', { class:'field', style:'margin:0' }, [
         el('span', { class:'field__label', text:'الجامعة — تظهر المادة في قسمها بـ«استكشف»' }), uniSel, uniCountry, uniNew, campusHint ]),
       el('div', { class:'field', style:'margin:0' }, [
-        el('span', { class:'field__label', text:'الكلية (اختياري)' }), colSel, colNew ])
+        el('span', { class:'field__label', text:'الكلية (اختياري)' }), colSel, colNew ]),
+      /* الرافع: المشرف يختار من رفعها ويقرّر إن كان يعدّل بعد النشر */
+      (!owner && QBANK.views.uploaderField) ? QBANK.views.uploaderField(sub, refresh) : null
     ]),
-    el('div', { class:'ad-bar', style:'margin:16px 0 0' }, [ save, pub, free, verify ]),
+    /* الرافع ينشر ويُخفي من شريط الحال فوق المحرّر — زرّ واحد لا اثنان */
+    el('div', { class:'ad-bar', style:'margin:16px 0 0' }, owner ? [ save ] : [ save, pub, free, verify ]),
     /* بابٌ من المادة إلى بلاغاتها: المشرف الذي يفتحها ليوثّقها يرى أولًا ما عليها */
-    Number(sub.reports_open) > 0
+    (!owner && Number(sub.reports_open) > 0)
       ? el('a', { class:'ad-warn', href:'#/admin/reports' }, [
           el('span', { text:'⚑ عليها ' + QBANK.views.arNum(sub.reports_open) +
             (Number(sub.reports_open) === 1 ? ' بلاغ مفتوح' : ' بلاغات مفتوحة') }),
@@ -643,3 +658,7 @@ const AdminSubjectView = {
 QBANK.admin.subject = SubjEditor;
 QBANK.views.ViewAdminSubject = AdminSubjectView;
 QBANK.views.subjIdentity = subjIdentity;
+/* اللوحات نفسها يستعملها محرّر المالك (#/edit) — مكوّن واحد لا نسختان */
+QBANK.views.subjContent   = subjContent;
+QBANK.views.subjTopics    = subjTopics;
+QBANK.views.subjQuestions = subjQuestions;

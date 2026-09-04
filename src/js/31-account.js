@@ -321,7 +321,7 @@ function myUploadsCard(){
     el('p', { class:'field__hint', style:'margin:0', text:'جارٍ الجلب…' }) ]);
   if (!u) return box;
   QBANK.api.rest('subjects?created_by=eq.' + u.id +
-    '&select=id,name,icon,color,q_count,published,status,price,free,rating_avg,rating_n&order=created_at.desc')
+    '&select=id,name,icon,color,q_count,published,status,price,free,rating_avg,rating_n,owner_edit&order=created_at.desc')
     .then(r => {
       if (!box.isConnected) return;
       box.innerHTML = ''; box.appendChild(el('h2', { style:'margin:0', text:'موادي المرفوعة' }));
@@ -332,19 +332,29 @@ function myUploadsCard(){
         box.appendChild(el('a', { class:'btn btn--soft btn--block', href:'#/upload', text:'⇪ ارفع مادتك الأولى' }));
         return;
       }
+      /*
+        ★ المخفية بابها محرّرها لا صفحتها.
+        كانت تُسمّى «قيد المراجعة» وتقود إلى صفحة المادة — وهي ليست في
+        قائمة المواد أصلًا فيُقال «لم نجد المادة». لا أحد يراجعها غير
+        صاحبها: يفتحها في محرّره، يصحّح، ثم ينشر. والمنشورة تُفتح في صفحتها،
+        ومعها زرّ تحرير إن فتح المشرف التعديل بعد النشر.
+      */
       rows.forEach(s => {
+        const editable = !s.published || !!s.owner_edit;
         const st = s.published ? el('span', { class:'badge badge--ok', text:'منشورة' })
-                 : el('span', { class:'badge badge--warn', text:'قيد المراجعة' });
-        box.appendChild(el('a', { class:'up-row', href:'#/subject/' + s.id }, [
+                 : el('span', { class:'badge badge--warn', text:'مخفية — راجعها وانشرها' });
+        box.appendChild(el('div', { class:'up-row' }, [
           el('span', { class:'up-row__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(s.icon, 18) ]),
-          el('span', { class:'up-row__x' }, [
+          el('a', { class:'up-row__x', href: s.published ? '#/subject/' + s.id : '#/edit/' + s.id }, [
             el('span', { class:'up-row__t', text: s.name }),
             el('span', { class:'up-row__s num', text:
               QBANK.views.arNum(s.q_count || 0) + ' سؤالًا' +
               (Number(s.rating_n) ? ' · ★ ' + Number(s.rating_avg).toFixed(1) +
                 ' (' + QBANK.views.arNum(s.rating_n) + ')' : ' · بلا تقييم بعد') })
           ]),
-          st
+          st,
+          editable ? el('a', { class:'btn btn--sm btn--soft', href:'#/edit/' + s.id,
+            'aria-label':'حرّر ' + s.name, text: s.published ? 'حرّر' : 'راجع وانشر' }) : null
         ]));
       });
       box.appendChild(el('a', { class:'btn btn--ghost btn--block', href:'#/upload', text:'+ ارفع مادة أخرى' }));
@@ -420,6 +430,8 @@ const ViewAccount = {
       body.appendChild(accountBody());
       body.appendChild(campusCard());
     } else if (active === 'uploads'){
+      /* ما توقّف رفعه قبل ما اكتمل: المسوّدة تُستأنف من هنا لا من ذاكرة صاحبها */
+      if (QBANK.views.myDraftsCard) body.appendChild(QBANK.views.myDraftsCard());
       body.appendChild(myUploadsCard());
       const wallet = (QBANK.wallet && QBANK.wallet.body) ? QBANK.wallet.body() : null;
       if (wallet) body.appendChild(wallet);

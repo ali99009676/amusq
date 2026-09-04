@@ -350,6 +350,18 @@ const Admin = {
     return w;
   },
 
+  /*
+    ★ من صاحب المسوّدة؟ الرافع الذي اختاره المشرف، وإلا من يرفع.
+    المشرف يرفع بنكًا أرسله له طالب ويُسنده إليه — فتُكتب المسوّدة باسم
+    الطالب من أولها: يراها في «مسوّداتي» ويستأنفها إن شاء، وapprove_draft
+    تكتب المادة والمدّة له لا للمشرف. الطالب لا يملك هذا الحقل — السياسة
+    تمنعه من كتابة اسم غيره.
+  */
+  ownerOf(w){
+    const u = QBANK.api.user() || {};
+    return (w && w.uploader && w.uploader.id) || u.id || null;
+  },
+
   async saveDraft(w){
     const body = {
       name: w.subjectName || w.filename.replace(/\.[^.]+$/, ''),
@@ -359,9 +371,11 @@ const Admin = {
       updated_at: new Date().toISOString()
     };
     if (w.draftId) {
+      /* المشرف قد يغيّر الرافع بعد إنشاء المسوّدة — يُكتب مع كل حفظ */
+      if (w.uploader && QBANK.store.get('is_admin_check', {}).ok) body.created_by = Admin.ownerOf(w);
       return QBANK.api.rest('drafts?id=eq.' + w.draftId, { method:'PATCH', body: JSON.stringify(body) });
     }
-    body.created_by = (QBANK.api.user() || {}).id;
+    body.created_by = Admin.ownerOf(w);
     const r = await QBANK.api.rest('drafts?select=id', {
       method:'POST',
       headers: Object.assign(QBANK.api.headers(), { 'Prefer':'return=representation' }),
@@ -421,9 +435,9 @@ const Admin = {
 
   async stamp(subjectId, w, publish){
     if (!subjectId) return { ok:false };
-    const u = QBANK.api.user() || {};
     const body = {
-      created_by: u.id || null,
+      /* الرافع المختار لا من ضغط الزرّ — وإلا عادت المادة إلى المشرف بعد أن كتبتها القاعدة للطالب */
+      created_by: Admin.ownerOf(w),
       sanctity_mode: w.mode === 'enhanced' ? 'enhanced' : 'strict',
       course_code: w.courseCode || ''
     };
@@ -551,14 +565,34 @@ function adminContentTab(box){
   Promise.all([
     /* ★ السعر في الجلب: بلا العمود يبدأ كل حقلٍ في القائمة بصفرٍ كاذب،
        فيحفظه المشرف بلا قصدٍ ويُمحى سعرُ مادةٍ كان صحيحًا. */
-    QBANK.api.rest('subjects?select=id,name,color,icon,q_count,published,free,price,ord,exam_date&order=ord'),
+    QBANK.api.rest('subjects?select=id,name,color,icon,q_count,published,free,price,ord,exam_date,created_by,owner_edit&order=ord'),
     // قوائم المسوّدات بلا payload — الحمولة كبيرة ولا تلزم القائمة
-    QBANK.api.rest('drafts?select=id,name,status,total,done,updated_at&order=updated_at.desc')
-  ]).then(([subs, drs]) => {
+    QBANK.api.rest('drafts?select=id,name,status,total,done,updated_at,created_by&order=updated_at.desc')
+  ]).then(async ([subs, drs]) => {
     if (!listBox.isConnected) return;
-    listBox.innerHTML = '';
     const subjects = (subs.ok && subs.data) || [];
     const drafts = (drs.ok && drs.data) || [];
+
+    /*
+      ★ «رفعها فلان» في القائمة.
+      بعد أن صار الإسناد ممكنًا يجب أن يُرى: المشرف يمرّ على الصفوف فيعرف
+      أيّها مواد الطلاب وأيّها مواده. جلبٌ واحد لأسماء كل الرافعين — لا نداء
+      لكل صف. وفشله لا يُعطّل القائمة: تُرسم بلا أسماء.
+    */
+    const names = {};
+    const me = (QBANK.api.user() || {}).id;
+    const ids = {};
+    subjects.concat(drafts).forEach(x => { if (x.created_by && x.created_by !== me) ids[x.created_by] = 1; });
+    const idList = Object.keys(ids);
+    if (idList.length){
+      try {
+        const pr = await QBANK.api.rest('profiles?select=id,name&id=in.(' + idList.join(',') + ')');
+        ((pr.ok && Array.isArray(pr.data)) ? pr.data : []).forEach(p => { names[p.id] = String(p.name || '').trim() || 'طالب بلا اسم'; });
+      } catch(e){ /* القائمة تُرسم بلا أسماء */ }
+    }
+    const by = x => !x.created_by ? '' : (x.created_by === me ? 'أنا' : (names[x.created_by] || 'طالب'));
+    if (!listBox.isConnected) return;
+    listBox.innerHTML = '';
 
     /*
       ★ زرّ حذفٍ لكل مسوّدة ولكل مادة (بطلب علي).
@@ -588,9 +622,10 @@ function adminContentTab(box){
             el('span', { class:'ad-row__main' }, [
               el('span', { class:'ad-row__t', text: d.name || 'بلا اسم' }),
               el('span', { class:'ad-row__s', text:
-                d.status === 'reviewing' ? 'اكتملت المعالجة — بانتظار مراجعتك'
+                (d.status === 'reviewing' ? 'اكتملت المعالجة — بانتظار مراجعتك'
                   : (stale(d) ? 'عالقة منذ ' + QBANK.admin.charts.ago(d.updated_at) + ' — '
-                              : 'قيد المعالجة: ') + d.done + ' من ' + d.total })
+                              : 'قيد المعالجة: ') + d.done + ' من ' + d.total)
+                + (by(d) && by(d) !== 'أنا' ? ' · رفعها ' + by(d) : '') })
             ]),
             el('span', { class:'badge ' + (d.status === 'reviewing' ? 'badge--warn' : (stale(d) ? 'badge--bad' : '')),
               text: d.status === 'reviewing' ? 'راجِعها' : (stale(d) ? 'عالقة' : 'تُعالَج') }),
@@ -669,10 +704,12 @@ function adminContentTab(box){
         el('span', { text: sub.icon || '▤' }),
         el('span', { class:'ad-row__main' }, [
           el('span', { class:'ad-row__t', text: sub.name }),
-          el('span', { class:'ad-row__s', text: sub.q_count + ' سؤالًا' })
+          el('span', { class:'ad-row__s', text: sub.q_count + ' سؤالًا' + (by(sub) ? ' · رفعها ' + by(sub) : '') })
         ]),
         sub.published ? el('span', { class:'badge badge--ok', text:'منشورة' })
                       : el('span', { class:'badge', text:'مخفية' }),
+        /* الرافع يعدّل بعد النشر؟ — يُرى هنا كي لا يُفتح المفتاح ويُنسى */
+        (sub.published && sub.owner_edit) ? el('span', { class:'badge badge--warn', text:'الرافع يعدّل' }) : null,
         el('a', { class:'btn btn--sm btn--soft', href:'#/admin/subject/' + sub.id, text:'حرّر' }),
         pubBtn,
         el('span', { class:'ad-sub', style:'flex:1 0 100%' }, [
