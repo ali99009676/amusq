@@ -49,7 +49,8 @@ function enforce(original, ai, mode){
     sanctity_mode: enhanced ? 'enhanced' : 'strict',
     topic: String(ai.topic || ''),
     expl_ar: String(ai.expl_ar || ''),
-    expl_en: String(ai.expl_en || ''),
+    /* شرحُ الملف نفسه (Explanation: …) يسبق شرح الذكاء — كلام الدكتور أوثق من كلام النموذج */
+    expl_en: String(original.explanation || ai.expl_en || ''),
     translation: String(ai.translation || ''),
     mnemonic: (ai.mnemonic && typeof ai.mnemonic === 'object') ? ai.mnemonic : {},
     important: false

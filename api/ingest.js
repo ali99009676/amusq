@@ -15,8 +15,27 @@
 const { extract, imageMime } = require('./_lib/extract.js');
 const { parse } = require('./_lib/parser.js');
 const { slugify } = require('./_lib/sanctity.js');
-const { aiRead, aiReadMedia } = require('./_lib/reader.js');
+const { aiRead, aiReadPart, aiReadMedia, chunkText } = require('./_lib/reader.js');
 const { callAI, pickProvider } = require('./_lib/provider.js');
+const supa = require('./_lib/supa.js');
+
+/*
+  ★ الملف الكبير يأتي من مخزن Supabase لا في جسم الطلب.
+  Vercel يرفض جسمًا فوق ٤٫٥ ميغابايت — فكان PDF الدكتور ذو الثلاثين صفحة
+  يُردّ بصمت. المتصفح يرفعه إلى المخزن مباشرةً (حدّه ٥٠ ميغابايت) ويرسل
+  مساره، والخادم يجلبه بمفتاح الخدمة. المسار يبدأ بمعرّف الرافع، والحارس
+  الوحيد الذي نحتاجه هنا: أن يكون الطالب المسجَّل هو صاحب المجلد.
+*/
+async function fetchFromStorage(storagePath, userId){
+  const { url, key } = supa.creds();
+  const clean = String(storagePath || '').replace(/^\/+/, '');
+  if (!userId || clean.indexOf(userId + '/') !== 0) throw new Error('مسار الملف ليس لصاحب الجلسة');
+  const r = await fetch(url + '/storage/v1/object/uploads/' + clean.split('/').map(encodeURIComponent).join('/'), {
+    headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+  });
+  if (!r.ok) throw new Error('تعذّر جلب الملف من المخزن (' + r.status + ')');
+  return Buffer.from(await r.arrayBuffer());
+}
 
 /*
   متى نثق بالقواعد فلا نزعج الذكاء؟
@@ -33,7 +52,27 @@ function rulesLookSound(qs){
 module.exports = async function handler(req, res){
   if (req.method !== 'POST') return res.status(405).json({ error:'POST فقط' });
   try{
-    const { filename, content_base64, subject_name, sanctity_mode, force_ai, images } = req.body || {};
+    const { filename, subject_name, sanctity_mode, force_ai, images, storage_path, text_part } = req.body || {};
+    let content_base64 = (req.body || {}).content_base64;
+
+    /*
+      ═══ وضع الجزء: قراءةُ نصٍّ واحدٍ بالذكاء ═══
+      المتصفح يرسل الأجزاء التي أعادها الخادم واحدًا واحدًا (ثلاثة معًا).
+      نداءٌ قصير لا يقارب مهلة Vercel، ولا يحمل الملف.
+    */
+    if (typeof text_part === 'string'){
+      if (pickProvider() === 'none') return res.status(503).json({ error:'لا مفتاح ذكاء على الخادم', kind:'no_ai' });
+      const r = await aiReadPart(text_part, callAI);
+      return res.status(200).json({ ok:true, questions: r.questions, usage: r.usage || null });
+    }
+
+    /* ملفٌ في المخزن بدل الجسم — يحتاج جلسةً صالحة ليُعرف صاحب المجلد */
+    if (storage_path && !content_base64){
+      const user = await supa.userFromToken(supa.bearer(req));
+      if (!user) return res.status(401).json({ error:'جلسة غير صالحة' });
+      const buf0 = await fetchFromStorage(storage_path, user.id);
+      content_base64 = buf0.toString('base64');
+    }
 
     /*
       ═══ الصور: بابٌ كان مغلقًا ═══
@@ -113,7 +152,23 @@ module.exports = async function handler(req, res){
 
     let aiErr = null;
     const wantAi = force_ai === true || !rulesLookSound(questions);
+    /*
+      ★ الملف الذي يحتاج الذكاء لا يُقرأ هنا — يُقسَّم ويُعاد.
+      نصٌّ من ثلاثين صفحة يعني عشرين دفعة؛ قراءتها في نداءٍ واحد تصطدم
+      بمهلة الخادم مهما وازينا. فنعيد الأجزاء وما التقطته القواعد، والمتصفح
+      يقرأ الأجزاء متوازيةً بنداءاتٍ قصيرة (وضع text_part أعلاه). الملف
+      الصغير (≤ ٤ أجزاء) يُقرأ هنا مباشرةً — رحلةٌ واحدة أرخص من خمس.
+    */
     if (wantAi && pickProvider() !== 'none') {
+      const parts = chunkText(text);
+      if (parts.length > 4){
+        const name0 = String(subject_name || '').trim() || filename.replace(/\.[^.]+$/, '');
+        return res.status(200).json({
+          ok:true, need_ai:true, filename, subject_name: name0, slug: slugify(name0),
+          sanctity_mode: sanctity_mode === 'enhanced' ? 'enhanced' : 'strict',
+          parts, rules_questions: questions, text_len: text.length
+        });
+      }
       const r = await aiRead(text, callAI);
       aiErr = r.error || null;
       /*

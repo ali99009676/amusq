@@ -10,9 +10,6 @@
   ولا يظهر في رسالة خطأ.
 */
 
-/* ★ ذاكرة قصيرة للمحوّل: تبريد المزوّد المتعثّر، وسقف طلبات وتزامن للدفعات */
-const { preferOrder, coolFromError, runBatch, coolingInfo } = require('./limits.js');
-
 /* ═══ اكتشاف المزوّد ═══
    الترتيب مقصود: AI_PROVIDER يفوز إن ضُبط صراحةً، وإلا نستنتج من المفتاح
    الموجود. الاستنتاج يحذف خطوةً من الإعداد — ومتغيّرٌ أقل يعني عطلًا أقل. */
@@ -289,20 +286,6 @@ async function callAI(system, user, opts){
   if (provider === 'none')
     throw new Error('لا مفتاح ذكاء مضبوط — أضف GEMINI_API_KEY أو ANTHROPIC_API_KEY ' +
                     'في متغيّرات بيئة Vercel، أو ارفع بلا إثراء');
-
-  /*
-    ★ التبريد يسبق الاختيار.
-    السقوط وحده بلا ذاكرة يعني أن مزوّدًا نفدت حصّته في السؤال العاشر من
-    دفعةِ ثلاثمئة يُجرَّب في التسعين الباقية، فيفشل تسعين مرة قبل أن ننتقل
-    في كل مرة. نتذكّره فنتخطّاه — واختيارُ المشرف يبقى الأول ما لم يكن مبرَّدًا.
-  */
-  const hasKey = p => !!(p === 'gemini'
-    ? process.env.GEMINI_API_KEY : process.env.ANTHROPIC_API_KEY);
-  const fallback = provider === 'gemini' ? 'anthropic' : 'gemini';
-  const order  = preferOrder(provider, fallback, hasKey);
-  const first  = order[0] || provider;
-  const second = order[1] || null;
-
   const run = async (prov) => {
     const model = modelFor(prov);
     const r = prov === 'gemini'
@@ -312,7 +295,7 @@ async function callAI(system, user, opts){
     return { items: r.items, usage: r.usage, model: r.model || model, provider: prov };
   };
 
-  try { return await run(first); }
+  try { return await run(provider); }
   catch(e){
     /*
       ★ هنا يُصرف ثمنُ المحوّل.
@@ -320,23 +303,18 @@ async function callAI(system, user, opts){
       ثم كان الخنقُ يقع فعلًا فنكتفي بإبلاغ الطالب. فإن نفدت حصّة الأول أو
       ازدحم خادمه، وكان مفتاح الثاني موجودًا، جرّبناه — مرةً واحدة، فمزوّدان
       يتعثّران معًا عطلٌ حقيقي لا يُداوى بمحاولة ثالثة.
-
-      ★ ونتعلّم من العطل بدل أن نكرّره: المدّة مشتقّة من التصنيف نفسه الذي
-      يحسبه classify أعلاه — حصّة اليوم لا تُطرق قبل ساعة، وحصّة الدقيقة
-      تحترم retryDelay، والمفتاح المرفوض لا يُصلحه إلحاح.
     */
-    coolFromError(first, e);
+    const other = provider === 'gemini' ? 'anthropic' : 'gemini';
+    const otherKey = other === 'gemini' ? process.env.GEMINI_API_KEY : process.env.ANTHROPIC_API_KEY;
     const worthSwitching = e && (e.kind === 'quota_day' || e.kind === 'quota_minute' ||
                                  e.kind === 'overloaded' || e.kind === 'auth');
-    if (second && hasKey(second) && worthSwitching) {
-      try { return await run(second); }
-      catch(e2){ coolFromError(second, e2); throw e; }  // نُبلغ بعطل الأول
+    if (otherKey && worthSwitching) {
+      try { return await run(other); }
+      catch(e2){ throw e; }   // نُبلغ بعطل الأول: هو المزوّد الذي اختاره المشرف
     }
     throw e;
   }
 }
 
 module.exports = { callAI, withMedia, pickProvider, modelFor, parseArray, parseObject,
-                   suggestedModel, DEFAULT_MODEL, classify, retryAfter, aiError, HUMAN,
-                   /* ★ للدفعات: سقف تزامن وسقف دقيقة، وحالة التبريد للوحة المشرف */
-                   runBatch, coolingInfo };
+                   suggestedModel, DEFAULT_MODEL, classify, retryAfter, aiError, HUMAN };

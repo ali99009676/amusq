@@ -70,7 +70,9 @@ const Admin = {
   /* ===== معالج الرفع — أربع خطوات، حالته قابلة للفحص بمعزل عن الواجهة ===== */
   // ٤٠ لا ٢٥: تعليمات النظام تُرسل مرة لكل دفعة، فالدفعة الأكبر توزّع كلفتها
   // على أسئلة أكثر. والسقف يبقى دون مهلة الخادم ويسمح باستئناف الرفع.
-  BATCH: 40,
+  /* ★ ١٢ لا ٤٠: دفعة الأربعين تُخرج ~٤٠ ألف حرف فتتجاوز دقيقة Vercel وتُقطع
+     كلها. اثنتا عشرة تنجو في نصف دقيقة، وتُعالَج اثنتان معًا فلا يطول الزمن. */
+  BATCH: 12,
   chunk(arr, n){
     const out = [];
     for (let i = 0; i < arr.length; i += n) out.push(arr.slice(i, i + n));
@@ -81,7 +83,9 @@ const Admin = {
     /* ★ enrich=true افتراضًا: المادة الكاملة هي ما يريده الطالب فعلًا —
        رفع ليذاكر لا ليخزّن نصًّا. ومن أراد المجاني يختاره بضغطة واحدة،
        والافتراض يجب أن يكون أفضل مخرَج لا أرخصه. */
-    const w = { step:1, filename:'', subjectName:'', slug:'', mode:'strict', enrich:true,
+    /* ★ enrich:false افتراضًا (بطلب علي): الأسئلة والأجوبة كما رُفعت — فورًا وبلا حشو.
+       الإثراء بالذكاء (شرح، ترجمة، بطاقات) اختيارٌ صريح يأخذ وقته حين يُطلب. */
+    const w = { step:1, filename:'', subjectName:'', slug:'', mode:'strict', enrich:false,
                 country:'', university:'', college:'', courseCode:'',
                 raw:[], enriched:[], draftId:null, done:0, total:0, error:'' };
     /*
@@ -137,11 +141,80 @@ const Admin = {
     return w;
   },
 
-  async wizardIngest(w, filename, base64, forceAi){
-    const r = await Admin.server('/api/ingest', { filename, content_base64: base64,
-      subject_name: w.subjectName || '', sanctity_mode: w.mode || 'strict',
-      force_ai: forceAi === true });
+  /*
+    ★ الملف فوق ٣٫٥ ميغابايت يُرفع إلى مخزن Supabase مباشرة (bucket: uploads)
+    ثم يُرسل مساره — لا جسمه. Vercel يرفض الجسم فوق ٤٫٥ ميغابايت بلا رسالة
+    مفهومة، وكان PDF الدكتور يسقط عندها بصمت. المسار يبدأ بمعرّف الطالب
+    فلا يقرأ الخادم إلا ملفاته. يحتاج db/UPLOADS.sql مرة واحدة.
+  */
+  BIG_FILE: 3.5 * 1024 * 1024,
+  async storageUpload(file){
+    const c = QBANK.config.get(), s = QBANK.api.session(), f = QBANK.api.fetchFn();
+    const u = QBANK.api.user();
+    if (!c || !s || !u || !f) return { ok:false, error:'لا جلسة' };
+    const safe = String(file.name || 'file').replace(/[^\w.\-\u0600-\u06FF]+/g, '_').slice(-80);
+    const path = u.id + '/' + Date.now() + '-' + safe;
+    try {
+      const res = await f(c.url + '/storage/v1/object/uploads/' + path.split('/').map(encodeURIComponent).join('/'), {
+        method:'POST',
+        headers:{ 'Authorization':'Bearer ' + s.access_token, 'apikey': c.anonKey,
+                  'Content-Type': file.type || 'application/octet-stream', 'x-upsert':'true' },
+        body: file
+      });
+      if (!res.ok){
+        const t = await res.text().catch(() => '');
+        return { ok:false, error: res.status === 404 || /Bucket not found/i.test(t)
+          ? 'مخزن الملفات الكبيرة غير مهيّأ بعد (نفّذ db/UPLOADS.sql) — أو ارفع ملفًا أصغر من ٣٫٥ ميغابايت.'
+          : 'تعذّر رفع الملف إلى المخزن (' + res.status + ')' };
+      }
+      return { ok:true, path };
+    } catch(e){ return { ok:false, error:'تعذّر الاتصال بالمخزن' }; }
+  },
+
+  /*
+    ★ قراءة الأجزاء متوازيةً من المتصفح.
+    الخادم يعيد الأجزاء حين يحتاج الملفُ الذكاءَ؛ ثلاثة نداءات معًا، كلٌّ
+    قصير. onPart يُعلم الشاشة كي يرى الطالب «قُرئ ٤ من ١٢» لا سطرًا جامدًا.
+    التكرار الناتج عن تراكب الأجزاء يُطوى بالنص المطبَّع.
+  */
+  async readParts(parts, onPart){
+    const results = new Array(parts.length);
+    let next = 0, done = 0, lastErr = null;
+    const worker = async () => {
+      while (next < parts.length){
+        const i = next++;
+        const r = await Admin.server('/api/ingest', { text_part: parts[i] });
+        if (r.ok && r.data && Array.isArray(r.data.questions)) results[i] = r.data.questions;
+        else { results[i] = []; lastErr = (r.data && r.data.error) || 'تعذّر جزء'; }
+        done++; if (onPart) onPart(done, parts.length);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(3, parts.length) }, worker));
+    const seen = Object.create(null), out = [];
+    const norm = t => String(t || '').replace(/[\u064B-\u0652\u0640]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+    results.forEach(list => (list || []).forEach(q => {
+      const k = norm(q.q); if (!k || seen[k]) return; seen[k] = 1; q.num = out.length + 1; out.push(q);
+    }));
+    return { questions: out, error: out.length ? null : lastErr };
+  },
+
+  async wizardIngest(w, filename, base64, forceAi, opts){
+    const o = opts || {};
+    const body = { filename, subject_name: w.subjectName || '', sanctity_mode: w.mode || 'strict', force_ai: forceAi === true };
+    if (o.storagePath) body.storage_path = o.storagePath; else body.content_base64 = base64;
+    const r = await Admin.server('/api/ingest', body);
     if (!r.ok) { w.error = (r.data && r.data.error) || 'تعذّر الاتصال بالخادم'; return w; }
+
+    /* الملف الكبير الذي يحتاج الذكاء: الخادم قسّمه — نقرأ الأجزاء هنا متوازيةً */
+    if (r.data && r.data.need_ai && Array.isArray(r.data.parts)){
+      const rp = await Admin.readParts(r.data.parts, o.onPart);
+      const rules = Array.isArray(r.data.rules_questions) ? r.data.rules_questions : [];
+      const best = rp.questions.length > rules.length ? rp.questions : rules;
+      r.data.questions = best; r.data.total = best.length;
+      r.data.read_by = best === rules ? 'rules' : 'ai';
+      r.data.unverified = best.filter(q => q.unverified).length;
+      if (!best.length && rp.error) { w.error = rp.error; w.raw = []; w.total = 0; return w; }
+    }
 
     /*
       ★ الحارس الذي كان ناقصًا.
@@ -224,25 +297,21 @@ const Admin = {
     }
 
     const batches = Admin.chunk(w.raw, Admin.BATCH);
-    for (let i = 0; i < batches.length; i++) {
-      // لا إعادة معالجة لما اكتمل — الاستئناف يبدأ من حيث توقّف
-      if (w.done >= (i + 1) * Admin.BATCH) continue;
-      /* ★ نُعلن بدء الدفعة لا نهايتها وحدها: بين النهايتين دقائق يظنّها
-         الطالب تعليقًا، فيُغلق الصفحة على عملٍ يجري فعلًا. */
-      if (onProgress) onProgress(w.done, w.total, { batch: i + 1,
-                                                    batches: batches.length, running: true });
+    /*
+      ★ دفعتان معًا لا واحدةٌ بعد واحدة.
+      كل دفعة مستقلة: تحسم رصيدها، تنادي الخادم، وتكتب في موضعها هي
+      (لا بالإلحاق — الإلحاق ضاعف الأسئلة يومًا عند الاستئناف). فلا شيء
+      يمنع تشغيل اثنتين متوازيتين سوى العادة. الخطأ في إحداهما يوقف
+      جدولة ما بعدها ويُترك ما بدأ يكمل.
+    */
+    let nextI = 0, stop = false;
+    w.error = ''; w.errorKind = '';   // خطأ جولةٍ سابقة لا يُبقي الاستئناف عالقًا
+    const runBatch = async (i) => {
+      if (w.done >= (i + 1) * Admin.BATCH && w.enriched[i * Admin.BATCH]) return;   // مكتملة من استئناف سابق
+      if (onProgress) onProgress(w.done, w.total, { batch: i + 1, batches: batches.length, running: true });
 
-      /*
-        الحسم قبل النداء لا بعده. لو حسمنا بعده لكان كل انقطاع إثراءً مجانيًا،
-        ولو تعطّل الخادم بعد الحسم رددنا الرصيد في السطر التالي.
-      */
       const cpq = (typeof w.costPerQ === 'number' && w.costPerQ >= 0) ? w.costPerQ : 1;
       const need = batches[i].length * cpq;
-      /*
-        ★ حين يكون الإثراء مجانيًا لا نمرّ بالمحفظة أصلًا.
-        نداءُ حسمٍ بصفرٍ نجاحُه محقّق، لكنه رحلةُ شبكةٍ لكل دفعة، وأسوأ منها
-        أنه يجعل عطلًا في المحفظة يوقف إثراءً لا علاقة له بها.
-      */
       const pay = need > 0
         ? await QBANK.api.rpc('spend_credits',
             { n: need, p_reason: 'إثراء ' + batches[i].length + ' سؤالًا', p_draft: w.draftId })
@@ -253,36 +322,28 @@ const Admin = {
           ? 'رصيدك ' + (d.balance || 0) + ' كوين ولا يكفي — يلزم ' + need
           : (d.reason === 'closed' ? 'الإثراء موقوف مؤقتًا' : 'تعذّر حسم الرصيد');
         w.needCoins = d.reason === 'insufficient' ? need - (d.balance || 0) : 0;
-        return w;
+        stop = true; return;
       }
 
       const r = await Admin.server('/api/ai', { questions: batches[i], sanctity_mode: w.mode || 'strict' });
       if (!r.ok) {
-        // الطالب لا يدفع ثمن عطل عندنا — ومن لم يدفع شيئًا لا يُردّ له شيء
         if (need > 0)
           await QBANK.api.rpc('refund_credits', { n: need, p_reason: 'تعذّرت الدفعة', p_draft: w.draftId });
         w.error = (r.data && r.data.error) || 'انقطعت الدفعة ' + (i + 1) + ' — رُدّ رصيدها';
-        /* نوع العطل يرافق نصّه: على أساسه تقرّر الشاشة أتعرض «أعد المحاولة»
-           وحدها أم تفتح للطالب باب النشر بلا إثراء. */
         w.errorKind = (r.data && r.data.kind) || 'other';
-        return w;
+        stop = true; return;
       }
-      /*
-        ★ الكتابة بموضعها لا بالإلحاق.
-        كان `concat` يُلحق نتيجة كل دفعة بآخر ما عنده، فإن أُعيد التشغيل
-        بعد انقطاع (أو أعاد الرافع القراءة) تضاعفت الأسئلة: ملفٌ من ٦٥
-        سؤالًا خرج بـ٢٥٩ — نُسخًا مكرّرة يظنّها الطالب مادته. والموضع
-        يجعل إعادة التشغيل تكتب فوق نفسها لا بجانبها.
-      */
       const at = i * Admin.BATCH;
       const got = r.data.questions || [];
       for (let k = 0; k < got.length; k++) w.enriched[at + k] = got[k];
       w.done = Math.min(w.enriched.filter(Boolean).length, w.total);
       if (r.data.usage) w.usage = r.data.usage;
       await Admin.saveDraft(w);
-      if (onProgress) onProgress(w.done, w.total, { batch: i + 1,
-                                                    batches: batches.length, running: false });
-    }
+      if (onProgress) onProgress(w.done, w.total, { batch: i + 1, batches: batches.length, running: false });
+    };
+    const worker = async () => { while (!stop && nextI < batches.length) await runBatch(nextI++); };
+    await Promise.all([worker(), worker()]);
+    if (stop) return w;
     if (w.done >= w.total) { w.step = 3; w.error = ''; }
     return w;
   },

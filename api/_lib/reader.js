@@ -135,23 +135,30 @@ async function aiRead(text, callAI, opts){
   const out = [];
   let lastErr = null;
 
-  for (let i = 0; i < parts.length; i++) {
-    let r;
-    try {
-      r = await callAI(SYS, parts[i], { maxTokens: 32768, timeoutMs: 240000 });
-    } catch (e) {
-      /*
-        دفعةٌ تسقط لا تُسقط الملف كله. ملفٌ من عشرين دفعة تعطّلت واحدة منه
-        يعطي الطالب تسعة أعشار مادته — وهذا أنفع له بكثير من صفحة خطأ.
+  /*
+    ★ الدفعات متوازيةً لا واحدةً بعد واحدة.
+    كانت الدفعة تنتظر سابقتها، فملفٌ من عشرين دفعة يقرأ في ثلث ساعة — وخادم
+    Vercel يقطع النداء عند الدقيقة. ثلاث دفعات معًا، وكلٌّ بمهلةٍ قصيرة
+    وسقف خرجٍ يكفيها (٦٠٠٠ حرف ≈ ١٥ سؤالًا ≈ ٥ آلاف رمز): دفعةٌ تتأخر لا
+    تُعطّل الباقي، والملف كله يُقرأ في زمن أطول دفعة لا مجموعها.
 
-        ★ لكنّا نحتفظ بالعطل. كان يُبتلع كليًّا، فإذا سقطت كل الدفعات عاد
-        القارئ بصفر أسئلة صامتًا، فيُقال للطالب «لم نتعرّف على سؤال واحد
-        في ملفك» — وملفُه سليم، والعطل عندنا: نفدت حصّة الذكاء. اتهامُ
-        البريء أسوأ من الاعتراف بالعجز.
-      */
-      lastErr = e;
-      continue;
+    دفعةٌ تسقط لا تُسقط الملف كله؛ ونحتفظ بالعطل كي يُقال للطالب إنه
+    عندنا (نفدت الحصّة) لا في ملفه.
+  */
+  const CONC = o.concurrency || 3;
+  const results = new Array(parts.length);
+  let next = 0;
+  async function worker(){
+    while (next < parts.length){
+      const i = next++;
+      try {
+        results[i] = await callAI(SYS, parts[i], { maxTokens: o.maxTokens || 8192, timeoutMs: o.timeoutMs || 50000 });
+      } catch (e) { lastErr = e; results[i] = null; }
     }
+  }
+  await Promise.all(Array.from({ length: Math.min(CONC, parts.length) }, worker));
+
+  results.forEach(r => {
     const items = Array.isArray(r && r.items) ? r.items : [];
     items.forEach(it => {
       const s = shape(it, normalizedSource, out.length);
@@ -161,11 +168,29 @@ async function aiRead(text, callAI, opts){
       seen[k] = 1;
       out.push(s);
     });
-  }
+  });
 
   // إعادة الترقيم بعد إزالة المكرر كي يوافق الرقمُ الترتيبَ الحقيقي
   out.forEach((q, i) => { q.num = i + 1; });
   return { questions: out, chunks: parts.length, error: out.length ? null : lastErr };
+}
+
+/*
+  ★ قراءة جزءٍ واحد — للمسار المتوازي من المتصفح.
+  الملف الكبير لا يُقرأ في نداءٍ واحد: الخادم يقسّمه ويعيد الأجزاء، والمتصفح
+  ينادي هذه الدالة لكل جزءٍ على حدة (ثلاثة معًا)، فكل نداءٍ قصيرٌ يسلم من
+  مهلة Vercel، والتوازي يقصّر الانتظار. المطابقة الحرفية تُفحص على الجزء
+  نفسه — هو مصدر النص.
+*/
+async function aiReadPart(part, callAI){
+  const src = String(part || '');
+  if (!src.trim()) return { questions: [] };
+  const normalizedSource = norm(src);
+  const r = await callAI(SYS, src, { maxTokens: 8192, timeoutMs: 50000 });
+  const items = Array.isArray(r && r.items) ? r.items : [];
+  const out = [];
+  items.forEach(it => { const s = shape(it, normalizedSource, out.length); if (s) out.push(s); });
+  return { questions: out, usage: r && r.usage };
 }
 
 /*
@@ -213,7 +238,7 @@ async function aiReadMedia(media, callAI){
     try {
       r = await callAI(MEDIA_SYS,
         'استخرج كل الأسئلة من هذه ' + (batches[i].length > 1 ? 'الصور' : 'الصورة') + '.',
-        { maxTokens: 32768, timeoutMs: 240000, media: batches[i] });
+        { maxTokens: 8192, timeoutMs: 50000, media: batches[i] });   /* ضمن مهلة Vercel */
     } catch (e) { lastErr = e; continue; }
     const items = Array.isArray(r && r.items) ? r.items : [];
     items.forEach(it => {
@@ -231,4 +256,4 @@ async function aiReadMedia(media, callAI){
   return { questions: out, chunks: batches.length, error: out.length ? null : lastErr };
 }
 
-module.exports = { aiRead, aiReadMedia, chunkText, shape, norm, verbatimIn, SYS, MEDIA_SYS, CHUNK };
+module.exports = { aiRead, aiReadPart, aiReadMedia, chunkText, shape, norm, verbatimIn, SYS, MEDIA_SYS, CHUNK };

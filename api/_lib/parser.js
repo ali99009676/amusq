@@ -32,6 +32,13 @@ const ANS_LINE =
 
 /* علامة «هذا هو الصحيح» بجانب الخيار — نجمة أو صحّ، شائعة في ملفات Word */
 const STAR = /\s*[*★✓✔√]\s*$/;
+/*
+  ★ سطر الشرح ليس من الخيار الأخير.
+  «Explanation: …» بعد الخيارات كان يُلحق بالخيار D لأن كل سطرٍ بعد
+  الخيارات «تابعٌ لخيارٍ امتد سطرين». فيقرأ الطالب خيارًا فيه إجابته
+  وشرحها. الآن يُعرف الشرح بعنوانه ويُحفظ في حقله.
+*/
+const EXPL_LINE = /^\s*(?:EXPLANATION|EXPLAIN|RATIONALE|WHY|NOTE|الشرح|التعليل|التفسير|السبب|ملاحظة)\s*[:\-.]\s*/i;
 
 /*
   ترتيب الحرف: لاتينيًّا A=0، وعربيًّا أ=0 ب=1 ج=2 د=3 هـ=4.
@@ -73,11 +80,16 @@ function parseBlock(block){
   let answerLetter = null;
   let starred = -1;       // موضع الخيار المعلَّم بنجمة
   let answerText = null;  // للشكل «سؤال ثم إجابة»
-  let mode = 'q';         // q ← نقرأ السؤال، ثم opts أو answer
+  let mode = 'q';         // q ← نقرأ السؤال، ثم opts أو answer أو expl
+  const explLines = [];   // الشرح إن جاء بعنوانه
 
   block.lines.forEach(line => {
     const ansM = line.match(ANS_LINE);
-    if (ansM) { answerLetter = ansM[1]; return; }
+    if (ansM) { answerLetter = ansM[1]; mode = 'ans'; return; }
+    if (EXPL_LINE.test(line)) { mode = 'expl'; explLines.push(line.replace(EXPL_LINE, '').replace(/\s+$/,'')); return; }
+    if (mode === 'expl') { if (line.trim()) explLines.push(line.replace(/\s+$/,'')); return; }
+    /* بعد سطر الإجابة لا خيارات جديدة — ما يليه شرحٌ بلا عنوان أو ضجيج، لا ذيلٌ للخيار الأخير */
+    if (mode === 'ans' && !line.match(OPT_START)) { if (line.trim()) explLines.push(line.replace(/\s+$/,'')); return; }
     const optM = line.match(OPT_START);
     if (optM) {
       mode = 'opts';
@@ -103,13 +115,15 @@ function parseBlock(block){
     // الشكل أ: سؤال بخيارات — الترتيب كما وصل، حرف الإجابة يُحوَّل لموضع رقمي
     const byLetter = answerLetter !== null ? letterIndex(answerLetter) : -1;
     const answer = byLetter >= 0 ? byLetter : (starred >= 0 ? starred : null);
-    return {
+    const out = {
       q: qText,
       options: options.map(o => o.text),
       answer: answer,
       answer_letter: answerLetter,
       has_options: true
     };
+    if (explLines.length) out.explanation = explLines.join('\n').trim();
+    return out;
   }
 
   // الشكل ب: سؤال ثم إجابته — آخر جزء غير فارغ بعد السؤال هو الإجابة.
@@ -139,4 +153,4 @@ function parse(text){
 }
 
 module.exports = { parse, splitBlocks, parseBlock, letterIndex, toLatinDigits,
-                   Q_START, OPT_START, ANS_LINE, STAR };
+                   Q_START, OPT_START, ANS_LINE, STAR, EXPL_LINE };

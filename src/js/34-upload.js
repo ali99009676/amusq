@@ -354,7 +354,18 @@ function stepRead(box, rerender){
     const kb = Math.round(file.size / 1024);
     phase('يُقرأ «' + file.name + '» من جهازك', kb + ' ك.ب', 0);
 
-    const b64 = await new Promise(resolve => {
+    /*
+      ★ الملف الكبير لا يمرّ بجسم الطلب: يُرفع إلى المخزن ويُرسل مساره.
+      حدّ Vercel ٤٫٥ ميغابايت كان يُسقط ملفات الدكاترة بصمت.
+    */
+    let storagePath = null;
+    if (file.size > QBANK.admin.BIG_FILE){
+      phase('يُرفع «' + file.name + '» إلى المخزن', kb + ' ك.ب — الملفات الكبيرة تُرفع مباشرةً لا عبر الخادم.', 5);
+      const up = await QBANK.admin.storageUpload(file);
+      if (!up.ok){ rdCard.hidden = true; msg.textContent = '⚠ ' + up.error; return; }
+      storagePath = up.path;
+    }
+    const b64 = storagePath ? 'stored' : await new Promise(resolve => {
       const rd = new FileReader();
       // تقدّمٌ حقيقي لا مُتخيَّل: المتصفح يقوله لنا فنقوله للطالب
       rd.onprogress = e => {
@@ -377,8 +388,14 @@ function stepRead(box, rerender){
     }, 1000);
     phase('يُرفع ملفك', 'ثم يُستخرج نصّه ويُقسَّم أسئلة.');
 
-    wizard = await QBANK.admin.wizardIngest(wizard, file.name, b64);
-    clearInterval(tick);
+    wizard = await QBANK.admin.wizardIngest(wizard, file.name, storagePath ? null : b64, false, {
+      storagePath,
+      /* الأجزاء: الطالب يرى «قُرئ ٤ من ١٢» — عدّادٌ يتقدّم يفرّق بين بطيء ومعطّل */
+      onPart: (done, total) => { clearInterval(tick); tick = null;
+        phase('يقرأ الذكاءُ ملفك على أجزاء', 'قُرئ ' + QBANK.views.arNum(done) + ' من ' + QBANK.views.arNum(total) +
+          ' أجزاء — ثلاثة معًا، وكل جزء بضع ثوانٍ.', Math.round(done / total * 100)); }
+    });
+    if (tick) clearInterval(tick);
     rdCard.hidden = true;
     rdBar.classList.remove('meter--busy');
     if (wizard.error) { msg.textContent = '⚠ ' + wizard.error; return; }
@@ -588,22 +605,21 @@ function stepEnrich(box, rerender){
     paths.innerHTML = '';
     [
       /*
-        ★ المسار الكامل أولًا وهو المختار افتراضًا.
-        الطالب لا يرفع ليحصل على نصٍّ خام — يرفع ليذاكر. والترتيب القديم
-        كان يضع «بلا إثراء» أولًا ومختارًا، فيمرّ عليه الطالب بضغطة فيخرج
-        ببنك فقير ثم يظنّ المنصة فقيرة. الافتراض يجب أن يكون أفضل مخرَج.
+        ★ «الأسئلة كما هي» أولًا وهي الافتراض (بطلب علي: لا حشو، والنص كما
+        رُفع). تنشر في ثوانٍ. والإثراء اختيارٌ صريح ثانٍ يأخذ وقته — يُقال
+        زمنه بالأرقام كي يختاره من يريده على بيّنة.
       */
-      /* ★ الثمن يُقال بلسانه: «مجانًا» لا «٠ كوين». صفرٌ مكتوبٌ بجانب كلمة
-         كوين يقرؤه الطالب سعرًا لم يُحسب بعد، فيتردّد أمام ما هو مبذول له. */
-      { id:true, t:'المادة الكاملة — كطريقة AMSU',
+      { id:false, t:'الأسئلة والأجوبة كما هي — الآن', price:'مجانًا',
+        d:'نصّ أسئلتك وخياراتك وإجاباتك حرفًا بحرف كما في ملفك، جاهزة للاختبار خلال ثوانٍ.',
+        miss: 'بلا شرح ولا ترجمة — يمكن إضافتهما لاحقًا من محرّر المادة'
+              + (noAnswer ? '. و' + N(noAnswer) + ' سؤالًا بلا إجابة معلنة تضبطها بيدك' : '') },
+      /* ★ الثمن يُقال بلسانه: «مجانًا» لا «٠ كوين». */
+      { id:true, t:'مع شرح بالذكاء (اختياري)',
         price: cost > 0 ? N(cost) + ' كوين' : 'مجانًا',
-        d:'شرح عربي وإنجليزي لكل سؤال، وترجمته، وبطاقة حفظ منحوتة، وتصنيف بالمحاور، ثم «عن المادة» و«طريقة الحفظ» و«الأخطاء الشائعة».',
+        d:'شرح لكل سؤال وترجمته وبطاقة حفظ وتصنيف بالمحاور — النص الأصلي لا يُمسّ. يستغرق نحو '
+          + N(Math.max(1, Math.ceil(wizard.raw.length / 24))) + ' دقيقة لـ' + N(wizard.raw.length) + ' سؤالًا.',
         miss: noAnswer ? 'ويستنتج الذكاء إجابات ' + N(noAnswer) + ' سؤالًا لم تُعلَن في ملفك'
-                       : 'وكل أسئلتك فيها إجاباتها أصلًا — فلن يُغيّر الذكاء إجابة واحدة' },
-      { id:false, t:'الأسئلة وحدها', price:'مجانًا',
-        d:'أسئلتك وخياراتها كما وصلت، جاهزة للاختبار حالًا.',
-        miss: 'بلا شرح ولا ترجمة ولا بطاقات حفظ — ويمكنك إثراؤها لاحقًا'
-              + (noAnswer ? '. و' + N(noAnswer) + ' سؤالًا بلا إجابة معلنة ستضبطها بيدك' : '') }
+                       : 'وكل أسئلتك فيها إجاباتها أصلًا — فلن يُغيّر الذكاء إجابة واحدة' }
     ].forEach(o => {
       const on = wizard.enrich === o.id;
       const blocked = o.id && known && !enough;   // لا نحجب بناءً على جهلٍ بالرصيد
@@ -643,7 +659,7 @@ function stepEnrich(box, rerender){
         creditBox.appendChild(el('a', { class:'btn btn--sm', href:'#/account', text:'اشحن رصيدك' }));
     }
     go.textContent = wizard.done ? 'أكمل من حيث توقفت (' + wizard.done + ')'
-                    : (wizard.enrich ? 'ولّد المادة وانشر' : 'انشر بلا إثراء');
+                    : (wizard.enrich ? 'أثرِ بالذكاء ثم راجع' : 'تابع للمراجعة والنشر');
     go.setAttribute('aria-disabled', (wizard.enrich && !enough) ? 'true' : 'false');
   }
 
