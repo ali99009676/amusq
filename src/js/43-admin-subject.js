@@ -651,7 +651,11 @@ const AdminSubjectView = {
     load();
 
     const back = el('a', { class:'btn btn--sm btn--ghost', href:'#/admin/content', text:'→ كل المواد' });
-    return QBANK.views.page('محرر المادة', 'الهوية والمحاور والأسئلة في مكان واحد.', [back, body]);
+    /* من المحرّر إلى المعاينة بضغطة: يصلح ثم يرى ما أصلحه كما يراه الطالب */
+    const prev = el('a', { class:'btn btn--sm btn--soft', href:'#/admin/preview/' + id, 'aria-label':'عاين المادة كما يراها الطالب' },
+      [ QBANK.ico('eye', { size:14 }), ' عاين كما يراها الطالب' ]);
+    return QBANK.views.page('محرر المادة', 'الهوية والمحاور والأسئلة في مكان واحد.', [
+      el('div', { class:'row' }, [back, prev]), body ]);
   }
 };
 

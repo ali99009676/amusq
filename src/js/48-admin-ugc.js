@@ -54,6 +54,9 @@ function ugcRow(u, refresh){
     ]),
     el('div', { class:'ad-bar', style:'margin:0' }, [
       priceIn, savePrice,
+      /* ★ «معاينة» قبل «حرّر»: المشرف يرى المادة كما يراها الطالب من داخل اللوحة، ثم يقرّر */
+      el('a', { class:'btn btn--sm btn--soft', href:'#/admin/preview/' + u.id, 'aria-label':'عاين ' + u.name },
+        [ QBANK.ico('eye', { size:14 }), ' معاينة' ]),
       el('a', { class:'btn btn--sm btn--soft', href:'#/admin/subject/' + u.id, text:'حرّر' }),
       el('span', { class:'spacer' }), susp, del
     ])

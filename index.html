@@ -2367,6 +2367,29 @@ html.gated{ overflow:hidden; }
 .audit__k{ font-size:.78rem; padding:.25em .6em; border-radius:var(--r-pill); background:var(--surface-2); border:1px solid var(--line-soft); color:var(--text-2); max-width:100%; overflow-wrap:anywhere; }
 .audit__k b{ color:var(--text-3); font-weight:700; }
 
+/* ═══ معاينة المادة من اللوحة ═══
+   شريطٌ واحد فوق صفحة الطالب يقول «هذه معاينة» ويحمل باب التحرير — لاصقٌ
+   كي يبقى الباب في متناول المشرف وهو يقرأ بنكًا من مئات الأسئلة. */
+.ad-preview-bar{
+  position:sticky; top:var(--s2); z-index:5;
+  display:flex; align-items:center; justify-content:space-between; gap:var(--s3); flex-wrap:wrap;
+  padding:var(--s3) var(--s4); margin-bottom:var(--s3);
+  border-inline-start:4px solid var(--gold);
+  background:color-mix(in srgb, var(--surface) 92%, var(--gold));
+  box-shadow:var(--sh2);
+}
+.ad-preview-bar__x{ display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; min-width:0; }
+.ad-preview-bar__eye{ display:inline-grid; place-items:center; width:30px; height:30px; border-radius:9px;
+  background:var(--gold); color:var(--btn-fg); }
+.ad-preview-bar__t{ font-weight:800; font-family:var(--font-display); }
+.ad-preview-bar__acts{ display:flex; gap:var(--s2); flex-wrap:wrap; }
+/* رأس المادة داخل اللوحة: لا يمتدّ وراء عرض اللوحة */
+.is-admin .ad-preview .sub-hero{ border-radius:var(--r3); overflow:hidden; }
+@media (max-width:600px){
+  .ad-preview-bar{ position:static; }
+  .ad-preview-bar__acts .btn{ flex:1 1 auto; }
+}
+
 
 /* ===== 70-polish.css ===== */
 /*
@@ -6176,6 +6199,8 @@ function adminContentTab(box){
                       : el('span', { class:'badge', text:'مخفية' }),
         /* الرافع يعدّل بعد النشر؟ — يُرى هنا كي لا يُفتح المفتاح ويُنسى */
         (sub.published && sub.owner_edit) ? el('span', { class:'badge badge--warn', text:'الرافع يعدّل' }) : null,
+        el('a', { class:'btn btn--sm btn--ghost', href:'#/admin/preview/' + sub.id, 'aria-label':'عاين ' + sub.name },
+          [ QBANK.ico('eye', { size:14 }), ' معاينة' ]),
         el('a', { class:'btn btn--sm btn--soft', href:'#/admin/subject/' + sub.id, text:'حرّر' }),
         pubBtn,
         el('span', { class:'ad-sub', style:'flex:1 0 100%' }, [
@@ -7723,13 +7748,29 @@ const ViewSubject = {
       نسأل مرة، ثم نحكم.
     */
     if (!sub) return refetchThenSubject(sid);
+    return renderSubject(sub, route, {});
+  }
+};
 
-    QBANK.gate.captureRef(route.query);          // ?ref= يُحفظ قبل أي شيء آخر
-    QBANK.trial.stop();                          // مغادرة مادة توقف عدّادها
+/*
+  ★ صفحة المادة دالةٌ تأخذ المادة لا معرّفها.
+  كانت الشاشة تبحث عن المادة في قائمة المنشور وحدها، فلا سبيل للمشرف أن
+  يرى مادةً مخفية «كما يراها الطالب» قبل نشرها. الآن الصفحة نفسها — الرأس
+  والتبويبات والبنك والشرح — تُرسم لأي مادةٍ تُعطاها، ومعاينةُ اللوحة
+  (opts.preview) تمرّ بلا بوّابة ولا تجربة، وتُجلب أسئلتها من الخادم لا من
+  ذاكرة الجهاز كي يرى المشرف آخر تعديلٍ حفظه قبل ثانية.
+*/
+function renderSubject(sub, route, opts){
+  const o = opts || {};
+  const sid = sub.id;
+  const base = o.base || ('#/subject/' + sid);
+  {
+    if (!o.preview) QBANK.gate.captureRef(route.query);   // ?ref= يُحفظ قبل أي شيء آخر
+    QBANK.trial.stop();                                    // مغادرة مادة توقف عدّادها
 
     // بوابة المحتوى: مادة غير مملوكة تعرض بطاقة الشراء لا المحتوى.
     // نعرض بالتخمين المحلي فورًا (لا وميض)، ثم نصحّح بقرار القاعدة حين يصل.
-    const guess = QBANK.gate.localGuess(sub);
+    const guess = o.preview ? { allowed:true } : QBANK.gate.localGuess(sub);
     if (!guess.allowed) {
       const box = el('div', {}, [ QBANK.gate.paywallCard(sub) ]);
       return QBANK.views.page(sub.name, null, [box]);
@@ -7741,7 +7782,7 @@ const ViewSubject = {
         'aria-selected': String(t.id === active), text: t.label })));
     tabs.addEventListener('click', e => {
       const b = e.target.closest('[data-tab]');
-      if (b) QBANK.router.go('#/subject/' + sid + '/' + b.getAttribute('data-tab'));
+      if (b) QBANK.router.go(base + '/' + b.getAttribute('data-tab'));
     });
 
     const body = el('div', { class:'stack', id:'subjBody' },
@@ -7749,7 +7790,7 @@ const ViewSubject = {
 
     // شريط التجربة يُعلَّق فوق التبويبات متى قالت القاعدة إن الوصول بالتجربة
     const trialSlot = el('div', {});
-    QBANK.trial.access(sid).then(a => {
+    if (!o.preview) QBANK.trial.access(sid).then(a => {
       if (!trialSlot.isConnected || !a) return;   // null = تعذّر السؤال، لا رفض
       if (a.reason === 'trial'){
         trialSlot.appendChild(QBANK.trial.start(sid, Number(a.seconds_left), () => {
@@ -7777,7 +7818,15 @@ const ViewSubject = {
       }
     });
 
-    QBANK.data.subjectQuestions(sid).then(r => {
+    /* المعاينة تقرأ من الخادم دائمًا وتُحدّث نسخة الجهاز — المشرف عدّل قبل ثانية */
+    const fetchQs = o.preview
+      ? QBANK.api.rpc('subject_questions', { sid }).then(r => {
+          const list = (r.ok && Array.isArray(r.data)) ? r.data : [];
+          if (list.length) { try { QBANK.data.putQuestions(sid, list); } catch(e){ /* ذاكرة الجهاز اختيارية */ } }
+          return { ok: list.length > 0, data: list, offline: r.offline };
+        })
+      : QBANK.data.subjectQuestions(sid);
+    fetchQs.then(r => {
       if (!body.isConnected) return;
       body.innerHTML = '';
       if (!r.ok && !r.data.length) {
@@ -7818,7 +7867,7 @@ const ViewSubject = {
     const hero = el('section', { class:'sub-hero', style:'--acc:' + subjectColor(sub.color) }, [
       el('div', { class:'wrap' }, [
         el('div', { class:'herotop' }, [
-          el('a', { class:'backbtn', href:'#/', text:'‹ كل المواد' }),
+          el('a', { class:'backbtn', href: o.back || '#/', text:'‹ ' + (o.backLabel || 'كل المواد') }),
           el('div', { class:'topacts' }, [shareBtn, printBtn])
         ]),
         el('div', { class:'inner' }, [
@@ -7834,7 +7883,8 @@ const ViewSubject = {
               sub.free ? el('span', { class:'stat', text:'مجانية' }) : null
             ])
           ]),
-          el('a', { class:'hero-exam', href:'#/exam/' + sid }, [
+          /* المخفية لا اختبار لها بعد: شاشة الاختبار تقرأ من قائمة المنشور */
+          (o.preview && !sub.published) ? null : el('a', { class:'hero-exam', href:'#/exam/' + sid }, [
             el('span', {}, [
               document.createTextNode('اختبار تجريبي'),
               el('small', { text:'في هذه المادة' })
@@ -7854,8 +7904,9 @@ const ViewSubject = {
       tabs, body
     ]);
   }
-};
+}
 QBANK.views.ViewSubject = ViewSubject;
+QBANK.views.renderSubject = renderSubject;
 QBANK.views.bankTab = bankTab;
 
 
@@ -9945,7 +9996,11 @@ const AdminSubjectView = {
     load();
 
     const back = el('a', { class:'btn btn--sm btn--ghost', href:'#/admin/content', text:'→ كل المواد' });
-    return QBANK.views.page('محرر المادة', 'الهوية والمحاور والأسئلة في مكان واحد.', [back, body]);
+    /* من المحرّر إلى المعاينة بضغطة: يصلح ثم يرى ما أصلحه كما يراه الطالب */
+    const prev = el('a', { class:'btn btn--sm btn--soft', href:'#/admin/preview/' + id, 'aria-label':'عاين المادة كما يراها الطالب' },
+      [ QBANK.ico('eye', { size:14 }), ' عاين كما يراها الطالب' ]);
+    return QBANK.views.page('محرر المادة', 'الهوية والمحاور والأسئلة في مكان واحد.', [
+      el('div', { class:'row' }, [back, prev]), body ]);
   }
 };
 
@@ -10688,6 +10743,9 @@ function ugcRow(u, refresh){
     ]),
     el('div', { class:'ad-bar', style:'margin:0' }, [
       priceIn, savePrice,
+      /* ★ «معاينة» قبل «حرّر»: المشرف يرى المادة كما يراها الطالب من داخل اللوحة، ثم يقرّر */
+      el('a', { class:'btn btn--sm btn--soft', href:'#/admin/preview/' + u.id, 'aria-label':'عاين ' + u.name },
+        [ QBANK.ico('eye', { size:14 }), ' معاينة' ]),
       el('a', { class:'btn btn--sm btn--soft', href:'#/admin/subject/' + u.id, text:'حرّر' }),
       el('span', { class:'spacer' }), susp, del
     ])
@@ -16458,6 +16516,78 @@ QBANK.views.uploaderField = uploaderField;
 QBANK.views.resumeBanner  = resumeBanner;
 QBANK.views.myDraftsCard  = myDraftsCard;
 QBANK.views.ownerStatus   = ownerStatus;
+
+
+/* ===== 73-admin-preview.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  معاينة المادة من اللوحة — «هكذا يراها الطالب»
+  ═══════════════════════════════════════════════════════════════════
+  كان المشرف يفتح المادة من محرّرها: أسئلةٌ في صفوف وحقول — لا يعرف منها
+  كيف تبدو للطالب فعلًا: الرأس، التبويبات، الشرح، ترتيب البنك. ولرؤيتها
+  كان يغادر اللوحة إلى واجهة الطالب ثم يعود ويبحث عن المادة من جديد —
+  ولا سبيل أصلًا لرؤية مادةٍ مخفية قبل نشرها.
+
+  ★ الصفحة هي صفحة الطالب نفسها (renderSubject) لا نسخةً «تشبهها»: ما
+  يراه المشرف هنا هو ما سيصل الطالب حرفًا بحرف. وفوقها شريطٌ واحد يقول
+  إنها معاينة، ويحمل بابَي التحرير والعودة — فالمشرف يقرأ، يلمح خطأً،
+  يضغط «حرّر»، يصلح، ويعود يعاين. دورةٌ كاملة بلا مغادرة اللوحة.
+*/
+function previewBar(sub){
+  const N = QBANK.views.arNum;
+  const by = el('span', { class:'badge', hidden:true });
+  if (sub.created_by && QBANK.uploader)
+    QBANK.uploader.nameOf(sub.created_by).then(n => { if (n && alive()){ by.textContent = 'رفعها ' + n; by.hidden = false; } });
+
+  return el('div', { class:'card ad-preview-bar' }, [
+    el('div', { class:'ad-preview-bar__x' }, [
+      el('span', { class:'ad-preview-bar__eye', 'aria-hidden':'true' }, [ QBANK.ico('eye', { size:18 }) ]),
+      el('span', { class:'ad-preview-bar__t', text:'معاينة — هكذا يراها الطالب' }),
+      sub.published ? el('span', { class:'badge badge--ok', text:'منشورة' })
+                    : el('span', { class:'badge badge--warn', text:'مخفية — لا يراها الطالب بعد' }),
+      el('span', { class:'badge num', text: N(sub.q_count || 0) + ' سؤالًا' }),
+      by
+    ]),
+    el('div', { class:'ad-preview-bar__acts' }, [
+      el('a', { class:'btn btn--sm', href:'#/admin/subject/' + sub.id, text:'✎ حرّر المادة' }),
+      /* «افتح كطالب» للمنشورة وحدها: المخفية ليست في قائمة الطالب أصلًا */
+      sub.published ? el('a', { class:'btn btn--sm btn--ghost', href:'#/subject/' + sub.id, text:'افتح كطالب ↗' }) : null,
+      el('a', { class:'btn btn--sm btn--ghost', href:'#/admin/ugc', text:'→ مواد الطلاب' })
+    ])
+  ]);
+}
+
+const ViewAdminPreview = {
+  title:'معاينة المادة',
+  view(route){
+    if (!QBANK.api.user()) return QBANK.views.ViewAdminLogin.view();
+    const id = route.rest[0];
+    if (!id) return QBANK.views.ViewNotFound.view();
+
+    const wrap = el('div', { class:'stack ad-preview' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
+    /* من القاعدة مباشرةً لا من قائمة المنشور: المخفية تُعاين قبل نشرها */
+    QBANK.api.rest('subjects?id=eq.' + id + '&select=*').then(r => {
+      if (!wrap.isConnected) return;
+      const sub = (r.ok && r.data && r.data[0]) || null;
+      wrap.innerHTML = '';
+      if (!sub){
+        wrap.appendChild(QBANK.views.empty('⚠', 'لم نجد المادة', 'ربما حُذفت، أو حسابك ليس مشرفًا.',
+          el('a', { class:'btn', href:'#/admin/ugc', text:'→ مواد الطلاب' })));
+        return;
+      }
+      wrap.appendChild(previewBar(sub));
+      wrap.appendChild(QBANK.views.renderSubject(sub, route, {
+        preview: true, base:'#/admin/preview/' + id, back:'#/admin/ugc', backLabel:'مواد الطلاب'
+      }));
+    });
+    return wrap;
+  }
+};
+
+/* المسار يُسجَّل هنا: الملف مستقلّ ولا يلمس 40-app */
+QBANK.router.add('#/admin/preview', ViewAdminPreview);
+QBANK.views.ViewAdminPreview = ViewAdminPreview;
+QBANK.views.previewBar = previewBar;
 
 })();
 

@@ -519,3 +519,26 @@
 .audit__x{ display:flex; flex-wrap:wrap; gap:6px; }
 .audit__k{ font-size:.78rem; padding:.25em .6em; border-radius:var(--r-pill); background:var(--surface-2); border:1px solid var(--line-soft); color:var(--text-2); max-width:100%; overflow-wrap:anywhere; }
 .audit__k b{ color:var(--text-3); font-weight:700; }
+
+/* ═══ معاينة المادة من اللوحة ═══
+   شريطٌ واحد فوق صفحة الطالب يقول «هذه معاينة» ويحمل باب التحرير — لاصقٌ
+   كي يبقى الباب في متناول المشرف وهو يقرأ بنكًا من مئات الأسئلة. */
+.ad-preview-bar{
+  position:sticky; top:var(--s2); z-index:5;
+  display:flex; align-items:center; justify-content:space-between; gap:var(--s3); flex-wrap:wrap;
+  padding:var(--s3) var(--s4); margin-bottom:var(--s3);
+  border-inline-start:4px solid var(--gold);
+  background:color-mix(in srgb, var(--surface) 92%, var(--gold));
+  box-shadow:var(--sh2);
+}
+.ad-preview-bar__x{ display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; min-width:0; }
+.ad-preview-bar__eye{ display:inline-grid; place-items:center; width:30px; height:30px; border-radius:9px;
+  background:var(--gold); color:var(--btn-fg); }
+.ad-preview-bar__t{ font-weight:800; font-family:var(--font-display); }
+.ad-preview-bar__acts{ display:flex; gap:var(--s2); flex-wrap:wrap; }
+/* رأس المادة داخل اللوحة: لا يمتدّ وراء عرض اللوحة */
+.is-admin .ad-preview .sub-hero{ border-radius:var(--r3); overflow:hidden; }
+@media (max-width:600px){
+  .ad-preview-bar{ position:static; }
+  .ad-preview-bar__acts .btn{ flex:1 1 auto; }
+}

@@ -710,6 +710,8 @@ function adminContentTab(box){
                       : el('span', { class:'badge', text:'مخفية' }),
         /* الرافع يعدّل بعد النشر؟ — يُرى هنا كي لا يُفتح المفتاح ويُنسى */
         (sub.published && sub.owner_edit) ? el('span', { class:'badge badge--warn', text:'الرافع يعدّل' }) : null,
+        el('a', { class:'btn btn--sm btn--ghost', href:'#/admin/preview/' + sub.id, 'aria-label':'عاين ' + sub.name },
+          [ QBANK.ico('eye', { size:14 }), ' معاينة' ]),
         el('a', { class:'btn btn--sm btn--soft', href:'#/admin/subject/' + sub.id, text:'حرّر' }),
         pubBtn,
         el('span', { class:'ad-sub', style:'flex:1 0 100%' }, [

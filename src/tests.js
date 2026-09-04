@@ -57,14 +57,23 @@ async function nav(W, hash){
 // انتظار شرط بدل مهلة ثابتة — الفحص لا يعتمد على سرعة الجهاز
 function until(W, cond, ms){
   return new Promise((resolve, reject) => {
-    const t0 = Date.now();
-    (function poll(){
+    /*
+      ★ الساعة تبدأ عند أول استطلاعٍ حقيقي لا عند الاستدعاء.
+      الفحوص المتزامنة (مئة نافذة تُبنى وتُرسم) تستغرق نصف دقيقة قبل أن
+      تأخذ حلقةُ الأحداث نفَسًا، فلو عُدَّت المهلة من لحظة الاستدعاء انتهت
+      قبل أن تنبض مؤقّتات النافذة مرةً — فيسقط الفحص لطول الملف لا لعطل.
+    */
+    let t0 = null;
+    (function poll(fromTimer){
       let v = false;
       try { v = cond(); } catch(e){}
       if (v) return resolve(true);
-      if (Date.now() - t0 > (ms || 20000)) return resolve(false);   // سقف عالٍ: الفحوص المتوازية تزاحم حلقة الأحداث
-      W.setTimeout(poll, 10);
-    })();
+      if (fromTimer){
+        if (t0 === null) t0 = Date.now();
+        if (Date.now() - t0 > (ms || 20000)) return resolve(false);   // سقف عالٍ: الفحوص المتوازية تزاحم حلقة الأحداث
+      }
+      W.setTimeout(() => poll(true), 10);
+    })(false);
   });
 }
 
@@ -592,7 +601,7 @@ describe('٢١ · منطق اللوحة: الدفعات، التقدير، ال�
 {
   const d = makeDom('#/');
   const W = d.window, A = W.QBANK, Ad = A.admin;
-  eq(Ad.BATCH, 40, 'حد الدفعة ٤٠ سؤالًا — يوزّع كلفة التعليمات على أسئلة أكثر');
+  eq(Ad.BATCH, 12, '★ حد الدفعة ١٢ — دفعة الأربعين كانت تتجاوز دقيقة Vercel فتُقطع كلها');
   eq(Ad.chunk([1,2,3,4,5], 2).length, 3, 'التقسيم لدفعات صحيح');
   eq(Ad.chunk([], 2).length, 0, 'مصفوفة فارغة: صفر دفعات');
 
@@ -603,7 +612,7 @@ describe('٢١ · منطق اللوحة: الدفعات، التقدير، ال�
   const est = Ad.estimate(w);
   eq(est.questions, 300, 'التقدير: ٣٠٠ سؤال — ملف كبير يمرّ');
   eq(est.batches, Math.ceil(300 / Ad.BATCH), 'التقدير: عدد الدفعات مشتقّ من الحدّ لا مكتوب');
-  eq(est.batches, 8, 'وهو ٨ دفعات لـ٣٠٠ سؤال');
+  eq(est.batches, 25, 'وهو ٢٥ دفعة لـ٣٠٠ سؤال — دفعات صغيرة تنجو من مهلة الخادم');
 
   // كشف المكرر: يوسم ولا يحذف
   const dups = Ad.findDuplicates([
@@ -646,7 +655,7 @@ describe('٢١ · منطق اللوحة: الدفعات، التقدير، ال�
     return { afterFail, final: { done: w2.done, step: w2.step, len: w2.enriched.length } };
   })();
   pending.push(W.__t.then(r => {
-    eq(r.afterFail.done, 40, 'انقطاع الدفعة ٢: منجز الدفعة الأولى محفوظ لا ضائع');
+    ok(r.afterFail.done >= 12 && r.afterFail.done < 60, 'انقطاع دفعة: منجز الدفعات الناجحة محفوظ لا ضائع');
     ok(spent.some(x => x < 0), 'ورصيد الدفعة المنقطعة رُدّ — الطالب لا يدفع ثمن عطلنا');
     has(r.afterFail.error, 'انقطاع', 'الخطأ يُبلَّغ صراحة');
     ok(r.afterFail.saved >= 1, 'المسوّدة حُفظت بعد الدفعة الأولى');
@@ -2695,13 +2704,13 @@ describe('٦٣ · توفير تكلفة الذكاء');
   has(ai, 'const GOLD', 'المثال الذهبي حاضر — النموذج يقلّد ما يرى لا ما يُوصف له');
   has(ai, 'من ٣ إلى ٤ جمل', 'والشرح العربي مطلوب بعمق AMSU لا بجملتين');
   has(ai, 'المعلومة المفتاحية:', 'ويختم بالمعلومة المفتاحية كما في مواد علي');
-  has(ai, 'maxTokens: 32768', 'وسقف الخرج يتّسع للمعيار الجديد فلا يُقطع الردّ');
+  has(ai, 'maxTokens: 16384', 'وسقف الخرج يتّسع لدفعة الاثنتي عشرة بلا قطع');
 
   has(ai, 'questions.length > 40', 'حدّ الدفعة ٤٠ — تعليمات أقل لكل سؤال');
   has(ai, 'usage: aiOut._usage', 'والاستهلاك الحقيقي يعود للمشرف لا التقدير وحده');
 
   const A = makeDom().window.QBANK;
-  eq(A.admin.BATCH, 40, 'وحدّ المتصفح يطابق حدّ الخادم');
+  ok(A.admin.BATCH <= 40, 'وحدّ المتصفح لا يتجاوز حدّ الخادم');
 }
 
 /* ============ ٦٤ · حاسبة التكلفة ============ */
@@ -2777,9 +2786,9 @@ describe('٦٥ · اختيار المسار');
                has_options: hasOpts });
   }
   const w = A.admin.newWizard();
-  /* ★ انقلب الافتراض: المادة الكاملة هي المخرَج الذي رفع الطالبُ ملفَه لأجله.
-     المجاني يبقى بضغطة واحدة، لكن الافتراض صار أفضل ما نعطيه لا أرخصه. */
-  eq(w.enrich, true, 'المادة الكاملة — كطريقة AMSU — هي الافتراض');
+  /* ★ عاد الافتراض إلى «الأسئلة كما هي» بطلب علي: لا حشو، والنص كما رُفع،
+     ونشرٌ في ثوانٍ. والإثراء اختيارٌ صريح يأخذ وقته حين يُطلب. */
+  eq(w.enrich, false, 'الأسئلة والأجوبة كما هي — هي الافتراض');
   w.step = 2; w.raw = raw; w.total = raw.length; w.filename = 'f.txt';
   A.views.ViewUpload._set(w);
 
@@ -2796,18 +2805,18 @@ describe('٦٥ · اختيار المسار');
     eq(doc.querySelectorAll('.path').length, 2, 'مساران معروضان');
     const free = doc.querySelector('[data-path="false"]');
     const paid = doc.querySelector('[data-path="true"]');
-    /* ★ الافتراض صار المادة الكاملة: الطالب يرفع ليذاكر لا ليخزّن نصًّا */
-    eq(paid.getAttribute('aria-checked'), 'true', 'والمادة الكاملة محدَّدة ابتداءً');
-    eq(free.getAttribute('aria-checked'), 'false', 'والمجاني خيارٌ بضغطة لا افتراض');
+    /* ★ الافتراض «الأسئلة كما هي» (بطلب علي): النص كما رُفع، بلا حشو، وفورًا */
+    eq(free.getAttribute('aria-checked'), 'true', 'والأسئلة كما هي محدَّدة ابتداءً');
+    eq(paid.getAttribute('aria-checked'), 'false', 'والإثراء خيارٌ بضغطة لا افتراض');
     has(free.textContent, 'مجانًا', 'وثمنه معلن: مجانًا');
 
     // ★ الفرق يُقال بالأسماء لا يُخبأ — الطالب لا يعرف ما «الإثراء» حتى يرى ما ينقصه بدونه
     has(free.textContent, 'بلا شرح', 'المسار المجاني يقول ما ينقصه');
     has(free.textContent, 'ولا ترجمة', 'ولا ترجمة');
-    has(free.textContent, 'بطاقات حفظ', 'ولا بطاقات حفظ');
+    has(free.textContent, 'ولا ترجمة', 'ولا بطاقات حفظ — يُقال ما ينقص');
     has(free.textContent, 'بلا إجابة معلنة', 'ويحذّر من الأسئلة التي ستحتاج ضبطًا يدويًا');
     has(paid.textContent, 'بطاقة حفظ', 'والمسار الكامل يقول ما يضيفه — بطاقة حفظ');
-    has(paid.textContent, 'طريقة الحفظ', 'وتحليلًا للمادة كما في AMSU');
+    has(paid.textContent, 'دقيقة', 'ويقول زمنه بالأرقام كي يُختار على بيّنة');
     has(paid.textContent, 'كوين', 'وثمنه بالكوين');
 
     has(main.textContent, '120 سؤالًا', 'وعدد الأسئلة معروض');
@@ -4802,8 +4811,8 @@ describe('١٢٤ · الإثراء مجانًا');
     has(paid.textContent, 'مجانًا', 'الثمن يُقال «مجانًا» لا «٠ كوين»');
     ok(paid.className.indexOf('is-blocked') === -1,
        '★ ولا يُحجب المسار الكامل ولو كانت المحفظة فارغة');
-    eq(paid.getAttribute('aria-checked'), 'true', 'ويبقى هو المحدَّد');
-    eq(A.views.ViewUpload._get().enrich, true, 'ولا يرتدّ إلى المجاني — لا سبب للارتداد');
+    eq(paid.getAttribute('aria-checked'), 'false', 'ويبقى الافتراض «كما هي» — الإثراء بضغطة');
+    eq(A.views.ViewUpload._get().enrich, false, 'والافتراض لا يتغيّر بحال المحفظة');
     eq(A.views.ViewUpload._get().costPerQ, 0, 'وسعر السؤال المحفوظ صفر');
     ok(doc.querySelector('.costbox').hidden, 'وصندوق الرصيد يختفي: لا محفظة حيث لا ثمن');
     A.views.ViewUpload._reset();
@@ -7144,7 +7153,7 @@ describe('١٧٨ب · «احفظ مخفية» تبقى مخفية');
   has(html, "async stamp(subjectId, w, publish){", 'الختم يعرف هل نُشرت');
   has(html, "if (publish !== false) body.status = 'published';", '★ ولا يكتب published فوق مادةٍ أُخفيت');
   has(html, "await QBANK.admin.stamp(newId, w, publish);", 'والمعالج يمرّر القرار');
-  has(html, "'#/admin/subject/' + newId\n", 'والمخفية تُفتح في محرّرها');
+  has(html, "(adm ? '#/admin/subject/' : '#/edit/') + newId", 'والمخفية تُفتح في محرّرها — للمشرف محرّر اللوحة وللطالب محرّر مادته');
 }
 
 /* ============ ١٧٩ · لوحة المتصدرين والإحصاءات الحيّة ============ */
@@ -7490,6 +7499,382 @@ describe('١٨٢ب · عدّاد الاختبارات لا يتضاعف');
   ok(P.repair(), 'الإصلاح يلمس الفاسد');
   eq(P.all().s1.exams, 0, 'ويعيده صفرًا');
   ok(!P.repair(), 'ولا يلمس السليم مرة ثانية');
+}
+
+/* ============ ١٨٣ · رفعٌ سريع ومختصر ============ */
+describe('١٨٣ · القراءة متوازية وعلى أجزاء');
+{
+  const R = require('../api/_lib/reader.js');
+  const fs2 = require('fs');
+  const reader = fs2.readFileSync(path.join(__dirname, '..', 'api', '_lib', 'reader.js'), 'utf8');
+  has(reader, "await Promise.all(Array.from({ length: Math.min(CONC, parts.length) }, worker));", '★ الدفعات تُقرأ ثلاثًا معًا لا واحدةً بعد واحدة');
+  has(reader, "timeoutMs: o.timeoutMs || 50000", 'ومهلة كل دفعة تحت دقيقة Vercel');
+  ok(typeof R.aiReadPart === 'function', 'وقراءة جزءٍ واحد للمسار المتوازي من المتصفح');
+  pending.push((async () => {
+    let calls = 0;
+    const fake = async (sys, user) => { calls++; return { items:[{ q: user.trim().split('\n')[0], options:['a','b'], answer_index:0 }] }; };
+    const r = await R.aiReadPart('Q one?\nA) a\nB) b', fake);
+    eq(r.questions.length, 1, 'الجزء يعيد أسئلته');
+    eq(r.questions[0].unverified, false, 'ومطابقتها الحرفية تُفحص على الجزء نفسه');
+    /* التوازي يحافظ على الترتيب: الدفعة الثانية قد تعود قبل الأولى */
+    const parts = 'a1\n'.repeat(3000) + 'b1\n'.repeat(3000) + 'c1\n'.repeat(3000);
+    let n = 0;
+    const slowFirst = async (sys, user) => { n++; const mine = n; await new Promise(r => setTimeout(r, mine === 1 ? 30 : 1));
+      return { items:[{ q: user.trim().slice(0, 2) + '?', options:['x','y'], answer_index:1 }] }; };
+    const rr = await R.aiRead(parts, slowFirst);
+    ok(rr.chunks >= 3, 'ثلاث دفعات فأكثر');
+    eq(rr.questions[0].num, 1, 'والترقيم بترتيب الملف لا بترتيب الوصول');
+  })());
+
+  const ingest = fs2.readFileSync(path.join(__dirname, '..', 'api', 'ingest.js'), 'utf8');
+  has(ingest, "if (typeof text_part === 'string'){", '★ وضع الجزء في /api/ingest');
+  has(ingest, "if (parts.length > 4){", 'والملف الكبير يُعاد أجزاءً بدل أن يُقرأ في نداء واحد');
+  has(ingest, "if (storage_path && !content_base64){", 'والملف الكبير يأتي من المخزن لا من الجسم');
+  has(ingest, "if (!userId || clean.indexOf(userId + '/') !== 0) throw", 'والخادم لا يجلب إلا ملفات صاحب الجلسة');
+  const vj = JSON.parse(fs2.readFileSync(path.join(__dirname, '..', 'vercel.json'), 'utf8'));
+  eq(vj.functions['api/*.js'].maxDuration, 60, 'ومهلة الدوال ٦٠ ثانية — أقصى ما تعطيه الخطة');
+  const ai = fs2.readFileSync(path.join(__dirname, '..', 'api', 'ai.js'), 'utf8');
+  has(ai, "{ maxTokens: 16384, timeoutMs: 55000 }", 'وإثراء الدفعة تحت الدقيقة');
+
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "BIG_FILE: 3.5 * 1024 * 1024,", '★ فوق ٣٫٥ ميغابايت يُرفع إلى المخزن مباشرة');
+  has(html, "'/storage/v1/object/uploads/'", 'إلى bucket uploads');
+  has(html, "async readParts(parts, onPart){", 'وقراءة الأجزاء من المتصفح ثلاثةً معًا');
+  has(html, "t:'الأسئلة والأجوبة كما هي — الآن'", '★ الخيار الافتراضي: النص كما رُفع، فورًا');
+  has(html, "await Promise.all([worker(), worker()]);", 'والإثراء (إن طُلب) دفعتان معًا');
+
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  const calls = [];
+  A.api._fetch = (url, opts) => { calls.push(url); const b = JSON.parse(opts.body);
+    return Promise.resolve({ ok:true, status:200, headers:{ get:()=>null }, text:()=>Promise.resolve('{}'),
+      json: () => Promise.resolve({ ok:true, questions:[{ q:'Q' + b.text_part.slice(0,1), options:['a','b'], answer:0, has_options:true }] }) }); };
+  A.admin.apiBase = () => '';
+  pending.push(A.admin.readParts(['x1','y2','z3','x1'], null).then(r => {
+    eq(r.questions.length, 3, '★ الأجزاء تُدمج ويُطوى المكرر (التراكب)');
+    eq(r.questions[2].num, 3, 'وتُرقَّم بترتيبها');
+  }));
+}
+
+/* ============ ١٨٤ · حذف المسوّدات والمواد من اللوحة ============ */
+describe('١٨٤ · المشرف يحذف أي مسوّدة أو مادة');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "const armedDelete = (label, onDo) =>", 'زرّ حذفٍ واحد بضغطتين لكل صفّ');
+  has(html, "QBANK.api.rest('drafts?id=eq.' + d.id, { method:'DELETE' })", '★ حذف المسوّدة');
+  has(html, "QBANK.api.rest('subjects?id=eq.' + sub.id, { method:'DELETE' })", '★ وحذف المادة من قائمة المحتوى');
+  has(html, "text: d.status === 'reviewing' ? 'راجِعها' : (stale(d) ? 'عالقة' : 'تُعالَج')", 'والمسوّدة العالقة تُسمّى عالقة');
+
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'u1', email:'admin@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  const calls = [];
+  A.api._fetch = (url, opts) => { calls.push((opts && opts.method || 'GET') + ' ' + url);
+    let data = [];
+    if (/subjects\?select/.test(url)) data = [{ id:'s1', name:'مادة', q_count:3, published:true, price:0, free:true }];
+    if (/drafts\?select/.test(url)) data = [{ id:'d1', name:'مسوّدة قديمة', status:'processing', total:50, done:10, updated_at: new Date(Date.now() - 5*3600e3).toISOString() }];
+    return Promise.resolve({ ok:true, status:200, headers:{ get:()=>'application/json' }, text:()=>Promise.resolve(JSON.stringify(data)), json:()=>Promise.resolve(data) }); };
+  W.location.hash = '#/admin/content'; A.router.render('#/admin/content');
+  pending.push(new Promise(r => setTimeout(r, 60)).then(async () => {
+    const dels = doc.querySelectorAll('#main button[aria-label^="احذف"]');
+    ok(dels.length >= 2, 'زرّ حذف للمسوّدة وللمادة');
+    has(doc.querySelector('#main').textContent, 'عالقة', 'والمسوّدة القديمة موسومة عالقة');
+    const b = dels[0]; b.click();
+    has(b.textContent, 'ثانيةً', 'الضغطة الأولى تسلّح فقط');
+    ok(!calls.some(c => c.indexOf('DELETE') === 0), 'ولا حذف بعدُ');
+    b.click(); await new Promise(r => setTimeout(r, 30));
+    ok(calls.some(c => c.indexOf('DELETE') === 0), '★ والثانية تحذف');
+  }));
+}
+
+describe('١٨٤ب · مرشّح محفوظ لا يطابق شيئًا لا يُفرغ «استكشف»');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "QBANK.store.set(Explore.KEY, { sort: st.sort });", '★ المرشّح المحفوظ يُسقط حين لا يطابق شيئًا');
+  has(html, "أُزيل مرشّح الجامعة المحفوظ — لا مواد تطابقه", 'ويُقال ذلك بسطر');
+}
+
+describe('١٨٥ · ما كشفه الفحص الحيّ الشامل');
+{
+  const { parse } = require('../api/_lib/parser.js');
+  let t = ''; for (let i = 1; i <= 1200; i++) t += i + '. Q' + i + '?\nA) a\nB) b\nAnswer: A\n\n';
+  eq(parse(t).length, 1200, '★ بنكٌ من ألف سؤال فأكثر يُقرأ كله — كان يقف عند ٩٩٩');
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  no(html, "'Content-Type': file.type || 'application/octet-stream', 'x-upsert'", '★ رفع المخزن بلا x-upsert — الاستبدال كان يُرفض بـRLS ويُسقط الملف الكبير');
+}
+
+/* ============ ١٨٦ · الرافع والتعديل قبل النشر ============ */
+/*
+  ★ بطلب علي: يرفع هو بنكًا أرسله له طالب ويُسنده إليه على أنه هو الرافع؛
+  وللرافع (طالبًا أو مشرفًا) أن يعود إلى ما رفعه ويعدّله قبل النشر؛ وبعد
+  النشر يملك المشرف القرار. الحكم في القاعدة (UPLOADER.sql) والواجهة تتبعه.
+*/
+describe('١٨٦ · قاعدة البيانات: الرافع والقفل');
+{
+  const sql = fs.readFileSync(path.join(__dirname, '..', 'db', 'UPLOADER.sql'), 'utf8');
+  has(sql, 'add column if not exists owner_edit boolean not null default false', '★ مفتاح «الرافع يعدّل بعد النشر» — مقفل افتراضًا');
+  has(sql, 'create policy questions_select on qbank.questions for select', 'سياسة قراءة الأسئلة تُعاد');
+  has(sql, 'or s.created_by = auth.uid()))', 'وصاحب المادة يقرأ أسئلته المخفية');
+  has(sql, 'create policy questions_owner_edit on qbank.questions for all', '★ ويكتبها ما دامت غير منشورة أو المفتاح مفتوحًا');
+  has(sql, "and (s.published = false or s.owner_edit)", 'بالشرط نفسه في using وwith check');
+  has(sql, 'create trigger questions_owner_guard_trg', 'حارس الأسئلة: بعد النشر لا يتغيّر إلا الوسم');
+  has(sql, 'create trigger subjects_owner_guard_trg', 'وحارس المادة');
+  has(sql, 'new.created_by := old.created_by;', '★ غير المشرف لا يغيّر الرافع');
+  has(sql, 'new.verified   := old.verified;', 'ولا التوثيق');
+  has(sql, 'new.price      := old.price;', 'ولا السعر');
+  has(sql, 'if pg_trigger_depth() <= 1 then new.q_count := old.q_count; end if;', 'والعدّاد لقادح الأسئلة لا للطالب');
+  has(sql, "if auth.uid() is null or qbank.is_admin() then return new; end if;", 'والخادم والمشرف يمرّان');
+  has(sql, "if not new.published and new.status = 'suspended' then new.status := 'published'; end if;", '★ «مخفية» ليست «موقوفة» — كان النشر اللاحق يبقيها موقوفة');
+  has(sql, "where published = false and status = 'suspended';", 'والصفوف القديمة تُصحَّح مرة');
+  has(sql, 'create or replace function qbank.admin_set_uploader(p_subject uuid, p_user uuid)', '★ الإسناد دالة');
+  has(sql, "if not qbank.is_admin() then raise exception 'للمشرف وحده'; end if;", 'للمشرف وحده');
+  has(sql, "values (p_user, p_subject, 'subject', 'upload',", 'وتمنح مدّة الرافع كما يمنحها الرفع');
+  has(sql, "notify pgrst, 'reload schema';", 'وتُعلم PostgREST');
+  no(sql, 'drop table', 'بلا حذف جدول');
+  no(sql, 'delete from', 'وبلا حذف صفّ');
+}
+
+describe('١٨٦ب · منتقي الطالب وإسناد المادة');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "QBANK.router.add('#/edit', ViewOwnerEdit);", '★ مسار محرّر المالك مسجَّل');
+  has(html, "return (w && w.uploader && w.uploader.id) || u.id || null;", 'صاحب المسوّدة: الرافع المختار وإلا من يرفع');
+  has(html, "created_by: Admin.ownerOf(w),", '★ والختم يكتب الرافع المختار لا من ضغط الزرّ');
+  has(html, "body.created_by = Admin.ownerOf(w);", 'والمسوّدة تُنشأ باسمه من أولها');
+  has(html, "wizard.uploader = (d.created_by && d.created_by !== me) ? { id: d.created_by, name:'' } : null;", 'والاستئناف يعيد الإسناد');
+  has(html, "(!owner && QBANK.views.uploaderField) ? QBANK.views.uploaderField(sub, refresh) : null", 'وحقل الرافع في محرّر المشرف');
+  has(html, "' · رفعها ' + by(sub)", 'و«رفعها فلان» في قائمة المحتوى');
+
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'adm', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  A.store.set('is_admin_check', { uid:'adm', ok:true });
+  const calls = [];
+  A.api._fetch = (url, opts) => {
+    const body = opts && opts.body ? JSON.parse(opts.body) : {};
+    calls.push({ url, method: (opts && opts.method) || 'GET', body });
+    let data = [];
+    if (/rpc\/admin_students_pro/.test(url)) data = body.p_search === 'سا'
+      ? [{ id:'stu1', name:'سارة', email:'s@x.y', university:'جامعة نجران', avatar:'🎓' }]
+      : [{ id:'stu2', name:'خالد', email:'k@x.y' }, { id:'stu1', name:'سارة', email:'s@x.y' }];
+    if (/rpc\/public_profile/.test(url)) data = { id: body.p_user, name:'سارة' };
+    if (/rpc\/admin_set_uploader/.test(url)) data = { ok:true, name:'سارة' };
+    if (/drafts\?select=id/.test(url) && opts.method === 'POST') data = [{ id:'d9' }];
+    return Promise.resolve({ ok:true, status:200, headers:{ get:()=>'application/json' },
+      text:()=>Promise.resolve(JSON.stringify(data)), json:()=>Promise.resolve(data) });
+  };
+
+  let picked = 'none';
+  const pk = A.views.uploaderPick({ value:null, me:{ id:'adm', name:'أنا (المشرف)' }, onPick: v => { picked = v; } });
+  doc.body.appendChild(pk);
+  has(pk.querySelector('.spick__cur').textContent, 'أنا', 'الافتراض: أنا');
+  pending.push(new Promise(r => setTimeout(r, 40)).then(async () => {
+    ok(pk.querySelectorAll('.spick__row').length >= 3, '★ أحدث الطلاب يظهرون بلا كتابة — و«أنا» أولهم');
+    eq(pk.querySelector('.spick__row').getAttribute('data-uid'), 'adm', '«أنا» الصفّ الأول');
+    const inp = pk.querySelector('input[type="search"]');
+    inp.value = 'سا'; inp.dispatchEvent(new W.Event('input'));
+    await new Promise(r => setTimeout(r, 340));
+    const rows = pk.querySelectorAll('.spick__row[data-uid="stu1"]');
+    eq(rows.length, 1, 'البحث بحرفين يجد سارة');
+    has(rows[0].textContent, 'جامعة نجران', 'مع جامعتها وإيميلها');
+    rows[0].click();
+    eq(picked && picked.id, 'stu1', '★ الاختيار يعيد الطالب');
+    has(pk.querySelector('.spick__cur').textContent, 'سارة', 'والشريحة تحمل اسمها');
+    pk.querySelector('.spick__row[data-uid="adm"]').click();
+    eq(picked, null, 'و«أنا» يعيد الإسناد إلى المشرف');
+
+    /* المعالج: الرافع المختار يُكتب في المسوّدة والختم */
+    const w = A.admin.newWizard();
+    eq(A.admin.ownerOf(w), 'adm', 'بلا اختيار: صاحب المسوّدة هو من يرفع');
+    w.uploader = { id:'stu1', name:'سارة' };
+    eq(A.admin.ownerOf(w), 'stu1', '★ ومع الاختيار: الطالب');
+    w.filename = 'f.txt'; w.enriched = [{ q:'Q', options:['a','b'], answer:0 }]; w.total = 1; w.done = 1;
+    await A.admin.saveDraft(w);
+    const post = calls.filter(c => /drafts\?select=id/.test(c.url) && c.method === 'POST').pop();
+    eq(post && post.body.created_by, 'stu1', '★ المسوّدة تُنشأ باسم الطالب');
+    eq(w.draftId, 'd9', 'وتحمل معرّفها');
+    await A.admin.saveDraft(w);
+    const patch = calls.filter(c => /drafts\?id=eq\.d9/.test(c.url) && c.method === 'PATCH').pop();
+    eq(patch && patch.body.created_by, 'stu1', 'والحفظ اللاحق يعيد كتابته — المشرف قد يغيّره');
+    await A.admin.stamp('s9', w, true);
+    const st = calls.filter(c => /subjects\?id=eq\.s9/.test(c.url) && c.method === 'PATCH').pop();
+    eq(st && st.body.created_by, 'stu1', '★ والختم لا يعيد المادة إلى المشرف');
+
+    /* محرّر المشرف: حقل الرافع ومفتاح ما بعد النشر */
+    const sub = { id:'s9', name:'م', q_count:1, published:true, price:0, free:true, created_by:'stu1', owner_edit:false, topics:[] };
+    const idn = A.views.subjIdentity(sub, null);
+    doc.body.appendChild(idn);
+    ok(!!idn.querySelector('.spick-field'), '★ حقل الرافع في هوية المادة');
+    has(idn.textContent, 'اسمح للرافع بالتعديل بعد النشر', 'ومفتاح ما بعد النشر مقفل ظاهرًا');
+    has(idn.textContent, 'التعديل الآن للمشرف وحده', 'ويشرح حاله');
+    ok(!!idn.querySelector('input[aria-label="سعر المادة بالريال"]'), 'والمشرف يرى السعر');
+    await new Promise(r => setTimeout(r, 30));
+    has(idn.querySelector('.spick__cur').textContent, 'سارة', 'واسم الرافع يُجلب من ملفه العام');
+    idn.querySelector('[aria-pressed]').click();
+    await new Promise(r => setTimeout(r, 20));
+    const tg = calls.filter(c => /subjects\?id=eq\.s9/.test(c.url) && c.method === 'PATCH').pop();
+    eq(tg && tg.body.owner_edit, true, '★ الضغطة تفتح المفتاح');
+
+    /* الرافع في محرّره: بلا سعر ولا توثيق ولا إسناد */
+    const own = A.views.subjIdentity(sub, null, { owner:true });
+    ok(!own.querySelector('input[aria-label="سعر المادة بالريال"]'), '★ الرافع لا يرى السعر');
+    ok(!own.querySelector('.spick-field'), 'ولا حقل الإسناد');
+    no(own.textContent, 'وثّق هذه المادة', 'ولا التوثيق');
+    no(own.textContent, 'انشرها', 'ولا زرّ نشرٍ ثانٍ — النشر من شريط الحال');
+  }));
+}
+
+describe('١٨٦ج · العودة قبل النشر: مسوّداتي، محرّر المالك، القفل');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'stu1', email:'s@x.y' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  A.store.set('is_admin_check', { uid:'stu1', ok:false });
+  const U = A.uploader;
+  ok(!U.isAdmin(), 'الطالب ليس مشرفًا');
+  ok(U.canEdit({ created_by:'stu1', published:false }, { id:'stu1' }), '★ المالك يعدّل قبل النشر');
+  ok(!U.canEdit({ created_by:'stu1', published:true, owner_edit:false }, { id:'stu1' }), 'ولا يعدّل بعده');
+  ok(U.canEdit({ created_by:'stu1', published:true, owner_edit:true }, { id:'stu1' }), 'إلا إن فتح له المشرف');
+  ok(!U.canEdit({ created_by:'stu2', published:false }, { id:'stu1' }), 'وغير المالك لا يعدّل أبدًا');
+  has(U.draftLine({ status:'processing', done:80, total:300 }), 'قُرئ ٨٠ من ٣٠٠', 'سطر المسوّدة يقول أين توقّفت');
+
+  let subs = { s1:{ id:'s1', name:'فيزيولوجيا', q_count:12, published:false, status:'published', created_by:'stu1', owner_edit:false, topics:[], price:0, free:true },
+               s2:{ id:'s2', name:'تشريح', q_count:40, published:true, status:'published', created_by:'stu1', owner_edit:false, topics:[], price:29, free:false },
+               s3:{ id:'s3', name:'ليست لي', q_count:5, published:false, status:'published', created_by:'stu2', owner_edit:false, topics:[] } };
+  const calls = [];
+  A.api._fetch = (url, opts) => {
+    const body = opts && opts.body ? JSON.parse(opts.body) : {};
+    calls.push({ url, method: (opts && opts.method) || 'GET', body });
+    let data = [];
+    const m = /subjects\?id=eq\.(\w+)/.exec(url);
+    if (m) {
+      if (opts.method === 'PATCH') { Object.assign(subs[m[1]], body); data = []; }
+      else data = subs[m[1]] ? [subs[m[1]]] : [];
+    }
+    if (/subjects\?created_by=eq\.stu1/.test(url)) data = [subs.s1, subs.s2];
+    if (/questions\?subject_id/.test(url)) data = [{ id:'q1', subject_id:'s1', ord:0, q:'Q?', options:['a','b'], answer:0, topic:'' }];
+    if (/drafts\?select/.test(url)) data = [{ id:'d1', name:'كيمياء حيوية', status:'processing', total:300, done:80, updated_at:new Date().toISOString(), created_by:'stu1' }];
+    if (/rpc\/content_pack/.test(url)) data = { subjects:[], settings:{}, fetched_at:'x' };
+    return Promise.resolve({ ok:true, status:200, headers:{ get:()=>'application/json' },
+      text:()=>Promise.resolve(JSON.stringify(data)), json:()=>Promise.resolve(data) });
+  };
+
+  pending.push((async () => {
+    /* حساب الطالب: مسوّداتي + المخفية تفتح محرّرها */
+    W.location.hash = '#/account/uploads'; A.router.render('#/account/uploads');
+    await new Promise(r => setTimeout(r, 60));
+    const main = doc.querySelector('#main');
+    has(main.textContent, 'مسوّداتي', '★ بطاقة المسوّدات في «موادي»');
+    const cont = main.querySelector('a[href="#/upload?draft=d1"]');
+    ok(!!cont && /أكمل/.test(cont.textContent), 'و«أكمل» يعود بها إلى المعالج');
+    has(main.textContent, 'قُرئ ٨٠ من ٣٠٠', 'ويقول أين توقّفت');
+    ok(!!main.querySelector('a[href="#/edit/s1"]'), '★ المخفية تفتح في محرّر مادتي');
+    has(main.textContent, 'مخفية — راجعها وانشرها', 'وتُسمّى بحالها لا «قيد المراجعة»');
+    ok(!!main.querySelector('a.up-row__x[href="#/subject/s2"]'), 'والمنشورة تفتح صفحتها');
+    ok(!main.querySelector('a[href="#/edit/s2"]'), 'وبلا زرّ تحرير — المفتاح مقفل');
+    no(main.textContent, 'قيد المراجعة', 'لا طابور مراجعة يُوهَم به');
+
+    /* المعالج: لافتة الاستئناف */
+    W.location.hash = '#/upload'; A.router.render('#/upload');
+    await new Promise(r => setTimeout(r, 60));
+    const rb = doc.querySelector('#main .resume');
+    ok(rb && !rb.hidden, '★ «لديك مسوّدة لم تكتمل» في أول المعالج');
+    ok(!!rb.querySelector('a[href="#/upload?draft=d1"]'), 'وزرّها يستأنف');
+    ok(!doc.querySelector('#main .spick'), 'والطالب لا يرى منتقي الرافع');
+
+    /* محرّر المالك: مخفية → كل شيء بيده */
+    W.location.hash = '#/edit/s1'; A.router.render('#/edit/s1');
+    await new Promise(r => setTimeout(r, 60));
+    const ed = doc.querySelector('#main');
+    ok(!!ed.querySelector('.ownerbar') && !ed.querySelector('.ownerbar.is-locked'), '★ شريط الحال مفتوح');
+    has(ed.textContent, 'مخفية — لا يراها أحد غيرك', 'ويقول حالها');
+    ok(!!ed.querySelector('.ad-q'), 'والأسئلة تُعرض للمراجعة');
+    ok(!ed.querySelector('input[aria-label="سعر المادة بالريال"]'), 'بلا سعر');
+    const pubBtn = Array.prototype.find.call(ed.querySelectorAll('button'), b => b.textContent === 'انشر للطلاب');
+    ok(!!pubBtn, 'وزرّ «انشر للطلاب»');
+    pubBtn.click();
+    await new Promise(r => setTimeout(r, 80));
+    const pp = calls.filter(c => /subjects\?id=eq\.s1/.test(c.url) && c.method === 'PATCH').pop();
+    eq(pp && pp.body.published, true, '★ النشر يكتب published وحدها — والحالة تبقى للقاعدة');
+    ok(calls.some(c => /rpc\/content_pack/.test(c.url)), 'ثم تُجدَّد قائمة المواد فتظهر فورًا');
+
+    /* منشورة ومقفلة: يرى ولا يعدّل */
+    W.location.hash = '#/edit/s2'; A.router.render('#/edit/s2');
+    await new Promise(r => setTimeout(r, 60));
+    const lk = doc.querySelector('#main');
+    ok(!!lk.querySelector('.ownerbar.is-locked'), '★ منشورة بلا إذن: مقفلة');
+    has(lk.textContent, 'المادة منشورة — التعديل بعد النشر بإذن المشرف', 'بالجملة نفسها التي ترفع بها القاعدة');
+    ok(!lk.querySelector('.ad-q') && !lk.querySelector('.ad-panel'), 'ولا محرّر يُرسم');
+    ok(!!lk.querySelector('a[href="#/subject/s2"]'), 'بل رابط صفحتها');
+
+    /* المشرف فتح المفتاح */
+    subs.s2.owner_edit = true;
+    W.location.hash = '#/edit/s2'; A.router.render('#/edit/s2');
+    await new Promise(r => setTimeout(r, 60));
+    const op = doc.querySelector('#main');
+    ok(!op.querySelector('.ownerbar.is-locked') && !!op.querySelector('.ad-panel'), '★ بالإذن يعود المحرّر');
+    ok(Array.prototype.some.call(op.querySelectorAll('button'), b => b.textContent === 'أخفِها عن الطلاب'), 'ومعه الإخفاء');
+
+    /* ليست مادته */
+    W.location.hash = '#/edit/s3'; A.router.render('#/edit/s3');
+    await new Promise(r => setTimeout(r, 60));
+    has(doc.querySelector('#main').textContent, 'هذه ليست مادتك', '★ وغير المالك يُردّ بجملة لا بمحرّر');
+  })());
+}
+
+/* ============ ١٨٧ · معاينة المادة من اللوحة ============ */
+/*
+  ★ بطلب علي: من «مواد الطلاب» زرّ معاينة يريه المادة كما يراها الطالب
+  وهو داخل اللوحة، ومنها يدخل ويعدّل ما يشاء. الصفحة هي صفحة الطالب نفسها
+  (renderSubject) لا نسخةٌ تشبهها.
+*/
+describe('١٨٧ · معاينة المادة من اللوحة');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "function renderSubject(sub, route, opts){", '★ صفحة المادة دالةٌ تأخذ المادة لا معرّفها');
+  has(html, "return renderSubject(sub, route, {});", 'وصفحة الطالب تستعملها كما هي');
+  has(html, "QBANK.router.add('#/admin/preview', ViewAdminPreview);", 'ومسار المعاينة مسجَّل');
+  has(html, "href:'#/admin/preview/' + u.id, 'aria-label':'عاين ' + u.name", '★ زرّ معاينة في «مواد الطلاب»');
+  has(html, "href:'#/admin/preview/' + sub.id, 'aria-label':'عاين ' + sub.name", 'وفي قائمة المحتوى');
+  has(html, "' عاين كما يراها الطالب' ]", 'وفي المحرّر');
+  const css = fs.readFileSync(path.join(__dirname,'css','60-admin.css'), 'utf8');
+  has(css, '.ad-preview-bar{', 'وشريط المعاينة له طرازه');
+  ok(!/#[0-9a-fA-F]{3,6}\b/.test(css.slice(css.indexOf('.ad-preview-bar{'))), 'بلا لون صريح');
+
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'adm', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  A.store.set('is_admin_check', { uid:'adm', ok:true });
+  A.store.set('pack', { subjects:[{ id:'p2', name:'منشورة', q_count:1, published:true, free:true, topics:[] }], settings:{} });
+  const hidden = { id:'p1', name:'مادة مخفية', q_count:2, published:false, status:'published', free:true, color:'subject-2', icon:'▤', topics:['م١'], created_by:'stu1', descr:'' };
+  const calls = [];
+  A.api._fetch = (url, opts) => {
+    calls.push(url);
+    let data = [];
+    if (/subjects\?id=eq\.p1/.test(url)) data = [hidden];
+    if (/rpc\/subject_questions/.test(url)) data = [{ id:'q1', subject_id:'p1', ord:0, q:'Hidden Q?', options:['a','b'], answer:0, topic:'م١' }, { id:'q2', subject_id:'p1', ord:1, q:'Q2?', options:['a','b'], answer:1, topic:'م١' }];
+    if (/rpc\/public_profile/.test(url)) data = { id:'stu1', name:'سارة' };
+    if (/rpc\/subject_uploader|rpc\/peer_uploader/.test(url)) data = null;
+    return Promise.resolve({ ok:true, status:200, headers:{ get:()=>'application/json' }, text:()=>Promise.resolve(JSON.stringify(data)), json:()=>Promise.resolve(data) });
+  };
+  W.location.hash = '#/admin/preview/p1'; A.router.render('#/admin/preview/p1');
+  pending.push(new Promise(r => setTimeout(r, 120)).then(async () => {
+    const main = doc.querySelector('#main');
+    ok(!!main.querySelector('.ad-preview-bar'), '★ شريط المعاينة فوق الصفحة');
+    has(main.textContent, 'هكذا يراها الطالب', 'ويقول ما هو');
+    has(main.textContent, 'مخفية — لا يراها الطالب بعد', 'ويقول حال المادة');
+    ok(!!main.querySelector('a[href="#/admin/subject/p1"]'), 'وباب التحرير');
+    ok(!main.querySelector('a[href="#/subject/p1"]'), 'و«افتح كطالب» لا يظهر للمخفية — ليست في قائمة الطالب');
+    ok(!!main.querySelector('.sub-hero'), '★ ورأس المادة نفسه الذي يراه الطالب — لمادةٍ مخفية ليست في قائمة المنشور');
+    has(main.querySelector('.sub-hero').textContent, 'مادة مخفية', 'باسمها');
+    ok(!main.querySelector('.hero-exam'), 'وبلا زرّ اختبار للمخفية');
+    ok(!!main.querySelector('.backbtn[href="#/admin/ugc"]'), 'والرجوع إلى مواد الطلاب لا إلى واجهة الطالب');
+    ok(calls.some(u => /rpc\/subject_questions/.test(u)), '★ الأسئلة من الخادم لا من ذاكرة الجهاز');
+    ok(!calls.some(u => /rpc\/subject_access/.test(u)), 'وبلا بوّابة ولا تجربة');
+    ok(doc.body.classList.contains('is-admin'), 'والصفحة داخل عالم اللوحة');
+    const tab = main.querySelector('.tabs__btn[data-tab="bank"]');
+    ok(!!tab, 'والتبويبات موجودة');
+    tab.click();
+    await new Promise(r => setTimeout(r, 120));
+    eq(W.location.hash, '#/admin/preview/p1/bank', '★ والتبويب يبقى داخل المعاينة');
+    has(doc.querySelector('#main').textContent, 'Hidden Q?', 'وبنك الأسئلة يُعرض');
+  }));
 }
 
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */

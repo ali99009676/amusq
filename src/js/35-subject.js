@@ -344,13 +344,29 @@ const ViewSubject = {
       نسأل مرة، ثم نحكم.
     */
     if (!sub) return refetchThenSubject(sid);
+    return renderSubject(sub, route, {});
+  }
+};
 
-    QBANK.gate.captureRef(route.query);          // ?ref= يُحفظ قبل أي شيء آخر
-    QBANK.trial.stop();                          // مغادرة مادة توقف عدّادها
+/*
+  ★ صفحة المادة دالةٌ تأخذ المادة لا معرّفها.
+  كانت الشاشة تبحث عن المادة في قائمة المنشور وحدها، فلا سبيل للمشرف أن
+  يرى مادةً مخفية «كما يراها الطالب» قبل نشرها. الآن الصفحة نفسها — الرأس
+  والتبويبات والبنك والشرح — تُرسم لأي مادةٍ تُعطاها، ومعاينةُ اللوحة
+  (opts.preview) تمرّ بلا بوّابة ولا تجربة، وتُجلب أسئلتها من الخادم لا من
+  ذاكرة الجهاز كي يرى المشرف آخر تعديلٍ حفظه قبل ثانية.
+*/
+function renderSubject(sub, route, opts){
+  const o = opts || {};
+  const sid = sub.id;
+  const base = o.base || ('#/subject/' + sid);
+  {
+    if (!o.preview) QBANK.gate.captureRef(route.query);   // ?ref= يُحفظ قبل أي شيء آخر
+    QBANK.trial.stop();                                    // مغادرة مادة توقف عدّادها
 
     // بوابة المحتوى: مادة غير مملوكة تعرض بطاقة الشراء لا المحتوى.
     // نعرض بالتخمين المحلي فورًا (لا وميض)، ثم نصحّح بقرار القاعدة حين يصل.
-    const guess = QBANK.gate.localGuess(sub);
+    const guess = o.preview ? { allowed:true } : QBANK.gate.localGuess(sub);
     if (!guess.allowed) {
       const box = el('div', {}, [ QBANK.gate.paywallCard(sub) ]);
       return QBANK.views.page(sub.name, null, [box]);
@@ -362,7 +378,7 @@ const ViewSubject = {
         'aria-selected': String(t.id === active), text: t.label })));
     tabs.addEventListener('click', e => {
       const b = e.target.closest('[data-tab]');
-      if (b) QBANK.router.go('#/subject/' + sid + '/' + b.getAttribute('data-tab'));
+      if (b) QBANK.router.go(base + '/' + b.getAttribute('data-tab'));
     });
 
     const body = el('div', { class:'stack', id:'subjBody' },
@@ -370,7 +386,7 @@ const ViewSubject = {
 
     // شريط التجربة يُعلَّق فوق التبويبات متى قالت القاعدة إن الوصول بالتجربة
     const trialSlot = el('div', {});
-    QBANK.trial.access(sid).then(a => {
+    if (!o.preview) QBANK.trial.access(sid).then(a => {
       if (!trialSlot.isConnected || !a) return;   // null = تعذّر السؤال، لا رفض
       if (a.reason === 'trial'){
         trialSlot.appendChild(QBANK.trial.start(sid, Number(a.seconds_left), () => {
@@ -398,7 +414,15 @@ const ViewSubject = {
       }
     });
 
-    QBANK.data.subjectQuestions(sid).then(r => {
+    /* المعاينة تقرأ من الخادم دائمًا وتُحدّث نسخة الجهاز — المشرف عدّل قبل ثانية */
+    const fetchQs = o.preview
+      ? QBANK.api.rpc('subject_questions', { sid }).then(r => {
+          const list = (r.ok && Array.isArray(r.data)) ? r.data : [];
+          if (list.length) { try { QBANK.data.putQuestions(sid, list); } catch(e){ /* ذاكرة الجهاز اختيارية */ } }
+          return { ok: list.length > 0, data: list, offline: r.offline };
+        })
+      : QBANK.data.subjectQuestions(sid);
+    fetchQs.then(r => {
       if (!body.isConnected) return;
       body.innerHTML = '';
       if (!r.ok && !r.data.length) {
@@ -439,7 +463,7 @@ const ViewSubject = {
     const hero = el('section', { class:'sub-hero', style:'--acc:' + subjectColor(sub.color) }, [
       el('div', { class:'wrap' }, [
         el('div', { class:'herotop' }, [
-          el('a', { class:'backbtn', href:'#/', text:'‹ كل المواد' }),
+          el('a', { class:'backbtn', href: o.back || '#/', text:'‹ ' + (o.backLabel || 'كل المواد') }),
           el('div', { class:'topacts' }, [shareBtn, printBtn])
         ]),
         el('div', { class:'inner' }, [
@@ -455,7 +479,8 @@ const ViewSubject = {
               sub.free ? el('span', { class:'stat', text:'مجانية' }) : null
             ])
           ]),
-          el('a', { class:'hero-exam', href:'#/exam/' + sid }, [
+          /* المخفية لا اختبار لها بعد: شاشة الاختبار تقرأ من قائمة المنشور */
+          (o.preview && !sub.published) ? null : el('a', { class:'hero-exam', href:'#/exam/' + sid }, [
             el('span', {}, [
               document.createTextNode('اختبار تجريبي'),
               el('small', { text:'في هذه المادة' })
@@ -475,6 +500,7 @@ const ViewSubject = {
       tabs, body
     ]);
   }
-};
+}
 QBANK.views.ViewSubject = ViewSubject;
+QBANK.views.renderSubject = renderSubject;
 QBANK.views.bankTab = bankTab;
