@@ -181,6 +181,20 @@ function ViewExploreRender(route){
       ? d.total + ' مادة' + (st.q ? ' لـ «' + st.q + '»' : '')
       : 'لا نتائج' + (st.q ? ' لـ «' + st.q + '»' : '');
     if (!d.rows.length){
+      /*
+        ★ مرشّحٌ محفوظ من زيارةٍ سابقة (دولة/جامعة) لا يطابق شيئًا اليوم
+        كان يفتح «استكشف» فارغةً بلا سبب ظاهر — الزائر لا يتذكّر أنه اختار
+        «السعودية» قبل أسبوع. فإن كان الفراغ من المرشّح المحفوظ لا من بحثه،
+        نُسقط المرشّح ونُعيد الجلب بلا قيود، ونقول ذلك بسطر.
+      */
+      const fromSaved = !st.q && !(route.query && (route.query.country || route.query.uni || route.query.col))
+                        && (st.country || st.uni || st.col);
+      if (fromSaved){
+        QBANK.store.set(Explore.KEY, { sort: st.sort });
+        QBANK.toast('أُزيل مرشّح الجامعة المحفوظ — لا مواد تطابقه');
+        QBANK.router.go('#/explore');
+        return;
+      }
       grid.appendChild(QBANK.views.empty('⌕', 'لم نجد شيئًا',
         'جرّب كلمة أقصر، أو أزل بعض المرشّحات — أو كن أنت من يرفع هذه المادة.',
         el('a', { class:'btn', href:'#/upload', text:'⇪ ارفع هذه المادة' })));

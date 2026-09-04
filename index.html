@@ -5574,8 +5574,10 @@ const Admin = {
     try {
       const res = await f(c.url + '/storage/v1/object/uploads/' + path.split('/').map(encodeURIComponent).join('/'), {
         method:'POST',
+        /* بلا x-upsert: الاستبدال يحتاج سياسة قراءة لا نمنحها، والمسار فريد
+           بالطابع الزمني أصلًا — فالإدراج البسيط يكفي ويمرّ من RLS */
         headers:{ 'Authorization':'Bearer ' + s.access_token, 'apikey': c.anonKey,
-                  'Content-Type': file.type || 'application/octet-stream', 'x-upsert':'true' },
+                  'Content-Type': file.type || 'application/octet-stream' },
         body: file
       });
       if (!res.ok){
@@ -10684,7 +10686,7 @@ QBANK.cost = { estimate: estimateCost, compare: compareModels, money,
 /* ★ نسخةٌ حرفية من تعابير الخادم (api/_lib/parser.js) — وفحصٌ يحرس تطابقها.
    فاحصُ التنسيق يعد الطالبَ بما سيحدث عند الرفع، فإن اختلفت النسختان صار
    وعدًا كاذبًا: يُقال له «١٢ سؤالًا» ثم يرفع فيجد صفرًا. */
-const FMT_Q_START   = /^\s*(?:Q|س|السؤال|سؤال)?\s*\.?\s*([\d٠-٩]{1,3})\s*[).\-:]\s+/i;
+const FMT_Q_START   = /^\s*(?:Q|س|السؤال|سؤال)?\s*\.?\s*([\d٠-٩]{1,4})\s*[).\-:]\s+/i;
 const FMT_OPT_START = /^\s*(هـ|[A-Ea-e]|[أابجده])\s*[).\-]\s+/;
 const FMT_ANS_LINE  = /^\s*(?:ANSWER|ANS|KEY|CORRECT|الاجابة|الإجابة|الجواب|الحل|الصحيح)\s*(?:الصحيحة?|الصحيح)?\s*(?:هي|هو)?\s*[:\-.]?\s*(هـ|[A-Ea-e]|[أابجده])(?=\s|$|[).,،])/i;
 
@@ -10961,6 +10963,20 @@ function ViewExploreRender(route){
       ? d.total + ' مادة' + (st.q ? ' لـ «' + st.q + '»' : '')
       : 'لا نتائج' + (st.q ? ' لـ «' + st.q + '»' : '');
     if (!d.rows.length){
+      /*
+        ★ مرشّحٌ محفوظ من زيارةٍ سابقة (دولة/جامعة) لا يطابق شيئًا اليوم
+        كان يفتح «استكشف» فارغةً بلا سبب ظاهر — الزائر لا يتذكّر أنه اختار
+        «السعودية» قبل أسبوع. فإن كان الفراغ من المرشّح المحفوظ لا من بحثه،
+        نُسقط المرشّح ونُعيد الجلب بلا قيود، ونقول ذلك بسطر.
+      */
+      const fromSaved = !st.q && !(route.query && (route.query.country || route.query.uni || route.query.col))
+                        && (st.country || st.uni || st.col);
+      if (fromSaved){
+        QBANK.store.set(Explore.KEY, { sort: st.sort });
+        QBANK.toast('أُزيل مرشّح الجامعة المحفوظ — لا مواد تطابقه');
+        QBANK.router.go('#/explore');
+        return;
+      }
       grid.appendChild(QBANK.views.empty('⌕', 'لم نجد شيئًا',
         'جرّب كلمة أقصر، أو أزل بعض المرشّحات — أو كن أنت من يرفع هذه المادة.',
         el('a', { class:'btn', href:'#/upload', text:'⇪ ارفع هذه المادة' })));
