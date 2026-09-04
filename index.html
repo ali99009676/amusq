@@ -5975,6 +5975,26 @@ function adminContentTab(box){
     const subjects = (subs.ok && subs.data) || [];
     const drafts = (drs.ok && drs.data) || [];
 
+    /*
+      ★ زرّ حذفٍ لكل مسوّدة ولكل مادة (بطلب علي).
+      مسوّدةٌ انقطع رفعها، أو مادةٌ رُفعت خطأً — كانتا تبقيان في القائمة
+      بلا مخرج إلا SQL. الحذف بضغطتين: الأولى تسلّح الزرّ وتُسمّي الفعل،
+      والثانية تنفّذ. والقاعدة تحذف ما يتبعها (الأسئلة، المحاولات) بالتتابع.
+    */
+    const armedDelete = (label, onDo) => {
+      const b = el('button', { class:'btn btn--sm btn--ghost', type:'button', text:'احذف', 'aria-label': label });
+      let armed = false, t = null;
+      b.addEventListener('click', async () => {
+        if (!armed){ armed = true; b.textContent = 'اضغط ثانيةً — حذف نهائي'; b.className = 'btn btn--sm btn--danger';
+          t = setTimeout(() => { armed = false; b.textContent = 'احذف'; b.className = 'btn btn--sm btn--ghost'; }, 6000); return; }
+        clearTimeout(t); b.disabled = true; b.textContent = '… يُحذف';
+        await onDo();
+      });
+      return b;
+    };
+    const stale = d => d.status !== 'reviewing' && d.status !== 'approved'
+                    && (Date.now() - new Date(d.updated_at).getTime()) > 3600 * 1000;
+
     const pending = drafts.filter(d => d.status !== 'approved');
     if (pending.length) {
       listBox.appendChild(adminPanel('المسوّدات', pending.length + ' غير معتمدة — لا يراها الطالب',
@@ -5984,11 +6004,17 @@ function adminContentTab(box){
               el('span', { class:'ad-row__t', text: d.name || 'بلا اسم' }),
               el('span', { class:'ad-row__s', text:
                 d.status === 'reviewing' ? 'اكتملت المعالجة — بانتظار مراجعتك'
-                                         : 'قيد المعالجة: ' + d.done + ' من ' + d.total })
+                  : (stale(d) ? 'عالقة منذ ' + QBANK.admin.charts.ago(d.updated_at) + ' — '
+                              : 'قيد المعالجة: ') + d.done + ' من ' + d.total })
             ]),
-            el('span', { class:'badge ' + (d.status === 'reviewing' ? 'badge--warn' : ''),
-              text: d.status === 'reviewing' ? 'راجِعها' : 'تُعالَج' }),
-            el('a', { class:'btn btn--sm btn--soft', href:'#/admin/upload?draft=' + d.id, text:'أكمل' })
+            el('span', { class:'badge ' + (d.status === 'reviewing' ? 'badge--warn' : (stale(d) ? 'badge--bad' : '')),
+              text: d.status === 'reviewing' ? 'راجِعها' : (stale(d) ? 'عالقة' : 'تُعالَج') }),
+            el('a', { class:'btn btn--sm btn--soft', href:'#/admin/upload?draft=' + d.id, text:'أكمل' }),
+            armedDelete('احذف مسوّدة ' + (d.name || ''), async () => {
+              const r = await QBANK.api.rest('drafts?id=eq.' + d.id, { method:'DELETE' });
+              QBANK.toast(r.ok ? 'حُذفت المسوّدة' : 'تعذّر الحذف');
+              if (r.ok) QBANK.router.render('#/admin/content');
+            })
           ])))));
     }
 
@@ -6067,7 +6093,12 @@ function adminContentTab(box){
         el('span', { class:'ad-sub', style:'flex:1 0 100%' }, [
           el('label', { class:'ad-inline' }, [
             el('span', { class:'ad-inline__l', text:'موعد الاختبار' }), dateIn ]),
-          priceWrap, freeBtn, anaBtn
+          priceWrap, freeBtn, anaBtn,
+          armedDelete('احذف مادة ' + sub.name, async () => {
+            const r = await QBANK.api.rest('subjects?id=eq.' + sub.id, { method:'DELETE' });
+            QBANK.toast(r.ok ? 'حُذفت «' + sub.name + '» وأسئلتها' : 'تعذّر الحذف — ' + ((r.data && r.data.message) || ''));
+            if (r.ok){ try { await QBANK.data.refreshPack(); } catch(e){} QBANK.router.render('#/admin/content'); }
+          })
         ])
       ]));
     });
