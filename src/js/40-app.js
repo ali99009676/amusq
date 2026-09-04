@@ -157,6 +157,9 @@ function boot(){
     /* ★ نبضةٌ متكرّرة لا واحدة عند الإقلاع: من فتح التطبيق ثم وضع جوّاله
        في جيبه ليس متصلًا بالمعنى الذي يهمّ المشرف. */
     if (QBANK.presence) QBANK.presence.start();
+    /* ★ بوابة الاسم: من دخل بحسابٍ بلا اسم لا يمضي قبل أن يكتبه —
+       اللوحة بأسماءٍ مجهولة لا تحفّز أحدًا. لا تُفتح في لوحة المشرف. */
+    if (QBANK.names && !(location.hash || '').startsWith('#/admin')) QBANK.names.checkGate();
   }
   if (QBANK.config.ready()) {
     QBANK.data.refreshPack().then(r => {         // تحديث قائمة المواد إن توفّر اتصال

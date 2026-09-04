@@ -104,6 +104,24 @@ const Presence = {
     '#/admin':     'في لوحة التحكم'
   },
 
+  /*
+    ★ معرّف المادة التي يذاكرها الآن — منه «المتصلون الآن» في كل مادة.
+    المسارات: #/subject/<id> و#/exam/<id> بمعرّف، و#/s/<slug> برابط
+    مشاركة يُردّ إلى معرّفه من فهرس المواد. ولا معرّف خارج هذه الشاشات.
+  */
+  subjectId(route){
+    const r = route || (QBANK.router && QBANK.router.current) || null;
+    if (!r) return null;
+    const path = r.path || '';
+    if (path !== '#/subject' && path !== '#/exam' && path !== '#/s') return null;
+    const id = (r.rest && r.rest[0]) || '';
+    try {
+      const subs = (QBANK.data.pack().subjects) || [];
+      const s = subs.filter(x => x.id === id || x.slug === id)[0];
+      return s ? s.id : (/^[0-9a-f-]{36}$/i.test(id) ? id : null);
+    } catch(e){ return null; }
+  },
+
   place(route){
     const r = route || (QBANK.router && QBANK.router.current) || null;
     if (!r) return '';
@@ -141,7 +159,8 @@ const Presence = {
       p_place: place,
       p_kind: Presence.kind(typeof navigator !== 'undefined' ? navigator.userAgent : '',
                            typeof navigator !== 'undefined' ? navigator.maxTouchPoints : 0),
-      p_country: Presence.country()
+      p_country: Presence.country(),
+      p_subject: Presence.subjectId()
     };
     if (Presence._sendFn) return Presence._sendFn(payload);
     return QBANK.api.rpc('heartbeat', payload);

@@ -7110,6 +7110,246 @@ describe('١٧٧ب · «ينتظرك» قائمة أفعال + نبض المؤش
   has(html, "{ spark: ser('attempts'), deltaOf: ser('attempts') }", 'والاختبارات في اللوحة بنبضها');
 }
 
+describe('١٧٧ج · السجل بالعربية لا JSON');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  no(html, "el('span', { class:'payrow__t', text: JSON.stringify(x.detail) })", '★ لا JSON خامًا في صفّ السجل — كان يدهس الشارات على الجوال');
+  has(html, "amount:'المبلغ', balance:'الرصيد بعده'", 'المفاتيح المعروفة تُقال بكلمتها');
+  has(html, "t.slice(0, 8) + '…'", 'والمعرّفات الطويلة تُختصر');
+  has(html, ".audit__x{ display:flex; flex-wrap:wrap;", 'والشرائح تلتفّ');
+  has(html, "overflow-wrap:anywhere; }   /* نصٌّ طويل يلتفّ ولا يدفع الصف */", 'وصفوف الدفعات كذلك');
+}
+
+/* ============ ١٧٨ · ما كشفه اختبار الرفع الحي ============ */
+describe('١٧٨ · سطر الشرح ليس من الخيار الأخير');
+{
+  const { parse } = require('../api/_lib/parser.js');
+  const qs = parse('1. Which drug?\nA) Propranolol\nB) Atenolol\nC) Carvedilol\nD) Labetalol\nAnswer: B\nExplanation: Atenolol is cardioselective.\n\n2. Next?\nA) x\nB) y\nAnswer: A');
+  eq(qs.length, 2, 'سؤالان');
+  eq(qs[0].options[3], 'Labetalol', '★ الخيار D نظيف — كان «Labetalol Explanation: …»');
+  eq(qs[0].explanation, 'Atenolol is cardioselective.', 'والشرح في حقله');
+  eq(qs[0].answer, 1, 'والإجابة B');
+  const ar = parse('١. سؤال؟\nأ) واحد\nب) اثنان\nالإجابة: ب\nالشرح: لأن كذا.');
+  eq(ar[0].options.length, 2, 'وبالعربية خياران');
+  eq(ar[0].explanation, 'لأن كذا.', 'وشرحٌ عربي');
+  const { enforce } = require('../api/_lib/sanctity.js');
+  const e = enforce(qs[0], { expl_en:'AI text', expl_ar:'ش' }, 'strict');
+  eq(e.expl_en, 'Atenolol is cardioselective.', '★ شرح الملف يسبق شرح الذكاء');
+}
+
+describe('١٧٨ب · «احفظ مخفية» تبقى مخفية');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "async stamp(subjectId, w, publish){", 'الختم يعرف هل نُشرت');
+  has(html, "if (publish !== false) body.status = 'published';", '★ ولا يكتب published فوق مادةٍ أُخفيت');
+  has(html, "await QBANK.admin.stamp(newId, w, publish);", 'والمعالج يمرّر القرار');
+  has(html, "'#/admin/subject/' + newId\n", 'والمخفية تُفتح في محرّرها');
+}
+
+/* ============ ١٧٩ · لوحة المتصدرين والإحصاءات الحيّة ============ */
+/*
+  المبدأ الحاكم: كل رقم يراه الطالب رقم حقيقي. هذه الفحوص شرطُ تسليمٍ لا
+  زينة: الأسماء، البوابة، اللوحة، Pulse، والصدق.
+*/
+describe('١٧٩ · مرشّح الأسماء — في المتصفح وفي الخادم');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, N = A.names;
+  /* كل اسم في قائمة الاستثناء يمرّ — والفحص يطبع من حُجب منها بالاسم */
+  const allow = ['عمر','عمرو','عمار','معتز','خولة','زبير','زبيدة','حسان','بسام','قصي','لوط','شعيب',
+                 'نعمة','طعمة','مكسيم','كسرى','باكستان','أسامة','حمزة','معاذ','سهيل'];
+  const hit = allow.filter(n => N.blocked(n));
+  ok(hit.length === 0, '★ كل الأسماء الحقيقية تمرّ' + (hit.length ? ' — حُجب: ' + hit.join('، ') : ''));
+  ['سارة العتيبي','Ali Alsoqoor','محمد بن سلمان','Fatimah'].forEach(n => ok(!N.blocked(n), 'يمرّ: ' + n));
+  /* المسيء يُحجب ومعه حِيله */
+  ['شرمووووط','ش ر م و ط','f.u.c.k','ADMIN','كسسسس','sh1t','3رص','B1tch','منيووووك'].forEach(n =>
+    ok(N.blocked(n), 'يُحجب: ' + n));
+  eq(N.norm('ش ر م و ط'), 'شرموط', 'التطبيع يزيل الفراغات');
+  eq(N.norm('كسسسس'), 'كس', 'ويطوي التكرار');
+  eq(N.normAr('3رص'), 'عرص', 'وأرقامٌ بدل حروف عربيًا');
+  eq(N.normEn('sh1t'), 'shit', 'ولاتينيًا');
+  /* clean يشرح السبب */
+  const c = N.clean('شرموط');
+  ok(!c.ok && c.why.indexOf('غير مناسب للوحة المتصدرين') !== -1, '★ رسالة الخطأ تشرح السبب لا الطول');
+  ok(N.clean('   سارة   العتيبي ').ok && N.clean('   سارة   العتيبي ').name === 'سارة العتيبي', 'وينظّف الفراغات');
+  ok(!N.clean('1234').ok, 'ولا اسم بلا حرف');
+  eq(N.clean('x'.repeat(40)).name.length, N.MAX, 'و٢٤ حرفًا سقفًا');
+  eq(N.shown('شرموط'), 'اسم محظور', 'والقناع');
+
+  /* المرشّح في الخادم أيضًا — والقوائم واحدة */
+  const sql = require('fs').readFileSync(__dirname + '/../db/BOARD.sql', 'utf8');
+  has(sql, 'create or replace function qbank.name_blocked(t text)', '★ الحكم في القاعدة: الاسم المسيء لا يغادرها');
+  has(sql, "'اسم محظور'", 'مقنَّعًا');
+  has(sql, "qbank.name_blocked(p.name)", 'ومعه blocked لكل صف');
+  N.ALLOW.forEach(w => has(sql, "('" + w + "','allow')", 'استثناء في الخادم: ' + w));
+  N.ROOTS.forEach(w => has(sql, "('" + w + "','root')", 'جذر في الخادم: ' + w));
+  N.EXACT.forEach(w => has(sql, "('" + w + "','exact')", 'كلمة في الخادم: ' + w));
+  has(sql, "'(.)\\1+', '\\1', 'g'", 'وطيّ التكرار في الخادم');
+  no(sql, 'delete from qbank.attempts', '★ لا يُحذف صفّ من المخزن — الحجب مسؤولية عرض');
+  no(sql, "'email'", 'ولا بريد في أي مُخرَج');
+}
+
+describe('١٧٩ب · بوابة الاسم');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  let saved = null;
+  A.api.saveProfile = async d => { saved = d; return { ok:true }; };
+  const g = A.views.nameGate();
+  ok(!!g && !!doc.querySelector('.namebox'), 'البوابة تُفتح');
+  ok(doc.documentElement.classList.contains('gated'), 'وتمنع التمرير خلفها');
+  eq(A.views.nameGate(), null, '★ ولا تُفتح مرتين');
+  ok(!g.querySelector('button[aria-label*="إغلاق"], .namebox__x'), 'وبلا زر تخطٍّ');
+  const inp = doc.getElementById('gateName'), btn = g.querySelector('.btn');
+  inp.value = 'شرموط'; btn.click();
+  ok(!!doc.querySelector('.namebox'), 'لا تُغلق باسم مرفوض');
+  has(g.querySelector('[role="alert"]').textContent, 'غير مناسب', 'ورسالتها تشرح السبب');
+  inp.value = 'سارة'; btn.click();
+  pending.push(new Promise(r => setTimeout(r, 30)).then(() => {
+    ok(!doc.querySelector('.namebox'), '★ تُقبل باسم صحيح وتُغلق');
+    ok(saved && saved.name === 'سارة', 'ويُحفظ في الملف');
+    ok(!doc.documentElement.classList.contains('gated'), 'ويعود التمرير');
+    eq(A.store.get('profile').name, 'سارة', 'وفي الجهاز');
+  }));
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "if (QBANK.names && !(location.hash || '').startsWith('#/admin')) QBANK.names.checkGate();", 'وتُفحص عند الإقلاع');
+  has(html, "const nc = QBANK.names.clean(nameInput.value);", 'واسم الملف يمرّ بالمرشّح نفسه');
+}
+
+describe('١٧٩ج · اللوحة بثلاثة نطاقات');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  A.store.set('pack', { subjects:[{ id:'s1', name:'علم السموم', color:'subject-2', icon:'☠' }], settings:{} });
+  const AR = '٠١٢٣٤٥٦٧٨٩';
+  const mk = (n) => ({ id:'u' + n, name:'طالب' + AR[n], avatar:'🎓', avatar_url:'', university:'جامعة نجران',
+    tries: 20 - n, best: 50 + n, questions: 100 + n * 7, correct: 60 + n * 3, accuracy: 40 + n * 10,
+    seconds: 600 * n, last: new Date().toISOString(), blocked: n === 3, online: n < 2 });
+  const rows = [1,2,3,4,5].map(mk); rows[2].name = 'اسم محظور';
+  let lastCall = null;
+  A.api.rpc = (name, args) => {
+    if (name === 'board_full') lastCall = { name, args };
+    if (name === 'board_full') return Promise.resolve({ ok:true, data:{ ok:true, scope: args.p_scope, online_window_h: 4,
+      board: rows, me:{ id:'u1', rank:1, of:5, tries:19, best:51, accuracy:60, seconds:600, questions:107 },
+      summary:{ students:5, active7d: 4, online_now: 2, exams: 85, questions: 605, correct: 345, accuracy: 57, hours: 2.5 },
+      champions:[{ subject_id:'s1', subject:'علم السموم', color:'subject-2', icon:'☠', name:'طالب١', pct: 51, blocked:false, exams: 85, online_now: 3 }],
+      feed:[{ uid:'u2', n:'طالب٢', s:'s1', subject:'علم السموم', color:'subject-2', p: 80, q: 10, t: Math.floor(Date.now()/1000) - 60 }],
+      universities:[{ id:'un1', name:'جامعة نجران', country:'SA', students:5, exams:85 }], target: null } });
+    if (name === 'subjects_online') return Promise.resolve({ ok:true, data:{ s1: 3 } });
+    return Promise.resolve({ ok:false, status:404, data:null });
+  };
+  A.router.render('#/board');
+  pending.push(new Promise(r => setTimeout(r, 40)).then(() => {
+    const main = doc.getElementById('main');
+    eq(lastCall.args.p_scope, 'all', 'الافتراضي: كل الجامعات');
+    ok(!!main.querySelector('.lb-online'), '★ «متصل الآن» في رأس اللوحة');
+    has(main.querySelector('.lb-online').getAttribute('title'), '٤ ساعات', 'والتلميح يقول النافذة — الصدق');
+    has(main.querySelector('.lb-online').textContent, '٢ متصل الآن', 'والرقم من الخادم بأرقام عربية');
+    eq(main.querySelectorAll('.lb-kpi').length, 5, '★ «نشطون» تختفي تحت العشرة: خمس بطاقات لا ست');
+    ok(!!main.querySelector('.lb-feed'), 'شريط الحركة');
+    eq(main.querySelectorAll('.lb-feed__i').length, 2, 'والمحتوى مكرّر مرتين للحركة الدائرية');
+    ok(!!main.querySelector('.lb-me') && main.querySelector('.lb-me').textContent.indexOf('أنت المتصدّر') !== -1, 'بطاقتك أنت');
+    eq(main.querySelectorAll('.lb-podium__p').length, 3, 'المنصّة بثلاثة');
+    ok(main.querySelector('.lb-podium__p--1 .lb-podium__name').textContent === 'طالب١', 'والأول في الوسط أعلى');
+    ok(!!main.querySelector('.lb-champ') && main.querySelector('.lb-champ .lb-online').textContent.indexOf('٣') !== -1,
+       '★ كل مادة تعرض عدد المتصلين الآن فيها');
+    eq(main.querySelectorAll('.lb-row').length, 5, 'الجدول الكامل');
+    ok(!!main.querySelector('.lb-row.is-me .badge--gold'), '★ صفّ الطالب مميَّز بشارة «أنت»');
+    ok(!!main.querySelector('.lb-row.is-blk .badge--bad'), 'والمحظور بشارته — بأرقامه، بلا حذف');
+    ok(!/[0-9]/.test(main.querySelector('.lb-rows').textContent), '★ الأرقام كلها عربية هندية');
+    /* الفرز في المتصفح بلا نداء */
+    const before = lastCall;
+    main.querySelector('[data-sort="acc"]').click();
+    ok(lastCall === before, 'الفرز لا ينادي الخادم');
+    has(main.querySelector('.lb-row .lb-row__name').textContent, 'طالب٥', 'وترتيب الدقة يُقدّم الأدقّ (طالب٥)');
+    main.querySelector('[data-sort="qs"]').click();
+    has(main.querySelector('.lb-row .lb-row__name').textContent, 'طالب٥', 'والأسئلة تُقدّم الأكثر');
+    main.querySelector('[data-sort="best"]').click();
+    has(main.querySelector('.lb-row .lb-row__name').textContent, 'طالب٥', 'وأعلى نسبة');
+    main.querySelector('[data-sort="tries"]').click();
+    has(main.querySelector('.lb-row .lb-row__name').textContent, 'طالب١', 'والافتراضي الاختبارات');
+
+    /* النطاقات */
+    A.router.render('#/board/university/un1');
+    return new Promise(r => setTimeout(r, 40));
+  }).then(() => {
+    eq(lastCall.args.p_scope, 'university', '★ نطاق الجامعة من المسار');
+    eq(lastCall.args.p_id, 'un1', 'بمعرّفها');
+    ok(!!doc.querySelector('#main .lb-scope select'), 'وقائمة الجامعات للاختيار');
+    A.router.render('#/board/subject/s1');
+    return new Promise(r => setTimeout(r, 40));
+  }).then(() => {
+    eq(lastCall.args.p_scope, 'subject', '★ نطاق المادة');
+    eq(lastCall.args.p_id, 's1', 'بمعرّفها');
+    ok(!doc.querySelector('#main .lb-champs'), 'ولا أبطال مواد داخل مادة واحدة');
+  }));
+
+  /* لوحة فارغة بلا انهيار */
+  const dom2 = makeDom(), W2 = dom2.window, A2 = W2.QBANK;
+  A2.api.rpc = () => Promise.resolve({ ok:true, data:{ ok:true, scope:'all', board:[], me:null, summary:{}, champions:[], feed:[], universities:[] } });
+  A2.router.render('#/board');
+  pending.push(new Promise(r => setTimeout(r, 40)).then(() => {
+    has(W2.document.getElementById('main').textContent, 'كن أول من يؤدّي اختبارًا', '★ الفراغ دعوة لا عطل');
+  }));
+
+  /* «متصل الآن» على بطاقات المواد في الرئيسية */
+  const dom3 = makeDom(), W3 = dom3.window, A3 = W3.QBANK;
+  A3.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  A3.store.set('pack', { subjects:[{ id:'s1', name:'علم السموم', q_count: 10 }], settings:{} });
+  A3.store.set('my_subjects', ['s1']);
+  A3.api.rpc = (name) => Promise.resolve(name === 'subjects_online' ? { ok:true, data:{ s1: 4 } } : { ok:false, data:null });
+  A3.router.render('#/');
+  pending.push(new Promise(r => setTimeout(r, 40)).then(() => {
+    const c = W3.document.querySelector('.sub-card[data-id="s1"] .lb-online');
+    ok(!!c && c.textContent.indexOf('٤ متصل الآن') !== -1, '★ بطاقة المادة تعرض المتصلين الآن فيها');
+  }));
+}
+
+describe('١٧٩د · Pulse — أربع قواعد');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document, P = A.pulse;
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  const feed = [{ uid:'u1', n:'أنا', s:'s1', subject:'x', p:90 }, { uid:'u2', n:'عبدالرحمن', s:'s1', subject:'علم السموم', color:'subject-2', p:80 }];
+  P.feed(feed);
+  eq(P._items.length, 1, 'حدث الطالب نفسه لا يُعرض');
+  eq(P.FIRST, 12000, 'أول إشعار بعد ١٢ ثانية'); eq(P.GAP, 45000, 'ثم كل ~٤٥'); eq(P.LIFE, 7000, 'يبقى ٧'); eq(P.MAX, 6, 'وستة في الجلسة');
+  P.stop();
+  A.router.render('#/exam/s1');
+  P.tick();
+  ok(!doc.querySelector('.pulse'), '★ لا إشعار أثناء اختبار');
+  P.stop();
+  A.router.render('#/');
+  const b1 = P.show(P._items[0]);
+  ok(!!b1 && !!doc.querySelector('.pulse'), 'يظهر خارج الاختبار');
+  has(doc.querySelector('.pulse').textContent, 'عبدالرحمن', 'باسم الزميل');
+  ok(!!doc.querySelector('.pulse a[href="#/subject/s1"]'), 'وزر «جرّبها» يفتح المادة');
+  eq(P.show(P._items[0]), null, '★ لا يظهر اثنان معًا');
+  P.shown = P.MAX; P.tick();
+  eq(doc.querySelectorAll('.pulse').length, 1, 'ولا يتجاوز MAX');
+  doc.querySelector('.pulse__x').click();
+  ok(P.off() && !doc.querySelector('.pulse'), '★ زر الإيقاف يوقفه ويُحفظ الاختيار');
+  P.stop();
+}
+
+describe('١٧٩هـ · الصدق — لا رقم مُختلَق');
+{
+  const src = require('fs').readFileSync(__dirname + '/js/32-board.js', 'utf8');
+  ok(!/text:\s*'[٠-٩0-9]+ (?:طالب|نشيط|متصل)/.test(src), '★ لا «٥٣ نشيطًا» في المصدر — كل قيمة من ردّ الخادم');
+  has(src, "MIN_ACTIVE: 10", 'وقاعدة العشرة معلنة');
+  has(src, "if ((S.active7d || 0) >= Board.MIN_ACTIVE)", 'ومطبَّقة');
+  has(src, "title:'حضورٌ خلال آخر ٤ ساعات'", '★ «الآن» تُقال بنافذتها');
+  const sql = require('fs').readFileSync(__dirname + '/../db/BOARD.sql', 'utf8');
+  has(sql, "win interval := interval '4 hours';", 'والقاعدة تحسب الأربع ساعات');
+  has(sql, "d.subject_id = s.id and d.last_seen > now() - win", '★ ولكل مادة عدّادها من نبضة المادة');
+  has(sql, "p_subject uuid default null", 'والنبضة تحمل المادة');
+  has(sql, "drop function if exists qbank.heartbeat(text, text, text, text);", 'ولا overload — التوقيع القديم يُسقَط أولًا');
+  has(sql, "case when coalesce(sum(a.total),0) > 0 then round(sum(a.correct) * 100.0 / sum(a.total))::int", '★ الدقة تُحسب ولا تُخزَّن');
+  has(sql, "order by tries desc, best desc, questions desc", 'والافتراضي عدد المحاولات لا أعلى نسبة');
+  has(sql, "grant execute on function qbank.board_full(text, uuid, int) to anon, authenticated;", 'واللوحة للجميع — أسماء عرض فقط');
+  no(sql, 'expl_ar', 'ولا محتوى مدفوع فيها');
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "p_subject: Presence.subjectId()", 'والمتصفح يرسل المادة في نبضته');
+}
+
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */
 Promise.all(pending).then(() => {
   const total = pass + fail;

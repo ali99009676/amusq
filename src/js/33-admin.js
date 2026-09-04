@@ -356,15 +356,21 @@ const Admin = {
     return (r.ok && r.data && r.data[0] && r.data[0].slug) || null;
   },
 
-  async stamp(subjectId, w){
+  async stamp(subjectId, w, publish){
     if (!subjectId) return { ok:false };
     const u = QBANK.api.user() || {};
     const body = {
       created_by: u.id || null,
       sanctity_mode: w.mode === 'enhanced' ? 'enhanced' : 'strict',
-      status: 'published',
       course_code: w.courseCode || ''
     };
+    /*
+      ★ الحالة لا تُكتب هنا إلا عند النشر.
+      كان الختم يكتب 'published' دائمًا — فمن ضغط «احفظ مخفية» وجد مادته
+      منشورة بعد ثانية: approve_draft أوقفتها، والختم أعادها. الآن الختم
+      يؤكّد النشر إن نُشرت، ويترك المخفية كما تركتها القاعدة.
+    */
+    if (publish !== false) body.status = 'published';
     /*
       ★ الحقل الفارغ يُحذف ولا يُرسل صفرًا.
       كان يُرسل `slug: w.slug || null` دائمًا. والقاعدة تولّد الرابط عند

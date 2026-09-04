@@ -529,11 +529,31 @@ function proAuditTab(box){
       body.appendChild(QBANK.views.empty('◷', 'لا أفعال بعد', 'سيظهر هنا كل تدخّل إداري.'));
       return;
     }
-    rows.forEach(x => body.appendChild(el('div', { class:'payrow' }, [
-      el('span', { class:'badge', text: AR[x.action] || x.action }),
-      el('span', { class:'payrow__t', text: JSON.stringify(x.detail) }),
-      el('span', { class:'badge num', text: x.actor || 'مشرف' }),
-      el('span', { class:'payrow__d num', text: new Date(x.created_at).toLocaleString('ar') })
+    /*
+      ★ التفاصيل بالعربية لا JSON خامًا.
+      «{"amount":100,"balance":500}» كان يُلقى نصًّا واحدًا لا يلتفّ فيدهس
+      الشارات على الجوال. الآن كل مفتاحٍ معروف يُقال بكلمته، والمجهول
+      يُعرض مفتاح: قيمة — كلٌّ في شريحته الصغيرة تلتفّ حيث تشاء.
+    */
+    const K = { amount:'المبلغ', balance:'الرصيد بعده', note:'ملاحظة', user:'الطالب', user_id:'الطالب',
+                phone:'الجوال', claim:'الطلب', subject:'المادة', subject_id:'المادة', days:'أيام',
+                admin:'مشرف', status:'الحالة', from:'من', to:'إلى', reason:'السبب', id:'المعرّف' };
+    const short = v => { const t = String(v); return /^[0-9a-f-]{20,}$/i.test(t) ? t.slice(0, 8) + '…' : t; };
+    const detailChips = d => {
+      if (!d || typeof d !== 'object') return [ el('span', { class:'audit__k', text: d == null ? '—' : short(d) }) ];
+      return Object.keys(d).map(k => el('span', { class:'audit__k' }, [
+        el('b', { text: (K[k] || k) + ': ' }),
+        el('span', { class: /phone|id|claim|user/.test(k) ? 'num ltr' : '', text: short(typeof d[k] === 'object' ? JSON.stringify(d[k]) : d[k]) })
+      ]));
+    };
+    rows.forEach(x => body.appendChild(el('div', { class:'audit' }, [
+      el('div', { class:'audit__h' }, [
+        el('span', { class:'badge', text: AR[x.action] || x.action }),
+        el('span', { class:'spacer' }),
+        el('span', { class:'audit__who', text: x.actor || 'مشرف' }),
+        el('span', { class:'audit__d num', text: new Date(x.created_at).toLocaleString('ar-SA-u-nu-arab', { dateStyle:'short', timeStyle:'short' }) })
+      ]),
+      el('div', { class:'audit__x' }, detailChips(x.detail))
     ])));
   });
 }

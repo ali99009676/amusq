@@ -38,29 +38,17 @@ const Api = {
   },
   user(){ const s = Api.session(); return s && s.user ? s.user : null; },
 
-  /*
-    ★ رمزٌ انتهى وقتُه لا يُرسل — يُرسل مفتاح الزائر مكانه.
-    كان الرمز الميت يُرسل كما هو، فترجع كل الاستدعاءات ٤٠١ ولا يرى الزائر
-    حتى المادة المجانية المفتوحة له. سقوطُنا إلى الزائر أنفع من سقوطنا إلى
-    لا شيء: يذاكر المتاح ويُدعى للدخول، لا يواجه صفحةً فارغة بلا سبب.
-  */
-  usableToken(){
-    const s = Api.session();
-    if (!s || !s.access_token) return null;
-    if (s.expires_abs && Date.now() > s.expires_abs) return null;
-    return s.access_token;
-  },
-
   headers(){
     const c = QBANK.config.get() || {};
+    const s = Api.session();
     return {
       'apikey': c.anonKey || '',
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + (Api.usableToken() || c.anonKey || '')
+      'Authorization': 'Bearer ' + (s && s.access_token ? s.access_token : (c.anonKey || ''))
     };
   },
 
-  async raw(path, opts, retried){
+  async raw(path, opts){
     const c = QBANK.config.get();
     const f = Api.fetchFn();
     if (!c || !f) return { ok:false, offline:true, data:null };
@@ -74,21 +62,6 @@ const Api = {
       const text = await res.text();
       let data = null;
       try{ data = text ? JSON.parse(text) : null; } catch(e){ data = text; }
-
-      /*
-        ★ التجديد الاستباقي وحده لا يكفي.
-        هو يقيس الوقت، والرمز قد يموت قبل وقته: مفتاحٌ دُوِّر في Supabase،
-        أو حسابٌ حُذف، أو ساعةُ الجهاز مائلة. عندها يُرسل رمزٌ يراه الجهاز
-        حيًّا ويراه الخادم ميتًا، فترجع ٤٠١ إلى الأبد — كل فتحةٍ سبعة نداءات
-        فاشلة، ولا شيء يُصلح نفسه لأن لا أحد ينظر إلى الرمز إلا الساعة.
-        فنجرّب التجديد مرةً واحدة. وإن مات رمز التجديد أيضًا فقد مسحته
-        refresh، ونعيد الطلب زائرًا: المجاني يُرى، والباقي يدعو للدخول.
-      */
-      if ((res.status === 401 || res.status === 403) && !retried
-          && path.indexOf('/auth/') === -1 && Api.session()) {
-        await Api.auth.refresh();
-        return Api.raw(path, opts, true);
-      }
       return { ok: res.ok, status: res.status, data };
     } catch(e){
       return { ok:false, offline:true, data:null, err: e.message };

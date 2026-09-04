@@ -804,7 +804,7 @@ function stepPublish(box){
     // approve_draft تُرجع معرّف المادة — نختمها بهوية رافعها ونمطه ومساره
     const newId = (typeof r.data === 'string') ? r.data : (r.data && r.data.id) || null;
     const w = wizard;
-    await QBANK.admin.stamp(newId, w);
+    await QBANK.admin.stamp(newId, w, publish);
     /*
       ★ نُجدّد قائمة المواد قبل أن نُري الرابط.
       القائمة تُجلب مرة عند الإقلاع وتعيش في التخزين المحلي، فالمادة التي
@@ -822,7 +822,9 @@ function stepPublish(box){
       return void showShare(box, realSlug || w.slug, w.subjectName, newId, w.analysisLang || 'ar');
     }
     wizard = null;
-    QBANK.router.go(QBANK.store.get('is_admin_check', {}).ok ? '#/admin/content' : '#/account');
+    /* المخفية تُفتح في محرّرها مباشرة: من أخفاها يريد أن يكملها لا أن يبحث عنها */
+    QBANK.router.go(newId && QBANK.store.get('is_admin_check', {}).ok ? '#/admin/subject/' + newId
+                  : QBANK.store.get('is_admin_check', {}).ok ? '#/admin/content' : '#/account/uploads');
   }
   pub.addEventListener('click', () => fire(true));
   hide.addEventListener('click', () => fire(false));

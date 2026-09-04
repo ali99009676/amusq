@@ -121,6 +121,16 @@ function accountBody(){
       phoneInput.focus();
       return;
     }
+    /* ★ الاسم يمرّ بمرشّح اللوحة نفسه — والرسالة تشرح السبب لا تكتفي بالطول */
+    if (QBANK.names){
+      const nc = QBANK.names.clean(nameInput.value);
+      if (!nc.ok){
+        phoneMsg.textContent = nc.why; phoneMsg.className = 'field__hint is-bad';
+        nameInput.focus();
+        return;
+      }
+      nameInput.value = nc.name;
+    }
     phoneMsg.textContent = ''; phoneMsg.className = 'field__hint';
     const picked = avatarRow.querySelector('[aria-checked="true"] .iconbtn__ico');
     const data = { name: nameInput.value.trim(), avatar: picked ? picked.textContent : AVATARS[0],

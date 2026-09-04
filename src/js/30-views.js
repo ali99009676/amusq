@@ -75,7 +75,7 @@ function subjectCard(sub){
     اللون يُحقن مرة واحدة في --acc فيتلوّن كل ما بالداخل من نظام التصميم.
   */
   const card = el('article', {
-    class:'sub-card' + (past ? ' exam-done' : ''), tabindex:'0', role:'link',
+    class:'sub-card' + (past ? ' exam-done' : ''), tabindex:'0', role:'link', 'data-id': sub.id,
     style:'--acc:' + color, 'aria-label':'مادة ' + sub.name }, [
     past ? el('span', { class:'stamp', 'aria-hidden':'true', text:'تم الانتهاء' }) : null,
     el('div', { class:'art', 'aria-hidden':'true' }, [
@@ -266,6 +266,8 @@ const ViewHome = {
     }
     const pg = page('موادي', 'اختر مادة لتبدأ المراجعة.', body);
     if (hero) pg.classList.add('page--hero');   // البطل هو الرأس؛ العنوان يبقى للقارئ الآلي
+    /* «متصل الآن» على بطاقات المواد — بعد إدراجها في الصفحة، بنداء واحد للكل */
+    if (QBANK.board && QBANK.board.decorateCards) setTimeout(() => QBANK.board.decorateCards(), 0);
     return pg;
   }
 };
