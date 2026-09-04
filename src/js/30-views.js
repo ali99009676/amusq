@@ -70,36 +70,44 @@ function subjectCard(sub){
   const topics = (sub.topics && sub.topics.length) || 0;
 
   /*
-    بطاقة AMSU: منطقة فنية بتدرّج لون المادة وأيقونتها، شارة «N سؤالًا»،
-    الاسم وتحته الإنجليزي، سطر موعد الاختبار بعدّه، شريط تقدّم، و«ابدأ المراجعة».
-    اللون يُحقن مرة واحدة في --acc فيتلوّن كل ما بالداخل من نظام التصميم.
+    ★ البطاقة أُعيد تصميمها (بحكم علي: «طريقة عرض المواد سيئة»).
+    كانت منطقةً فنية بتدرّجٍ باهت وأيقونةٍ صغيرة تطفو في فراغ، ثم اسمٌ
+    وشريط وذيلٌ متزاحم. الآن: بلاطةٌ ملوّنة بلون المادة تحمل أيقونتها،
+    والاسم وترجمته بجانبها، ثم شرائح الحقائق (الأسئلة، المحاور، السعر،
+    المتصلون الآن)، ثم شريط التقدّم بجملته، ثم زرٌّ واحد صريح. اللون
+    يُحقن مرة في --acc فتتلوّن البلاطة والزرّ والشريط من نظام التصميم.
   */
+  const N = QBANK.views.arNum;
   const card = el('article', {
     class:'sub-card' + (past ? ' exam-done' : ''), tabindex:'0', role:'link', 'data-id': sub.id,
     style:'--acc:' + color, 'aria-label':'مادة ' + sub.name }, [
     past ? el('span', { class:'stamp', 'aria-hidden':'true', text:'تم الانتهاء' }) : null,
-    el('div', { class:'art', 'aria-hidden':'true' }, [
-      el('span', { class:'art__ico', text: sub.icon || '▤' }),
-      el('span', { class:'badge num', text: QBANK.views.arNum(sub.q_count || 0) + ' سؤالًا' })
-    ]),
-    el('div', { class:'meta' }, [
-      el('h3', { text: sub.name }),
-      sub.name_en ? el('span', { class:'qn ltr', text: sub.name_en })
-        : (sub.course_code ? el('span', { class:'qn ltr', text: sub.course_code }) : null),
-      left !== null ? el('div', { class:'examline num' }, [
-        el('span', { class:'when', text: past ? 'انتهى موعده' : 'موعد الاختبار' }),
-        past ? null : el('b', { class: left <= 2 ? 'urgent' : '',
-          text:'متبقٍ ' + QBANK.views.arNum(left) + (left === 1 ? ' يوم' : ' أيام') })
-      ]) : null,
-      el('div', { class:'prog', 'aria-label':'أنجزت ' + pct + '٪' }, [
-        el('i', { style:'width:' + pct + '%' })
-      ]),
-      el('div', { class:'foot num' }, [
-        el('span', { text:'راجعت ' + QBANK.views.arNum(done) + ' من ' +
-          QBANK.views.arNum(sub.q_count || 0) + ' · ' + QBANK.views.arNum(pct) + '٪' }),
-        sub.free ? el('span', { class:'badge badge--ok', text:'مجانية' }) : null,
-        el('span', { class:'cta', text:'ابدأ المراجعة ‹' })
+    el('div', { class:'sc-top' }, [
+      el('span', { class:'sc-ico', 'aria-hidden':'true', text: sub.icon || '▤' }),
+      el('div', { class:'sc-x' }, [
+        el('h3', { text: sub.name }),
+        sub.name_en ? el('span', { class:'qn ltr', text: sub.name_en })
+          : (sub.course_code ? el('span', { class:'qn ltr', text: sub.course_code }) : null)
       ])
+    ]),
+    el('div', { class:'foot' }, [
+      el('span', { class:'badge num', text: N(sub.q_count || 0) + ' سؤالًا' }),
+      topics ? el('span', { class:'badge num', text: N(topics) + ' محاور' }) : null,
+      sub.free ? el('span', { class:'badge badge--ok', text:'مجانية' })
+               : (Number(sub.price) > 0 ? el('span', { class:'badge badge--gold num', text: N(sub.price) + ' ريال' }) : null)
+    ]),
+    left !== null ? el('div', { class:'examline' }, [
+      el('span', { class:'when', text: past ? 'انتهى موعده' : 'موعد الاختبار' }),
+      past ? null : el('b', { class: left <= 2 ? 'urgent' : '',
+        text:'متبقٍ ' + N(left) + (left === 1 ? ' يوم' : ' أيام') })
+    ]) : null,
+    el('div', { class:'sc-prog' }, [
+      el('div', { class:'prog', 'aria-label':'أنجزت ' + pct + '٪' }, [ el('i', { style:'width:' + pct + '%' }) ]),
+      /* بلا num: الصنف يقلب الاتجاه فتقفز «٪» إلى أول الجملة العربية */
+      el('span', { class:'sc-prog__l', text:'راجعت ' + N(done) + ' من ' + N(sub.q_count || 0) + ' · ' + N(pct) + '٪' })
+    ]),
+    el('div', { class:'sc-act' }, [
+      el('span', { class:'btn btn--sm cta', text: pct > 0 ? 'أكمل المراجعة' : 'ابدأ المراجعة' })
     ])
   ]);
   card.addEventListener('click', () => QBANK.router.go('#/subject/' + sub.id));
@@ -206,6 +214,9 @@ const ViewHome = {
        وبزرٍّ يضغطه هو لا بنافذةٍ تقفز فتُرفض بلا قراءة. */
     if (QBANK.views.notifyBanner){ const nb = QBANK.views.notifyBanner(); if (nb) nudges.appendChild(nb); }
 
+    /* ★ المتصدرون في أول شاشة: اللوحة كانت بلا باب — ما لا يُرى لا يوجد */
+    if (QBANK.views.boardMini) body.push(QBANK.views.boardMini());
+
     // دعوة الرفع: الطالب لا يبحث عن ميزة لا يعرف بوجودها
     body.push(el('a', { class:'upsell', href:'#/upload' }, [
       el('span', { class:'upsell__ico', 'aria-hidden':'true', text:'⇪' }),
@@ -260,7 +271,8 @@ const ViewHome = {
           QBANK.toast('أُضيفت «' + su.name + '» إلى موادك');
           QBANK.router.render('#/');
         });
-        c.appendChild(el('div', { class:'row', style:'margin-top:8px' }, [add]));
+        /* زرّ الإضافة في صفّ الأفعال بجانب زرّ البدء — لا صفًّا ثانيًا معلَّقًا تحت البطاقة */
+        (c.querySelector('.sc-act') || c).appendChild(add);
         return c;
       })));
     }

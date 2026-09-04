@@ -202,4 +202,5 @@ const ViewExplore = { title:'استكشف', view: ViewExploreRender };
 
 QBANK.explore = Explore;
 QBANK.explore.countryName = countryName;
+QBANK.explore.COUNTRIES = Object.keys(COUNTRIES);   /* الرموز بالترتيب — لقوائم الاختيار في اللوحة */
 QBANK.views.ViewExplore = ViewExplore;

@@ -15,30 +15,35 @@
   والرسم مضمّن لا من مكتبة: خمسة رموز لا تستحق ملفًا خارجيًا يُحمَّل،
   وتضمينها يبقيها تعمل بلا إنترنت كبقية التطبيق.
 */
+/*
+  ★ الأيقونات أُعيد رسمها: كانت خطوطًا رفيعة (١.٧) بهندسةٍ مبسّطة فبدت
+  «سيئة» بحكم علي. الآن أشكالٌ مغلقة أوضح بخطٍّ ٢.١ وزوايا مستديرة —
+  على طراز Lucide — وما زالت مسارات SVG مكتوبة هنا بلا مكتبة خارجية.
+*/
 const ICONS = {
-  /* الرئيسية: بيت — أوضح رمز في الواجهات كلها، ولا يحتاج تعلّمًا */
-  home: 'M3 10.4 12 3l9 7.4M5.6 9v10.5c0 .6.4 1 1 1h4v-6h2.8v6h4c.6 0 1-.4 1-1V9',
-  /* استكشف: عدسة */
-  search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20.5 20.5 16 16',
-  /* راجع: سهم دائري — الاسترجاع بعد حين */
-  repeat: 'M20 12a8 8 0 1 1-2.6-5.9M20 3.5V8h-4.5',
-  /* ارفع: سهم يصعد من قاعدة */
-  upload: 'M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 16v2.5c0 .8.7 1.5 1.5 1.5h13c.8 0 1.5-.7 1.5-1.5V16',
-  /* حسابي: كتف ورأس */
-  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4.5 20.5c.9-3.6 3.9-5.5 7.5-5.5s6.6 1.9 7.5 5.5'
+  /* الرئيسية: بيتٌ بسقفٍ وبابٍ مغلقين — لا ثلاثة خطوط متفرّقة */
+  home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  /* استكشف: عدسة بدائرة كاملة ومقبض قصير */
+  search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM21 21l-4.3-4.3',
+  /* راجع: دورة كاملة تعود إلى بدايتها — الاسترجاع بعد حين */
+  repeat: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
+  /* ارفع: سهم يصعد وصينيّة تحته */
+  upload: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
+  /* حسابي: رأسٌ وكتفان مغلقان */
+  user: 'M18 20a6 6 0 0 0-12 0M12 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'
 };
 
 function icon(d){
   const NS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('width', '20'); svg.setAttribute('height', '20');
+  svg.setAttribute('width', '22'); svg.setAttribute('height', '22');
   svg.setAttribute('fill', 'none');
   svg.setAttribute('aria-hidden', 'true');
   const path = document.createElementNS(NS, 'path');
   path.setAttribute('d', d);
   path.setAttribute('stroke', 'currentColor');
-  path.setAttribute('stroke-width', '1.7');
+  path.setAttribute('stroke-width', '2.1');
   path.setAttribute('stroke-linecap', 'round');
   path.setAttribute('stroke-linejoin', 'round');
   svg.appendChild(path);

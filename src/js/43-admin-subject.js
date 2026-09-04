@@ -102,8 +102,75 @@ function subjIdentity(sub, refresh){
   priceIn.addEventListener('input', paintPrice);
   paintPrice();
 
+  /*
+    ★ الجامعة والكلية — من اللوحة لا من SQL (بطلب علي).
+    المادة بلا جامعة لا تظهر في «استكشف» لأحد، والرافع قد ينسى أو يخطئ.
+    قائمتان: الجامعات كلّها (list_universities) ثم كلياتُ المختارة
+    (list_colleges)، و«+ جديدة» يكتب اسمًا فتُنشأ إن لم توجد (ensure_*)
+    بالمطابقة المعيارية — فلا تتكرّر «جامعة الملك سعود» بهمزةٍ أو بدونها.
+  */
+  const uniSel = el('select', { class:'input', 'aria-label':'الجامعة' });
+  const colSel = el('select', { class:'input', 'aria-label':'الكلية' });
+  const uniNew = el('input', { class:'input input--sm', placeholder:'+ جامعة جديدة (اكتب اسمها)', hidden:true });
+  const colNew = el('input', { class:'input input--sm', placeholder:'+ كلية جديدة (اكتب اسمها)', hidden:true });
+  const uniCountry = el('select', { class:'input input--sm', 'aria-label':'دولة الجامعة الجديدة', hidden:true });
+  (QBANK.explore && QBANK.explore.COUNTRIES ? QBANK.explore.COUNTRIES :
+    ['SA','EG','JO','AE','KW','QA','BH','OM','IQ','MA','DZ','TN','SD','YE','LY','SY','LB','PS']).forEach(c =>
+    uniCountry.appendChild(el('option', { value:c, text: QBANK.explore && QBANK.explore.countryName ? QBANK.explore.countryName(c) : c })));
+  const campusHint = el('p', { class:'field__hint', style:'margin:4px 0 0' });
+  const fillCols = async (uniId, keep) => {
+    colSel.innerHTML = '';
+    colSel.appendChild(el('option', { value:'', text:'— بلا كلية —' }));
+    if (uniId){
+      const r = await QBANK.api.rpc('list_colleges', { p_university: uniId });
+      ((r.ok && Array.isArray(r.data)) ? r.data : []).forEach(c =>
+        colSel.appendChild(el('option', { value:c.id, text:c.name, selected: c.id === keep ? true : null })));
+    }
+    colSel.appendChild(el('option', { value:'__new', text:'+ كلية جديدة…' }));
+  };
+  uniSel.appendChild(el('option', { value:'', text:'جارٍ جلب الجامعات…' }));
+  QBANK.api.rpc('list_universities', { q:'', p_country:'' }).then(async r => {
+    uniSel.innerHTML = '';
+    uniSel.appendChild(el('option', { value:'', text:'— بلا جامعة (لا تظهر في استكشف) —' }));
+    ((r.ok && Array.isArray(r.data)) ? r.data : []).forEach(u =>
+      uniSel.appendChild(el('option', { value:u.id, text: u.name + (u.country ? ' · ' + u.country : ''),
+        selected: u.id === sub.university_id ? true : null })));
+    uniSel.appendChild(el('option', { value:'__new', text:'+ جامعة جديدة…' }));
+    if (!sub.university_id) campusHint.textContent = 'المادة بلا جامعة الآن — لن يجدها أحد في «استكشف» حتى تُحدَّد.';
+    await fillCols(sub.university_id || null, sub.college_id || null);
+  });
+  uniSel.addEventListener('change', () => {
+    const isNew = uniSel.value === '__new';
+    uniNew.hidden = !isNew; uniCountry.hidden = !isNew;
+    fillCols(isNew ? null : (uniSel.value || null), null);
+  });
+  colSel.addEventListener('change', () => { colNew.hidden = colSel.value !== '__new'; });
+  /* يعيد {university_id, college_id} بعد إنشاء ما يلزم — أو خطأً نصيًا */
+  async function resolveCampus(){
+    let uni = uniSel.value || null, col = colSel.value || null;
+    if (uni === '__new'){
+      const nm = uniNew.value.trim();
+      if (!nm) return { error:'اكتب اسم الجامعة الجديدة' };
+      const r = await QBANK.api.rpc('ensure_university', { p_country: uniCountry.value, p_name: nm });
+      if (!r.ok || !r.data) return { error:'تعذّر إنشاء الجامعة' };
+      uni = r.data;
+    }
+    if (col === '__new'){
+      const nm = colNew.value.trim();
+      if (!uni) return { error:'اختر الجامعة أولًا ثم الكلية' };
+      if (!nm) return { error:'اكتب اسم الكلية الجديدة' };
+      const r = await QBANK.api.rpc('ensure_college', { p_university: uni, p_name: nm });
+      if (!r.ok || !r.data) return { error:'تعذّر إنشاء الكلية' };
+      col = r.data;
+    }
+    if (!uni) col = null;   // كليةٌ بلا جامعة لا معنى لها
+    return { university_id: uni, college_id: col };
+  }
+
   const save = el('button', { class:'btn', type:'button', text:'احفظ الهوية' });
   save.addEventListener('click', async () => {
+    const campus = await resolveCampus();
+    if (campus.error){ campusHint.textContent = '⚠ ' + campus.error; return; }
     /* السعر يُقصّ إلى نطاقٍ معقول قبل الحفظ: حقلُ رقمٍ في متصفح يقبل
        أي شيء، والقيمة السالبة أو الخيالية تُفسد البوابة لا الحقل. */
     const price = Math.max(0, Math.min(999, parseInt(priceIn.value || '0', 10) || 0));
@@ -113,7 +180,8 @@ function subjIdentity(sub, refresh){
       ord: parseInt(ordIn.value || '0', 10), exam_date: dateIn.value || null,
       price: price,
       /* والمجانية تتبع السعر لا تناقضه: صفرٌ يعني مجانية، وأكثرُ منه مدفوعة */
-      free: price === 0
+      free: price === 0,
+      university_id: campus.university_id, college_id: campus.college_id
     });
     QBANK.toast(r.ok ? 'حُفظت هوية المادة' : 'تعذّر الحفظ');
     if (r.ok && refresh) refresh();
@@ -182,7 +250,11 @@ function subjIdentity(sub, refresh){
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الأيقونة' }), icons ]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترتيب' }), ordIn ]),
       el('label', { class:'field', style:'margin:0' }, [
-        el('span', { class:'field__label', text:'السعر بالريال' }), priceIn, priceHint ])
+        el('span', { class:'field__label', text:'السعر بالريال' }), priceIn, priceHint ]),
+      el('div', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'الجامعة — تظهر المادة في قسمها بـ«استكشف»' }), uniSel, uniCountry, uniNew, campusHint ]),
+      el('div', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'الكلية (اختياري)' }), colSel, colNew ])
     ]),
     el('div', { class:'ad-bar', style:'margin:16px 0 0' }, [ save, pub, free, verify ]),
     /* بابٌ من المادة إلى بلاغاتها: المشرف الذي يفتحها ليوثّقها يرى أولًا ما عليها */

@@ -139,20 +139,22 @@
   .topnav{ display:flex; align-items:center; gap:var(--s1); margin-inline-end:auto;
            padding-inline-start:var(--s5); }
   .topnav__item{
-    display:inline-flex; align-items:center; gap:7px;
-    padding:8px 12px; border-radius:10px; text-decoration:none;
-    color:var(--text-2); font-size:.88rem; font-weight:600;
+    display:inline-flex; align-items:center; gap:8px;
+    padding:6px 12px 6px 8px; border-radius:12px; text-decoration:none;
+    color:var(--text-2); font-size:.9rem; font-weight:700;
     transition:background .16s var(--ease), color .16s var(--ease);
   }
   .topnav__item:hover{ background:var(--surface-2); color:var(--text); text-decoration:none; }
-  .topnav__item[aria-current="page"]{
-    color:var(--gold);
-    background:color-mix(in srgb, var(--gold) 14%, transparent);
-  }
-  .topnav__item svg{ display:block; opacity:.9; }
+  .topnav__item[aria-current="page"]{ color:var(--text); background:var(--surface-2); }
+  /* الأيقونة في حبّةٍ: تُعطيها وزنًا وتجعل المفعَّل يُرى من بعيد */
+  .topnav__item svg{ display:block; width:30px; height:30px; padding:5px; border-radius:9px;
+    background:color-mix(in srgb, var(--text-3) 12%, transparent); color:var(--text-2);
+    transition:background .16s, color .16s; }
+  .topnav__item:hover svg{ color:var(--text); }
+  .topnav__item[aria-current="page"] svg{ background:var(--gold); color:var(--btn-fg); }
 }
 /* بين ٨٢٠ و٩٦٠ تضيق الترويسة: تبقى الأيقونات وتُطوى الكلمات */
 @media (min-width:820px) and (max-width:960px){
-  .topnav__item{ padding:8px; }
+  .topnav__item{ padding:6px; }
   .topnav__lbl{ display:none; }
 }

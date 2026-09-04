@@ -7350,6 +7350,75 @@ describe('١٧٩هـ · الصدق — لا رقم مُختلَق');
   has(html, "p_subject: Presence.subjectId()", 'والمتصفح يرسل المادة في نبضته');
 }
 
+/* ============ ١٧٩ · المتصدرون في صفحة البداية ============ */
+describe('١٧٩ · نافذة المتصدرين في أول شاشة');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "if (QBANK.views.boardMini) body.push(QBANK.views.boardMini());", '★ في رئيسية الطالب — اللوحة كانت بلا باب');
+  has(html, "[ QBANK.views.boardMini({ title:'الأوائل على كل الجامعات' }) ]", 'وفي صفحة الزائر');
+  has(html, "B.load('all')", 'نطاق كل الجامعات — مسموح للزائر');
+  has(html, "text:'كن أول المتصدرين'", 'والفراغ دعوة لا بطاقة مختفية');
+  has(html, "'ترتيبك: ' + B.N(d.me.rank)", 'وترتيب الطالب نفسه');
+
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  /* زائر: النافذة تُبنى وتنتظر الشبكة، ولا تكسر الصفحة إن غاب الخادم */
+  const m = A.views.boardMini();
+  ok(m.classList.contains('lb-mini'), 'تُبنى');
+  ok(!!m.querySelector('a[href="#/board"]'), 'وبابها إلى اللوحة الكاملة');
+  W.location.hash = '#/'; A.router.render('#/');
+  ok(!!doc.querySelector('#main .lp .lb-mini'), 'وموجودة في صفحة الزائر');
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  A.store.set('pack', { subjects:[{ id:'s1', name:'م', q_count:5 }], settings:{} });
+  A.router.render('#/');
+  ok(!!doc.querySelector('#main .lb-mini'), 'وفي رئيسية الطالب');
+}
+
+/* ============ ١٨٠ · ملاحظات علي على الشكل ============ */
+describe('١٨٠ · لا كتلة سوداء في الفاتح + أيقونات أوضح');
+{
+  const tokens = fs.readFileSync(path.join(__dirname,'css','00-tokens.css'), 'utf8');
+  const light = tokens.slice(0, tokens.indexOf('[data-theme="dark"]'));
+  has(light, '--today-bg:   #fbf3df', '★ بطل اليوم ورقةٌ ذهبية فاتحة لا حبرًا أسود');
+  no(light, '--today-bg:   var(--ink)', 'ولا أثر للحبر');
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "path.setAttribute('stroke-width', '2.1');", 'الأيقونات بخطٍّ أثقل');
+  has(html, "home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'", 'وبيتٌ مغلق');
+  has(html, '.topnav__item[aria-current="page"] svg{ background:var(--gold); color:var(--btn-fg); }', 'والمفعَّل في حبّة ذهبية');
+}
+
+describe('١٨٠ب · بطاقة المادة الجديدة');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  A.store.set('pack', { subjects:[
+    { id:'s1', name:'علم الأمراض', name_en:'Pathology', q_count:159, icon:'☤', color:'subject-2', free:true, topics:['a','b'] },
+    { id:'s2', name:'التشريح', q_count:80, price:15, free:false } ], settings:{} });
+  A.store.set('my_subjects', ['s1']);
+  A.router.render('#/');
+  const c = doc.querySelector('.sub-card[data-id="s1"]');
+  ok(!!c.querySelector('.sc-ico'), '★ بلاطة ملوّنة تحمل الأيقونة — لا خلفية باهتة');
+  ok(!c.querySelector('.art'), 'والمنطقة الفنية القديمة ذهبت');
+  has(c.textContent, '١٥٩ سؤالًا', 'عدد الأسئلة شريحة');
+  has(c.textContent, '٢ محاور', 'والمحاور');
+  has(c.textContent, 'مجانية', 'والمجانية');
+  has(c.textContent, 'ابدأ المراجعة', 'وزرٌّ صريح');
+  const c2 = doc.querySelector('.sub-card[data-id="s2"]');
+  has(c2.textContent, '١٥ ريال', 'والسعر للمدفوعة');
+  ok(!!c2.querySelector('.sc-act [aria-label*="أضف"]'), '★ زرّ الإضافة في صفّ الأفعال لا صفًّا معلَّقًا');
+  ok(!!c.querySelector('.foot'), 'و.foot باقٍ — فيه تُلصق شارة «متصل الآن»');
+}
+
+describe('١٨٠ج · جامعة المادة من اللوحة');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "QBANK.api.rpc('list_universities', { q:'', p_country:'' })", '★ قائمة الجامعات في محرّر المادة');
+  has(html, "QBANK.api.rpc('list_colleges', { p_university: uniId })", 'وكليات المختارة');
+  has(html, "QBANK.api.rpc('ensure_university', { p_country: uniCountry.value, p_name: nm })", 'و«+ جديدة» تُنشئ بالمطابقة المعيارية');
+  has(html, "university_id: campus.university_id, college_id: campus.college_id", 'وتُحفظ مع الهوية');
+  has(html, "if (!uni) col = null;", 'وكليةٌ بلا جامعة لا تُحفظ');
+  has(html, 'لن يجدها أحد في «استكشف» حتى تُحدَّد', 'والمشرف يُنبَّه لماذا يهمّ');
+}
+
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */
 Promise.all(pending).then(() => {
   const total = pass + fail;

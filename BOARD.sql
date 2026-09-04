@@ -192,7 +192,9 @@ begin
     tries int, best int, questions int, correct int, accuracy int, seconds int, last timestamptz,
     blocked boolean, online boolean
   ) on commit drop;
-  delete from _rows;
+  /* ★ «where true» ليس زينة: امتداد pg-safeupdate في Supabase يرفض DELETE بلا WHERE
+     من أدوار الواجهة (anon/authenticated) — فتفشل الدالة كلها بـ21000 وتعمل في المحرّر وحده */
+  delete from _rows where true;
   insert into _rows
   select p.id,
          qbank.name_shown(p.name),

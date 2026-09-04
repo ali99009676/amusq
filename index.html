@@ -76,12 +76,17 @@ try{
   --btn-fg:  #17161a;
   --btn-sh:  0 8px 20px -8px color-mix(in srgb, var(--gold) 70%, transparent);
   --ink:     #17161a;
-  /* لوحة «الحبر والذهب»: بطل اليوم، بطل الملف، شريط المشرف — داكنٌ في
-     الفاتح فيقفز من الورق؛ وفي الليلي سطحٌ أفتح درجة (انظر أدناه) */
-  --today-bg:   var(--ink);
-  --today-fg:   #fffefb;
-  --today-fg2:  #b9b6ad;
-  --today-line: rgba(255,254,251,.14);
+  /*
+    لوحة «البطل» (بطل اليوم، بطل الملف، شريط المشرف).
+    ★ كانت حبرًا أسود في الوضع الفاتح — «بشع وغير مناسب» بحكم علي، وهو
+    محقّ: كتلة سوداء وسط ورقٍ دافئ تُقرأ إعلانًا لا بطاقة. صارت ورقةً
+    ذهبية فاتحة بحبرٍ داكن — البطل يُميَّز بالدفء لا بالظلمة، والليلي
+    يبقى سطحًا أفتح درجة كما كان.
+  */
+  --today-bg:   #fbf3df;
+  --today-fg:   #17161a;
+  --today-fg2:  #6e6653;
+  --today-line: #ecdfbd;
 
   --ok:      #12805c; --ok-soft:   #e6f6ef;
   --warn:    #b06d1e; --warn-soft: #fdf0dc;
@@ -384,21 +389,23 @@ img,svg{ max-width:100%; height:auto; }
   .topnav{ display:flex; align-items:center; gap:var(--s1); margin-inline-end:auto;
            padding-inline-start:var(--s5); }
   .topnav__item{
-    display:inline-flex; align-items:center; gap:7px;
-    padding:8px 12px; border-radius:10px; text-decoration:none;
-    color:var(--text-2); font-size:.88rem; font-weight:600;
+    display:inline-flex; align-items:center; gap:8px;
+    padding:6px 12px 6px 8px; border-radius:12px; text-decoration:none;
+    color:var(--text-2); font-size:.9rem; font-weight:700;
     transition:background .16s var(--ease), color .16s var(--ease);
   }
   .topnav__item:hover{ background:var(--surface-2); color:var(--text); text-decoration:none; }
-  .topnav__item[aria-current="page"]{
-    color:var(--gold);
-    background:color-mix(in srgb, var(--gold) 14%, transparent);
-  }
-  .topnav__item svg{ display:block; opacity:.9; }
+  .topnav__item[aria-current="page"]{ color:var(--text); background:var(--surface-2); }
+  /* الأيقونة في حبّةٍ: تُعطيها وزنًا وتجعل المفعَّل يُرى من بعيد */
+  .topnav__item svg{ display:block; width:30px; height:30px; padding:5px; border-radius:9px;
+    background:color-mix(in srgb, var(--text-3) 12%, transparent); color:var(--text-2);
+    transition:background .16s, color .16s; }
+  .topnav__item:hover svg{ color:var(--text); }
+  .topnav__item[aria-current="page"] svg{ background:var(--gold); color:var(--btn-fg); }
 }
 /* بين ٨٢٠ و٩٦٠ تضيق الترويسة: تبقى الأيقونات وتُطوى الكلمات */
 @media (min-width:820px) and (max-width:960px){
-  .topnav__item{ padding:8px; }
+  .topnav__item{ padding:6px; }
   .topnav__lbl{ display:none; }
 }
 
@@ -725,49 +732,39 @@ img,svg{ max-width:100%; height:auto; }
 
 /* ═══ بطاقة المادة — بطاقة AMSU حرفيًا ═══ */
 .sub-card{
-  position:relative; overflow:hidden; text-align:start; padding:0; border-radius:var(--r4);
-  background:var(--surface); border:1px solid var(--line); box-shadow:var(--sh2);
-  transition:transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s;
-  display:flex; flex-direction:column; width:100%; cursor:pointer;
+  position:relative; overflow:hidden; text-align:start; border-radius:var(--r3);
+  background:var(--surface); border:1px solid var(--line); box-shadow:var(--sh1);
+  padding:var(--s4) var(--s4) var(--s4);
+  transition:transform .25s var(--ease), box-shadow .25s var(--ease), border-color .25s;
+  display:flex; flex-direction:column; gap:var(--s3); width:100%; cursor:pointer;
+  /* خيطٌ ملوّن على الحافة الجانبية: لون المادة يُرى من بعيد بلا تدرّجٍ يغرق البطاقة */
+  border-inline-start:4px solid var(--acc);
 }
-.sub-card:hover{
-  transform:translateY(-5px); box-shadow:var(--sh3);
-  border-color:color-mix(in srgb, var(--acc) 40%, var(--line));
+.sub-card:hover{ transform:translateY(-3px); box-shadow:var(--sh2); border-color:color-mix(in srgb, var(--acc) 40%, var(--line)); border-inline-start-color:var(--acc); }
+.sub-card .sc-top{ display:flex; align-items:center; gap:var(--s3); min-width:0; }
+/* بلاطة الأيقونة: لون المادة صلبًا — الهوية في مربّعٍ واحد لا في خلفيةٍ باهتة */
+.sub-card .sc-ico{
+  flex:0 0 52px; width:52px; height:52px; border-radius:14px; display:grid; place-items:center;
+  font-size:1.6rem; line-height:1; background:var(--acc); color:var(--on-acc);
+  box-shadow:0 6px 16px -8px var(--acc);
 }
-.sub-card .art{
-  height:118px; position:relative; display:flex; align-items:center; justify-content:space-between;
-  padding:0 18px; border-bottom:1px solid var(--line);
-  background:linear-gradient(135deg,
-    color-mix(in srgb, var(--acc) 16%, var(--surface)),
-    color-mix(in srgb, var(--acc) 4%, var(--surface)));
-}
-:root[data-theme="dark"] .sub-card .art{
-  background:linear-gradient(135deg, color-mix(in srgb, var(--acc) 26%, var(--surface)), var(--surface));
-}
-.sub-card .art__ico{ font-size:3.2rem; line-height:1; color:var(--acc); opacity:.95; }
-.sub-card .meta{ padding:16px 18px 18px; display:flex; flex-direction:column; gap:.5rem; flex:1; }
-.sub-card h3{ margin:0; font-size:1.12em; }
-.sub-card .qn{ color:var(--text-2); font-size:.86em; }
-.sub-card .foot{
-  display:flex; align-items:center; justify-content:space-between; gap:.6rem;
-  font-size:.79em; color:var(--text-3); margin-top:.15rem;
-}
+.sub-card .sc-x{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.sub-card h3{ margin:0; font-size:1.08em; line-height:1.3; }
+.sub-card .qn{ color:var(--text-3); font-size:.8em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sub-card .foot{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:.8em; }
 .sub-card .examline{
-  display:flex; align-items:center; gap:.45em; flex-wrap:wrap; margin-top:.3rem;
-  padding:.5em .7em; border-radius:11px; background:var(--acc-soft);
+  display:flex; align-items:center; gap:.45em; flex-wrap:wrap;
+  padding:.45em .7em; border-radius:10px; background:var(--acc-soft);
   font-size:.78em; line-height:1.5;
 }
 .sub-card .examline .when{ color:var(--text-2); }
-.sub-card .examline b{
-  margin-inline-start:auto; font-weight:800; color:var(--acc-d); font-variant-numeric:tabular-nums;
-}
+.sub-card .examline b{ margin-inline-start:auto; font-weight:800; color:var(--acc-d); font-variant-numeric:tabular-nums; }
 :root[data-theme="dark"] .sub-card .examline b{ color:var(--acc); }
 .sub-card .examline b.urgent{ color:var(--bad); }
-.sub-card .cta{
-  display:inline-flex; align-items:center; gap:.35em;
-  color:var(--acc); font-weight:800; font-size:1.05em;
-}
-:root[data-theme="light"] .sub-card .cta{ color:var(--acc-d); }
+.sub-card .sc-prog{ display:flex; flex-direction:column; gap:4px; }
+.sub-card .sc-prog__l{ font-size:.76em; color:var(--text-3); }
+.sub-card .sc-act{ display:flex; align-items:center; gap:var(--s2); flex-wrap:wrap; margin-top:auto; }
+.sub-card .sc-act .cta{ flex:1 1 auto; }
 @keyframes urgentblink{ 0%,100%{opacity:1} 50%{opacity:.55} }
 .urgent{ animation:urgentblink 2s ease-in-out infinite; }
 
@@ -1521,6 +1518,27 @@ html.gated{ overflow:hidden; }
 @keyframes pulseIn{ from{ transform:translateY(12px); opacity:0; } to{ transform:none; opacity:1; } }
 @keyframes pulseOut{ to{ transform:translateY(12px); opacity:0; } }
 @media (prefers-reduced-motion: reduce){ .pulse, .pulse.is-out{ animation:none; } }
+
+/* ═══ نافذة المتصدرين في صفحة البداية ═══ */
+.lb-mini{ display:flex; flex-direction:column; gap:var(--s4); }
+.lb-mini__h{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; }
+.lb-mini__ico{ font-size:1.4rem; line-height:1; }
+.lb-mini__x{ display:flex; flex-direction:column; gap:2px; min-width:0; flex:1 1 200px; }
+.lb-mini__t{ margin:0; font-size:1.1rem; }
+.lb-mini__s{ font-size:.78rem; color:var(--text-3); }
+.lb-mini__on:empty{ display:none; }
+.lb-mini__b{ display:flex; flex-direction:column; gap:var(--s3); }
+.lb-mini__empty{ display:flex; align-items:center; gap:var(--s3); flex-wrap:wrap; color:var(--text-2); font-size:.92rem; }
+.lb-mini__list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; counter-reset:lbm; }
+.lb-mini__list[start="4"]{ counter-reset:lbm 3; }
+.lb-mini__row{ display:flex; align-items:center; gap:var(--s2); padding:.45em .7em; border-radius:var(--r1); background:var(--surface-2); counter-increment:lbm; }
+.lb-mini__row::before{ content:counter(lbm, arabic-indic); font-family:var(--font-num); font-weight:800; color:var(--text-3); min-width:1.4em; }
+.lb-mini__av{ font-size:1.1rem; line-height:1; }
+.lb-mini__n{ font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.lb-mini__n.blk{ color:var(--text-3); font-style:italic; }
+.lb-mini__k{ font-size:.78rem; color:var(--text-3); white-space:nowrap; }
+.lb-mini__me{ margin:0; font-size:.85rem; font-weight:700; color:var(--gold); }
+.lp .lb-mini{ max-width:720px; margin-inline:auto; }
 
 
 /* ===== 50-landing.css ===== */
@@ -3762,36 +3780,44 @@ function subjectCard(sub){
   const topics = (sub.topics && sub.topics.length) || 0;
 
   /*
-    بطاقة AMSU: منطقة فنية بتدرّج لون المادة وأيقونتها، شارة «N سؤالًا»،
-    الاسم وتحته الإنجليزي، سطر موعد الاختبار بعدّه، شريط تقدّم، و«ابدأ المراجعة».
-    اللون يُحقن مرة واحدة في --acc فيتلوّن كل ما بالداخل من نظام التصميم.
+    ★ البطاقة أُعيد تصميمها (بحكم علي: «طريقة عرض المواد سيئة»).
+    كانت منطقةً فنية بتدرّجٍ باهت وأيقونةٍ صغيرة تطفو في فراغ، ثم اسمٌ
+    وشريط وذيلٌ متزاحم. الآن: بلاطةٌ ملوّنة بلون المادة تحمل أيقونتها،
+    والاسم وترجمته بجانبها، ثم شرائح الحقائق (الأسئلة، المحاور، السعر،
+    المتصلون الآن)، ثم شريط التقدّم بجملته، ثم زرٌّ واحد صريح. اللون
+    يُحقن مرة في --acc فتتلوّن البلاطة والزرّ والشريط من نظام التصميم.
   */
+  const N = QBANK.views.arNum;
   const card = el('article', {
     class:'sub-card' + (past ? ' exam-done' : ''), tabindex:'0', role:'link', 'data-id': sub.id,
     style:'--acc:' + color, 'aria-label':'مادة ' + sub.name }, [
     past ? el('span', { class:'stamp', 'aria-hidden':'true', text:'تم الانتهاء' }) : null,
-    el('div', { class:'art', 'aria-hidden':'true' }, [
-      el('span', { class:'art__ico', text: sub.icon || '▤' }),
-      el('span', { class:'badge num', text: QBANK.views.arNum(sub.q_count || 0) + ' سؤالًا' })
-    ]),
-    el('div', { class:'meta' }, [
-      el('h3', { text: sub.name }),
-      sub.name_en ? el('span', { class:'qn ltr', text: sub.name_en })
-        : (sub.course_code ? el('span', { class:'qn ltr', text: sub.course_code }) : null),
-      left !== null ? el('div', { class:'examline num' }, [
-        el('span', { class:'when', text: past ? 'انتهى موعده' : 'موعد الاختبار' }),
-        past ? null : el('b', { class: left <= 2 ? 'urgent' : '',
-          text:'متبقٍ ' + QBANK.views.arNum(left) + (left === 1 ? ' يوم' : ' أيام') })
-      ]) : null,
-      el('div', { class:'prog', 'aria-label':'أنجزت ' + pct + '٪' }, [
-        el('i', { style:'width:' + pct + '%' })
-      ]),
-      el('div', { class:'foot num' }, [
-        el('span', { text:'راجعت ' + QBANK.views.arNum(done) + ' من ' +
-          QBANK.views.arNum(sub.q_count || 0) + ' · ' + QBANK.views.arNum(pct) + '٪' }),
-        sub.free ? el('span', { class:'badge badge--ok', text:'مجانية' }) : null,
-        el('span', { class:'cta', text:'ابدأ المراجعة ‹' })
+    el('div', { class:'sc-top' }, [
+      el('span', { class:'sc-ico', 'aria-hidden':'true', text: sub.icon || '▤' }),
+      el('div', { class:'sc-x' }, [
+        el('h3', { text: sub.name }),
+        sub.name_en ? el('span', { class:'qn ltr', text: sub.name_en })
+          : (sub.course_code ? el('span', { class:'qn ltr', text: sub.course_code }) : null)
       ])
+    ]),
+    el('div', { class:'foot' }, [
+      el('span', { class:'badge num', text: N(sub.q_count || 0) + ' سؤالًا' }),
+      topics ? el('span', { class:'badge num', text: N(topics) + ' محاور' }) : null,
+      sub.free ? el('span', { class:'badge badge--ok', text:'مجانية' })
+               : (Number(sub.price) > 0 ? el('span', { class:'badge badge--gold num', text: N(sub.price) + ' ريال' }) : null)
+    ]),
+    left !== null ? el('div', { class:'examline' }, [
+      el('span', { class:'when', text: past ? 'انتهى موعده' : 'موعد الاختبار' }),
+      past ? null : el('b', { class: left <= 2 ? 'urgent' : '',
+        text:'متبقٍ ' + N(left) + (left === 1 ? ' يوم' : ' أيام') })
+    ]) : null,
+    el('div', { class:'sc-prog' }, [
+      el('div', { class:'prog', 'aria-label':'أنجزت ' + pct + '٪' }, [ el('i', { style:'width:' + pct + '%' }) ]),
+      /* بلا num: الصنف يقلب الاتجاه فتقفز «٪» إلى أول الجملة العربية */
+      el('span', { class:'sc-prog__l', text:'راجعت ' + N(done) + ' من ' + N(sub.q_count || 0) + ' · ' + N(pct) + '٪' })
+    ]),
+    el('div', { class:'sc-act' }, [
+      el('span', { class:'btn btn--sm cta', text: pct > 0 ? 'أكمل المراجعة' : 'ابدأ المراجعة' })
     ])
   ]);
   card.addEventListener('click', () => QBANK.router.go('#/subject/' + sub.id));
@@ -3898,6 +3924,9 @@ const ViewHome = {
        وبزرٍّ يضغطه هو لا بنافذةٍ تقفز فتُرفض بلا قراءة. */
     if (QBANK.views.notifyBanner){ const nb = QBANK.views.notifyBanner(); if (nb) nudges.appendChild(nb); }
 
+    /* ★ المتصدرون في أول شاشة: اللوحة كانت بلا باب — ما لا يُرى لا يوجد */
+    if (QBANK.views.boardMini) body.push(QBANK.views.boardMini());
+
     // دعوة الرفع: الطالب لا يبحث عن ميزة لا يعرف بوجودها
     body.push(el('a', { class:'upsell', href:'#/upload' }, [
       el('span', { class:'upsell__ico', 'aria-hidden':'true', text:'⇪' }),
@@ -3952,7 +3981,8 @@ const ViewHome = {
           QBANK.toast('أُضيفت «' + su.name + '» إلى موادك');
           QBANK.router.render('#/');
         });
-        c.appendChild(el('div', { class:'row', style:'margin-top:8px' }, [add]));
+        /* زرّ الإضافة في صفّ الأفعال بجانب زرّ البدء — لا صفًّا ثانيًا معلَّقًا تحت البطاقة */
+        (c.querySelector('.sc-act') || c).appendChild(add);
         return c;
       })));
     }
@@ -7859,6 +7889,12 @@ function landingView(){
   ]));
 
   /* ٤ · جرّب سؤالًا الآن — الشرح بالتجربة لا بالكلام */
+  /* ★ المتصدرون — الزائر يرى أن المنصة حيّة بأسماءٍ حقيقية قبل أن يسجّل */
+  if (QBANK.views.boardMini)
+    root.appendChild(lpSection('المتصدرون', 'من يراجع الآن؟',
+      'لوحة حقيقية من اختبارات الطلاب — وعدّاد من هم على المنصة هذه الساعات.',
+      [ QBANK.views.boardMini({ title:'الأوائل على كل الجامعات' }) ]));
+
   root.appendChild(lpSection('جرّبها الآن', 'أجب عن سؤال واحد',
     'هكذا يبدو كل سؤال في «مراجعة»: النص كما ورد، وشرح يوضّح لماذا الإجابة صحيحة ولماذا غيرها خاطئ.',
     [QBANK.views.lpParts.lpTryQuestion(demo)]));
@@ -8173,30 +8209,35 @@ QBANK.views.lpParts = { lpTryQuestion, lpMemoCard, LP_TIPS, LP_FAQ };
   والرسم مضمّن لا من مكتبة: خمسة رموز لا تستحق ملفًا خارجيًا يُحمَّل،
   وتضمينها يبقيها تعمل بلا إنترنت كبقية التطبيق.
 */
+/*
+  ★ الأيقونات أُعيد رسمها: كانت خطوطًا رفيعة (١.٧) بهندسةٍ مبسّطة فبدت
+  «سيئة» بحكم علي. الآن أشكالٌ مغلقة أوضح بخطٍّ ٢.١ وزوايا مستديرة —
+  على طراز Lucide — وما زالت مسارات SVG مكتوبة هنا بلا مكتبة خارجية.
+*/
 const ICONS = {
-  /* الرئيسية: بيت — أوضح رمز في الواجهات كلها، ولا يحتاج تعلّمًا */
-  home: 'M3 10.4 12 3l9 7.4M5.6 9v10.5c0 .6.4 1 1 1h4v-6h2.8v6h4c.6 0 1-.4 1-1V9',
-  /* استكشف: عدسة */
-  search: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14ZM20.5 20.5 16 16',
-  /* راجع: سهم دائري — الاسترجاع بعد حين */
-  repeat: 'M20 12a8 8 0 1 1-2.6-5.9M20 3.5V8h-4.5',
-  /* ارفع: سهم يصعد من قاعدة */
-  upload: 'M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M4 16v2.5c0 .8.7 1.5 1.5 1.5h13c.8 0 1.5-.7 1.5-1.5V16',
-  /* حسابي: كتف ورأس */
-  user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM4.5 20.5c.9-3.6 3.9-5.5 7.5-5.5s6.6 1.9 7.5 5.5'
+  /* الرئيسية: بيتٌ بسقفٍ وبابٍ مغلقين — لا ثلاثة خطوط متفرّقة */
+  home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  /* استكشف: عدسة بدائرة كاملة ومقبض قصير */
+  search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM21 21l-4.3-4.3',
+  /* راجع: دورة كاملة تعود إلى بدايتها — الاسترجاع بعد حين */
+  repeat: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
+  /* ارفع: سهم يصعد وصينيّة تحته */
+  upload: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
+  /* حسابي: رأسٌ وكتفان مغلقان */
+  user: 'M18 20a6 6 0 0 0-12 0M12 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'
 };
 
 function icon(d){
   const NS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(NS, 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('width', '20'); svg.setAttribute('height', '20');
+  svg.setAttribute('width', '22'); svg.setAttribute('height', '22');
   svg.setAttribute('fill', 'none');
   svg.setAttribute('aria-hidden', 'true');
   const path = document.createElementNS(NS, 'path');
   path.setAttribute('d', d);
   path.setAttribute('stroke', 'currentColor');
-  path.setAttribute('stroke-width', '1.7');
+  path.setAttribute('stroke-width', '2.1');
   path.setAttribute('stroke-linecap', 'round');
   path.setAttribute('stroke-linejoin', 'round');
   svg.appendChild(path);
@@ -8717,8 +8758,75 @@ function subjIdentity(sub, refresh){
   priceIn.addEventListener('input', paintPrice);
   paintPrice();
 
+  /*
+    ★ الجامعة والكلية — من اللوحة لا من SQL (بطلب علي).
+    المادة بلا جامعة لا تظهر في «استكشف» لأحد، والرافع قد ينسى أو يخطئ.
+    قائمتان: الجامعات كلّها (list_universities) ثم كلياتُ المختارة
+    (list_colleges)، و«+ جديدة» يكتب اسمًا فتُنشأ إن لم توجد (ensure_*)
+    بالمطابقة المعيارية — فلا تتكرّر «جامعة الملك سعود» بهمزةٍ أو بدونها.
+  */
+  const uniSel = el('select', { class:'input', 'aria-label':'الجامعة' });
+  const colSel = el('select', { class:'input', 'aria-label':'الكلية' });
+  const uniNew = el('input', { class:'input input--sm', placeholder:'+ جامعة جديدة (اكتب اسمها)', hidden:true });
+  const colNew = el('input', { class:'input input--sm', placeholder:'+ كلية جديدة (اكتب اسمها)', hidden:true });
+  const uniCountry = el('select', { class:'input input--sm', 'aria-label':'دولة الجامعة الجديدة', hidden:true });
+  (QBANK.explore && QBANK.explore.COUNTRIES ? QBANK.explore.COUNTRIES :
+    ['SA','EG','JO','AE','KW','QA','BH','OM','IQ','MA','DZ','TN','SD','YE','LY','SY','LB','PS']).forEach(c =>
+    uniCountry.appendChild(el('option', { value:c, text: QBANK.explore && QBANK.explore.countryName ? QBANK.explore.countryName(c) : c })));
+  const campusHint = el('p', { class:'field__hint', style:'margin:4px 0 0' });
+  const fillCols = async (uniId, keep) => {
+    colSel.innerHTML = '';
+    colSel.appendChild(el('option', { value:'', text:'— بلا كلية —' }));
+    if (uniId){
+      const r = await QBANK.api.rpc('list_colleges', { p_university: uniId });
+      ((r.ok && Array.isArray(r.data)) ? r.data : []).forEach(c =>
+        colSel.appendChild(el('option', { value:c.id, text:c.name, selected: c.id === keep ? true : null })));
+    }
+    colSel.appendChild(el('option', { value:'__new', text:'+ كلية جديدة…' }));
+  };
+  uniSel.appendChild(el('option', { value:'', text:'جارٍ جلب الجامعات…' }));
+  QBANK.api.rpc('list_universities', { q:'', p_country:'' }).then(async r => {
+    uniSel.innerHTML = '';
+    uniSel.appendChild(el('option', { value:'', text:'— بلا جامعة (لا تظهر في استكشف) —' }));
+    ((r.ok && Array.isArray(r.data)) ? r.data : []).forEach(u =>
+      uniSel.appendChild(el('option', { value:u.id, text: u.name + (u.country ? ' · ' + u.country : ''),
+        selected: u.id === sub.university_id ? true : null })));
+    uniSel.appendChild(el('option', { value:'__new', text:'+ جامعة جديدة…' }));
+    if (!sub.university_id) campusHint.textContent = 'المادة بلا جامعة الآن — لن يجدها أحد في «استكشف» حتى تُحدَّد.';
+    await fillCols(sub.university_id || null, sub.college_id || null);
+  });
+  uniSel.addEventListener('change', () => {
+    const isNew = uniSel.value === '__new';
+    uniNew.hidden = !isNew; uniCountry.hidden = !isNew;
+    fillCols(isNew ? null : (uniSel.value || null), null);
+  });
+  colSel.addEventListener('change', () => { colNew.hidden = colSel.value !== '__new'; });
+  /* يعيد {university_id, college_id} بعد إنشاء ما يلزم — أو خطأً نصيًا */
+  async function resolveCampus(){
+    let uni = uniSel.value || null, col = colSel.value || null;
+    if (uni === '__new'){
+      const nm = uniNew.value.trim();
+      if (!nm) return { error:'اكتب اسم الجامعة الجديدة' };
+      const r = await QBANK.api.rpc('ensure_university', { p_country: uniCountry.value, p_name: nm });
+      if (!r.ok || !r.data) return { error:'تعذّر إنشاء الجامعة' };
+      uni = r.data;
+    }
+    if (col === '__new'){
+      const nm = colNew.value.trim();
+      if (!uni) return { error:'اختر الجامعة أولًا ثم الكلية' };
+      if (!nm) return { error:'اكتب اسم الكلية الجديدة' };
+      const r = await QBANK.api.rpc('ensure_college', { p_university: uni, p_name: nm });
+      if (!r.ok || !r.data) return { error:'تعذّر إنشاء الكلية' };
+      col = r.data;
+    }
+    if (!uni) col = null;   // كليةٌ بلا جامعة لا معنى لها
+    return { university_id: uni, college_id: col };
+  }
+
   const save = el('button', { class:'btn', type:'button', text:'احفظ الهوية' });
   save.addEventListener('click', async () => {
+    const campus = await resolveCampus();
+    if (campus.error){ campusHint.textContent = '⚠ ' + campus.error; return; }
     /* السعر يُقصّ إلى نطاقٍ معقول قبل الحفظ: حقلُ رقمٍ في متصفح يقبل
        أي شيء، والقيمة السالبة أو الخيالية تُفسد البوابة لا الحقل. */
     const price = Math.max(0, Math.min(999, parseInt(priceIn.value || '0', 10) || 0));
@@ -8728,7 +8836,8 @@ function subjIdentity(sub, refresh){
       ord: parseInt(ordIn.value || '0', 10), exam_date: dateIn.value || null,
       price: price,
       /* والمجانية تتبع السعر لا تناقضه: صفرٌ يعني مجانية، وأكثرُ منه مدفوعة */
-      free: price === 0
+      free: price === 0,
+      university_id: campus.university_id, college_id: campus.college_id
     });
     QBANK.toast(r.ok ? 'حُفظت هوية المادة' : 'تعذّر الحفظ');
     if (r.ok && refresh) refresh();
@@ -8797,7 +8906,11 @@ function subjIdentity(sub, refresh){
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الأيقونة' }), icons ]),
       el('label', { class:'field', style:'margin:0' }, [ el('span', { class:'field__label', text:'الترتيب' }), ordIn ]),
       el('label', { class:'field', style:'margin:0' }, [
-        el('span', { class:'field__label', text:'السعر بالريال' }), priceIn, priceHint ])
+        el('span', { class:'field__label', text:'السعر بالريال' }), priceIn, priceHint ]),
+      el('div', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'الجامعة — تظهر المادة في قسمها بـ«استكشف»' }), uniSel, uniCountry, uniNew, campusHint ]),
+      el('div', { class:'field', style:'margin:0' }, [
+        el('span', { class:'field__label', text:'الكلية (اختياري)' }), colSel, colNew ])
     ]),
     el('div', { class:'ad-bar', style:'margin:16px 0 0' }, [ save, pub, free, verify ]),
     /* بابٌ من المادة إلى بلاغاتها: المشرف الذي يفتحها ليوثّقها يرى أولًا ما عليها */
@@ -10347,6 +10460,7 @@ const ViewExplore = { title:'استكشف', view: ViewExploreRender };
 
 QBANK.explore = Explore;
 QBANK.explore.countryName = countryName;
+QBANK.explore.COUNTRIES = Object.keys(COUNTRIES);   /* الرموز بالترتيب — لقوائم الاختيار في اللوحة */
 QBANK.views.ViewExplore = ViewExplore;
 
 
@@ -15265,6 +15379,77 @@ Names.checkGate = async function(){
   nameGate();
   return true;
 };
+
+
+/* ===== 71-board-mini.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  المتصدرون في صفحة البداية — نافذةٌ صغيرة على اللوحة الكاملة
+  ═══════════════════════════════════════════════════════════════════
+  اللوحة كانت لها صفحة (#/board) بلا بابٍ يُرى: لا في الرئيسية ولا في
+  صفحة الزائر ولا في شريط التنقّل. ما لا يُرى في أول شاشة لا يوجد.
+
+  ★ نافذة واحدة للزائر والطالب معًا (board_full مسموحة لـanon):
+  الزائر يرى أن المنصة حيّة — أسماءً حقيقية وعدّاد «متصل الآن» — قبل أن
+  يسجّل، والطالب يرى ترتيبه هو. والفراغُ لا يُخفى: «كن أول من يؤدّي
+  اختبارًا» دعوةٌ أصدق من بطاقةٍ مختفية.
+*/
+function boardMini(opts){
+  const o = opts || {};
+  const B = QBANK.board;
+  const box = el('section', { class:'lb-mini card', 'aria-label':'المتصدرون' });
+  const head = el('div', { class:'lb-mini__h' }, [
+    el('span', { class:'lb-mini__ico', 'aria-hidden':'true', text:'🏆' }),
+    el('div', { class:'lb-mini__x' }, [
+      el('h2', { class:'lb-mini__t', text: o.title || 'المتصدرون' }),
+      el('span', { class:'lb-mini__s', text:'أرقام حقيقية من اختبارات زملائك — بأسماء العرض فقط' })
+    ]),
+    el('span', { class:'lb-mini__on' }),
+    el('a', { class:'btn btn--sm btn--ghost', href:'#/board', text:'اللوحة كاملة ←' })
+  ]);
+  const body = el('div', { class:'lb-mini__b' }, [ el('p', { class:'field__hint', style:'margin:0', text:'جارٍ الجلب…' }) ]);
+  box.appendChild(head); box.appendChild(body);
+
+  B.load('all').then(r => {
+    if (!alive()) return;
+    body.innerHTML = '';
+    const d = (r.ok && r.data && r.data.ok) ? r.data : null;
+    if (!d){
+      /* لا نداء ولا بيانات: النافذة لا تُترك برسالة خطأ في أول شاشة — تختفي بصمت */
+      box.remove();
+      return;
+    }
+    const S = d.summary || {};
+    if (Number(S.online_now) > 0) head.querySelector('.lb-mini__on').appendChild(B.onlineBadge(S.online_now, true));
+
+    const rows = d.board || [];
+    if (!rows.length){
+      /* ★ الفراغ دعوة: أول اختبارٍ يفتح اللوحة — والزرّ يقود إلى مادة لا إلى شرح */
+      body.appendChild(el('div', { class:'lb-mini__empty' }, [
+        el('span', { text:'لا أحد على اللوحة بعد — أول اختبار تجريبي يفتحها.' }),
+        el('a', { class:'btn btn--sm', href: QBANK.api.user() ? '#/' : '#/login', text:'كن أول المتصدرين' })
+      ]));
+      return;
+    }
+    if (rows.length >= 3 && typeof lbPodium === 'function') body.appendChild(lbPodium(rows.slice(0, 3)));
+    /* الصفوف بعد المنصّة — أو كلها إن كانوا أقل من ثلاثة */
+    const rest = rows.length >= 3 ? rows.slice(3, 6) : rows.slice(0, 3);
+    if (rest.length) body.appendChild(el('ol', { class:'lb-mini__list', start: rows.length >= 3 ? 4 : 1 }, rest.map(x =>
+      el('li', { class:'lb-mini__row' }, [
+        el('span', { class:'lb-mini__av', text: x.avatar || '👤' }),
+        el('span', { class:'lb-mini__n' + (x.blocked ? ' blk' : ''), text: x.name }),
+        x.online ? el('i', { class:'lb-online__dot', title:'متصل الآن', 'aria-label':'متصل الآن' }) : null,
+        el('span', { class:'spacer' }),
+        el('span', { class:'lb-mini__k', text: B.N(x.tries) + ' اختبارًا · ' + B.N(x.best) + '٪' })
+      ]))));
+    /* ترتيبي أنا — إن كنتُ مسجَّلًا وعلى اللوحة */
+    if (d.me && d.me.rank)
+      body.appendChild(el('p', { class:'lb-mini__me', text:
+        'ترتيبك: ' + B.N(d.me.rank) + ' من ' + B.N(d.me.of) + ' — ' + B.N(d.me.tries) + ' اختبارًا' }));
+  });
+  return box;
+}
+QBANK.views.boardMini = boardMini;
 
 })();
 
