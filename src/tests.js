@@ -367,7 +367,7 @@ describe('١٣ · دمج التقدّم — لا يخسر أحد تقدّمه أ
   eq(Object.keys(m.s1.star).sort().join(','), 'b,c', 'النجوم: اتحاد الطرفين');
   eq(m.s1.wrong.a, 2, 'عدّاد الخطأ: الأعلى يفوز');
   eq(m.s1.wrong.c, 4, 'خطأ موجود في طرف واحد لا يضيع');
-  eq(m.s1.exams, 5, 'عدّاد الاختبارات: المجموع');
+  eq(m.s1.exams, 3, '★ عدّاد الاختبارات: الأعلى يفوز — المجموع كان يتضاعف مع كل دمج');
   eq(m.s1.best, 95, 'أفضل نتيجة: الأعلى يفوز');
   ok(!!m.s2, 'مادة موجودة في طرف واحد لا تضيع');
   eq(P.merge({}, {}) && Object.keys(P.merge({}, {})).length, 0, 'دمج فارغين يُرجع فارغًا بلا خطأ');
@@ -7029,7 +7029,7 @@ describe('١٧٥ب · لوحة الطالب والمشرف');
   has(html, ".pf-hero{\n  display:flex; align-items:center; gap:var(--s5);\n  background:var(--today-bg);", '★ بطل الملف بلوحة الحبر والذهب نفسها');
   no(html, 'pf-hero__mail{ color:var(--today-fg2) !important', 'بلا !important — بالترتيب والتخصيص');
   has(html, "const saveBtn = el('button', { class:'btn', type:'button', text:'احفظ ملفي' });", 'زر الحفظ بحجمه لا شريطًا');
-  has(html, "{ id:'profile',  label:'ملفي',   ico:'☺' }", 'تبويبات الحساب بأيقونات');
+  has(html, "{ id:'profile',  label:'ملفي',   ico:'user' }", 'تبويبات الحساب بأيقونات SVG من المجموعة الموحّدة');
   has(html, "background:var(--bg-soft); border:1px solid var(--line-soft);", 'والتبويبات شريحةٌ مقسّمة');
 
   has(html, "Admin.ICONS = {", 'أيقونات اللوحة بالمعرّف');
@@ -7382,8 +7382,8 @@ describe('١٨٠ · لا كتلة سوداء في الفاتح + أيقونات 
   has(light, '--today-bg:   #fbf3df', '★ بطل اليوم ورقةٌ ذهبية فاتحة لا حبرًا أسود');
   no(light, '--today-bg:   var(--ink)', 'ولا أثر للحبر');
   const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
-  has(html, "path.setAttribute('stroke-width', '2.1');", 'الأيقونات بخطٍّ أثقل');
-  has(html, "home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'", 'وبيتٌ مغلق');
+  has(html, "function icon(name){ return QBANK.ico(name, { size:22, weight:2.1 }); }", 'الأيقونات بخطٍّ أثقل — من المجموعة الموحّدة');
+  has(html, "home:        'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z'", 'وبيتٌ مغلق');
   has(html, '.topnav__item[aria-current="page"] svg{ background:var(--gold); color:var(--btn-fg); }', 'والمفعَّل في حبّة ذهبية');
 }
 
@@ -7456,6 +7456,40 @@ describe('١٨١ · الطباعة والاختبار وملف الطالب');
   has(doc.querySelector('#main .pf-hero__stats').textContent, '٤', 'وأرقام البطل: ٤ اختبارات');
   has(doc.querySelector('#main .pf-hero__stats').textContent, '٨٠٪', 'وأفضل نتيجة');
   eq(doc.querySelectorAll('#main .acc-sec').length, 2, 'وقسمان بعنوان وأيقونة');
+}
+
+/* ============ ١٨٢ · مجموعة أيقونات واحدة + إصلاح عدّاد الاختبارات ============ */
+describe('١٨٢ · أيقونات SVG موحّدة');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  const i = A.ico('trophy', { size:20 });
+  eq(i.tagName.toLowerCase(), 'svg', 'QBANK.ico يعيد SVG');
+  eq(i.getAttribute('width'), '20', 'بالحجم المطلوب');
+  ok(A.ico('nope').querySelector('path').getAttribute('d') === A.ICON_PATHS.circle, 'والاسم المجهول دائرةٌ لا خطأ');
+  eq(A.subjIcon('☤').tagName.toLowerCase(), 'svg', '★ رموز المواد القديمة تُرسم من المجموعة نفسها');
+  eq(A.subjIcon('🦷').tagName.toLowerCase(), 'span', 'ورمزٌ لا نعرفه يبقى نصًّا لا يختفي');
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  no(html, "text:'🏆' }", 'لا إيموجي كأس في الواجهة');
+  no(html, "text:'🔔' }", 'ولا جرس');
+  no(html, "'💳'", 'ولا بطاقة');
+  has(html, "{ id:'profile',  label:'ملفي',   ico:'user' }", 'تبويبات الحساب بأسماء أيقونات');
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  W.location.hash = '#/account'; A.router.render('#/account');
+  ok(!!doc.querySelector('#main .tabs__ico svg'), 'وتُرسم SVG في التبويبات');
+}
+
+describe('١٨٢ب · عدّاد الاختبارات لا يتضاعف');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  const P = A.progress;
+  const m = P.merge({ s1:{ seen:{}, wrong:{}, star:{}, exams:7, best:80 } }, { s1:{ seen:{}, wrong:{}, star:{}, exams:7, best:80 } });
+  eq(m.s1.exams, 7, '★ دمج الجهاز مع نسخته على الخادم لا يضاعف — كان ٧+٧');
+  eq(P.sane(5.06e31), 0, 'والقيمة الفاسدة تُصفَّر');
+  eq(P.sane(12), 12, 'والسليمة تبقى');
+  A.store.set('progress', { s1:{ seen:{}, wrong:{}, star:{}, exams:5e31, best:31.7 } });
+  ok(P.repair(), 'الإصلاح يلمس الفاسد');
+  eq(P.all().s1.exams, 0, 'ويعيده صفرًا');
+  ok(!P.repair(), 'ولا يلمس السليم مرة ثانية');
 }
 
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */

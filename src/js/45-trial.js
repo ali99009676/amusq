@@ -43,7 +43,7 @@ const Trial = {
     const meter = el('span', { class:'trialbar__m' }, [ el('span', { class:'trialbar__f' }) ]);
     const buy = el('button', { class:'btn btn--sm', type:'button', text:'اشترِ الآن' });
     buy.addEventListener('click', () => { if (onExpire) onExpire('buy'); });
-    bar.appendChild(el('span', { class:'trialbar__ico', 'aria-hidden':'true', text:'◷' }));
+    bar.appendChild(el('span', { class:'trialbar__ico', 'aria-hidden':'true' }, [ QBANK.ico('clock', { size:18 }) ]));
     bar.appendChild(label); bar.appendChild(meter); bar.appendChild(buy);
 
     const st = { sid, left: secondsLeft, cap: Trial.CAP, onExpire, bar };
@@ -89,7 +89,7 @@ const Trial = {
   */
   expiredCard(sub){
     const kids = [
-      el('span', { class:'empty__ico', 'aria-hidden':'true', text:'◷' }),
+      el('span', { class:'empty__ico', 'aria-hidden':'true' }, [ QBANK.ico('clock', { size:40, weight:1.6 }) ]),
       el('p', { class:'empty__title', text:'انتهت تجربتك المجانية' }),
       el('p', { class:'empty__text',
         text:'استفدت من عشر دقائق كاملة في «' + sub.name + '». افتحها الآن حتى نهاية الفصل.' }),

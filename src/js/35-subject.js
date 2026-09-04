@@ -444,7 +444,7 @@ const ViewSubject = {
         ]),
         el('div', { class:'inner' }, [
           el('div', { class:'figwrap', 'aria-hidden':'true' }, [
-            el('span', { class:'fig', text: sub.icon || '▤' })
+            el('span', { class:'fig' }, [ QBANK.subjIcon(sub.icon, 44) ])
           ]),
           el('div', { class:'hx' }, [
             el('h2', { text: sub.name }),

@@ -83,7 +83,7 @@ function subjectCard(sub){
     style:'--acc:' + color, 'aria-label':'مادة ' + sub.name }, [
     past ? el('span', { class:'stamp', 'aria-hidden':'true', text:'تم الانتهاء' }) : null,
     el('div', { class:'sc-top' }, [
-      el('span', { class:'sc-ico', 'aria-hidden':'true', text: sub.icon || '▤' }),
+      el('span', { class:'sc-ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(sub.icon, 26) ]),
       el('div', { class:'sc-x' }, [
         el('h3', { text: sub.name }),
         sub.name_en ? el('span', { class:'qn ltr', text: sub.name_en })
@@ -123,7 +123,7 @@ function campusBand(){
     wrap.innerHTML = '';
     if (c && c.university_id){
       wrap.appendChild(el('a', { class:'campus-band', href: QBANK.campus.href(c.university_id) }, [
-        el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'⌂' }),
+        el('span', { class:'campus-band__ico', 'aria-hidden':'true' }, [ QBANK.ico('school', { size:18 }) ]),
         el('span', { class:'campus-band__x' }, [
           el('span', { class:'campus-band__t', text: c.university }),
           el('span', { class:'campus-band__d', text: (c.college ? c.college + ' · ' : '') + 'افتح قسم جامعتك وشاركه بدفعتك' })
@@ -132,7 +132,7 @@ function campusBand(){
       ]));
     } else {
       wrap.appendChild(el('a', { class:'campus-band campus-band--ask', href:'#/account' }, [
-        el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'⌕' }),
+        el('span', { class:'campus-band__ico', 'aria-hidden':'true' }, [ QBANK.ico('search', { size:18 }) ]),
         el('span', { class:'campus-band__x' }, [
           el('span', { class:'campus-band__t', text:'حدّد جامعتك' }),
           el('span', { class:'campus-band__d', text:'مرة واحدة — فتفتح المنصة على بنوك جامعتك، وتُملأ خاناتها عند رفع أي مادة.' })
@@ -201,7 +201,7 @@ const ViewHome = {
       const p = (r.ok && r.data) ? r.data : null;
       if (!p || String(p.phone || '').replace(/\D/g,'').length >= 9) return;
       phoneNudge.appendChild(el('a', { class:'campus-band campus-band--ask', href:'#/login' }, [
-        el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'☎' }),
+        el('span', { class:'campus-band__ico', 'aria-hidden':'true' }, [ QBANK.ico('phone', { size:18 }) ]),
         el('span', { class:'campus-band__x' }, [
           el('span', { class:'campus-band__t', text:'أكمل ملفك: رقم جوالك' }),
           el('span', { class:'campus-band__d', text:'حقل مطلوب في ملفك — دقيقة واحدة ويختفي هذا التنبيه.' })
@@ -219,7 +219,7 @@ const ViewHome = {
 
     // دعوة الرفع: الطالب لا يبحث عن ميزة لا يعرف بوجودها
     body.push(el('a', { class:'upsell', href:'#/upload' }, [
-      el('span', { class:'upsell__ico', 'aria-hidden':'true', text:'⇪' }),
+      el('span', { class:'upsell__ico', 'aria-hidden':'true' }, [ QBANK.ico('upload', { size:20 }) ]),
       el('span', { class:'upsell__x' }, [
         el('span', { class:'upsell__t', text:'عندك بنك أسئلة لمادة ناقصة؟' }),
         el('span', { class:'upsell__d', text:'ارفعه، وجرّبه عشر دقائق مجانًا، وشاركه مع زملائك بكوينز لك على كل بيعة.' })

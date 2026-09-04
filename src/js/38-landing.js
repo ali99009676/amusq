@@ -104,7 +104,7 @@ function lpSampleCard(s){
   return el('article', { class:'lp-card lp-card--sample' }, [
     el('span', { class:'lp-card__top', style:'background:' + s.color, 'aria-hidden':'true' }),
     el('div', { class:'lp-card__row' }, [
-      el('span', { class:'lp-card__ico', 'aria-hidden':'true', text: s.icon }),
+      el('span', { class:'lp-card__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(s.icon, 26) ]),
       el('span', { class:'badge lp-card__stamp', text:'نموذج' })
     ]),
     el('h3', { class:'lp-card__title', text: s.name }),
@@ -186,7 +186,7 @@ function landingView(){
     'لا تنتظر أحدًا يضيفها لك. المنصة تبدأ فارغة في كل جامعة، وأول طالب فيها هو من يفتحها لدفعته.', [
     el('div', { class:'lp-grid' }, [
       el('article', { class:'lp-card lp-add' }, [
-        el('span', { class:'lp-card__ico', 'aria-hidden':'true', text:'⌂' }),
+        el('span', { class:'lp-card__ico', 'aria-hidden':'true' }, [ QBANK.ico('school', { size:26 }) ]),
         el('h3', { class:'lp-card__title', text:'أضف جامعتك وكليتك' }),
         el('p', { class:'lp-card__text', text:
           'لم تجدها في القائمة؟ اكتب اسمها فتُنشأ في الحال. ويصير لجامعتك قسم برابط واحد ترسله في مجموعة دفعتك — يجتمع فيه كل ما يرفعه زملاؤك.' }),
@@ -194,7 +194,7 @@ function landingView(){
           'ونوحّد الإملاء تلقائيًا، فلا تنقسم جامعتك إلى عشر تهجئات.' })
       ]),
       el('article', { class:'lp-card lp-add' }, [
-        el('span', { class:'lp-card__ico', 'aria-hidden':'true', text:'⇪' }),
+        el('span', { class:'lp-card__ico', 'aria-hidden':'true' }, [ QBANK.ico('upload', { size:26 }) ]),
         el('h3', { class:'lp-card__title', text:'أضف موادك ومقرّراتك' }),
         el('p', { class:'lp-card__text', text:
           'ارفع ملف أسئلة دكتورك — PDF أو Word أو نص — فيصير بنك مراجعة كاملًا في دقائق، ويظهر في قسم جامعتك لكل من يبحث عنه.' }),

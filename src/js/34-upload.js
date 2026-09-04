@@ -229,7 +229,7 @@ function stepRead(box, rerender){
 
   box.appendChild(formatGuide());
   const drop = el('div', { class:'drop', tabindex:'0', role:'button', 'aria-label':'اختر ملف أسئلة' }, [
-    el('span', { class:'empty__ico', 'aria-hidden':'true', text:'⇪' }),
+    el('span', { class:'empty__ico', 'aria-hidden':'true' }, [ QBANK.ico('upload', { size:40, weight:1.6 }) ]),
     el('p', { class:'empty__title', text:'أسقط ملف الأسئلة هنا أو اضغط للاختيار' }),
     /* ★ الصور مذكورةٌ أولَ السطر لا آخره: هي أكثر ما يملكه الطلاب، وكانت
        أول ما نردّه — والطالب الذي رُدّ مرةً لا يقرأ التذييل ليعرف أن الباب فُتح. */

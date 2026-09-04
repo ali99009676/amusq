@@ -181,3 +181,32 @@ select.input{ appearance:none; -webkit-appearance:none; padding-inline-end:2.4em
 /* ═══ ٩) العناوين الثانوية داخل البطاقات: أصغر وأوضح تسلسلًا ═══ */
 .card > h2, .card > .stack > h2{ font-size:var(--fs-lg); }
 .card h2 + .field__hint{ margin-top:-4px; }
+
+/* ═══ ١٠) الأيقونات الموحّدة: SVG يأخذ لون ما حوله ويجلس على خط النص ═══ */
+.ico{ display:inline-block; vertical-align:-.2em; flex:0 0 auto; }
+.tabs__ico .ico, .campus-band__ico .ico, .upsell__ico .ico, .acc-sec__ico .ico, .inbox__ic .ico,
+.lb-mini__ico .ico, .revcard__ico .ico, .ad-shell__mark .ico, .sc-ico .ico, .excard__ico .ico,
+.lp-card__ico .ico, .up-row__ico .ico, .lb-champ__ico .ico, .today__fi .ico, .trialbar__ico .ico{ display:block; vertical-align:middle; }
+.tabs__ico, .campus-band__ico, .upsell__ico, .acc-sec__ico, .inbox__ic, .lb-mini__ico, .revcard__ico,
+.ad-shell__mark, .sc-ico, .excard__ico, .lp-card__ico, .up-row__ico, .lb-champ__ico, .today__fi{ display:inline-grid; place-items:center; }
+.sub-hero .fig{ display:grid; place-items:center; }
+.sub-hero .fig .ico{ width:44px; height:44px; display:block; }
+.empty__ico .ico{ display:block; margin:0 auto; color:var(--text-3); }
+
+/* ═══ ١١) بطاقة الاستكشاف — أختُ بطاقة «موادي» ═══ */
+.excard{ padding:var(--s4); gap:var(--s3); border-inline-start:4px solid var(--acc); border-radius:var(--r3); }
+.excard__head{ gap:var(--s3); }
+.excard__ico{ width:46px; height:46px; flex:0 0 46px; border-radius:12px; background:var(--acc); color:var(--on-acc);
+  box-shadow:0 6px 16px -8px var(--acc); font-size:1rem; }
+.excard__x{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.excard__t{ font-size:var(--fs-md); line-height:1.35; }
+.excard__en{ font-size:var(--fs-xs); color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.excard__where{ font-size:var(--fs-xs); color:var(--text-2); font-weight:600; }
+.excard__meta{ gap:6px; padding-top:0; }
+.excard .badge{ font-size:var(--fs-xs); }
+
+/* ═══ ١٢) بطل الملف: صورةٌ أكبر وأرقامٌ في بلاطات ═══ */
+.pf-hero__stats{ gap:var(--s2); }
+.pf-hero__stat{ min-width:96px; padding:var(--s2) var(--s3); border-radius:var(--r2); background:color-mix(in srgb, var(--surface) 55%, transparent);
+  border:1px solid var(--today-line); align-items:center; text-align:center; }
+.pf-hero__stat b{ font-size:var(--fs-lg); }

@@ -2666,6 +2666,35 @@ select.input{ appearance:none; -webkit-appearance:none; padding-inline-end:2.4em
 .card > h2, .card > .stack > h2{ font-size:var(--fs-lg); }
 .card h2 + .field__hint{ margin-top:-4px; }
 
+/* ═══ ١٠) الأيقونات الموحّدة: SVG يأخذ لون ما حوله ويجلس على خط النص ═══ */
+.ico{ display:inline-block; vertical-align:-.2em; flex:0 0 auto; }
+.tabs__ico .ico, .campus-band__ico .ico, .upsell__ico .ico, .acc-sec__ico .ico, .inbox__ic .ico,
+.lb-mini__ico .ico, .revcard__ico .ico, .ad-shell__mark .ico, .sc-ico .ico, .excard__ico .ico,
+.lp-card__ico .ico, .up-row__ico .ico, .lb-champ__ico .ico, .today__fi .ico, .trialbar__ico .ico{ display:block; vertical-align:middle; }
+.tabs__ico, .campus-band__ico, .upsell__ico, .acc-sec__ico, .inbox__ic, .lb-mini__ico, .revcard__ico,
+.ad-shell__mark, .sc-ico, .excard__ico, .lp-card__ico, .up-row__ico, .lb-champ__ico, .today__fi{ display:inline-grid; place-items:center; }
+.sub-hero .fig{ display:grid; place-items:center; }
+.sub-hero .fig .ico{ width:44px; height:44px; display:block; }
+.empty__ico .ico{ display:block; margin:0 auto; color:var(--text-3); }
+
+/* ═══ ١١) بطاقة الاستكشاف — أختُ بطاقة «موادي» ═══ */
+.excard{ padding:var(--s4); gap:var(--s3); border-inline-start:4px solid var(--acc); border-radius:var(--r3); }
+.excard__head{ gap:var(--s3); }
+.excard__ico{ width:46px; height:46px; flex:0 0 46px; border-radius:12px; background:var(--acc); color:var(--on-acc);
+  box-shadow:0 6px 16px -8px var(--acc); font-size:1rem; }
+.excard__x{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.excard__t{ font-size:var(--fs-md); line-height:1.35; }
+.excard__en{ font-size:var(--fs-xs); color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.excard__where{ font-size:var(--fs-xs); color:var(--text-2); font-weight:600; }
+.excard__meta{ gap:6px; padding-top:0; }
+.excard .badge{ font-size:var(--fs-xs); }
+
+/* ═══ ١٢) بطل الملف: صورةٌ أكبر وأرقامٌ في بلاطات ═══ */
+.pf-hero__stats{ gap:var(--s2); }
+.pf-hero__stat{ min-width:96px; padding:var(--s2) var(--s3); border-radius:var(--r2); background:color-mix(in srgb, var(--surface) 55%, transparent);
+  border:1px solid var(--today-line); align-items:center; text-align:center; }
+.pf-hero__stat b{ font-size:var(--fs-lg); }
+
 
 /* ===== 90-print.css ===== */
 /*
@@ -2893,6 +2922,101 @@ function toast(msg, ms){
 QBANK.dom = { $, $$, el, esc };
 QBANK.store = Store;
 QBANK.toast = toast;
+
+
+/* ===== 05-icons.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  الأيقونات — مجموعة واحدة بخطٍّ واحد لكل الواجهة
+  ═══════════════════════════════════════════════════════════════════
+  كانت الواجهة تخلط رموز يونيكود (☺ ⇪ ↻ ⌂) وإيموجي (🏆 🔔 💳) — كلٌّ
+  بخطٍّ ولونٍ وحجمٍ من عند نظام التشغيل، فتبدو الشاشة مرقّعة. هنا مسارات
+  SVG مرسومة بخطٍّ ٢ وزوايا مستديرة (على طراز Lucide)، تأخذ لون النص
+  الذي حولها، وتُرسم بالحجم نفسه في كل مكان. لا مكتبة ولا ملف خارجي.
+
+  ★ الاستعمال: QBANK.ico('trophy') يعيد عنصر SVG جاهزًا. والاسم غير
+  المعروف يعيد دائرةً فارغة لا خطأً — أيقونةٌ ناقصة أهون من شاشةٍ مكسورة.
+*/
+const ICON_PATHS = {
+  home:        'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  search:      'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM21 21l-4.3-4.3',
+  repeat:      'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
+  upload:      'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
+  user:        'M18 20a6 6 0 0 0-12 0M12 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
+  users:       'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8',
+  activity:    'M22 12h-4l-3 9L9 3l-3 9H2',
+  settings:    'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
+  trophy:      'M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.7V17c0 .6-.5 1-1 1.2C7.9 18.8 7 20.2 7 22M14 14.7V17c0 .6.5 1 1 1.2 1.1.6 2 2 2 3.8M18 2H6v7a6 6 0 0 0 12 0V2Z',
+  school:      'M14 22v-4a2 2 0 1 0-4 0v4M18 10l4 2v10H2V12l4-2M12 2 8 5v3h8V5l-4-3ZM6 10v12M18 10v12',
+  bell:        'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0',
+  phone:       'M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.4 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.6 2.8.7a2 2 0 0 1 1.7 2Z',
+  clock:       'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 6v6l4 2',
+  card:        'M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1ZM2 10h20',
+  swap:        'M8 3 4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4',
+  edit:        'M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3Z',
+  flag:        'M4 22V4a1 1 0 0 1 1-1h11l1 2h5v11h-6l-1-2H4',
+  book:        'M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z',
+  stethoscope: 'M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 12 0V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4M20 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z',
+  heart:       'M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z',
+  flask:       'M10 2v7.5L4.2 19a2 2 0 0 0 1.7 3h12.2a2 2 0 0 0 1.7-3L14 9.5V2M8.5 2h7M7 16h10',
+  plus:        'M12 5v14M5 12h14',
+  gem:         'M6 3h12l4 6-10 13L2 9ZM11 3 8 9l4 13 4-13-3-6M2 9h20',
+  wind:        'M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 0 14 16H2',
+  smile:       'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01',
+  shield:      'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z',
+  layout:      'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
+  list:        'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  check:       'M20 6 9 17l-5-5',
+  checkCircle: 'M22 11.1V12a10 10 0 1 1-5.9-9.1M22 4 12 14l-3-3',
+  x:           'M18 6 6 18M6 6l12 12',
+  coins:       'M8 14a6 6 0 1 0 0-12 6 6 0 0 0 0 12ZM18.1 10.4A6 6 0 1 1 10.3 18M7 6h1v4M16.7 13.9l.7.7-2.8 2.8',
+  calendar:    'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z',
+  star:        'm12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8l-6.2 3.3L7 14.2 2 9.3l6.9-1L12 2Z',
+  share:       'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13',
+  print:       'M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z',
+  chevron:     'm9 18 6-6-6-6',
+  arrow:       'M19 12H5M12 19l-7-7 7-7',
+  target:      'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20ZM12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12ZM12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z',
+  flame:       'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4 2-5 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.5-2.3 1-3 .5 1 1.5 1.5 2.5 1.5Z',
+  brain:       'M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 4.44-1.04ZM14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24A2.5 2.5 0 0 0 14.5 2Z',
+  message:     'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z',
+  eye:         'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z',
+  zap:         'M13 2 3 14h9l-1 8 10-12h-9l1-8Z',
+  circle:      'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z'
+};
+
+/* رموز المواد القديمة (يختارها المشرف من قائمة) تُرسم أيقوناتٍ من المجموعة نفسها */
+const GLYPH_ICON = { '▤':'book', '☤':'stethoscope', '✚':'plus', '♥':'heart', '◈':'gem',
+                     '⚕':'stethoscope', '☣':'flask', '◐':'wind', '⌁':'activity', '⚗':'flask' };
+
+function ico(name, opts){
+  const o = opts || {};
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  const size = o.size || 20;
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', String(size)); svg.setAttribute('height', String(size));
+  svg.setAttribute('fill', 'none'); svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('class', 'ico' + (o.cls ? ' ' + o.cls : ''));
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('d', ICON_PATHS[name] || ICON_PATHS.circle);
+  path.setAttribute('stroke', 'currentColor');
+  path.setAttribute('stroke-width', String(o.weight || 2));
+  path.setAttribute('stroke-linecap', 'round'); path.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(path);
+  return svg;
+}
+/* أيقونة مادة من رمزها: SVG إن عُرف الرمز، وإلا النص كما هو (رمزٌ جديد لا نعرفه لا يُخفى) */
+function subjIcon(glyph, size){
+  const name = GLYPH_ICON[String(glyph || '').trim()];
+  if (name) return ico(name, { size: size || 24, weight: 1.9 });
+  const s = document.createElement('span'); s.textContent = glyph || '▤'; s.setAttribute('aria-hidden', 'true');
+  return s;
+}
+QBANK.ico = ico;
+QBANK.subjIcon = subjIcon;
+QBANK.ICON_PATHS = ICON_PATHS;
+QBANK.GLYPH_ICON = GLYPH_ICON;
 
 
 /* ===== 10-theme.js ===== */
@@ -3326,7 +3450,20 @@ const Progress = {
   _pushFn: null,   // باب حقن للفحوص
 
   blank(){ return {}; },
+  /* عدّادٌ تجاوز الآلاف رقمٌ فاسد من دمجٍ قديم لا إنجازٌ — يُعاد إلى الصفر */
+  sane(n){ n = Number(n) || 0; return (n < 0 || n > 5000) ? 0 : Math.round(n); },
   all(){ return QBANK.store.get(Progress.KEY, Progress.blank()); },
+  /* إصلاحٌ لمرة واحدة لما أفسده الدمج القديم — يُستدعى عند الإقلاع وقبل الدفع */
+  repair(){
+    const p = Progress.all(); let touched = false;
+    Object.keys(p).forEach(sid => {
+      const s = p[sid] || {};
+      const e = Progress.sane(s.exams), b = Math.min(100, Math.max(0, Number(s.best) || 0));
+      if (e !== s.exams || b !== s.best){ s.exams = e; s.best = b; touched = true; }
+    });
+    if (touched) QBANK.store.set(Progress.KEY, p);
+    return touched;
+  },
   save(p){ QBANK.store.set(Progress.KEY, p); Progress.schedulePush(); },
 
   forSubject(sid){
@@ -3460,8 +3597,14 @@ const Progress = {
           Object.keys(a.wrong || {}).forEach(k => { w[k] = Math.max(w[k] || 0, a.wrong[k]); });
           return w;
         })(),
-        exams: (a.exams || 0) + (b.exams || 0),
-        best:  Math.max(a.best || 0, b.best || 0),
+        /*
+          ★ عدّاد الاختبارات: الأعلى يفوز لا المجموع.
+          كان مجموعًا، والدمج يجري عند كل دخول بين الجهاز والخادم — والخادم
+          يحمل ما دفعه الجهاز نفسه قبل دقيقة — فيتضاعف العدد مع كل دمج حتى
+          بلغ ٥×١٠³¹ في ملف علي. كل جهاز يدفع مجموعه، والأعلى هو الأقرب للحقيقة.
+        */
+        exams: Progress.sane(Math.max(a.exams || 0, b.exams || 0)),
+        best:  Math.min(100, Math.max(a.best || 0, b.best || 0)),
         /*
           ★ جدول المراجعة: الأحدث مراجعةً يفوز — لا الأطول فترةً.
           لو أخذنا الأطول لضاع تعثّرٌ حدث على الجهاز الآخر: الخطأ يُنزل
@@ -3485,6 +3628,7 @@ const Progress = {
     Progress._timer = setTimeout(() => { Progress._timer = null; Progress.push(); }, Progress.PUSH_DELAY);
   },
   async push(){
+    Progress.repair();
     if (Progress._pushFn) return Progress._pushFn(Progress.all());
     if (!QBANK.api.user()) return { ok:false };   // زائر: يبقى تقدّمه في جهازه حتى يسجّل
     return QBANK.api.rest('progress?on_conflict=user_id', {
@@ -4001,7 +4145,7 @@ function subjectCard(sub){
     style:'--acc:' + color, 'aria-label':'مادة ' + sub.name }, [
     past ? el('span', { class:'stamp', 'aria-hidden':'true', text:'تم الانتهاء' }) : null,
     el('div', { class:'sc-top' }, [
-      el('span', { class:'sc-ico', 'aria-hidden':'true', text: sub.icon || '▤' }),
+      el('span', { class:'sc-ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(sub.icon, 26) ]),
       el('div', { class:'sc-x' }, [
         el('h3', { text: sub.name }),
         sub.name_en ? el('span', { class:'qn ltr', text: sub.name_en })
@@ -4041,7 +4185,7 @@ function campusBand(){
     wrap.innerHTML = '';
     if (c && c.university_id){
       wrap.appendChild(el('a', { class:'campus-band', href: QBANK.campus.href(c.university_id) }, [
-        el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'⌂' }),
+        el('span', { class:'campus-band__ico', 'aria-hidden':'true' }, [ QBANK.ico('school', { size:18 }) ]),
         el('span', { class:'campus-band__x' }, [
           el('span', { class:'campus-band__t', text: c.university }),
           el('span', { class:'campus-band__d', text: (c.college ? c.college + ' · ' : '') + 'افتح قسم جامعتك وشاركه بدفعتك' })
@@ -4050,7 +4194,7 @@ function campusBand(){
       ]));
     } else {
       wrap.appendChild(el('a', { class:'campus-band campus-band--ask', href:'#/account' }, [
-        el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'⌕' }),
+        el('span', { class:'campus-band__ico', 'aria-hidden':'true' }, [ QBANK.ico('search', { size:18 }) ]),
         el('span', { class:'campus-band__x' }, [
           el('span', { class:'campus-band__t', text:'حدّد جامعتك' }),
           el('span', { class:'campus-band__d', text:'مرة واحدة — فتفتح المنصة على بنوك جامعتك، وتُملأ خاناتها عند رفع أي مادة.' })
@@ -4119,7 +4263,7 @@ const ViewHome = {
       const p = (r.ok && r.data) ? r.data : null;
       if (!p || String(p.phone || '').replace(/\D/g,'').length >= 9) return;
       phoneNudge.appendChild(el('a', { class:'campus-band campus-band--ask', href:'#/login' }, [
-        el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'☎' }),
+        el('span', { class:'campus-band__ico', 'aria-hidden':'true' }, [ QBANK.ico('phone', { size:18 }) ]),
         el('span', { class:'campus-band__x' }, [
           el('span', { class:'campus-band__t', text:'أكمل ملفك: رقم جوالك' }),
           el('span', { class:'campus-band__d', text:'حقل مطلوب في ملفك — دقيقة واحدة ويختفي هذا التنبيه.' })
@@ -4137,7 +4281,7 @@ const ViewHome = {
 
     // دعوة الرفع: الطالب لا يبحث عن ميزة لا يعرف بوجودها
     body.push(el('a', { class:'upsell', href:'#/upload' }, [
-      el('span', { class:'upsell__ico', 'aria-hidden':'true', text:'⇪' }),
+      el('span', { class:'upsell__ico', 'aria-hidden':'true' }, [ QBANK.ico('upload', { size:20 }) ]),
       el('span', { class:'upsell__x' }, [
         el('span', { class:'upsell__t', text:'عندك بنك أسئلة لمادة ناقصة؟' }),
         el('span', { class:'upsell__d', text:'ارفعه، وجرّبه عشر دقائق مجانًا، وشاركه مع زملائك بكوينز لك على كل بيعة.' })
@@ -4453,7 +4597,8 @@ function accountBody(){
   */
   const P = QBANK.progress.all ? QBANK.progress.all() : {};
   let exams = 0, best = 0;
-  Object.keys(P).forEach(sid => { exams += Number(P[sid] && P[sid].exams) || 0; best = Math.max(best, Number(P[sid] && P[sid].best) || 0); });
+  /* sane(): عدّادٌ فاسد من دمجٍ قديم (٥×١٠³¹) لا يُعرض رقمًا فلكيًّا في وجه الطالب */
+  Object.keys(P).forEach(sid => { exams += QBANK.progress.sane(P[sid] && P[sid].exams); best = Math.max(best, Math.min(100, Number(P[sid] && P[sid].best) || 0)); });
   const nSubs = (QBANK.store.get('my_subjects', []) || []).length;
   const N = QBANK.views.arNum;
   const stats = el('div', { class:'pf-hero__stats' }, [
@@ -4583,7 +4728,7 @@ function accountBody(){
   */
   const sec = (ico, t, sub, body) => el('section', { class:'card acc-sec' }, [
     el('div', { class:'acc-sec__h' }, [
-      el('span', { class:'acc-sec__ico', 'aria-hidden':'true', text: ico }),
+      el('span', { class:'acc-sec__ico', 'aria-hidden':'true' }, [ QBANK.ico(ico, { size:18 }) ]),
       el('div', {}, [ el('h2', { class:'acc-sec__t', text: t }), sub ? el('p', { class:'acc-sec__s', text: sub }) : null ])
     ])
   ].concat(body));
@@ -4591,14 +4736,14 @@ function accountBody(){
     hero,
     el('div', { class:'acc-grid' }, [
       el('div', { class:'acc-grid__main stack' }, [
-        sec('☺', 'هويتك', 'ما يراه زملاؤك على اللوحة وفي مادتك', [
+        sec('user', 'هويتك', 'ما يراه زملاؤك على اللوحة وفي مادتك', [
           el('div', { class:'acc-grid2' }, [
             el('label', { class:'field' }, [ el('span', { class:'field__label', text:'الاسم' }), nameInput ]),
             el('label', { class:'field' }, [ el('span', { class:'field__label', text:'رقم الجوال *' }), phoneInput, phoneMsg ]),
             el('label', { class:'field field--wide' }, [ el('span', { class:'field__label', text:'نبذة عني' }), bioInput ])
           ])
         ]),
-        sec('🎭', 'رمز مؤقّت — يظهر حتى ترفع صورتك', 'اضغط الكاميرا في الأعلى لرفع صورتك الحقيقية', [ avatarRow ]),
+        sec('smile', 'رمز مؤقّت — يظهر حتى ترفع صورتك', 'اضغط الكاميرا في الأعلى لرفع صورتك الحقيقية', [ avatarRow ]),
         el('div', { class:'row' }, [ saveBtn ])
       ]),
       el('aside', { class:'acc-grid__side stack' }, [ ratesBox ])
@@ -4707,7 +4852,7 @@ function myUploadsCard(){
         const st = s.published ? el('span', { class:'badge badge--ok', text:'منشورة' })
                  : el('span', { class:'badge badge--warn', text:'قيد المراجعة' });
         box.appendChild(el('a', { class:'up-row', href:'#/subject/' + s.id }, [
-          el('span', { class:'up-row__ico', 'aria-hidden':'true', text: s.icon || '▤' }),
+          el('span', { class:'up-row__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(s.icon, 18) ]),
           el('span', { class:'up-row__x' }, [
             el('span', { class:'up-row__t', text: s.name }),
             el('span', { class:'up-row__s num', text:
@@ -4751,10 +4896,10 @@ function myStatsCard(){
   والتمرير الطويل يدفن ما يهم. والتبويب في الهاش فيبقى بعد التحديث.
 */
 const ACC_TABS = [
-  { id:'profile',  label:'ملفي',   ico:'☺' },
-  { id:'uploads',  label:'موادي',  ico:'⇪' },
-  { id:'activity', label:'نشاطي', ico:'↻' },
-  { id:'account',  label:'الحساب', ico:'⚙' }
+  { id:'profile',  label:'ملفي',   ico:'user' },
+  { id:'uploads',  label:'موادي',  ico:'upload' },
+  { id:'activity', label:'نشاطي', ico:'activity' },
+  { id:'account',  label:'الحساب', ico:'settings' }
 ];
 
 const ViewAccount = {
@@ -4769,7 +4914,7 @@ const ViewAccount = {
     const tabs = el('div', { class:'tabs', role:'tablist' }, ACC_TABS.map(t =>
       el('button', { class:'tabs__btn', type:'button', role:'tab', 'data-tab':t.id,
         'aria-selected': t.id === active ? 'true' : 'false' }, [
-        el('span', { class:'tabs__ico', 'aria-hidden':'true', text:t.ico }),
+        el('span', { class:'tabs__ico', 'aria-hidden':'true' }, [ QBANK.ico(t.ico, { size:16 }) ]),
         el('span', { text:t.label }) ])));
     tabs.addEventListener('click', e => {
       const b = e.target.closest('[data-tab]');
@@ -4880,7 +5025,7 @@ function authChip(){
   if (adm && adm.uid === u.id && adm.ok) {
     slot.appendChild(el('a', { class:'iconbtn authchip__adm', href:'#/admin',
       'aria-label':'لوحة التحكم', title:'لوحة التحكم' }, [
-      el('span', { class:'iconbtn__ico', 'aria-hidden':'true', text:'⚙' })
+      el('span', { class:'iconbtn__ico', 'aria-hidden':'true' }, [ QBANK.ico('settings', { size:18 }) ])
     ]));
   }
 
@@ -5038,7 +5183,7 @@ function lbChampions(ch, onPick){
   return el('div', { class:'lb-champs' }, ch.map(c => {
     const card = el('button', { class:'lb-champ', type:'button', style:'--acc:' + Board.colorOf(c.color),
       'aria-label':'متصدّرو مادة ' + c.subject }, [
-      el('span', { class:'lb-champ__ico', 'aria-hidden':'true', text: c.icon || '▤' }),
+      el('span', { class:'lb-champ__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(c.icon, 20) ]),
       el('span', { class:'lb-champ__x' }, [
         el('span', { class:'lb-champ__s', text: c.subject }),
         el('span', { class:'lb-champ__w' + (c.blocked ? ' blk' : ''), text: c.name ? '🏆 ' + c.name + ' · ' + Board.N(c.pct) + '٪' : '—' })
@@ -5931,8 +6076,8 @@ const ADMIN_TABS = [
 
 /* أيقونة كل تبويب — بالمعرّف لا بالموضع، فالملفات اللاحقة تُدخل تبويباتها حيث تشاء */
 Admin.ICONS = {
-  dash:'◫', students:'☺', content:'▤', ugc:'⇪', reports:'⚑', quality:'✓',
-  money:'◎', campus:'⌂', audit:'≡', settings:'⚙'
+  dash:'layout', students:'users', content:'book', ugc:'upload', reports:'flag', quality:'checkCircle',
+  money:'coins', campus:'school', audit:'list', settings:'settings'
 };
 
 const AdminView = {
@@ -5954,7 +6099,7 @@ const AdminView = {
        الشريط يقول الشيء نفسه — شاشةٌ كاملة على الجوال قبل أول رقم. عنوان
        الصفحة يُخفى على مسارات اللوحة (CSS)، والشريط يحمل الهوية والمخرج. */
     const head = el('div', { class:'ad-shell' }, [
-      el('span', { class:'ad-shell__mark', 'aria-hidden':'true', text:'⛨' }),
+      el('span', { class:'ad-shell__mark', 'aria-hidden':'true' }, [ QBANK.ico('shield', { size:18 }) ]),
       el('div', { class:'ad-shell__x' }, [
         el('strong', { class:'ad-shell__t', text:'لوحة المشرف' }),
         el('span', { class:'ad-shell__s', text: (u && u.email) || '' })
@@ -5974,7 +6119,7 @@ const AdminView = {
       ADMIN_TABS.map(t => el('button', {
         class:'tabs__btn', type:'button', role:'tab', 'data-tab':t.id,
         'aria-selected': t.id === active ? 'true' : 'false' }, [
-        el('span', { class:'tabs__ico', 'aria-hidden':'true', text: Admin.ICONS[t.id] || '▪' }),
+        el('span', { class:'tabs__ico', 'aria-hidden':'true' }, [ QBANK.ico(Admin.ICONS[t.id] || 'circle', { size:16 }) ]),
         el('span', { text: t.label }),
         el('span', { class:'tabs__n', 'data-n': t.id, hidden: true })
       ])));
@@ -6267,7 +6412,7 @@ function stepRead(box, rerender){
 
   box.appendChild(formatGuide());
   const drop = el('div', { class:'drop', tabindex:'0', role:'button', 'aria-label':'اختر ملف أسئلة' }, [
-    el('span', { class:'empty__ico', 'aria-hidden':'true', text:'⇪' }),
+    el('span', { class:'empty__ico', 'aria-hidden':'true' }, [ QBANK.ico('upload', { size:40, weight:1.6 }) ]),
     el('p', { class:'empty__title', text:'أسقط ملف الأسئلة هنا أو اضغط للاختيار' }),
     /* ★ الصور مذكورةٌ أولَ السطر لا آخره: هي أكثر ما يملكه الطلاب، وكانت
        أول ما نردّه — والطالب الذي رُدّ مرةً لا يقرأ التذييل ليعرف أن الباب فُتح. */
@@ -7454,7 +7599,7 @@ const ViewSubject = {
         ]),
         el('div', { class:'inner' }, [
           el('div', { class:'figwrap', 'aria-hidden':'true' }, [
-            el('span', { class:'fig', text: sub.icon || '▤' })
+            el('span', { class:'fig' }, [ QBANK.subjIcon(sub.icon, 44) ])
           ]),
           el('div', { class:'hx' }, [
             el('h2', { text: sub.name }),
@@ -8067,7 +8212,7 @@ function lpSampleCard(s){
   return el('article', { class:'lp-card lp-card--sample' }, [
     el('span', { class:'lp-card__top', style:'background:' + s.color, 'aria-hidden':'true' }),
     el('div', { class:'lp-card__row' }, [
-      el('span', { class:'lp-card__ico', 'aria-hidden':'true', text: s.icon }),
+      el('span', { class:'lp-card__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(s.icon, 26) ]),
       el('span', { class:'badge lp-card__stamp', text:'نموذج' })
     ]),
     el('h3', { class:'lp-card__title', text: s.name }),
@@ -8149,7 +8294,7 @@ function landingView(){
     'لا تنتظر أحدًا يضيفها لك. المنصة تبدأ فارغة في كل جامعة، وأول طالب فيها هو من يفتحها لدفعته.', [
     el('div', { class:'lp-grid' }, [
       el('article', { class:'lp-card lp-add' }, [
-        el('span', { class:'lp-card__ico', 'aria-hidden':'true', text:'⌂' }),
+        el('span', { class:'lp-card__ico', 'aria-hidden':'true' }, [ QBANK.ico('school', { size:26 }) ]),
         el('h3', { class:'lp-card__title', text:'أضف جامعتك وكليتك' }),
         el('p', { class:'lp-card__text', text:
           'لم تجدها في القائمة؟ اكتب اسمها فتُنشأ في الحال. ويصير لجامعتك قسم برابط واحد ترسله في مجموعة دفعتك — يجتمع فيه كل ما يرفعه زملاؤك.' }),
@@ -8157,7 +8302,7 @@ function landingView(){
           'ونوحّد الإملاء تلقائيًا، فلا تنقسم جامعتك إلى عشر تهجئات.' })
       ]),
       el('article', { class:'lp-card lp-add' }, [
-        el('span', { class:'lp-card__ico', 'aria-hidden':'true', text:'⇪' }),
+        el('span', { class:'lp-card__ico', 'aria-hidden':'true' }, [ QBANK.ico('upload', { size:26 }) ]),
         el('h3', { class:'lp-card__title', text:'أضف موادك ومقرّراتك' }),
         el('p', { class:'lp-card__text', text:
           'ارفع ملف أسئلة دكتورك — PDF أو Word أو نص — فيصير بنك مراجعة كاملًا في دقائق، ويظهر في قسم جامعتك لكل من يبحث عنه.' }),
@@ -8509,35 +8654,9 @@ QBANK.views.lpParts = { lpTryQuestion, lpMemoCard, LP_TIPS, LP_FAQ };
   «سيئة» بحكم علي. الآن أشكالٌ مغلقة أوضح بخطٍّ ٢.١ وزوايا مستديرة —
   على طراز Lucide — وما زالت مسارات SVG مكتوبة هنا بلا مكتبة خارجية.
 */
-const ICONS = {
-  /* الرئيسية: بيتٌ بسقفٍ وبابٍ مغلقين — لا ثلاثة خطوط متفرّقة */
-  home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
-  /* استكشف: عدسة بدائرة كاملة ومقبض قصير */
-  search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM21 21l-4.3-4.3',
-  /* راجع: دورة كاملة تعود إلى بدايتها — الاسترجاع بعد حين */
-  repeat: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
-  /* ارفع: سهم يصعد وصينيّة تحته */
-  upload: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
-  /* حسابي: رأسٌ وكتفان مغلقان */
-  user: 'M18 20a6 6 0 0 0-12 0M12 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'
-};
-
-function icon(d){
-  const NS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('width', '22'); svg.setAttribute('height', '22');
-  svg.setAttribute('fill', 'none');
-  svg.setAttribute('aria-hidden', 'true');
-  const path = document.createElementNS(NS, 'path');
-  path.setAttribute('d', d);
-  path.setAttribute('stroke', 'currentColor');
-  path.setAttribute('stroke-width', '2.1');
-  path.setAttribute('stroke-linecap', 'round');
-  path.setAttribute('stroke-linejoin', 'round');
-  svg.appendChild(path);
-  return svg;
-}
+/* الأيقونات من المجموعة الموحّدة (05-icons.js) — مصدرٌ واحد لكل الواجهة */
+const ICONS = { home:'home', search:'search', repeat:'repeat', upload:'upload', user:'user' };
+function icon(name){ return QBANK.ico(name, { size:22, weight:2.1 }); }
 
 const NAV = [
   { path:'#/',         label:'الرئيسية',  ico:'home' },
@@ -9914,7 +10033,7 @@ const Trial = {
     const meter = el('span', { class:'trialbar__m' }, [ el('span', { class:'trialbar__f' }) ]);
     const buy = el('button', { class:'btn btn--sm', type:'button', text:'اشترِ الآن' });
     buy.addEventListener('click', () => { if (onExpire) onExpire('buy'); });
-    bar.appendChild(el('span', { class:'trialbar__ico', 'aria-hidden':'true', text:'◷' }));
+    bar.appendChild(el('span', { class:'trialbar__ico', 'aria-hidden':'true' }, [ QBANK.ico('clock', { size:18 }) ]));
     bar.appendChild(label); bar.appendChild(meter); bar.appendChild(buy);
 
     const st = { sid, left: secondsLeft, cap: Trial.CAP, onExpire, bar };
@@ -9960,7 +10079,7 @@ const Trial = {
   */
   expiredCard(sub){
     const kids = [
-      el('span', { class:'empty__ico', 'aria-hidden':'true', text:'◷' }),
+      el('span', { class:'empty__ico', 'aria-hidden':'true' }, [ QBANK.ico('clock', { size:40, weight:1.6 }) ]),
       el('p', { class:'empty__title', text:'انتهت تجربتك المجانية' }),
       el('p', { class:'empty__text',
         text:'استفدت من عشر دقائق كاملة في «' + sub.name + '». افتحها الآن حتى نهاية الفصل.' }),
@@ -10617,11 +10736,15 @@ const Explore = {
    هنا الطالب لا يملكها بعد، فنُظهر أين تُدرَّس وكم سعرها لا تقدّمه فيها */
 function exCard(r){
   const color = QBANK.views.subjectColor(r.color);
-  const card = el('a', { class:'excard', href:'#s/' + (r.slug || '') , 'data-id': r.id }, [
-    el('span', { class:'excard__bar', style:'background:' + color, 'aria-hidden':'true' }),
+  /* ★ بالشكل نفسه الذي في «موادي»: بلاطة ملوّنة بلون المادة تحمل أيقونتها،
+     ثم الاسم وموضعه — بطاقةٌ واحدة في المنصة كلها لا بطاقتان */
+  const card = el('a', { class:'excard', href:'#s/' + (r.slug || '') , 'data-id': r.id, style:'--acc:' + color }, [
     el('span', { class:'excard__head' }, [
-      el('span', { class:'excard__ico', 'aria-hidden':'true', text: r.icon || '▤' }),
-      el('span', { class:'excard__t', text: r.name })
+      el('span', { class:'excard__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(r.icon, 24) ]),
+      el('span', { class:'excard__x' }, [
+        el('span', { class:'excard__t', text: r.name }),
+        r.name_en ? el('span', { class:'excard__en ltr', text: r.name_en }) : (r.course_code ? el('span', { class:'excard__en ltr', text: r.course_code }) : null)
+      ])
     ]),
     r.university ? el('span', { class:'excard__where',
       text: r.university + (r.college ? ' · ' + r.college : '') }) : null,
@@ -10629,7 +10752,6 @@ function exCard(r){
     el('span', { class:'excard__meta' }, [
       el('span', { class:'badge num', text: (r.q_count || 0) + ' سؤالًا' }),
       Number(r.students) > 0 ? el('span', { class:'badge num', text: r.students + ' مشترك' }) : null,
-      r.course_code ? el('span', { class:'badge', text: r.course_code }) : null,
       r.free ? el('span', { class:'badge badge--ok', text:'مجانية' })
              : (r.price ? el('span', { class:'badge num', text: r.price + ' ريال' }) : null)
     ].concat(QBANK.trust ? QBANK.trust.badges(r) : []))
@@ -10898,11 +11020,13 @@ function campusPicker(current, onSaved){
 /* ═══ صفحة القسم ═══ */
 function uniSubjectCard(r){
   const color = QBANK.views.subjectColor(r.color);
-  return el('a', { class:'excard', href:'#s/' + (r.slug || ''), 'data-id': r.id }, [
-    el('span', { class:'excard__bar', style:'background:' + color, 'aria-hidden':'true' }),
+  return el('a', { class:'excard', href:'#s/' + (r.slug || ''), 'data-id': r.id, style:'--acc:' + color }, [
     el('span', { class:'excard__head' }, [
-      el('span', { class:'excard__ico', 'aria-hidden':'true', text: r.icon || '▤' }),
-      el('span', { class:'excard__t', text: r.name })
+      el('span', { class:'excard__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(r.icon, 24) ]),
+      el('span', { class:'excard__x' }, [
+        el('span', { class:'excard__t', text: r.name }),
+        r.name_en ? el('span', { class:'excard__en ltr', text: r.name_en }) : null
+      ])
     ]),
     r.descr ? el('span', { class:'excard__d', text: r.descr }) : null,
     el('span', { class:'excard__meta' }, [
@@ -13056,7 +13180,7 @@ function reviewCard(){
   }
 
   return el('a', { class:'card revcard', href:'#/review' }, [
-    el('span', { class:'revcard__ico', 'aria-hidden':'true', text:'↻' }),
+    el('span', { class:'revcard__ico', 'aria-hidden':'true' }, [ QBANK.ico('repeat', { size:22 }) ]),
     el('div', { class:'revcard__x' }, [
       el('p', { class:'revcard__t', text:'راجع اليوم: ' + N(due.length) + ' سؤالًا' }),
       el('p', { class:'revcard__s', text:'أسئلة حان موعد استرجاعها — قبل أن تنساها.' })
@@ -15153,11 +15277,11 @@ QBANK.views.adminOrdersCard = adminOrdersCard;
 function inboxPanel(){
   const box = el('section', { class:'inbox', 'aria-label':'ينتظرك' });
   const items = [
-    ['purchases', 'طلب شراء',   '#/admin/money',    '💳', 'يدفع الطالب ولا يُفتح له حتى تعتمد'],
-    ['phones',    'توثيق جوال', '#/admin/money',    '☎',  'رسالة واتساب وصلت وتنتظر ضغطة'],
-    ['payouts',   'تحويل أرباح','#/admin/money',    '⇄',  'رافعٌ طلب ماله'],
-    ['drafts',    'مسوّدة',     '#/admin/content',  '✎',  'مادة رفعها طالب ولم تُنشر بعد'],
-    ['reports',   'بلاغ',       '#/admin/quality',  '⚑',  'سؤالٌ أبلغ عنه طالب']
+    ['purchases', 'طلب شراء',   '#/admin/money',    'card',  'يدفع الطالب ولا يُفتح له حتى تعتمد'],
+    ['phones',    'توثيق جوال', '#/admin/money',    'phone', 'رسالة واتساب وصلت وتنتظر ضغطة'],
+    ['payouts',   'تحويل أرباح','#/admin/money',    'swap',  'رافعٌ طلب ماله'],
+    ['drafts',    'مسوّدة',     '#/admin/content',  'edit',  'مادة رفعها طالب ولم تُنشر بعد'],
+    ['reports',   'بلاغ',       '#/admin/quality',  'flag',  'سؤالٌ أبلغ عنه طالب']
   ];
   box.appendChild(el('p', { class:'field__hint', style:'margin:0', text:'جارٍ العدّ…' }));
 
@@ -15188,7 +15312,7 @@ function inboxPanel(){
       const age = it[0] === 'purchases' && d.oldest_purchase
         ? 'أقدمها منذ ' + QBANK.admin.charts.ago(d.oldest_purchase) : it[4];
       list.appendChild(el('a', { class:'inbox__i is-on', href: it[2] }, [
-        el('span', { class:'inbox__ic', 'aria-hidden':'true', text: it[3] }),
+        el('span', { class:'inbox__ic', 'aria-hidden':'true' }, [ QBANK.ico(it[3], { size:18 }) ]),
         el('span', { class:'inbox__x' }, [
           el('span', { class:'inbox__l', text: N(n) + ' ' + it[1] }),
           el('span', { class:'inbox__d', text: age })
@@ -15354,7 +15478,7 @@ function notifyBanner(){
     QBANK.store.set(Notify.DISMISS_KEY, (QBANK.store.get(Notify.DISMISS_KEY, 0) || 0) + 1);
     box.remove();
   });
-  box.appendChild(el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'🔔' }));
+  box.appendChild(el('span', { class:'campus-band__ico', 'aria-hidden':'true' }, [ QBANK.ico('bell', { size:18 }) ]));
   box.appendChild(el('span', { class:'campus-band__x' }, [
     el('span', { class:'campus-band__t', text:'تذكيرٌ صباحي بما يستحق' }), msg ]));
   box.appendChild(el('span', { class:'notify-band__b' }, [go, no]));
@@ -15522,7 +15646,7 @@ function todayHero(){
       /* «راجعت ٢٥ من ٧٩٩» أوضح من «٣٪ مرّت عليك» — العدد المطلق يقول ما بقي */
       el('span', { class:'today__fl', text: st.total ? 'راجعت ' + N(st.seen) + ' من ' + N(st.total) + ' سؤالًا' : 'لا أسئلة بعد' }) ]),
     st.exam ? el('a', { class:'today__fact today__exam', href:'#/subject/' + st.exam.id }, [
-      el('span', { class:'today__fi', 'aria-hidden':'true', text:'◷' }),
+      el('span', { class:'today__fi', 'aria-hidden':'true' }, [ QBANK.ico('clock', { size:15 }) ]),
       el('span', { class:'today__fl', text: 'أقرب اختبار: ' + st.exam.name + ' ' +
         (st.exam.days === 0 ? 'اليوم' : st.exam.days === 1 ? 'غدًا' : 'بعد ' + N(st.exam.days) + ' أيام') })
     ]) : null
@@ -15634,7 +15758,7 @@ function nameGate(onDone){
   const btn = el('button', { class:'btn btn--block', type:'button', text:'احفظ اسمي وادخل' });
   const box = el('div', { class:'namebox', role:'dialog', 'aria-modal':'true', 'aria-labelledby':'gateT' }, [
     el('div', { class:'namebox__card card stack' }, [
-      el('span', { class:'namebox__ico', 'aria-hidden':'true', text:'🏆' }),
+      el('span', { class:'namebox__ico', 'aria-hidden':'true' }, [ QBANK.ico('trophy', { size:20 }) ]),
       el('h2', { id:'gateT', style:'margin:0', text:'باسمك تدخل اللوحة' }),
       el('p', { class:'field__hint', style:'margin:0', text:
         'كل اختبارٍ تؤدّيه يُحسب لك في لوحة المتصدرين — بجامعتك وبين كل الجامعات. اكتب الاسم الذي يعرفك به زملاؤك.' }),
@@ -15702,7 +15826,7 @@ function boardMini(opts){
   const B = QBANK.board;
   const box = el('section', { class:'lb-mini card', 'aria-label':'المتصدرون' });
   const head = el('div', { class:'lb-mini__h' }, [
-    el('span', { class:'lb-mini__ico', 'aria-hidden':'true', text:'🏆' }),
+    el('span', { class:'lb-mini__ico', 'aria-hidden':'true' }, [ QBANK.ico('trophy', { size:22 }) ]),
     el('div', { class:'lb-mini__x' }, [
       el('h2', { class:'lb-mini__t', text: o.title || 'المتصدرون' }),
       el('span', { class:'lb-mini__s', text:'أرقام حقيقية من اختبارات زملائك — بأسماء العرض فقط' })

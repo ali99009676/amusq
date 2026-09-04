@@ -142,7 +142,7 @@ function lbChampions(ch, onPick){
   return el('div', { class:'lb-champs' }, ch.map(c => {
     const card = el('button', { class:'lb-champ', type:'button', style:'--acc:' + Board.colorOf(c.color),
       'aria-label':'متصدّرو مادة ' + c.subject }, [
-      el('span', { class:'lb-champ__ico', 'aria-hidden':'true', text: c.icon || '▤' }),
+      el('span', { class:'lb-champ__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(c.icon, 20) ]),
       el('span', { class:'lb-champ__x' }, [
         el('span', { class:'lb-champ__s', text: c.subject }),
         el('span', { class:'lb-champ__w' + (c.blocked ? ' blk' : ''), text: c.name ? '🏆 ' + c.name + ' · ' + Board.N(c.pct) + '٪' : '—' })

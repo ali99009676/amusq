@@ -15,7 +15,7 @@ function boardMini(opts){
   const B = QBANK.board;
   const box = el('section', { class:'lb-mini card', 'aria-label':'المتصدرون' });
   const head = el('div', { class:'lb-mini__h' }, [
-    el('span', { class:'lb-mini__ico', 'aria-hidden':'true', text:'🏆' }),
+    el('span', { class:'lb-mini__ico', 'aria-hidden':'true' }, [ QBANK.ico('trophy', { size:22 }) ]),
     el('div', { class:'lb-mini__x' }, [
       el('h2', { class:'lb-mini__t', text: o.title || 'المتصدرون' }),
       el('span', { class:'lb-mini__s', text:'أرقام حقيقية من اختبارات زملائك — بأسماء العرض فقط' })

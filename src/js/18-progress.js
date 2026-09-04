@@ -10,7 +10,20 @@ const Progress = {
   _pushFn: null,   // باب حقن للفحوص
 
   blank(){ return {}; },
+  /* عدّادٌ تجاوز الآلاف رقمٌ فاسد من دمجٍ قديم لا إنجازٌ — يُعاد إلى الصفر */
+  sane(n){ n = Number(n) || 0; return (n < 0 || n > 5000) ? 0 : Math.round(n); },
   all(){ return QBANK.store.get(Progress.KEY, Progress.blank()); },
+  /* إصلاحٌ لمرة واحدة لما أفسده الدمج القديم — يُستدعى عند الإقلاع وقبل الدفع */
+  repair(){
+    const p = Progress.all(); let touched = false;
+    Object.keys(p).forEach(sid => {
+      const s = p[sid] || {};
+      const e = Progress.sane(s.exams), b = Math.min(100, Math.max(0, Number(s.best) || 0));
+      if (e !== s.exams || b !== s.best){ s.exams = e; s.best = b; touched = true; }
+    });
+    if (touched) QBANK.store.set(Progress.KEY, p);
+    return touched;
+  },
   save(p){ QBANK.store.set(Progress.KEY, p); Progress.schedulePush(); },
 
   forSubject(sid){
@@ -144,8 +157,14 @@ const Progress = {
           Object.keys(a.wrong || {}).forEach(k => { w[k] = Math.max(w[k] || 0, a.wrong[k]); });
           return w;
         })(),
-        exams: (a.exams || 0) + (b.exams || 0),
-        best:  Math.max(a.best || 0, b.best || 0),
+        /*
+          ★ عدّاد الاختبارات: الأعلى يفوز لا المجموع.
+          كان مجموعًا، والدمج يجري عند كل دخول بين الجهاز والخادم — والخادم
+          يحمل ما دفعه الجهاز نفسه قبل دقيقة — فيتضاعف العدد مع كل دمج حتى
+          بلغ ٥×١٠³¹ في ملف علي. كل جهاز يدفع مجموعه، والأعلى هو الأقرب للحقيقة.
+        */
+        exams: Progress.sane(Math.max(a.exams || 0, b.exams || 0)),
+        best:  Math.min(100, Math.max(a.best || 0, b.best || 0)),
         /*
           ★ جدول المراجعة: الأحدث مراجعةً يفوز — لا الأطول فترةً.
           لو أخذنا الأطول لضاع تعثّرٌ حدث على الجهاز الآخر: الخطأ يُنزل
@@ -169,6 +188,7 @@ const Progress = {
     Progress._timer = setTimeout(() => { Progress._timer = null; Progress.push(); }, Progress.PUSH_DELAY);
   },
   async push(){
+    Progress.repair();
     if (Progress._pushFn) return Progress._pushFn(Progress.all());
     if (!QBANK.api.user()) return { ok:false };   // زائر: يبقى تقدّمه في جهازه حتى يسجّل
     return QBANK.api.rest('progress?on_conflict=user_id', {

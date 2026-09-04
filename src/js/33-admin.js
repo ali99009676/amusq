@@ -659,8 +659,8 @@ const ADMIN_TABS = [
 
 /* أيقونة كل تبويب — بالمعرّف لا بالموضع، فالملفات اللاحقة تُدخل تبويباتها حيث تشاء */
 Admin.ICONS = {
-  dash:'◫', students:'☺', content:'▤', ugc:'⇪', reports:'⚑', quality:'✓',
-  money:'◎', campus:'⌂', audit:'≡', settings:'⚙'
+  dash:'layout', students:'users', content:'book', ugc:'upload', reports:'flag', quality:'checkCircle',
+  money:'coins', campus:'school', audit:'list', settings:'settings'
 };
 
 const AdminView = {
@@ -682,7 +682,7 @@ const AdminView = {
        الشريط يقول الشيء نفسه — شاشةٌ كاملة على الجوال قبل أول رقم. عنوان
        الصفحة يُخفى على مسارات اللوحة (CSS)، والشريط يحمل الهوية والمخرج. */
     const head = el('div', { class:'ad-shell' }, [
-      el('span', { class:'ad-shell__mark', 'aria-hidden':'true', text:'⛨' }),
+      el('span', { class:'ad-shell__mark', 'aria-hidden':'true' }, [ QBANK.ico('shield', { size:18 }) ]),
       el('div', { class:'ad-shell__x' }, [
         el('strong', { class:'ad-shell__t', text:'لوحة المشرف' }),
         el('span', { class:'ad-shell__s', text: (u && u.email) || '' })
@@ -702,7 +702,7 @@ const AdminView = {
       ADMIN_TABS.map(t => el('button', {
         class:'tabs__btn', type:'button', role:'tab', 'data-tab':t.id,
         'aria-selected': t.id === active ? 'true' : 'false' }, [
-        el('span', { class:'tabs__ico', 'aria-hidden':'true', text: Admin.ICONS[t.id] || '▪' }),
+        el('span', { class:'tabs__ico', 'aria-hidden':'true' }, [ QBANK.ico(Admin.ICONS[t.id] || 'circle', { size:16 }) ]),
         el('span', { text: t.label }),
         el('span', { class:'tabs__n', 'data-n': t.id, hidden: true })
       ])));

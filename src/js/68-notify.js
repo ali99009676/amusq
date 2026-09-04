@@ -144,7 +144,7 @@ function notifyBanner(){
     QBANK.store.set(Notify.DISMISS_KEY, (QBANK.store.get(Notify.DISMISS_KEY, 0) || 0) + 1);
     box.remove();
   });
-  box.appendChild(el('span', { class:'campus-band__ico', 'aria-hidden':'true', text:'🔔' }));
+  box.appendChild(el('span', { class:'campus-band__ico', 'aria-hidden':'true' }, [ QBANK.ico('bell', { size:18 }) ]));
   box.appendChild(el('span', { class:'campus-band__x' }, [
     el('span', { class:'campus-band__t', text:'تذكيرٌ صباحي بما يستحق' }), msg ]));
   box.appendChild(el('span', { class:'notify-band__b' }, [go, no]));

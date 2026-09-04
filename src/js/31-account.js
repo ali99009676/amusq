@@ -81,7 +81,8 @@ function accountBody(){
   */
   const P = QBANK.progress.all ? QBANK.progress.all() : {};
   let exams = 0, best = 0;
-  Object.keys(P).forEach(sid => { exams += Number(P[sid] && P[sid].exams) || 0; best = Math.max(best, Number(P[sid] && P[sid].best) || 0); });
+  /* sane(): عدّادٌ فاسد من دمجٍ قديم (٥×١٠³¹) لا يُعرض رقمًا فلكيًّا في وجه الطالب */
+  Object.keys(P).forEach(sid => { exams += QBANK.progress.sane(P[sid] && P[sid].exams); best = Math.max(best, Math.min(100, Number(P[sid] && P[sid].best) || 0)); });
   const nSubs = (QBANK.store.get('my_subjects', []) || []).length;
   const N = QBANK.views.arNum;
   const stats = el('div', { class:'pf-hero__stats' }, [
@@ -211,7 +212,7 @@ function accountBody(){
   */
   const sec = (ico, t, sub, body) => el('section', { class:'card acc-sec' }, [
     el('div', { class:'acc-sec__h' }, [
-      el('span', { class:'acc-sec__ico', 'aria-hidden':'true', text: ico }),
+      el('span', { class:'acc-sec__ico', 'aria-hidden':'true' }, [ QBANK.ico(ico, { size:18 }) ]),
       el('div', {}, [ el('h2', { class:'acc-sec__t', text: t }), sub ? el('p', { class:'acc-sec__s', text: sub }) : null ])
     ])
   ].concat(body));
@@ -219,14 +220,14 @@ function accountBody(){
     hero,
     el('div', { class:'acc-grid' }, [
       el('div', { class:'acc-grid__main stack' }, [
-        sec('☺', 'هويتك', 'ما يراه زملاؤك على اللوحة وفي مادتك', [
+        sec('user', 'هويتك', 'ما يراه زملاؤك على اللوحة وفي مادتك', [
           el('div', { class:'acc-grid2' }, [
             el('label', { class:'field' }, [ el('span', { class:'field__label', text:'الاسم' }), nameInput ]),
             el('label', { class:'field' }, [ el('span', { class:'field__label', text:'رقم الجوال *' }), phoneInput, phoneMsg ]),
             el('label', { class:'field field--wide' }, [ el('span', { class:'field__label', text:'نبذة عني' }), bioInput ])
           ])
         ]),
-        sec('🎭', 'رمز مؤقّت — يظهر حتى ترفع صورتك', 'اضغط الكاميرا في الأعلى لرفع صورتك الحقيقية', [ avatarRow ]),
+        sec('smile', 'رمز مؤقّت — يظهر حتى ترفع صورتك', 'اضغط الكاميرا في الأعلى لرفع صورتك الحقيقية', [ avatarRow ]),
         el('div', { class:'row' }, [ saveBtn ])
       ]),
       el('aside', { class:'acc-grid__side stack' }, [ ratesBox ])
@@ -335,7 +336,7 @@ function myUploadsCard(){
         const st = s.published ? el('span', { class:'badge badge--ok', text:'منشورة' })
                  : el('span', { class:'badge badge--warn', text:'قيد المراجعة' });
         box.appendChild(el('a', { class:'up-row', href:'#/subject/' + s.id }, [
-          el('span', { class:'up-row__ico', 'aria-hidden':'true', text: s.icon || '▤' }),
+          el('span', { class:'up-row__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(s.icon, 18) ]),
           el('span', { class:'up-row__x' }, [
             el('span', { class:'up-row__t', text: s.name }),
             el('span', { class:'up-row__s num', text:
@@ -379,10 +380,10 @@ function myStatsCard(){
   والتمرير الطويل يدفن ما يهم. والتبويب في الهاش فيبقى بعد التحديث.
 */
 const ACC_TABS = [
-  { id:'profile',  label:'ملفي',   ico:'☺' },
-  { id:'uploads',  label:'موادي',  ico:'⇪' },
-  { id:'activity', label:'نشاطي', ico:'↻' },
-  { id:'account',  label:'الحساب', ico:'⚙' }
+  { id:'profile',  label:'ملفي',   ico:'user' },
+  { id:'uploads',  label:'موادي',  ico:'upload' },
+  { id:'activity', label:'نشاطي', ico:'activity' },
+  { id:'account',  label:'الحساب', ico:'settings' }
 ];
 
 const ViewAccount = {
@@ -397,7 +398,7 @@ const ViewAccount = {
     const tabs = el('div', { class:'tabs', role:'tablist' }, ACC_TABS.map(t =>
       el('button', { class:'tabs__btn', type:'button', role:'tab', 'data-tab':t.id,
         'aria-selected': t.id === active ? 'true' : 'false' }, [
-        el('span', { class:'tabs__ico', 'aria-hidden':'true', text:t.ico }),
+        el('span', { class:'tabs__ico', 'aria-hidden':'true' }, [ QBANK.ico(t.ico, { size:16 }) ]),
         el('span', { text:t.label }) ])));
     tabs.addEventListener('click', e => {
       const b = e.target.closest('[data-tab]');
@@ -508,7 +509,7 @@ function authChip(){
   if (adm && adm.uid === u.id && adm.ok) {
     slot.appendChild(el('a', { class:'iconbtn authchip__adm', href:'#/admin',
       'aria-label':'لوحة التحكم', title:'لوحة التحكم' }, [
-      el('span', { class:'iconbtn__ico', 'aria-hidden':'true', text:'⚙' })
+      el('span', { class:'iconbtn__ico', 'aria-hidden':'true' }, [ QBANK.ico('settings', { size:18 }) ])
     ]));
   }
 

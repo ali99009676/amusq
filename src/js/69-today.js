@@ -118,7 +118,7 @@ function todayHero(){
       /* «راجعت ٢٥ من ٧٩٩» أوضح من «٣٪ مرّت عليك» — العدد المطلق يقول ما بقي */
       el('span', { class:'today__fl', text: st.total ? 'راجعت ' + N(st.seen) + ' من ' + N(st.total) + ' سؤالًا' : 'لا أسئلة بعد' }) ]),
     st.exam ? el('a', { class:'today__fact today__exam', href:'#/subject/' + st.exam.id }, [
-      el('span', { class:'today__fi', 'aria-hidden':'true', text:'◷' }),
+      el('span', { class:'today__fi', 'aria-hidden':'true' }, [ QBANK.ico('clock', { size:15 }) ]),
       el('span', { class:'today__fl', text: 'أقرب اختبار: ' + st.exam.name + ' ' +
         (st.exam.days === 0 ? 'اليوم' : st.exam.days === 1 ? 'غدًا' : 'بعد ' + N(st.exam.days) + ' أيام') })
     ]) : null

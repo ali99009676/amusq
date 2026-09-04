@@ -64,11 +64,15 @@ const Explore = {
    هنا الطالب لا يملكها بعد، فنُظهر أين تُدرَّس وكم سعرها لا تقدّمه فيها */
 function exCard(r){
   const color = QBANK.views.subjectColor(r.color);
-  const card = el('a', { class:'excard', href:'#s/' + (r.slug || '') , 'data-id': r.id }, [
-    el('span', { class:'excard__bar', style:'background:' + color, 'aria-hidden':'true' }),
+  /* ★ بالشكل نفسه الذي في «موادي»: بلاطة ملوّنة بلون المادة تحمل أيقونتها،
+     ثم الاسم وموضعه — بطاقةٌ واحدة في المنصة كلها لا بطاقتان */
+  const card = el('a', { class:'excard', href:'#s/' + (r.slug || '') , 'data-id': r.id, style:'--acc:' + color }, [
     el('span', { class:'excard__head' }, [
-      el('span', { class:'excard__ico', 'aria-hidden':'true', text: r.icon || '▤' }),
-      el('span', { class:'excard__t', text: r.name })
+      el('span', { class:'excard__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(r.icon, 24) ]),
+      el('span', { class:'excard__x' }, [
+        el('span', { class:'excard__t', text: r.name }),
+        r.name_en ? el('span', { class:'excard__en ltr', text: r.name_en }) : (r.course_code ? el('span', { class:'excard__en ltr', text: r.course_code }) : null)
+      ])
     ]),
     r.university ? el('span', { class:'excard__where',
       text: r.university + (r.college ? ' · ' + r.college : '') }) : null,
@@ -76,7 +80,6 @@ function exCard(r){
     el('span', { class:'excard__meta' }, [
       el('span', { class:'badge num', text: (r.q_count || 0) + ' سؤالًا' }),
       Number(r.students) > 0 ? el('span', { class:'badge num', text: r.students + ' مشترك' }) : null,
-      r.course_code ? el('span', { class:'badge', text: r.course_code }) : null,
       r.free ? el('span', { class:'badge badge--ok', text:'مجانية' })
              : (r.price ? el('span', { class:'badge num', text: r.price + ' ريال' }) : null)
     ].concat(QBANK.trust ? QBANK.trust.badges(r) : []))

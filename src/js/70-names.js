@@ -86,7 +86,7 @@ function nameGate(onDone){
   const btn = el('button', { class:'btn btn--block', type:'button', text:'احفظ اسمي وادخل' });
   const box = el('div', { class:'namebox', role:'dialog', 'aria-modal':'true', 'aria-labelledby':'gateT' }, [
     el('div', { class:'namebox__card card stack' }, [
-      el('span', { class:'namebox__ico', 'aria-hidden':'true', text:'🏆' }),
+      el('span', { class:'namebox__ico', 'aria-hidden':'true' }, [ QBANK.ico('trophy', { size:20 }) ]),
       el('h2', { id:'gateT', style:'margin:0', text:'باسمك تدخل اللوحة' }),
       el('p', { class:'field__hint', style:'margin:0', text:
         'كل اختبارٍ تؤدّيه يُحسب لك في لوحة المتصدرين — بجامعتك وبين كل الجامعات. اكتب الاسم الذي يعرفك به زملاؤك.' }),

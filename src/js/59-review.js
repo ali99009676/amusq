@@ -80,7 +80,7 @@ function reviewCard(){
   }
 
   return el('a', { class:'card revcard', href:'#/review' }, [
-    el('span', { class:'revcard__ico', 'aria-hidden':'true', text:'↻' }),
+    el('span', { class:'revcard__ico', 'aria-hidden':'true' }, [ QBANK.ico('repeat', { size:22 }) ]),
     el('div', { class:'revcard__x' }, [
       el('p', { class:'revcard__t', text:'راجع اليوم: ' + N(due.length) + ' سؤالًا' }),
       el('p', { class:'revcard__s', text:'أسئلة حان موعد استرجاعها — قبل أن تنساها.' })

@@ -20,35 +20,9 @@
   «سيئة» بحكم علي. الآن أشكالٌ مغلقة أوضح بخطٍّ ٢.١ وزوايا مستديرة —
   على طراز Lucide — وما زالت مسارات SVG مكتوبة هنا بلا مكتبة خارجية.
 */
-const ICONS = {
-  /* الرئيسية: بيتٌ بسقفٍ وبابٍ مغلقين — لا ثلاثة خطوط متفرّقة */
-  home: 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
-  /* استكشف: عدسة بدائرة كاملة ومقبض قصير */
-  search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM21 21l-4.3-4.3',
-  /* راجع: دورة كاملة تعود إلى بدايتها — الاسترجاع بعد حين */
-  repeat: 'M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5',
-  /* ارفع: سهم يصعد وصينيّة تحته */
-  upload: 'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12',
-  /* حسابي: رأسٌ وكتفان مغلقان */
-  user: 'M18 20a6 6 0 0 0-12 0M12 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z'
-};
-
-function icon(d){
-  const NS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('width', '22'); svg.setAttribute('height', '22');
-  svg.setAttribute('fill', 'none');
-  svg.setAttribute('aria-hidden', 'true');
-  const path = document.createElementNS(NS, 'path');
-  path.setAttribute('d', d);
-  path.setAttribute('stroke', 'currentColor');
-  path.setAttribute('stroke-width', '2.1');
-  path.setAttribute('stroke-linecap', 'round');
-  path.setAttribute('stroke-linejoin', 'round');
-  svg.appendChild(path);
-  return svg;
-}
+/* الأيقونات من المجموعة الموحّدة (05-icons.js) — مصدرٌ واحد لكل الواجهة */
+const ICONS = { home:'home', search:'search', repeat:'repeat', upload:'upload', user:'user' };
+function icon(name){ return QBANK.ico(name, { size:22, weight:2.1 }); }
 
 const NAV = [
   { path:'#/',         label:'الرئيسية',  ico:'home' },

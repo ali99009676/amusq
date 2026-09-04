@@ -200,11 +200,11 @@ QBANK.views.adminOrdersCard = adminOrdersCard;
 function inboxPanel(){
   const box = el('section', { class:'inbox', 'aria-label':'ينتظرك' });
   const items = [
-    ['purchases', 'طلب شراء',   '#/admin/money',    '💳', 'يدفع الطالب ولا يُفتح له حتى تعتمد'],
-    ['phones',    'توثيق جوال', '#/admin/money',    '☎',  'رسالة واتساب وصلت وتنتظر ضغطة'],
-    ['payouts',   'تحويل أرباح','#/admin/money',    '⇄',  'رافعٌ طلب ماله'],
-    ['drafts',    'مسوّدة',     '#/admin/content',  '✎',  'مادة رفعها طالب ولم تُنشر بعد'],
-    ['reports',   'بلاغ',       '#/admin/quality',  '⚑',  'سؤالٌ أبلغ عنه طالب']
+    ['purchases', 'طلب شراء',   '#/admin/money',    'card',  'يدفع الطالب ولا يُفتح له حتى تعتمد'],
+    ['phones',    'توثيق جوال', '#/admin/money',    'phone', 'رسالة واتساب وصلت وتنتظر ضغطة'],
+    ['payouts',   'تحويل أرباح','#/admin/money',    'swap',  'رافعٌ طلب ماله'],
+    ['drafts',    'مسوّدة',     '#/admin/content',  'edit',  'مادة رفعها طالب ولم تُنشر بعد'],
+    ['reports',   'بلاغ',       '#/admin/quality',  'flag',  'سؤالٌ أبلغ عنه طالب']
   ];
   box.appendChild(el('p', { class:'field__hint', style:'margin:0', text:'جارٍ العدّ…' }));
 
@@ -235,7 +235,7 @@ function inboxPanel(){
       const age = it[0] === 'purchases' && d.oldest_purchase
         ? 'أقدمها منذ ' + QBANK.admin.charts.ago(d.oldest_purchase) : it[4];
       list.appendChild(el('a', { class:'inbox__i is-on', href: it[2] }, [
-        el('span', { class:'inbox__ic', 'aria-hidden':'true', text: it[3] }),
+        el('span', { class:'inbox__ic', 'aria-hidden':'true' }, [ QBANK.ico(it[3], { size:18 }) ]),
         el('span', { class:'inbox__x' }, [
           el('span', { class:'inbox__l', text: N(n) + ' ' + it[1] }),
           el('span', { class:'inbox__d', text: age })
