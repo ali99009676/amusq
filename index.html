@@ -2789,6 +2789,11 @@ a.up-row__x:hover .up-row__t{ color:var(--acc); }
 .prov-badge{ display:inline-flex; align-items:center; gap:4px; }
 @media (prefers-reduced-motion: reduce){ .oauth__tile, .oauth__tile:hover{ transition:none; transform:none; } }
 
+/* ═══ ١٦) سياسة الخصوصية + فاصل التذييل ═══ */
+.footer__sep{ margin:0 var(--s2); color:var(--text-3); }
+.privacy__sec h2{ font-size:var(--fs-lg); }
+.privacy__p{ margin:0; max-width:68ch; text-wrap:pretty; }
+
 
 /* ===== 90-print.css ===== */
 /*
@@ -2870,6 +2875,8 @@ a.up-row__x:hover .up-row__t{ color:var(--acc); }
     <p class="footer__credit">
       برمجة وتصميم
       <a href="https://wa.me/966580805553" target="_blank" rel="noopener noreferrer">علي الصقور</a>
+      <span class="footer__sep" aria-hidden="true">·</span>
+      <a href="#/privacy">سياسة الخصوصية</a>
     </p>
   </div>
 </footer>
@@ -3338,7 +3345,11 @@ const Api = {
     oauthUrl(provider){
       const c = QBANK.config.get();
       if (!c) return null;
-      const back = (typeof location !== 'undefined') ? location.origin + location.pathname : '';
+      /* ★ داخل التطبيق الأصلي يعود المزوّد إلى رابطٍ عميق (muraja://auth) لا إلى
+         الصفحة: أصل التطبيق capacitor://localhost لا يقبله أحد، وSafari الذي فتح
+         الدخول لا يعرف طريق العودة إلى التطبيق إلا بالمخطّط المسجَّل له. */
+      const back = (QBANK.native && QBANK.native.active) ? QBANK.native.REDIRECT
+                 : (typeof location !== 'undefined') ? location.origin + location.pathname : '';
       return c.url + '/auth/v1/authorize?provider=' + provider + '&redirect_to=' + encodeURIComponent(back);
     },
     // عند العودة من رابط سحري أو OAuth تصل الرموز في هاش الصفحة
@@ -4578,7 +4589,10 @@ function loginCard(opts){
      اللوحة؟ من هذا المفتاح — يقرؤه الإقلاع بعد التقاط الجلسة ثم يمحوه. */
   const rememberAfter = () => { if (opts.after) QBANK.store.set('after_login', opts.after); };
   const gBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب جوجل' });
-  gBtn.addEventListener('click', () => { const u = QBANK.api.auth.oauthUrl('google'); if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد'); });
+  gBtn.addEventListener('click', () => {
+    if (QBANK.authProviders) return void QBANK.authProviders.launch('google', opts.after);
+    const u = QBANK.api.auth.oauthUrl('google'); if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد');
+  });
 
   /*
     ★ الأزرار الاجتماعية صارت صفًّا يُكتشف لا زرًّا واحدًا مكتوبًا.
@@ -7241,7 +7255,8 @@ function stepEnrich(box, rerender){
       creditBox.appendChild(el('span', { class:'costbox__s',
         text: enough ? 'سيتبقى لك ' + N(bal - cost) + ' كوين بعد الإثراء.'
                      : 'ينقصك ' + N(cost - bal) + ' كوين لإثراء هذا الملف.' }));
-      if (!enough)
+      /* داخل التطبيق لا «اشحن»: الشحن شراء، والشراء في التطبيق لأبل وحدها (٣.١.١) */
+      if (!enough && !(typeof window !== 'undefined' && window.QBANK_NATIVE_APP))
         creditBox.appendChild(el('a', { class:'btn btn--sm', href:'#/account', text:'اشحن رصيدك' }));
     }
     go.textContent = wizard.done ? 'أكمل من حيث توقفت (' + wizard.done + ')'
@@ -8227,6 +8242,8 @@ function finishExam(){
 function examFeedback(item, answered, st){
   const right = answered.choice === item.correct;
   const N = QBANK.views.arNum;
+  /* داخل التطبيق: «أصبت» تُحسّ في اليد قبل أن تُقرأ — وفي المتصفح لا شيء يحدث */
+  if (QBANK.native && QBANK.native.active) QBANK.native.haptic(right ? 'success' : 'error');
   const panes = [];
   if (item.expl_ar) panes.push(['شرح', el('p', { class:'exfb__p', text: item.expl_ar })]);
   if (item.expl_en) panes.push(['English', el('p', { class:'exfb__p ltr', text: item.expl_en })]);
@@ -17142,6 +17159,21 @@ const AuthProviders = {
     } catch(e){ return null; }
   },
 
+  /*
+    ★ بابٌ واحد للانطلاق إلى المزوّد — من كل زرّ.
+    الويب ينتقل بالصفحة نفسها، والتطبيق الأصلي يفتح Safari (opener يضبطه
+    الجسر). والوجهة تُحفظ قبل المغادرة في الحالين: من قصد اللوحة يعود إليها.
+  */
+  opener: null,
+  launch(id, after){
+    const u = QBANK.api.auth.oauthUrl(id);
+    if (!u) { QBANK.toast('المنصة غير موصولة بالخادم بعد'); return false; }
+    if (after) QBANK.store.set('after_login', after);
+    if (AuthProviders.opener && AuthProviders.opener(u)) return true;
+    location.href = u;
+    return true;
+  },
+
   /* المزوّد الواحد يظهر مرة: لينكدإن له معرّفان في Supabase (القديم والـOIDC) */
   dedupe(ids){
     const seen = {}, out = [];
@@ -17167,12 +17199,7 @@ function oauthRow(opts){
   const grid = el('div', { class:'oauth__grid' });
   box.appendChild(head); box.appendChild(grid);
 
-  function go(p){
-    const u = QBANK.api.auth.oauthUrl(p.id);
-    if (!u) return void QBANK.toast('المنصة غير موصولة بالخادم بعد');
-    if (o.after) QBANK.store.set('after_login', o.after);
-    location.href = u;
-  }
+  const go = p => AuthProviders.launch(p.id, o.after);
 
   function paint(ids){
     /* الافتراض جوجل: هو المفعَّل منذ اليوم الأول، ولو تعذّر السؤال فالزرّ يعمل */
@@ -17261,6 +17288,246 @@ function providersAdminCard(){
 
 QBANK.views.oauthRow = oauthRow;
 QBANK.views.providersAdminCard = providersAdminCard;
+
+
+/* ===== 76-native.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  التطبيق الأصلي (Capacitor) — الجسر بين الويب والجهاز
+  ═══════════════════════════════════════════════════════════════════
+  الملف نفسه (index.html) يعمل في المتصفح وفي تطبيق آيفون/أندرويد. الفرق
+  الوحيد: داخل التطبيق يوجد جسرٌ يحقنه النظام قبل أي سطر منّا
+  (window.Capacitor) — ليس مكتبةً نحمّلها من الشبكة، بل جزء من غلاف
+  التطبيق كما أن المتصفح جزء من الجهاز. كل ما هنا يُفعَّل حين يوجد الجسر
+  فقط، ويبقى الموقع كما هو بدونه — لا سطر منه يلمس الويب.
+
+  ★ لماذا يحتاج التطبيقُ جسرًا أصلًا؟
+  ١ · الدخول: جوجل ترفض OAuth داخل WebView مضمَّن (403 disallowed_useragent)،
+      فيُفتح الدخول في Safari الحقيقي ويعود بالرمز عبر رابطٍ عميق muraja://auth.
+  ٢ · الخادم: أصل التطبيق capacitor://localhost لا https — فنداءات /api
+      تحتاج عنوان الإنتاج صراحةً.
+  ٣ · وما يجعله «تطبيقًا» لا «موقعًا في غلاف» عند مراجعة أبل: اهتزاز عند
+      الإجابة، ورقة المشاركة، شريط الحالة يتبع الوضع، وشاشة بداية.
+*/
+const Native = {
+  SCHEME:   'muraja',
+  REDIRECT: 'muraja://auth',
+  API_BASE: 'https://amsuq.alsoqoor.com',
+  active: false,
+
+  bridge(){
+    const C = (typeof window !== 'undefined') ? window.Capacitor : null;
+    return (C && typeof C.isNativePlatform === 'function' && C.isNativePlatform()) ? C : null;
+  },
+  plugin(name){
+    const C = Native.bridge();
+    return (C && C.Plugins && C.Plugins[name]) || null;
+  },
+  platform(){ const C = Native.bridge(); return C ? C.getPlatform() : 'web'; },
+
+  /* يُستدعى عند تحميل الملف — والجسر موجود قبله. آمن التكرار (للفحوص) */
+  init(){
+    if (!Native.bridge()) { Native.active = false; return false; }
+    Native.active = true;
+    window.QBANK_NATIVE_APP = true;
+    /* الخادم: التطبيق لا يعرف «نفس الأصل»، فيُكتب عنوان الإنتاج مرة ويبقى */
+    if (!QBANK.store.get('api_base', '')) QBANK.store.set('api_base', Native.API_BASE);
+    Native.wireAuth();
+    Native.wireLinks();
+    Native.wireTheme();
+    Native.wireShare();
+    Native.wireBack();
+    Native.wireStore();
+    /* شاشة البداية تُخفى بعد أول رسم — لا قبل أن يكون هناك ما يُرى */
+    setTimeout(Native.splashOff, 250);
+    return true;
+  },
+
+  /*
+    ═══ قاعدة المتجر ٣.١.١: داخل التطبيق لا شراء إلا عبر أبل ═══
+    الإصدار الأول مجاني بلا شراء داخل التطبيق. فالمادة المدفوعة لا تعرض
+    سعرًا ولا رمز تفعيل ولا واتساب ولا «اشترِ» — أبل ترفض كل ذلك حتى
+    الإشارة إلى الموقع. تُقال الحقيقة بجملة واحدة، ويُترك للطالب ما هو
+    مفتوح. ومتجر الكوينز يختفي للسبب نفسه. يوم تُضاف مشتريات أبل (v2)
+    تُستبدل هذه البطاقة بزرّ StoreKit — لا تُلغى.
+  */
+  lockedCard(sub){
+    return el('div', { class:'card', style:'text-align:center' }, [
+      el('span', { class:'empty__ico', 'aria-hidden':'true' }, [ QBANK.ico('shield', { size:40, weight:1.6 }) ]),
+      el('p', { class:'empty__title', text:'«' + ((sub && sub.name) || 'هذه المادة') + '» غير متاحة في التطبيق حاليًا' }),
+      el('p', { class:'empty__text', text:'المواد المجانية كلها مفتوحة لك هنا — ومن اشترى من قبل يدخل بحسابه فتُفتح له تلقائيًا.' }),
+      el('a', { class:'btn btn--block', href:'#/explore', text:'استكشف المواد المجانية' })
+    ]);
+  },
+  wireStore(){
+    if (QBANK.gate)  QBANK.gate.paywallCard = sub => Native.lockedCard(sub);
+    if (QBANK.trial) QBANK.trial.expiredCard = sub => Native.lockedCard(sub);
+    if (QBANK.pay)   QBANK.pay.coinShop = () => null;
+  },
+
+  /* ═══ الدخول: Safari يفتح، والرابط العميق يُرجع ═══ */
+  wireAuth(){
+    if (!QBANK.authProviders) return;
+    QBANK.authProviders.opener = url => {
+      const B = Native.plugin('Browser');
+      if (B && B.open) { B.open({ url, presentationStyle:'popover' }); return true; }
+      return false;   // بلا إضافة متصفح: يُترك للمسار العادي
+    };
+  },
+  /*
+    ★ الرمز يعود في هاش الرابط العميق تمامًا كما يعود في هاش الصفحة على الويب —
+    فالتقاطه هو الدالة نفسها (captureFromHash)، ولا مسارَ ثانٍ للجلسة.
+  */
+  handleUrl(url){
+    const u = String(url || '');
+    if (u.indexOf(Native.SCHEME + '://') !== 0) return false;
+    const B = Native.plugin('Browser');
+    if (B && B.close) { try { B.close(); } catch(e){} }
+    const hashAt = u.indexOf('#');
+    const hash = hashAt >= 0 ? u.slice(hashAt) : '';
+    if (hash && QBANK.api.auth.captureFromHash(hash)){
+      const after = QBANK.store.get('after_login', '#/');
+      QBANK.store.remove('after_login');
+      QBANK.toast('تم تسجيل الدخول');
+      /* ما يفعله الإقلاع بعد الدخول يُفعل هنا أيضًا: التقدّم والاستحقاقات والحضور */
+      try { QBANK.progress.pull(); QBANK.gate.refresh(); if (QBANK.presence) QBANK.presence.start(); } catch(e){}
+      QBANK.router.go(/^#\//.test(after) ? after : '#/');
+      return true;
+    }
+    /* خطأٌ من المزوّد يصل في الاستعلام: ?error=…&error_description=… */
+    const m = /[?&#]error_description=([^&]+)/.exec(u) || /[?&#]error=([^&]+)/.exec(u);
+    if (m) QBANK.toast('تعذّر الدخول: ' + decodeURIComponent(m[1]).replace(/\+/g, ' '));
+    return true;
+  },
+  wireLinks(){
+    const A = Native.plugin('App');
+    if (A && A.addListener) A.addListener('appUrlOpen', ev => Native.handleUrl(ev && ev.url));
+  },
+
+  /* ═══ شريط الحالة يتبع الوضع: نصٌّ فاتح على الليلي وداكن على الفاتح ═══ */
+  wireTheme(){
+    const S = Native.plugin('StatusBar');
+    if (!S || !S.setStyle || !QBANK.theme) return;
+    const orig = QBANK.theme.apply;
+    QBANK.theme.apply = function(mode){
+      const out = orig.call(QBANK.theme, mode);
+      try { S.setStyle({ style: out === 'dark' ? 'DARK' : 'LIGHT' }); } catch(e){}
+      return out;
+    };
+    try { S.setStyle({ style: document.documentElement.getAttribute('data-theme') === 'dark' ? 'DARK' : 'LIGHT' }); } catch(e){}
+  },
+
+  /* ═══ ورقة المشاركة الأصلية بدل navigator.share الذي لا يوفّره WKWebView ═══ */
+  wireShare(){
+    const Sh = Native.plugin('Share');
+    if (!Sh || !Sh.share || !QBANK.share) return;
+    QBANK.share.sharePlain = async function(url, title, text){
+      try {
+        await Sh.share({ title: title || 'مراجعة', text: text || '', url, dialogTitle: title || 'مراجعة' });
+        return { ok:true, via:'share' };
+      } catch(e){ return { ok:false, cancelled:true }; }
+    };
+  },
+
+  /* ═══ زرّ الرجوع في أندرويد: يرجع في التاريخ، ومن الرئيسية يخرج ═══ */
+  wireBack(){
+    const A = Native.plugin('App');
+    if (!A || !A.addListener) return;
+    A.addListener('backButton', ev => {
+      const atRoot = !location.hash || location.hash === '#/' || location.hash === '#';
+      if (!atRoot && (!ev || ev.canGoBack !== false)) history.back();
+      else if (A.exitApp) A.exitApp();
+    });
+  },
+
+  /* ═══ الاهتزاز: يُنادى من شاشة الاختبار — «أصبت» تُحسّ لا تُقرأ فقط ═══ */
+  haptic(kind){
+    const H = Native.plugin('Haptics');
+    if (!H) return false;
+    try {
+      if (kind === 'success' && H.notification) H.notification({ type:'SUCCESS' });
+      else if (kind === 'error' && H.notification) H.notification({ type:'ERROR' });
+      else if (H.impact) H.impact({ style:'LIGHT' });
+      return true;
+    } catch(e){ return false; }
+  },
+
+  /* شاشة البداية تُخفى بعد أول رسم — لا قبل أن يكون هناك ما يُرى */
+  splashOff(){
+    const S = Native.plugin('SplashScreen');
+    if (S && S.hide) { try { S.hide(); } catch(e){} }
+  }
+};
+QBANK.native = Native;
+
+Native.init();
+
+
+/* ===== 77-privacy.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  سياسة الخصوصية — صفحة داخل المنصة
+  ═══════════════════════════════════════════════════════════════════
+  المتجران (آبل وجوجل) يشترطان رابطًا عامًّا لسياسة الخصوصية قبل النشر،
+  والطالب الذي يرفع بنك دكتوره يستحق أن يعرف أين يذهب. الصفحة هنا لا في
+  موقعٍ خارجي: تعمل بلا إنترنت، وتُحدَّث مع الكود لا بمعزلٍ عنه — فلا
+  تكذب على ما يفعله البرنامج فعلًا.
+
+  ★ كل بندٍ هنا يصف ما في الكود حرفيًا. ما لا نجمعه لا نذكره «احتياطًا».
+*/
+const PRIVACY_UPDATED = '٥ سبتمبر ٢٠٢٦';
+
+const PRIVACY_SECTIONS = [
+  ['ما هذه المنصة', [
+    '«مراجعة» بنوك أسئلة يرفعها طلاب الجامعات ويراجعون منها. يقدّمها علي الصقور من المملكة العربية السعودية. باستخدامك للموقع أو التطبيق فأنت توافق على ما في هذه الصفحة.'
+  ]],
+  ['ما نجمعه', [
+    'حسابك: بريدك الإلكتروني، واسم العرض الذي تختاره، وصورة رمزية أو صورة ترفعها اختيارًا، ورقم جوال إن وثّقته، وجامعتك وكليتك إن حدّدتهما. الدخول يكون برابط بريد أو رمز، أو بحساب جوجل أو آبل أو جِتهَب — ونأخذ من المزوّد بريدك واسمك فقط.',
+    'مذاكرتك: الأسئلة التي مرّت عليك وما أخطأت فيه وما علّمته، ونتائج اختباراتك التجريبية ومدّتها، وتقدّمك في كل مادة. تُحفظ في جهازك وتتزامن مع حسابك حين تدخل.',
+    'حضورك: آخر وقت فُتحت فيه المنصة من جهازك والمادة المفتوحة، ليعرف زملاؤك عدد المتصلين الآن ولتُحسب لك المتصدرين. لا موقع جغرافي.',
+    'ما ترفعه: ملفات بنوك الأسئلة (نص، PDF، Word، صور) واسم المادة. تُخزَّن في مخزن المنصة، ويُقرأ نصّها لاستخراج الأسئلة.',
+    'مشترياتك: طلبات الشراء ورموز التفعيل ورصيد الكوينز وطلبات التحويل. لا نخزّن أرقام بطاقات: الدفع بالتحويل أو عبر بوابة دفع مرخّصة إن فُعِّلت.',
+    'إشعاراتك: إن فعّلت الإشعارات حُفظ اشتراك جهازك لإرسال تذكير المراجعة، ويُلغى من إعداداتك متى شئت.'
+  ]],
+  ['فيم نستعمله', [
+    'لتشغيل المنصة لك: حفظ تقدّمك، ومزامنته بين أجهزتك، وفتح ما اشتريته، وتذكيرك بما يستحق المراجعة.',
+    'لعرض المتصدرين وعدد المتصلين — باسم العرض فقط، ويمكنك إخفاء نفسك من اللوحة من ملفك.',
+    'لقراءة الملفات التي ترفعها واستخراج أسئلتها وإضافة شرحٍ لها عند طلب ذلك — بلا تغيير حرفٍ من نص السؤال.',
+    'للتواصل معك في أمر حسابك أو مشترياتك.'
+  ]],
+  ['من يصل إلى بياناتك', [
+    'Supabase: قاعدة البيانات والدخول وتخزين الملفات (خوادم في الاتحاد الأوروبي). Vercel: استضافة الموقع ودوال الخادم.',
+    'مزوّد الدخول الذي تختاره (جوجل، آبل، جِتهَب): يرى أنك دخلت إلى «مراجعة» بحسابك، ولا نرى كلمة مرورك.',
+    'مزوّد نماذج الذكاء الاصطناعي: يستقبل نصّ الملف الذي ترفعه لاستخراج الأسئلة وشرحها — لا اسمك ولا بريدك.',
+    'المشرف: يرى بيانات حسابك وطلباتك ليخدمك. لا نبيع بياناتك، ولا نعرض إعلانات، ولا نشاركها مع معلنين.'
+  ]],
+  ['حقوقك', [
+    'تعديل اسمك وصورتك وجامعتك من «حسابي».',
+    'إخفاء نفسك من لوحة المتصدرين.',
+    'حذف حسابك وكل بياناته نهائيًا من «حسابي ← الحساب ← حذف الحساب» — يُنفَّذ فورًا ولا يحتاج تواصلًا.',
+    'طلب نسخة من بياناتك أو أي سؤال: واتساب ‎+966 58 080 5553‎.'
+  ]],
+  ['الأمان والاحتفاظ', [
+    'الاتصال مشفّر (HTTPS)، وكل طالب لا يرى إلا بياناته — تفرضه قاعدة البيانات نفسها لا الواجهة. نحتفظ بالبيانات ما دام حسابك قائمًا، وتُحذف بحذفه.',
+    'المنصة لطلاب الجامعات، ولا تستهدف من هم دون ١٣ عامًا.'
+  ]],
+  ['التغييرات', [
+    'حين تتغيّر هذه السياسة يُحدَّث تاريخها أعلى الصفحة، والتغيير الجوهري يُعلن داخل المنصة.'
+  ]]
+];
+
+const ViewPrivacy = {
+  title:'سياسة الخصوصية',
+  view(){
+    const body = PRIVACY_SECTIONS.map(([h, ps]) => el('section', { class:'card stack privacy__sec' }, [
+      el('h2', { style:'margin:0', text: h })
+    ].concat(ps.map(p => el('p', { class:'privacy__p', text: p })))));
+    return QBANK.views.page('سياسة الخصوصية', 'آخر تحديث: ' + PRIVACY_UPDATED + ' — ما هنا يصف ما يفعله البرنامج فعلًا.', body);
+  }
+};
+QBANK.router.add('#/privacy', ViewPrivacy);
+QBANK.views.ViewPrivacy = ViewPrivacy;
+QBANK.PRIVACY_SECTIONS = PRIVACY_SECTIONS;
 
 })();
 
