@@ -1,0 +1,27 @@
+{
+  "name": "muraja-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "مراجعة — غلاف التطبيق الأصلي (iOS/Android) حول index.html المبني",
+  "scripts": {
+    "prepare:www": "node prepare.js",
+    "ios:add": "npx cap add ios",
+    "ios:sync": "npx cap sync ios",
+    "assets": "npx capacitor-assets generate --ios --android --iconBackgroundColor #111722 --iconBackgroundColorDark #111722 --splashBackgroundColor #111722 --splashBackgroundColorDark #111722"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/app": "^6.0.2",
+    "@capacitor/browser": "^6.0.4",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/haptics": "^6.0.2",
+    "@capacitor/ios": "^6.2.0",
+    "@capacitor/share": "^6.0.3",
+    "@capacitor/splash-screen": "^6.0.3",
+    "@capacitor/status-bar": "^6.0.2"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^6.2.0"
+  }
+}

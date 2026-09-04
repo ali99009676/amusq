@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- مصدر أيقونة «مراجعة»: كتاب مفتوح + صفّ فقاعات ورقة الإجابة (الوسطى مظلَّلة).
+       منه تُولَّد ملفات assets/*.png (icon-only، foreground/background، splash). -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#151b26"/>
+      <stop offset="1" stop-color="#0b0e14"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6c453"/>
+      <stop offset="1" stop-color="#e8a317"/>
+    </linearGradient>
+  </defs>
+  <rect id="back" width="1024" height="1024" fill="url(#bg)"/>
+  <g id="mark">
+    <g fill="none" stroke="url(#gold)" stroke-width="58" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M512 296 C440 248 350 228 236 228 c-34 0-64 4-86 9 v470 c22-5 52-9 86-9 c114 0 204 20 276 68"/>
+      <path d="M512 296 C584 248 674 228 788 228 c34 0 64 4 86 9 v470 c-22-5-52-9-86-9 c-114 0-204 20-276 68"/>
+      <path d="M512 296 v470"/>
+    </g>
+    <g stroke="url(#gold)" stroke-width="22" fill="none">
+      <circle cx="372" cy="880" r="42"/>
+      <circle cx="512" cy="880" r="42" fill="url(#gold)"/>
+      <circle cx="652" cy="880" r="42"/>
+    </g>
+  </g>
+</svg>
