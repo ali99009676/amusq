@@ -724,20 +724,22 @@ a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
 .today{
   position:relative; overflow:hidden; isolation:isolate;
   background:var(--today-bg); color:var(--today-fg);
-  border:1px solid var(--today-line); border-radius:var(--r4);
-  padding:var(--s5) var(--s6); box-shadow:var(--sh3);
-  display:flex; flex-direction:column; gap:var(--s3);
+  border:1px solid var(--today-line); border-radius:var(--r3);
+  padding:var(--s4) var(--s5); box-shadow:var(--sh2);
+  display:flex; flex-direction:column; gap:var(--s2);
 }
 /* لا زخرفة في الزوايا: الفقاعات وحدها توقيعُ البطل (اختُبرت علاماتُ المحاذاة وأُزيلت — كانت تُقرأ خللًا) */
 .today__meta{ display:flex; align-items:baseline; gap:var(--s3); flex-wrap:wrap; }
 .today__hi{ font-weight:800; font-size:.95rem; }
 .today__date{ color:var(--today-fg2); font-size:.8rem; margin-inline-start:auto; }
 .today__t{
-  margin:0; font-size:clamp(1.5rem, 1.1rem + 1.8vw, 2.25rem); line-height:1.25;
-  letter-spacing:-.03em; color:var(--today-fg);
+  margin:0; font-size:clamp(1.2rem, 1rem + 1vw, 1.6rem); line-height:1.3;
+  letter-spacing:-.02em; color:var(--today-fg);
 }
-.today__s{ margin:0; color:var(--today-fg2); font-size:.95rem; max-width:52ch; }
-.today__facts{ display:flex; flex-wrap:wrap; gap:var(--s2) var(--s5); margin-top:var(--s1); }
+.today__s{ margin:0; color:var(--today-fg2); font-size:.9rem; max-width:60ch; }
+.today__foot{ display:flex; align-items:center; gap:var(--s3) var(--s5); flex-wrap:wrap; margin-top:var(--s2); }
+.today__foot .today__act{ margin-inline-start:auto; margin-top:0; }
+.today__facts{ display:flex; flex-wrap:wrap; gap:var(--s2) var(--s5); }
 .today__fact{ display:inline-flex; align-items:center; gap:var(--s2); color:var(--today-fg2); font-size:.85rem; text-decoration:none; }
 .today__fact.today__exam{ color:var(--today-fg); }
 .today__fact.today__exam:hover{ color:var(--gold); text-decoration:none; }
@@ -749,7 +751,7 @@ a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
 /* الفقاعات: عشر دوائر بحدٍّ رفيع، والمعبَّأة ذهبية — كما تُظلَّل في القاعة */
 .omr{ display:inline-flex; gap:5px; }
 .omr__b{
-  display:inline-block; width:12px; height:12px; border-radius:50%;
+  display:inline-block; width:10px; height:10px; border-radius:50%;
   border:1.5px solid var(--today-fg2); opacity:.7;
   transition:background .3s var(--ease), border-color .3s;
   transition-delay:calc(var(--i, 0) * 45ms);
@@ -757,8 +759,9 @@ a.revcard:hover{ transform:translateY(-2px); box-shadow:var(--sh2); }
 .omr__b.is-on{ background:var(--gold); border-color:var(--gold); opacity:1; }
 @media (prefers-reduced-motion: reduce){ .omr__b{ transition:none; } }
 @media (max-width:480px){
-  .today{ padding:var(--s4) var(--s4); border-radius:var(--r3); }
-  .today__date{ margin-inline-start:0; width:100%; }
+  .today{ padding:var(--s4) var(--s4); border-radius:var(--r2); }
+  .today__date{ display:none; }
+  .today__foot .today__act{ margin-inline-start:0; width:100%; }
   .today .btn{ flex:1 1 auto; }
 }
 

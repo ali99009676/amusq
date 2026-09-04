@@ -82,8 +82,12 @@ const Today = {
     if (st.next !== null)
       return { t: 'أنهيتَ مراجعة اليوم', s: st.next === 1 ? 'القادمة غدًا — والآن اختبر نفسك في مادة.' : 'القادمة بعد ' + N(st.next) + ' أيام — والآن اختبر نفسك في مادة.',
                href: '#/subject/' + st.first.id, btn: 'افتح ' + st.first.name };
-    return { t: 'ابدأ بأول سؤال', s: 'كل ما تجيب عنه يدخل جدول مراجعتك، ونذكّرك به في وقته.',
-             href: '#/subject/' + st.first.id, btn: 'ابدأ ' + st.first.name };
+    /* ★ لمن بدأ ولم يستحقّ عليه شيء بعد، ولمن لم يبدأ: جملةٌ عن موادّه لا عن «أول سؤال» */
+    if (st.seen > 0)
+      return { t: 'واصل مراجعتك', s: 'لا شيء مستحقٌّ الآن — افتح مادةً واختبر نفسك، وسنذكّرك حين يحين الاسترجاع.',
+               href: '#/subject/' + st.first.id, btn: 'افتح ' + st.first.name };
+    return { t: 'جاهز للمراجعة؟', s: 'اختر مادة وابدأ. نتابع تقدّمك ونذكّرك بما يستحق المراجعة في وقته.',
+             href: '#/subject/' + st.first.id, btn: 'ابدأ بـ' + st.first.name };
   }
 };
 QBANK.today = Today;
@@ -111,7 +115,8 @@ function todayHero(){
 
   const facts = el('div', { class:'today__facts' }, [
     el('span', { class:'today__fact' }, [ bubbleRow(st.pct),
-      el('span', { class:'today__fl', text: st.total ? N(st.pct) + '٪ من ' + N(st.total) + ' سؤالًا مرّت عليك' : 'لا أسئلة بعد' }) ]),
+      /* «راجعت ٢٥ من ٧٩٩» أوضح من «٣٪ مرّت عليك» — العدد المطلق يقول ما بقي */
+      el('span', { class:'today__fl', text: st.total ? 'راجعت ' + N(st.seen) + ' من ' + N(st.total) + ' سؤالًا' : 'لا أسئلة بعد' }) ]),
     st.exam ? el('a', { class:'today__fact today__exam', href:'#/subject/' + st.exam.id }, [
       el('span', { class:'today__fi', 'aria-hidden':'true', text:'◷' }),
       el('span', { class:'today__fl', text: 'أقرب اختبار: ' + st.exam.name + ' ' +
@@ -119,14 +124,17 @@ function todayHero(){
     ]) : null
   ]);
 
+  /* ★ أصغر: الحقائق والأزرار في صفٍّ واحد أسفل البطل — لا كتلةٌ بارتفاع الشاشة */
   return el('section', { class:'today', 'aria-label':'ورقة اليوم' }, [
     meta,
     el('h2', { class:'today__t', text: h.t }),
     el('p', { class:'today__s', text: h.s }),
-    facts,
-    el('div', { class:'today__act' }, [
-      el('a', { class:'btn', href: h.href, text: h.btn + ' ←' }),
-      el('a', { class:'btn btn--ghost btn--sm today__more', href:'#/account/activity', text:'نشاطي' })
+    el('div', { class:'today__foot' }, [
+      facts,
+      el('div', { class:'today__act' }, [
+        el('a', { class:'btn btn--sm', href: h.href, text: h.btn + ' ←' }),
+        el('a', { class:'btn btn--ghost btn--sm today__more', href:'#/account/activity', text:'نشاطي' })
+      ])
     ])
   ]);
 }
