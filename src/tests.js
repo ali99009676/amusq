@@ -8241,6 +8241,165 @@ describe('١٩١ · مشروع التطبيق: الملفات التي يحتا�
   has(gi, '*.p8', 'ومفاتيح أبل لا تدخل المستودع أبدًا');
 }
 
+/* ============ ١٩٢ · شكل ملف الطالب: غلاف ولون وخمسة ستايلات + المتصدرون أبواب ============ */
+/*
+  ★ بطلب علي: اسم الطالب في المتصدرين يفتح صفحته، وصفحته يُنسّقها هو —
+  غلاف (صورة أو تدرّج)، لون المحور، وواحد من خمسة ستايلات تغيّر التخطيط.
+  والحرية داخل نظام التصميم: أسماء متغيّرات لا hex، والقاعدة تحصر القيم.
+*/
+describe('١٩٢ · القاعدة تحصر شكل الملف، والملف العام يُرجعه');
+{
+  const sql = fs.readFileSync(path.join(__dirname, '..', 'db', 'PROFILE-LOOK.sql'), 'utf8');
+  ['layout','accent','cover_preset','cover_url'].forEach(c =>
+    has(sql, 'add column if not exists ' + c, 'عمود ' + c));
+  has(sql, "check (layout in ('classic','cover','stripe','magazine','glass'))", '★ الستايلات الخمسة محصورة في القاعدة');
+  has(sql, "check (accent in ('', 'subject-1'", '★ واللون اسمُ متغيّر من النظام لا hex يحقنه الطالب');
+  has(sql, "position('/storage/v1/object/public/avatars/' || id::text || '/' in cover_url) > 0", '★ والغلاف من مخزننا وفي مجلد صاحبه — لا رابط خارجي يتتبّع الزوار');
+  has(sql, "'layout', p.layout, 'accent', p.accent,", 'والملف العام يُرجع الشكل');
+  has(sql, "'cover_preset', p.cover_preset, 'cover_url', p.cover_url,", 'والغلاف');
+  no(sql.slice(sql.indexOf('public_profile')), 'au.email', 'وما زال بلا إيميل');
+  no(sql, 'drop table', 'بلا حذف جدول');
+
+  const css = fs.readFileSync(path.join(__dirname, 'css', '85-look.css'), 'utf8');
+  ['classic','cover','stripe','magazine','glass'].forEach(l => has(css, '.pf-look--' + l, 'ستايل ' + l + ' مرسوم في CSS'));
+  for (let i = 1; i <= 8; i++) has(css, '.pf-cover--g' + i + '{', 'تدرّج g' + i);
+  no(css, '#', '★ ولا hex في ملف الستايلات — كل الألوان من المتغيّرات');
+  has(css, 'backdrop-filter:blur', 'والزجاجي زجاجي فعلًا');
+}
+
+describe('١٩٢ب · المتصدرون: الاسم بابٌ إلى صاحبه');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'u1', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  const rows = [1,2,3,4].map(n => ({ id:'u' + n, name:'طالب' + n, avatar:'🎓', avatar_url:'', university:'ج', tries: 9 - n,
+    best: 50, questions: 10, correct: 5, accuracy: 50, seconds: 60, last: new Date().toISOString(), blocked:false, online:false }));
+  A.api.rpc = (name, args) => name === 'board_full'
+    ? Promise.resolve({ ok:true, data:{ ok:true, scope:'all', online_window_h:4, board: rows, me:null,
+        summary:{ students:4, active7d:4, online_now:0, exams:30, questions:40, correct:20, accuracy:50, hours:1 },
+        champions:[], feed:[], universities:[], target:null } })
+    : Promise.resolve({ ok:false, status:404, data:null });
+  A.router.render('#/board');
+  pending.push(new Promise(r => setTimeout(r, 40)).then(() => {
+    const main = doc.getElementById('main');
+    const a = main.querySelector('.lb-row a.lb-row__name');
+    ok(!!a, '★ اسم الطالب في الجدول رابط');
+    eq(a.getAttribute('href'), '#/p/u1', 'إلى ملفه العام #/p/<id> — والأول أكثرهم اختبارات');
+    const pod = main.querySelector('.lb-podium__p--1 a.lb-podium__name');
+    ok(!!pod && pod.getAttribute('href') === '#/p/u1', 'والمنصّة كذلك — الأول يفتح ملفه');
+    /* اللوحة المصغّرة في الرئيسية */
+    const mini = A.views.boardMini ? A.views.boardMini() : null;
+    if (mini){
+      doc.body.appendChild(mini);
+      return new Promise(r => setTimeout(r, 40)).then(() => {
+        const l = mini.querySelector('a.lb-mini__n');
+        ok(!!l && /^#\/p\/u/.test(l.getAttribute('href')), 'واللوحة المصغّرة في الرئيسية أيضًا');
+      });
+    }
+  }));
+}
+
+describe('١٩٢ج · Look: قراءة آمنة، وحقن اللون متغيّرًا، والغلاف');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  const L = A.look;
+  ok(!!L && L.LAYOUTS.length === 5, '★ خمسة ستايلات بالضبط');
+  eq(L.read({}).layout, 'classic', 'الافتراضي كلاسيكي');
+  eq(L.read({ layout:'evil', accent:'#ff0000', cover_preset:'x', cover_url:'http://evil' }).layout, 'classic', '★ قيمة عابثة تعود إلى الافتراضي');
+  eq(L.read({ accent:'#ff0000' }).accent, '', 'وhex لا يمرّ');
+  eq(L.read({ cover_url:'http://evil.test/a.jpg' }).cover_url, '', 'وغلاف بلا https لا يمرّ');
+  eq(L.read({ layout:'magazine', accent:'subject-3', cover_preset:'g2' }).accent, 'subject-3', 'والصحيح يمرّ');
+  const root = W.document.createElement('div');
+  L.apply(root, { layout:'glass', accent:'subject-5' });
+  ok(root.classList.contains('pf-look--glass'), 'الصنف يقود CSS');
+  eq(root.style.getPropertyValue('--acc'), 'var(--subject-5)', '★ اللون يُحقن ‎--acc‎ متغيّرًا كما تفعل بطاقة المادة');
+  L.apply(root, { layout:'classic', accent:'' });
+  ok(root.classList.contains('pf-look--classic') && !root.classList.contains('pf-look--glass'), 'وتبديل الستايل يزيل السابق');
+  eq(root.style.getPropertyValue('--acc'), '', 'وبلا لون يعود لون المنصة');
+  const c1 = L.cover({ cover_preset:'g3' });
+  ok(c1.classList.contains('pf-cover--g3'), 'غلاف التدرّج صنف');
+  const c2 = L.cover({ cover_url:'https://x.supabase.co/storage/v1/object/public/avatars/u1/cover.jpg' });
+  ok(!!c2.querySelector('img.pf-cover__img'), 'وغلاف الصورة صورة');
+  const c3 = L.cover({});
+  ok(c3.classList.contains('pf-cover--acc'), 'وبلا اختيار: تدرّج المحور (يُخفيه الكلاسيكي ويستعمله المجلّة والزجاجي)');
+}
+
+describe('١٩٢د · الصفحة العامة تُرسم بستايل صاحبها');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.api._fetch = (url, opts) => {
+    const body = opts && opts.body ? JSON.parse(opts.body) : {};
+    let data = {};
+    if (/rpc\/public_profile/.test(url)) data = { id: body.p_user, name:'سارة العتيبي', bio:'طالبة طب', university:'جامعة نجران',
+      layout:'magazine', accent:'subject-3', cover_preset:'g5', cover_url:'', uploads:2, questions:120, rating_avg:4.5, rating_n:3, subjects:[], ratings:[] };
+    return Promise.resolve({ ok:true, status:200, headers:{ get:()=>'application/json' },
+      text:()=>Promise.resolve(JSON.stringify(data)), json:()=>Promise.resolve(data) });
+  };
+  W.location.hash = '#/p/stu9'; A.router.render('#/p/stu9');
+  pending.push(new Promise(r => setTimeout(r, 60)).then(() => {
+    const pg = doc.querySelector('#main .pf-page');
+    ok(!!pg, '★ الصفحة تحمل صنف الشكل');
+    ok(pg.classList.contains('pf-look--magazine'), 'بستايل صاحبها: مجلّة');
+    eq(pg.style.getPropertyValue('--acc'), 'var(--subject-3)', 'وبلونه');
+    ok(!!pg.querySelector('.pf-cover.pf-cover--g5'), 'وغلافه أول الصفحة');
+    has(pg.querySelector('.pf-hero__n').textContent, 'سارة العتيبي', 'واسمه');
+    eq(pg.querySelectorAll('.peer-stat').length, 4, 'وأربع إحصاءات');
+  }));
+}
+
+describe('١٩٢هـ · محرّر «شكل ملفي»: معاينة حيّة وحفظ صريح وغلاف في مجلد صاحبه');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'stu1', email:'s@x.y' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  A.store.set('profile', { uid:'stu1', name:'سارة', avatar:'🎓', layout:'classic', accent:'' });
+  const calls = [];
+  A.api._fetch = (url, opts) => {
+    const body = opts && opts.body && typeof opts.body === 'string' ? JSON.parse(opts.body) : null;
+    calls.push({ url, method:(opts && opts.method) || 'GET', body });
+    let data = [];
+    if (/storage\/v1\/object\/avatars/.test(url)) return Promise.resolve({ ok:true, status:200, headers:{ get:()=>null }, text:()=>Promise.resolve('{}'), json:()=>Promise.resolve({}) });
+    if (/profiles\?id=eq/.test(url) && (!opts || !opts.method)) data = [{ id:'stu1', name:'سارة', layout:'classic', accent:'', cover_preset:'', cover_url:'' }];
+    return Promise.resolve({ ok:true, status:200, headers:{ get:()=>'application/json' },
+      text:()=>Promise.resolve(JSON.stringify(data)), json:()=>Promise.resolve(data) });
+  };
+  W.location.hash = '#/account/profile'; A.router.render('#/account/profile');
+  pending.push(new Promise(r => setTimeout(r, 60)).then(async () => {
+    const card = doc.querySelector('#main .look');
+    ok(!!card, '★ بطاقة «شكل ملفي» في تبويب ملفي');
+    eq(card.querySelectorAll('.look__tile').length, 5, 'خمس بلاطات ستايل');
+    eq(card.querySelectorAll('.look__dot').length, 9, 'وتسعة ألوان (الافتراضي + ٨)');
+    eq(card.querySelectorAll('.look__cover').length, 10, 'وعشرة خيارات غلاف (بلا + ٨ تدرّجات + صورتي)');
+    const pv = card.querySelector('.look__pv');
+    ok(pv.classList.contains('pf-look--classic'), 'المعاينة تبدأ بالمحفوظ');
+    const save = Array.prototype.find.call(card.querySelectorAll('button'), b => /محفوظ|احفظ/.test(b.textContent));
+    ok(save.disabled, '★ لا حفظ بلا تغيير');
+    card.querySelector('.look__tile[data-layout="glass"]').click();
+    card.querySelector('.look__dot[data-accent="subject-6"]').click();
+    card.querySelector('.look__cover[data-cover="g7"]').click();
+    ok(pv.classList.contains('pf-look--glass'), '★ المعاينة تتبدّل فورًا — ما تراه هو ما يُنشر');
+    eq(pv.style.getPropertyValue('--acc'), 'var(--subject-6)', 'وبلونه');
+    ok(!!pv.querySelector('.pf-cover--g7'), 'وبغلافه');
+    ok(!save.disabled && /احفظ/.test(save.textContent), 'وزر الحفظ يستيقظ');
+    eq(calls.filter(c => c.method === 'PATCH').length, 0, '★ ولا طلب حفظ قبل الضغط — تجربة عشرة ستايلات لا تُرسل عشرة طلبات');
+    save.click();
+    await new Promise(r2 => setTimeout(r2, 40));
+    const patch = calls.filter(c => c.method === 'PATCH' && /profiles\?id=eq\.stu1/.test(c.url))[0];
+    ok(!!patch, '★ الحفظ PATCH على ملفه هو');
+    eq(patch.body.layout, 'glass', 'بالستايل'); eq(patch.body.accent, 'subject-6', 'واللون'); eq(patch.body.cover_preset, 'g7', 'والغلاف');
+    eq(A.store.get('profile').layout, 'glass', 'والذاكرة المحلية تحدّثت');
+    /* رفع الغلاف: المسار في مجلد صاحبه ليمرّ من سياسة المخزن وقيد القاعدة */
+    W.HTMLCanvasElement.prototype.getContext = () => ({ drawImage(){} });
+    W.HTMLCanvasElement.prototype.toBlob = (cb) => cb(new W.Blob(['x'], { type:'image/jpeg' }));
+    const OrigImage = W.Image;
+    W.Image = function(){ const i = {}; setTimeout(() => { i.width = 3000; i.height = 1000; i.onload && i.onload(); }, 0); return i; };
+    W.URL.createObjectURL = () => 'blob:x';
+    const r = await A.look.uploadCover(new W.Blob(['img'], { type:'image/jpeg' }));
+    W.Image = OrigImage;
+    ok(r.ok, 'الرفع ينجح');
+    has(r.url, '/storage/v1/object/public/avatars/stu1/cover.jpg', '★ والمسار avatars/<معرّفه>/cover.jpg — الشرط الذي تفرضه القاعدة');
+    ok(calls.some(c => /storage\/v1\/object\/avatars\/stu1\/cover\.jpg/.test(c.url) && c.method === 'POST'), 'ورُفع إلى مجلده');
+  }));
+}
+
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */
 Promise.all(pending).then(() => {
   const total = pass + fail;
