@@ -111,16 +111,46 @@ function boot(){
   QBANK.data.migrateDB();    // وأسئلة وضع عدم الاتصال — بلا انتظار، فهي ليست شرطًا للإقلاع
   QBANK.theme.init();
 
-  // رموز الدخول تعود من Supabase في هاش الصفحة — نلتقطها قبل أن يفسّرها الموجّه كمسار
-  if (QBANK.api.auth.captureFromHash(location.hash)) {
-    /* ★ الوجهة المحفوظة قبل المغادرة تفوز على الرئيسية: من دخل من بوابة
-       المشرف يعود إلى لوحته لا إلى واجهة الطالب. تُقرأ مرة ثم تُمحى. */
+  /* ★ الوجهة المحفوظة قبل المغادرة تفوز على الرئيسية: من دخل من بوابة
+     المشرف يعود إلى لوحته لا إلى واجهة الطالب. تُقرأ مرة ثم تُمحى.
+     والرابط يُنظَّف من الرمز (هاشًا كان أو ?code=) كي لا يبقى في التاريخ. */
+  const landed = () => {
     const after = QBANK.store.get('after_login', '#/');
     QBANK.store.remove('after_login');
     const dest = /^#\//.test(after) ? after : '#/';
-    try { history.replaceState(null, '', location.pathname + location.search + dest); }
+    try { history.replaceState(null, '', location.pathname + dest); }
     catch(e) { location.hash = dest; }
     QBANK.toast('تم تسجيل الدخول');
+    return dest;
+  };
+
+  // رموز الدخول تعود من Supabase في هاش الصفحة — نلتقطها قبل أن يفسّرها الموجّه كمسار
+  const hadToken = /access_token=/.test(location.hash);
+  if (QBANK.api.auth.captureFromHash(location.hash)) {
+    landed();
+  } else if (hadToken) {
+    /* رمزٌ في الهاش بلا دخولٍ معلّق من هذا الجهاز: لا يُقبل (تدقيق H-01) —
+       نمحوه ونوجّه إلى شاشة الدخول ليكتب الرمز الذي في بريده. */
+    try { history.replaceState(null, '', location.pathname + '#/login'); } catch(e) { location.hash = '#/login'; }
+    QBANK.toast('افتح رابط الدخول من الجهاز الذي طلبته منه، أو اكتب الرمز من البريد');
+  }
+
+  /* عودة PKCE (?code=…): التبديل نداء شبكة، فلا يعطّل الرسم الأول — الصفحة
+     تُرسم زائرًا ثم تنقلب إلى جلسة حين يصل الردّ */
+  const code = QBANK.api.auth.codeFrom(location.search);
+  if (code) {
+    QBANK.api.auth.captureFromCode(code).then(ok => {
+      if (!ok) {
+        try { history.replaceState(null, '', location.pathname + '#/login'); } catch(e){}
+        QBANK.toast('تعذّر إتمام الدخول — حاول مرة أخرى');
+        QBANK.router.render(location.hash);
+        return;
+      }
+      const dest = landed();
+      try { QBANK.progress.pull(); QBANK.gate.refresh(); if (QBANK.presence) QBANK.presence.start(); } catch(e){}
+      QBANK.router.go(dest);
+      QBANK.router.render(location.hash);
+    });
   }
 
   buildTabbar();

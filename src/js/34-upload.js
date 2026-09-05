@@ -1071,7 +1071,7 @@ const ViewUpload = {
     if (route.query.draft && wizard.draftId !== route.query.draft) {
       wizard = QBANK.admin.newWizard();
       wizard.draftId = route.query.draft;
-      QBANK.api.rest('drafts?id=eq.' + route.query.draft + '&select=*').then(r => {
+      QBANK.api.rest('drafts?id=eq.' + encodeURIComponent(route.query.draft) + '&select=*').then(r => {
         if (r.ok && r.data && r.data[0]) {
           const d = r.data[0];
           wizard.filename = d.source_name; wizard.enriched = d.payload || [];

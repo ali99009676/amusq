@@ -357,9 +357,9 @@ function loginCard(opts){
      اللوحة؟ من هذا المفتاح — يقرؤه الإقلاع بعد التقاط الجلسة ثم يمحوه. */
   const rememberAfter = () => { if (opts.after) QBANK.store.set('after_login', opts.after); };
   const gBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب جوجل' });
-  gBtn.addEventListener('click', () => {
+  gBtn.addEventListener('click', async () => {
     if (QBANK.authProviders) return void QBANK.authProviders.launch('google', opts.after);
-    const u = QBANK.api.auth.oauthUrl('google'); if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد');
+    const u = await QBANK.api.auth.oauthUrl('google'); if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد');
   });
 
   /*

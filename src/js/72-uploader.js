@@ -282,8 +282,8 @@ const ViewOwnerEdit = {
     const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
     function load(){
       Promise.all([
-        QBANK.api.rest('subjects?id=eq.' + id + '&select=*'),
-        QBANK.api.rest('questions?subject_id=eq.' + id + '&select=*&order=ord')
+        QBANK.api.rest('subjects?id=eq.' + encodeURIComponent(id) + '&select=*'),
+        QBANK.api.rest('questions?subject_id=eq.' + encodeURIComponent(id) + '&select=*&order=ord')
       ]).then(([sr, qr]) => {
         if (!body.isConnected) return;
         const sub = (sr.ok && sr.data && sr.data[0]) || null;

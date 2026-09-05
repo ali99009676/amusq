@@ -80,8 +80,9 @@ const AuthProviders = {
     الجسر). والوجهة تُحفظ قبل المغادرة في الحالين: من قصد اللوحة يعود إليها.
   */
   opener: null,
-  launch(id, after){
-    const u = QBANK.api.auth.oauthUrl(id);
+  /* ★ الرابط يُبنى بلا تزامن (بصمة PKCE تُحسب بـcrypto.subtle) — الوجهة تُحفظ قبل المغادرة */
+  async launch(id, after){
+    const u = await QBANK.api.auth.oauthUrl(id);
     if (!u) { QBANK.toast('المنصة غير موصولة بالخادم بعد'); return false; }
     if (after) QBANK.store.set('after_login', after);
     if (AuthProviders.opener && AuthProviders.opener(u)) return true;

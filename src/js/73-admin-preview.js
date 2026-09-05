@@ -45,7 +45,7 @@ const ViewAdminPreview = {
 
     const wrap = el('div', { class:'stack ad-preview' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
     /* من القاعدة مباشرةً لا من قائمة المنشور: المخفية تُعاين قبل نشرها */
-    QBANK.api.rest('subjects?id=eq.' + id + '&select=*').then(r => {
+    QBANK.api.rest('subjects?id=eq.' + encodeURIComponent(id) + '&select=*').then(r => {
       if (!wrap.isConnected) return;
       const sub = (r.ok && r.data && r.data[0]) || null;
       wrap.innerHTML = '';

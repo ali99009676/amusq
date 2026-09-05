@@ -25,7 +25,8 @@ const Peer = {
 
   /* صورة الطالب: المرفوعة إن وُجدت، وإلا الرمزية — دالة واحدة لكل المنصة */
   face(p, cls){
-    if (p && p.avatar_url)
+    /* الصورة من مخزننا فقط (QBANK.look.ownImage) — وإلا الرمزية */
+    if (p && p.avatar_url && (!QBANK.look || QBANK.look.ownImage(p.avatar_url)))
       return el('img', { class:'peer-face ' + (cls || ''), src: p.avatar_url, alt: p.name || 'طالب' });
     return el('span', { class:'peer-face peer-face--emo ' + (cls || ''), 'aria-hidden':'true',
       text: (p && p.avatar) || '◍' });

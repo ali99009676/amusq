@@ -24,6 +24,18 @@ const $$ = (sel, root) => { const d = docOf(root); return d ? Array.prototype.sl
 */
 const alive = () => !!docOf(null);
 
+/*
+  ★ الرابط والمصدر لا يحملان سكربتًا: href/src بمخطّط javascript: أو vbscript:
+  يُسقَطان، وdata: لا يصلح رابطًا (يصلح مصدر صورة). البيانات تأتي من القاعدة
+  ومن ملفات الطلاب، وحارسٌ في البنّاء نفسه أضمن من تذكّره عند كل استعمال.
+*/
+const BAD_URL = /^\s*(javascript|vbscript)\s*:/i;
+function safeUrlAttr(k, v){
+  const s = String(v);
+  if (BAD_URL.test(s)) return false;
+  if (k === 'href' && /^\s*data\s*:/i.test(s)) return false;
+  return true;
+}
 function el(tag, attrs, children){
   const node = document.createElement(tag);
   if (attrs) Object.keys(attrs).forEach(k => {
@@ -32,6 +44,8 @@ function el(tag, attrs, children){
     if (k === 'class') node.className = v;
     else if (k === 'text') node.textContent = v;
     else if (k === 'html') node.innerHTML = v;   // يُستعمل فقط مع نصوص نبنيها نحن
+    else if ((k === 'href' || k === 'src' || k === 'action' || k === 'formaction') && !safeUrlAttr(k, v)) return;
+    else if (/^on/i.test(k)) return;              // لا معالجات أحداث كسِمات — addEventListener فقط
     else node.setAttribute(k, v === true ? '' : String(v));
   });
   if (children) [].concat(children).forEach(c => {

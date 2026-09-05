@@ -312,27 +312,28 @@ const Admin = {
       if (w.done >= (i + 1) * Admin.BATCH && w.enriched[i * Admin.BATCH]) return;   // مكتملة من استئناف سابق
       if (onProgress) onProgress(w.done, w.total, { batch: i + 1, batches: batches.length, running: true });
 
+      /*
+        ★ الخصم في الخادم لا هنا (تدقيق H-02).
+        كان المتصفح يحسم الرصيد ثم ينادي /api/ai، فمن يتجاوز الحسم يُثري
+        مجانًا. الآن /api/ai يتحقق من الجلسة، يحسم بالسعر الذي في الإعدادات،
+        ينادي الذكاء، ويردّ الرصيد بنفسه إن سقطت الدفعة. costPerQ هنا للتقدير
+        المعروض للطالب لا للحساب.
+      */
       const cpq = (typeof w.costPerQ === 'number' && w.costPerQ >= 0) ? w.costPerQ : 1;
       const need = batches[i].length * cpq;
-      const pay = need > 0
-        ? await QBANK.api.rpc('spend_credits',
-            { n: need, p_reason: 'إثراء ' + batches[i].length + ' سؤالًا', p_draft: w.draftId })
-        : { ok:true, data:{ ok:true, spent:0 } };
-      if (!pay.ok || !pay.data || !pay.data.ok) {
-        const d = (pay.data) || {};
-        w.error = d.reason === 'insufficient'
-          ? 'رصيدك ' + (d.balance || 0) + ' كوين ولا يكفي — يلزم ' + need
-          : (d.reason === 'closed' ? 'الإثراء موقوف مؤقتًا' : 'تعذّر حسم الرصيد');
-        w.needCoins = d.reason === 'insufficient' ? need - (d.balance || 0) : 0;
-        stop = true; return;
-      }
-
-      const r = await Admin.server('/api/ai', { questions: batches[i], sanctity_mode: w.mode || 'strict' });
+      const r = await Admin.server('/api/ai', { questions: batches[i], sanctity_mode: w.mode || 'strict',
+                                                draft_id: w.draftId || null });
       if (!r.ok) {
-        if (need > 0)
-          await QBANK.api.rpc('refund_credits', { n: need, p_reason: 'تعذّرت الدفعة', p_draft: w.draftId });
-        w.error = (r.data && r.data.error) || 'انقطعت الدفعة ' + (i + 1) + ' — رُدّ رصيدها';
-        w.errorKind = (r.data && r.data.kind) || 'other';
+        const d = r.data || {};
+        if (r.status === 402 && d.kind === 'insufficient') {
+          w.error = 'رصيدك ' + (d.balance || 0) + ' كوين ولا يكفي — يلزم ' + (d.needed || need);
+          w.needCoins = Math.max(0, (d.needed || need) - (d.balance || 0));
+        } else if (d.kind === 'closed') {
+          w.error = 'الإثراء موقوف مؤقتًا';
+        } else {
+          w.error = d.error || 'انقطعت الدفعة ' + (i + 1) + ' — رُدّ رصيدها';
+        }
+        w.errorKind = d.kind || 'other';
         stop = true; return;
       }
       const at = i * Admin.BATCH;

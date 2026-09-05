@@ -81,8 +81,22 @@ const Api = {
       // نحذف الهاش كي لا يختلط مسار التطبيق برموز الجلسة العائدة
       return location.origin + location.pathname;
     },
+    /*
+      ★ «دخولٌ معلّق» — علامة أن هذا الجهاز هو من طلب الدخول.
+      رمزٌ يصل في هاش الصفحة بلا طلبٍ سبقه من هنا لا يُقبل: كان أي رابط
+      مُرسَل من غريب (#access_token=رمزه) يُسجّل الضحية في حساب الغريب،
+      فيرفع ويدفع في حسابٍ ليس له (تدقيق H-01). خمس عشرة دقيقة تكفي
+      لفتح البريد؛ ومن فتح الرابط في جهازٍ آخر يكتب الرمز الذي في البريد.
+    */
+    PENDING_MS: 15 * 60 * 1000,
+    markPending(){ QBANK.store.set('login_pending', Date.now()); return true; },
+    isPending(){
+      const t = Number(QBANK.store.get('login_pending', 0)) || 0;
+      return t > 0 && (Date.now() - t) < Api.auth.PENDING_MS;
+    },
     magic(email){
       const back = Api.auth.redirectTo();
+      Api.auth.markPending();
       return Api.raw('/auth/v1/otp' + (back ? '?redirect_to=' + encodeURIComponent(back) : ''), {
         method:'POST',
         body: JSON.stringify({
@@ -91,8 +105,28 @@ const Api = {
         })
       });
     },
+    /*
+      ★ PKCE: المتصفح يولّد سرًّا (verifier) ويرسل بصمته (challenge) مع طلب
+      الدخول، فلا يعود من المزوّد رمزُ جلسةٍ بل رمزُ تبديل (code) لا يُصرف
+      إلا بالسرّ — ورمزٌ في رابطٍ من غريب لا يساوي شيئًا بلا سرّه.
+      السرّ في مخزن الجهاز لأن العودة إعادةُ تحميلٍ كاملة للصفحة.
+      إن غاب crypto.subtle (متصفح قديم جدًا) عدنا للتدفق الضمني بحارس
+      «الدخول المعلّق» وحده.
+    */
+    async pkceChallenge(){
+      try {
+        if (typeof crypto === 'undefined' || !crypto.subtle || !crypto.getRandomValues) return '';
+        const bytes = crypto.getRandomValues(new Uint8Array(32));
+        const b64 = a => btoa(String.fromCharCode.apply(null, Array.from(a)))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const verifier = b64(bytes);
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+        QBANK.store.set('pkce_verifier', verifier);
+        return '&code_challenge=' + b64(new Uint8Array(digest)) + '&code_challenge_method=s256';
+      } catch(e){ return ''; }
+    },
     // دخول جوجل/آبل: توجيه كامل للصفحة — يصلح للويب والتطبيق معًا
-    oauthUrl(provider){
+    async oauthUrl(provider){
       const c = QBANK.config.get();
       if (!c) return null;
       /* ★ داخل التطبيق الأصلي يعود المزوّد إلى رابطٍ عميق (muraja://auth) لا إلى
@@ -100,7 +134,32 @@ const Api = {
          الدخول لا يعرف طريق العودة إلى التطبيق إلا بالمخطّط المسجَّل له. */
       const back = (QBANK.native && QBANK.native.active) ? QBANK.native.REDIRECT
                  : (typeof location !== 'undefined') ? location.origin + location.pathname : '';
-      return c.url + '/auth/v1/authorize?provider=' + provider + '&redirect_to=' + encodeURIComponent(back);
+      Api.auth.markPending();
+      const pkce = await Api.auth.pkceChallenge();
+      return c.url + '/auth/v1/authorize?provider=' + encodeURIComponent(provider) +
+             '&redirect_to=' + encodeURIComponent(back) + pkce;
+    },
+    /* رمز التبديل من استعلام الرابط (?code=…) — عودة PKCE من المزوّد */
+    codeFrom(search){
+      const m = /[?&]code=([A-Za-z0-9._~-]{8,200})(?:&|$)/.exec(String(search || ''));
+      return m ? m[1] : '';
+    },
+    async captureFromCode(code){
+      const verifier = QBANK.store.get('pkce_verifier', '');
+      if (!code || !verifier) return false;
+      QBANK.store.remove('pkce_verifier');
+      const r = await Api.raw('/auth/v1/token?grant_type=pkce', {
+        method:'POST', body: JSON.stringify({ auth_code: code, code_verifier: verifier })
+      });
+      if (!r.ok || !r.data || !r.data.access_token) return false;
+      QBANK.store.remove('login_pending');
+      Api.saveSession({
+        access_token: r.data.access_token,
+        refresh_token: r.data.refresh_token || '',
+        expires_in: r.data.expires_in || 3600,
+        user: r.data.user || Api.auth.decodeUser(r.data.access_token)
+      });
+      return true;
     },
     // عند العودة من رابط سحري أو OAuth تصل الرموز في هاش الصفحة
     /*
@@ -127,12 +186,16 @@ const Api = {
     captureFromHash(hash){
       const h = String(hash || '');
       if (h.indexOf('access_token=') === -1) return false;
+      /* رمزٌ لم يطلبه هذا الجهاز خلال ربع ساعة لا يُقبل — انظر markPending */
+      if (!Api.auth.isPending()) return false;
       const p = {};
       h.replace(/^#/,'').split('&').forEach(kv => {
         const [k,v] = kv.split('=');
-        p[k] = decodeURIComponent(v || '');
+        // ترميزٌ معطوب في الرابط لا يُسقط الإقلاع كله (كان decodeURIComponent يرمي)
+        try { p[k] = decodeURIComponent(v || ''); } catch(e){ p[k] = ''; }
       });
       if (!p.access_token) return false;
+      QBANK.store.remove('login_pending');
       Api.saveSession({
         access_token: p.access_token,
         refresh_token: p.refresh_token || '',

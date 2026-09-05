@@ -42,6 +42,18 @@ const Look = {
   DEFAULT: { layout:'classic', accent:'', cover_preset:'', cover_url:'' },
 
   /* ما لا نعرفه يعود إلى الافتراضي — صفٌّ قديم أو قيمة عابثة لا تكسر الصفحة */
+  /*
+    ★ صورةٌ من مخزننا فقط — بادئة كاملة لا «https://» وحدها (تدقيق M-08).
+    رابط خارجي في غلاف أو صورة يتتبّع كل من فتح الصفحة (عنوانه ووقته)،
+    ويُبدَّل بعد الرفع بما لا نستضيفه. القاعدة تقيّده أيضًا؛ هذا الحارس الثاني.
+  */
+  ownImage(u){
+    const c = QBANK.config.get();
+    if (typeof u !== 'string' || !u) return false;
+    const base = ((c && c.url) || 'https://gbgjadqwqzxxyhydlgtj.supabase.co') + '/storage/v1/object/public/avatars/';
+    if (u.indexOf(base) !== 0) return false;
+    return /^[0-9a-f-]{36}\/[a-z0-9_-]+\.(jpg|jpeg|png|webp)(\?v=\d{1,16})?$/i.test(u.slice(base.length));
+  },
   read(p){
     const o = p || {};
     const ok = (list, v) => list.some(x => x.id === v) ? v : '';
@@ -49,7 +61,7 @@ const Look = {
       layout:       Look.LAYOUTS.some(l => l.id === o.layout) ? o.layout : 'classic',
       accent:       ok(Look.ACCENTS, o.accent || ''),
       cover_preset: ok(Look.COVERS, o.cover_preset || ''),
-      cover_url:    (typeof o.cover_url === 'string' && /^https:\/\//.test(o.cover_url)) ? o.cover_url : ''
+      cover_url:    Look.ownImage(o.cover_url) ? o.cover_url : ''
     };
   },
 

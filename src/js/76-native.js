@@ -82,9 +82,23 @@ const Native = {
     };
   },
   /*
-    ★ الرمز يعود في هاش الرابط العميق تمامًا كما يعود في هاش الصفحة على الويب —
-    فالتقاطه هو الدالة نفسها (captureFromHash)، ولا مسارَ ثانٍ للجلسة.
+    ★ العودة من المزوّد إلى الرابط العميق بإحدى صورتين، وكلتاهما الدوال
+    نفسها التي يستعملها الويب — لا مسارَ ثانٍ للجلسة:
+      muraja://auth?code=…          تدفق PKCE (الأصل الآن): رمز تبديل لا يُصرف
+                                     إلا بسرٍّ في هذا الجهاز (تدقيق H-01)
+      muraja://auth#access_token=…  التدفق الضمني القديم: لا يُقبل إلا ودخولٌ
+                                     معلّق من هذا الجهاز خلال ربع ساعة
+    المخطّط muraja:// قد يسجّله تطبيقٌ آخر على الجهاز نفسه ويفتحه أي موقع —
+    لذلك لا يكفي أن «الرابط وصل» ليصير جلسة.
   */
+  afterLogin(){
+    const after = QBANK.store.get('after_login', '#/');
+    QBANK.store.remove('after_login');
+    QBANK.toast('تم تسجيل الدخول');
+    /* ما يفعله الإقلاع بعد الدخول يُفعل هنا أيضًا: التقدّم والاستحقاقات والحضور */
+    try { QBANK.progress.pull(); QBANK.gate.refresh(); if (QBANK.presence) QBANK.presence.start(); } catch(e){}
+    QBANK.router.go(/^#\//.test(after) ? after : '#/');
+  },
   handleUrl(url){
     const u = String(url || '');
     if (u.indexOf(Native.SCHEME + '://') !== 0) return false;
@@ -92,18 +106,27 @@ const Native = {
     if (B && B.close) { try { B.close(); } catch(e){} }
     const hashAt = u.indexOf('#');
     const hash = hashAt >= 0 ? u.slice(hashAt) : '';
+    const qAt = u.indexOf('?');
+    const search = qAt >= 0 ? u.slice(qAt, hashAt >= 0 && hashAt > qAt ? hashAt : undefined) : '';
+    const code = QBANK.api.auth.codeFrom(search);
+    if (code){
+      QBANK.api.auth.captureFromCode(code).then(ok => {
+        if (ok) Native.afterLogin();
+        else QBANK.toast('تعذّر إتمام الدخول — حاول مرة أخرى');
+      });
+      return true;
+    }
     if (hash && QBANK.api.auth.captureFromHash(hash)){
-      const after = QBANK.store.get('after_login', '#/');
-      QBANK.store.remove('after_login');
-      QBANK.toast('تم تسجيل الدخول');
-      /* ما يفعله الإقلاع بعد الدخول يُفعل هنا أيضًا: التقدّم والاستحقاقات والحضور */
-      try { QBANK.progress.pull(); QBANK.gate.refresh(); if (QBANK.presence) QBANK.presence.start(); } catch(e){}
-      QBANK.router.go(/^#\//.test(after) ? after : '#/');
+      Native.afterLogin();
+      return true;
+    }
+    if (/access_token=/.test(hash)){
+      QBANK.toast('رابط دخول لم يطلبه هذا الجهاز — ابدأ الدخول من التطبيق');
       return true;
     }
     /* خطأٌ من المزوّد يصل في الاستعلام: ?error=…&error_description=… */
     const m = /[?&#]error_description=([^&]+)/.exec(u) || /[?&#]error=([^&]+)/.exec(u);
-    if (m) QBANK.toast('تعذّر الدخول: ' + decodeURIComponent(m[1]).replace(/\+/g, ' '));
+    if (m) { try { QBANK.toast('تعذّر الدخول: ' + decodeURIComponent(m[1]).replace(/\+/g, ' ')); } catch(e){ QBANK.toast('تعذّر الدخول'); } }
     return true;
   },
   wireLinks(){
