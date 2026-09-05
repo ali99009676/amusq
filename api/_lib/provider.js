@@ -183,7 +183,9 @@ async function callAnthropic(system, user, model, opts){
       */
       system: [{ type:'text', text: system, cache_control:{ type:'ephemeral' } }],
       messages: [{ role:'user', content: withMedia(user, opts.media, 'anthropic') }]
-    })
+    }),
+    // مهلة مسماة هنا أيضًا: نداءٌ بلا مهلة يعلّق الدالة حتى تقتلها Vercel بعد الخصم (تدقيق L-04)
+    signal: AbortSignal.timeout(opts.timeoutMs || 50000)
   });
   if (!res.ok) throw aiError(res.status, await res.text(), 'Anthropic');
   const data = await res.json();
@@ -222,7 +224,7 @@ async function callGemini(system, user, model, retried, opts){
       }
     }),
     // مهلة مسماة قبل أن تقتلنا بوابة Vercel بصمت
-    signal: AbortSignal.timeout(opts.timeoutMs || 120000)
+    signal: AbortSignal.timeout(opts.timeoutMs || 50000)
   });
   if (!res.ok){
     const body = await res.text();

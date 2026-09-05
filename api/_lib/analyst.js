@@ -101,14 +101,23 @@ const ALLOWED_TAGS = ['p','strong','em','h3','h4','table','thead','tbody',
 function sanitizeHtml(html){
   let s = String(html || '');
   s = s.replace(/<!--[\s\S]*?-->/g, '');
+  /*
+    ★ «/» فاصلُ سمات عند المتصفح: <svg/onload=…> يُقرأ <svg onload=…>،
+    بينما نمطنا القديم لا يرى سمةً إلا بعد فراغ فيتركه كما هو (تدقيق M-05).
+    نحوّل الشرطة بعد اسم الوسم إلى فراغ قبل أي فحص، فيرى النمطُ ما يراه المتصفح.
+  */
+  s = s.replace(/<([a-zA-Z][a-zA-Z0-9]*)\//g, '<$1 ');
   s = s.replace(/<(script|style|iframe|object|embed|link|meta)[\s\S]*?(<\/\1>|\/>|>)/gi, '');
-  s = s.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)((?:\s+[^<>]*?)?)\s*\/?>/g, (m, tag) => {
+  s = s.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)([^>]*)>/g, (m, tag) => {
     const t = tag.toLowerCase();
     if (ALLOWED_TAGS.indexOf(t) === -1) return '';
     const close = m.indexOf('</') === 0;
     // السمات كلها تُنزع — لا صنف ولا نمط ولا حدث
     return close ? '</' + t + '>' : '<' + t + '>';
   });
+  /* ما بقي من «<» ليس وسمًا نظيفًا من قائمتنا — فهو نصٌّ يُهرَّب لا يُفسَّر */
+  const clean = new RegExp('<(?!/?(?:' + ALLOWED_TAGS.join('|') + ')>)', 'g');
+  s = s.replace(clean, '&lt;');
   return s.trim();
 }
 

@@ -5,6 +5,28 @@
 */
 const { unzipSync, strFromU8 } = require('fflate');
 
+/* خطأٌ يقرؤه الطالب — لا عطلٌ يُخفى برمز (guard.fail يمرّر ما له kind) */
+function fileError(msg){ return Object.assign(new Error(msg), { status: 422, kind: 'file' }); }
+
+/*
+  ★ فكّ الضغط بسقف — قنبلة الضغط.
+  DOCX من أربعة ميغابايت قد ينتفخ إلى غيغابايتات (ملف XML من أصفارٍ
+  ينضغط ألف مرة)، وunzipSync يفكّ كل مدخلٍ في الذاكرة فيسقط الخادم.
+  فلا نفكّ إلا ما نقرؤه فعلًا (document.xml أو الشرائح)، ولا مدخلًا فوق
+  ٢٥ ميغابايت ولا مجموعًا فوق ٦٠ (تدقيق M-04).
+*/
+const MAX_ENTRY = 25 * 1024 * 1024, MAX_TOTAL = 60 * 1024 * 1024;
+function safeUnzip(buf, want){
+  let total = 0;
+  return unzipSync(new Uint8Array(buf), { filter(f){
+    if (!want.test(f.name)) return false;
+    total += f.originalSize || 0;
+    if ((f.originalSize || 0) > MAX_ENTRY || total > MAX_TOTAL)
+      throw fileError('الملف المضغوط أكبر من المسموح بعد فكّه');
+    return true;
+  } });
+}
+
 function fromTxt(buf){ return buf.toString('utf8'); }
 
 /* HTML/HTM: صفحةُ أسئلةٍ حُفظت من المتصفح — شائعة جدًا، وكانت تُرفض */
@@ -22,9 +44,9 @@ function fromHtml(buf){
 
 function fromDocx(buf){
   // DOCX = أرشيف zip وفيه word/document.xml — الفقرات <w:p> والنص داخل <w:t>
-  const files = unzipSync(new Uint8Array(buf));
+  const files = safeUnzip(buf, /^word\/document\.xml$/);
   const doc = files['word/document.xml'];
-  if (!doc) throw new Error('ملف DOCX بلا document.xml');
+  if (!doc) throw fileError('ملف DOCX بلا document.xml');
   const xml = strFromU8(doc);
   // كل فقرة سطر — نحافظ على بنية الأسطر لأن المقسّم يعتمد عليها
   return xml
@@ -42,11 +64,10 @@ function fromDocx(buf){
   كل شريحة ملفُ XML مستقل، ونصّها في <a:t>، فنقرأ الشرائح بترتيبها الرقمي.
 */
 function fromPptx(buf){
-  const files = unzipSync(new Uint8Array(buf));
+  const files = safeUnzip(buf, /^ppt\/slides\/slide\d+\.xml$/);
   const slides = Object.keys(files)
-    .filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n))
     .sort((a, b) => (parseInt(a.match(/(\d+)/)[1], 10) - parseInt(b.match(/(\d+)/)[1], 10)));
-  if (!slides.length) throw new Error('ملف PPTX بلا شرائح');
+  if (!slides.length) throw fileError('ملف PPTX بلا شرائح');
   return slides.map(n => strFromU8(files[n])
       .split(/<a:p[ >]/).slice(1)
       .map(p => (p.match(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g) || [])
@@ -57,10 +78,21 @@ function fromPptx(buf){
     .replace(/&quot;/g,'"').replace(/&#39;|&apos;/g,"'");
 }
 
+/*
+  PDF بسقفٍ للصفحات ومهلة: محلّل pdf.js القديم داخل pdf-parse بلا مهلة،
+  وملفٌ من آلاف الصفحات أو بجداول xref معطوبة يشغله حتى تقطعه Vercel.
+  ١٥٠ صفحة تكفي أي بنك أسئلة؛ وما بعدها يُرفع أجزاءً.
+*/
+const PDF_MAX_PAGES = 150, PDF_TIMEOUT_MS = 25000;
 async function fromPdf(buf){
   const pdfParse = require('pdf-parse');
-  const r = await pdfParse(buf);
-  return r.text || '';
+  let timer;
+  const bomb = new Promise((_, rej) => { timer = setTimeout(() =>
+    rej(fileError('قراءة PDF طالت أكثر من اللازم — جرّب ملفًا أصغر أو صدّره نصًّا')), PDF_TIMEOUT_MS); });
+  try {
+    const r = await Promise.race([pdfParse(buf, { max: PDF_MAX_PAGES }), bomb]);
+    return r.text || '';
+  } finally { clearTimeout(timer); }
 }
 
 /*
@@ -101,9 +133,9 @@ async function extract(filename, buf){
   if (ext === 'html' || ext === 'htm') return fromHtml(buf);
   if (TEXTY.indexOf(ext) !== -1) return fromTxt(buf);
   if (looksLikeText(buf)) return fromTxt(buf);
-  throw new Error('صيغة غير مدعومة: ' + ext +
+  throw fileError('صيغة غير مدعومة: ' + ext +
                   ' — المسموح: PDF أو DOCX أو PPTX أو HTML أو نص');
 }
 
 module.exports = { extract, fromTxt, fromDocx, fromPdf, fromPptx, fromHtml, looksLikeText,
-                   imageMime, isImage, IMAGE_MIME };
+                   imageMime, isImage, IMAGE_MIME, safeUnzip, MAX_ENTRY, MAX_TOTAL, PDF_MAX_PAGES };
