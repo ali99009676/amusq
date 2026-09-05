@@ -136,7 +136,7 @@ function campusPicker(current, onSaved){
 /* ═══ صفحة القسم ═══ */
 function uniSubjectCard(r){
   const color = QBANK.views.subjectColor(r.color);
-  return el('a', { class:'excard', href:'#s/' + (r.slug || ''), 'data-id': r.id, style:'--acc:' + color }, [
+  return el('a', { class:'excard', href:'#/subject/' + r.id, 'data-id': r.id, style:'--acc:' + color }, [
     el('span', { class:'excard__head' }, [
       el('span', { class:'excard__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(r.icon, 24) ]),
       el('span', { class:'excard__x' }, [
