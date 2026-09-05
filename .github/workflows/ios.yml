@@ -31,6 +31,11 @@ concurrency:
   group: ios-build
   cancel-in-progress: true
 
+# ★ أقل صلاحية: رمز GITHUB_TOKEN يقرأ المستودع فقط — البناء لا يكتب فيه شيئًا،
+#   وإجراءٌ خارجي مخترَق لا يجد رمزًا يكتب به (تدقيق M-09)
+permissions:
+  contents: read
+
 jobs:
   build:
     # ★ macOS 26 (Xcode 26.6 افتراضيًا): أبل ترفض منذ أبريل ٢٠٢٦ أي رفعٍ بُني بغير iOS 26 SDK —
@@ -40,11 +45,12 @@ jobs:
     env:
       MARKETING_VERSION: ${{ github.event.inputs.version || '1.0.0' }}
     steps:
-      - uses: actions/checkout@v4
+      # ★ الإجراءات مثبّتة ببصمة الالتزام لا بالوسم: الوسم v4 يُحرَّك، والبصمة لا (تدقيق M-09)
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683   # v4.2.2
 
       # ★ Node 22 لا 20: jsdom (للفحوص) يعتمد undici 8 الذي يشترط Node ≥ 22.19 —
       #   على Node 20 ينهار الفحص قبل أن يبدأ (markAsUncloneable is not a function)
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020   # v4.4.0
         with:
           node-version: '22'
 
@@ -61,9 +67,10 @@ jobs:
           node src/build.js
           node src/tests.js
 
+      # ★ npm ci بقفل الاعتمادات: البناء المرفوع للمتجر يجب أن يُعاد بالإصدارات نفسها لا بأحدث ما في السجل
       - name: اعتمادات الغلاف
         working-directory: mobile
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: تجهيز www من index.html المبني
         working-directory: mobile
