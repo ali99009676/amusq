@@ -80,8 +80,16 @@ const ViewShare = {
           el('p', { class:'field__hint', text:'سجّل دخولك أولًا لتشتري المادة وتفتحها على كل أجهزتك.' }),
           el('a', { class:'btn btn--block', href:'#/login', text:'سجّل الدخول' })
         ]));
+      } else if (sub.free){
+        /* ★ المادة المجانية تُفتح من رابط المشاركة كما تُفتح من الاستكشاف —
+        بطاقة القفل كانت تظهر هنا لمادة مجانية لأن هذا الفرع وحده نسي فحص
+        sub.free الذي تفحصه كل شاشة أخرى (35-subject.js، 36-examview.js). */
+        box.appendChild(el('div', { class:'card stack' }, [
+          el('p', { class:'field__hint', text:'مادة مجانية — افتحها الآن بلا شراء.' }),
+          el('a', { class:'btn btn--block', href:'#/subject/' + sub.id, text:'افتح المادة' })
+        ]));
       } else {
-        // الزميل لا تجربة له — إلى الشراء مباشرة، وهذا مقصود لا سهو
+        // الزميل لا تجربة له في المادة المدفوعة — إلى الشراء مباشرة، وهذا مقصود لا سهو
         box.appendChild(QBANK.gate.paywallCard(sub));
       }
     });
