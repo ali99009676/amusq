@@ -1,0 +1,172 @@
+/* ═══════════════════════════════════════════════════════════════════
+   شكل ملف الطالب — الغلاف والستايلات الخمسة ومحرّرها (78-look.js)
+   ═══════════════════════════════════════════════════════════════════
+   كل الألوان من المتغيّرات: لون الطالب يصل ‎--acc‎ محقونًا على .pf-page
+   كما تفعل بطاقة المادة، والتدرّجات مزيج من ألوان المواد — فلا hex هنا،
+   ويبقى كل ستايل مقروءًا في الوضعين الليلي والفاتح. */
+
+/* ── الاسم في المتصدرين رابطٌ يبدو رابطًا عند اللمس لا قبله ── */
+.lb-link{ color:inherit; text-decoration:none; }
+.lb-link:hover, .lb-link:focus-visible{ color:var(--acc); text-decoration:underline; text-underline-offset:.2em; }
+
+/* ── الغلاف ── */
+.pf-cover{
+  height:120px; border-radius:var(--r3); overflow:hidden; position:relative;
+  background:var(--surface-2); border:1px solid var(--line);
+}
+.pf-cover__img{ width:100%; height:100%; object-fit:cover; display:block; }
+/* تدرّج المحور: ما يُرسم حين لا غلاف — للستايلات التي لا تكتمل بدونه */
+.pf-cover--acc{ background:linear-gradient(135deg, var(--acc), color-mix(in srgb, var(--acc) 45%, var(--ink))); border:0; }
+.pf-cover--g1{ background:linear-gradient(135deg, var(--subject-1), var(--subject-6)); border:0; }
+.pf-cover--g2{ background:linear-gradient(135deg, var(--subject-3), var(--subject-4)); border:0; }
+.pf-cover--g3{ background:linear-gradient(135deg, var(--subject-5), var(--subject-2)); border:0; }
+.pf-cover--g4{ background:linear-gradient(135deg, var(--subject-4), var(--subject-2)); border:0; }
+.pf-cover--g5{ background:linear-gradient(135deg, var(--gold), var(--subject-3)); border:0; }
+.pf-cover--g6{ background:linear-gradient(135deg, var(--subject-6), var(--subject-5)); border:0; }
+.pf-cover--g7{ background:linear-gradient(135deg, var(--ink), var(--subject-2)); border:0; }
+.pf-cover--g8{ background:linear-gradient(135deg, var(--subject-2), var(--gold)); border:0; }
+/* ملمس خفيف يمنع التدرّج من أن يبدو صفيحة مسطّحة */
+.pf-cover:not(:has(.pf-cover__img))::before{
+  content:""; position:absolute; inset:0;
+  background:radial-gradient(60% 80% at 80% 20%, color-mix(in srgb, var(--surface) 22%, transparent), transparent 70%);
+}
+.pf-page{ position:relative; }
+.pf-page .peer-stats{ grid-template-columns:repeat(4,1fr); }
+@media (max-width:520px){ .pf-page .peer-stats{ grid-template-columns:repeat(2,1fr); } }
+
+/* ═══ ١) كلاسيكي: كما كان — والغلاف إن اختاره شريطٌ فوق البطل ═══ */
+.pf-look--classic .pf-cover--acc{ display:none; }
+.pf-look--classic .pf-cover{ height:110px; }
+
+/* ═══ ٢) غلاف: الصورة تتوسّط الغلاف والاسم تحتها في المنتصف ═══ */
+.pf-look--cover .pf-cover{ height:200px; border-radius:var(--r3) var(--r3) 0 0; }
+.pf-look--cover .pf-hero{
+  flex-direction:column; text-align:center; margin-top:-64px;
+  background:var(--surface); color:var(--text); border-color:var(--line);
+  border-radius:0 0 var(--r3) var(--r3); padding-top:0;
+}
+.pf-look--cover .pf-hero__x{ align-items:center; }
+.pf-look--cover .pf-hero .peer-face--lg{ width:112px; height:112px; border:4px solid var(--surface); box-shadow:var(--sh3); }
+.pf-look--cover .pf-hero .pf-hero__n{ color:var(--text); font-size:1.45rem; }
+.pf-look--cover .pf-hero .pf-hero__mail, .pf-look--cover .pf-hero .pf-hero__bio{ color:var(--text-2); }
+.pf-look--cover .pf-hero .pf-hero__bio{ max-width:52ch; }
+
+/* ═══ ٣) شريط: حافة لونية، ترتيب مضغوط، ومواده قائمة لا شبكة ═══ */
+.pf-look--stripe .pf-cover--acc{ display:none; }
+.pf-look--stripe .pf-cover{ height:14px; border-radius:999px; }
+.pf-look--stripe .pf-hero{
+  background:var(--surface); color:var(--text); border-color:var(--line);
+  border-inline-start:6px solid var(--acc); border-radius:var(--r2); gap:var(--s4); padding:var(--s4);
+}
+.pf-look--stripe .pf-hero .pf-hero__n{ color:var(--text); font-size:1.15rem; }
+.pf-look--stripe .pf-hero .pf-hero__mail, .pf-look--stripe .pf-hero .pf-hero__bio{ color:var(--text-2); }
+.pf-look--stripe .pf-hero .peer-face--lg{ width:64px; height:64px; font-size:2rem; border-width:2px; }
+.pf-look--stripe .pf-hero__avwrap{ width:64px; height:64px; }
+.pf-look--stripe .peer-stats{ gap:6px; }
+.pf-look--stripe .peer-stat{ flex-direction:row; align-items:baseline; justify-content:center; gap:6px; padding:var(--s3); border-inline-start:3px solid var(--acc); border-radius:var(--r1); }
+.pf-look--stripe .peer-stat b{ font-size:1.15rem; }
+.pf-look--stripe .grid{ grid-template-columns:1fr; gap:8px; }
+.pf-look--stripe h2{ border-inline-start:4px solid var(--acc); padding-inline-start:10px; font-size:1rem; }
+
+/* ═══ ٤) مجلّة: الاسم عنوانًا كبيرًا على الغلاف، والأرقام عمود ═══ */
+.pf-look--magazine .pf-cover{ height:280px; border-radius:var(--r4); }
+.pf-look--magazine .pf-cover::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(to top, color-mix(in srgb, var(--ink) 88%, transparent) 0%, color-mix(in srgb, var(--ink) 35%, transparent) 55%, transparent 100%);
+}
+.pf-look--magazine .pf-hero{
+  margin-top:-150px; background:transparent; border:0; box-shadow:none; color:var(--on-acc);
+  align-items:flex-end; padding:0 var(--s5) var(--s4); position:relative; z-index:1;
+}
+.pf-look--magazine .pf-hero .pf-hero__n{
+  color:var(--on-acc); font-size:clamp(1.8rem, 6vw, 2.6rem); line-height:1.1; letter-spacing:-.03em;
+  text-shadow:0 2px 12px color-mix(in srgb, var(--ink) 70%, transparent);
+}
+.pf-look--magazine .pf-hero .pf-hero__mail{ color:color-mix(in srgb, var(--on-acc) 82%, transparent); font-size:.95rem; }
+.pf-look--magazine .pf-hero .pf-hero__bio{ color:color-mix(in srgb, var(--on-acc) 90%, transparent); font-size:1.05rem; max-width:60ch; }
+.pf-look--magazine .pf-hero .peer-stars__n{ color:color-mix(in srgb, var(--on-acc) 75%, transparent); }
+.pf-look--magazine .pf-hero .peer-face--lg{ width:96px; height:96px; border:3px solid var(--on-acc); }
+.pf-look--magazine .peer-stats{ grid-template-columns:repeat(2,1fr); }
+.pf-look--magazine .peer-stat{ border:0; border-block-end:2px solid var(--acc); border-radius:0; background:transparent; box-shadow:none; text-align:start; align-items:flex-start; }
+.pf-look--magazine .peer-stat b{ font-size:2rem; }
+.pf-look--magazine h2{ font-family:var(--font-display); font-size:1.4rem; letter-spacing:-.02em; }
+@media (max-width:480px){ .pf-look--magazine .pf-hero{ align-items:center; } }
+
+/* ═══ ٥) زجاجي: بطاقات شفافة ضبابية تطفو فوق الغلاف ═══ */
+.pf-look--glass .pf-cover{ height:260px; border-radius:var(--r4); }
+.pf-look--glass .pf-hero, .pf-look--glass .peer-stat{
+  background:color-mix(in srgb, var(--surface) 62%, transparent);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3); backdrop-filter:blur(16px) saturate(1.3);
+  border:1px solid color-mix(in srgb, var(--surface) 70%, var(--acc)); color:var(--text);
+}
+.pf-look--glass .pf-hero{ margin:-190px var(--s4) 0; position:relative; z-index:1; border-radius:var(--r3); }
+.pf-look--glass .peer-stats{ margin:0 var(--s4); position:relative; z-index:1; }
+.pf-look--glass .pf-hero .pf-hero__n{ color:var(--text); }
+.pf-look--glass .pf-hero .pf-hero__mail, .pf-look--glass .pf-hero .pf-hero__bio{ color:var(--text-2); }
+.pf-look--glass .pf-hero .peer-face--lg{ border:3px solid color-mix(in srgb, var(--surface) 80%, transparent); }
+@media (max-width:480px){ .pf-look--glass .pf-hero{ margin-top:-200px; } }
+
+/* ═══ محرّر «شكل ملفي» ═══ */
+.look__pv{
+  border:1px solid var(--line); border-radius:var(--r3); padding:var(--s4);
+  background:var(--bg-soft); display:flex; flex-direction:column; gap:var(--s3); font-size:.9em;
+}
+.look__pv .pf-hero{ margin-inline:0; }
+
+/* بلاطات الستايلات: رسم تخطيطي صغير يقول شكل الصفحة قبل اختياره */
+.look__tiles{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+@media (max-width:520px){ .look__tiles{ grid-template-columns:repeat(3,1fr); } }
+.look__tile{
+  display:flex; flex-direction:column; gap:6px; padding:6px; cursor:pointer; font-family:inherit;
+  background:var(--surface); color:var(--text); border:2px solid var(--line); border-radius:var(--r2);
+  transition:border-color .16s var(--ease), box-shadow .16s var(--ease);
+}
+.look__tile[aria-checked="true"]{ border-color:var(--acc); box-shadow:var(--ring); }
+.look__tile-l{ font-size:.8rem; font-weight:700; text-align:center; }
+.look__mini{ display:block; position:relative; height:56px; border-radius:6px; overflow:hidden; background:var(--bg-soft); border:1px solid var(--line-soft); }
+.look__mini i{ position:absolute; display:block; }
+.look__mini-cov{ inset:0 0 auto 0; height:40%; background:linear-gradient(135deg, var(--acc), color-mix(in srgb, var(--acc) 45%, var(--ink))); }
+.look__mini-av{ width:16px; height:16px; border-radius:50%; background:var(--acc); border:2px solid var(--surface); top:14px; inset-inline-end:8px; }
+.look__mini-t{ height:5px; width:40%; border-radius:3px; background:var(--text-3); top:18px; inset-inline-end:30px; }
+.look__mini-s{ height:8px; inset-inline:8px; bottom:8px; border-radius:3px; background:color-mix(in srgb, var(--acc) 30%, var(--surface)); }
+/* كلاسيكي: بلا غلاف، الصورة يمين والاسم بجوارها */
+.look__mini--classic .look__mini-cov{ display:none; }
+/* غلاف: الصورة تتوسّط حافة الغلاف */
+.look__mini--cover .look__mini-av{ inset-inline-end:calc(50% - 8px); top:14px; }
+.look__mini--cover .look__mini-t{ inset-inline-end:30%; top:36px; }
+/* شريط: حافة لونية بلا غلاف */
+.look__mini--stripe .look__mini-cov{ inset:0 0 0 auto; width:5px; height:100%; }
+.look__mini--stripe .look__mini-av{ top:10px; inset-inline-end:12px; }
+.look__mini--stripe .look__mini-t{ top:14px; inset-inline-end:34px; }
+.look__mini--stripe .look__mini-s{ height:5px; bottom:10px; }
+/* مجلّة: غلاف عالٍ وعنوان ضخم أسفله */
+.look__mini--magazine .look__mini-cov{ height:70%; }
+.look__mini--magazine .look__mini-av{ top:6px; inset-inline-end:6px; width:12px; height:12px; }
+.look__mini--magazine .look__mini-t{ height:9px; width:55%; top:26px; background:var(--surface); }
+/* زجاجي: غلاف كامل وبطاقة شفافة فوقه */
+.look__mini--glass .look__mini-cov{ height:100%; }
+.look__mini--glass .look__mini-s{ height:22px; bottom:6px; background:color-mix(in srgb, var(--surface) 55%, transparent); border:1px solid color-mix(in srgb, var(--surface) 60%, transparent); }
+.look__mini--glass .look__mini-t{ top:30px; inset-inline-end:14px; z-index:1; background:var(--text-2); }
+.look__mini--glass .look__mini-av{ top:8px; }
+
+/* نقاط اللون */
+.look__dots{ display:flex; flex-wrap:wrap; gap:10px; }
+.look__dot{
+  width:32px; height:32px; border-radius:50%; cursor:pointer; padding:0;
+  background:var(--dot); border:3px solid var(--surface); box-shadow:0 0 0 1px var(--line);
+  transition:transform .14s var(--ease), box-shadow .14s var(--ease);
+}
+.look__dot:hover{ transform:scale(1.08); }
+.look__dot[aria-checked="true"]{ box-shadow:0 0 0 2px var(--dot); transform:scale(1.12); }
+
+/* الأغلفة الجاهزة */
+.look__covers{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+@media (max-width:520px){ .look__covers{ grid-template-columns:repeat(3,1fr); } }
+.look__cover{
+  height:44px; border-radius:8px; cursor:pointer; padding:0 8px; font-family:inherit; font-size:.78rem; font-weight:700;
+  border:2px solid transparent; color:var(--text);
+  transition:border-color .16s var(--ease), box-shadow .16s var(--ease);
+}
+.look__cover[aria-checked="true"]{ border-color:var(--acc); box-shadow:var(--ring); }
+.look__cover--none, .look__cover--up{ background:var(--surface); border-color:var(--line); }
+.look__cover--up{ grid-column:span 2; }
