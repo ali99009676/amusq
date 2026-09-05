@@ -448,8 +448,8 @@ describe('١٦ · شاشات الدخول والحساب');
   const btns = Array.prototype.map.call(doc.querySelectorAll('#main button'), b => b.textContent);
   ok(btns.indexOf('أرسل رابط الدخول') !== -1, 'زر الرابط السحري موجود');
   /* ★ جوجل مفعّل في Supabase وGoogle Cloud «In production» — زرّه ظاهر.
-     آبل ينتظر حساب المطوّر المدفوع — زرٌ ظاهر معطوب أسوأ من غائب */
-  ok(btns.indexOf('الدخول بحساب جوجل') !== -1, '★ زر جوجل ظاهر — مزوّده مفعّل');
+     وصار في صفٍّ يتّسع لكل مزوّد يُفعَّل، فنسأل عن الزرّ بمزوّده لا بنصّه */
+  ok(!!doc.querySelector('#main [data-provider="google"]'), '★ زر جوجل ظاهر — مزوّده مفعّل');
   ok(btns.indexOf('الدخول بحساب آبل') === -1, 'وزر آبل مخفي حتى حساب Apple Developer');
 
   A.router.render('#/admin/login');
@@ -7530,7 +7530,7 @@ describe('١٨٣ · القراءة متوازية وعلى أجزاء');
   has(ingest, "if (typeof text_part === 'string'){", '★ وضع الجزء في /api/ingest');
   has(ingest, "if (parts.length > 4){", 'والملف الكبير يُعاد أجزاءً بدل أن يُقرأ في نداء واحد');
   has(ingest, "if (storage_path && !content_base64){", 'والملف الكبير يأتي من المخزن لا من الجسم');
-  has(ingest, "if (!userId || clean.indexOf(userId + '/') !== 0) throw", 'والخادم لا يجلب إلا ملفات صاحب الجلسة');
+  has(ingest, "if (!clean || !(await canReadUpload(clean, userId, token)))", 'والخادم لا يجلب ملفًا إلا بإذن — مجلدُ صاحب الجلسة أو حكمُ القاعدة');
   const vj = JSON.parse(fs2.readFileSync(path.join(__dirname, '..', 'vercel.json'), 'utf8'));
   eq(vj.functions['api/*.js'].maxDuration, 60, 'ومهلة الدوال ٦٠ ثانية — أقصى ما تعطيه الخطة');
   const ai = fs2.readFileSync(path.join(__dirname, '..', 'api', 'ai.js'), 'utf8');
@@ -7875,6 +7875,370 @@ describe('١٨٧ · معاينة المادة من اللوحة');
     eq(W.location.hash, '#/admin/preview/p1/bank', '★ والتبويب يبقى داخل المعاينة');
     has(doc.querySelector('#main').textContent, 'Hidden Q?', 'وبنك الأسئلة يُعرض');
   }));
+}
+
+/* ============ ١٨٨ · «ارفعها عنّي» — طلب رفع مادة ============ */
+/*
+  ★ بطلب علي: خيارٌ ثانٍ للطالب — يرسل اسم المادة وملفها فقط، والمشرف
+  يرفعها بنفسه (تجنّبًا للأخطاء وضبطًا لفاتورة الذكاء)، والمادة تُنشر باسم
+  صاحب الطلب لا باسم من رفعها.
+*/
+describe('١٨٨ · قاعدة البيانات: طابور الطلبات');
+{
+  const sql = fs.readFileSync(path.join(__dirname, '..', 'db', 'REQUESTS.sql'), 'utf8');
+  has(sql, 'create table if not exists qbank.upload_requests', '★ جدول الطلبات');
+  has(sql, "status       text not null default 'new'", 'وحاله تبدأ «جديد»');
+  has(sql, "check (status in ('new','doing','done','rejected'))", 'وحالاته محصورة');
+  has(sql, 'alter table qbank.upload_requests enable row level security', 'وRLS مفعّل');
+  has(sql, 'using (user_id = auth.uid() or qbank.is_admin())', 'القراءة لصاحبه والمشرف');
+  has(sql, "position(auth.uid()::text || '/' in storage_path) = 1", '★ ومسار الملف يجب أن يكون في مجلد صاحبه — وإلا صار الطلب بابًا لملفات غيره');
+  has(sql, "using ((user_id = auth.uid() and status = 'new') or qbank.is_admin())", 'والإلغاء ما دام في الطابور');
+  has(sql, 'create policy upload_requests_upd', 'والتحديث للمشرف وحده');
+  has(sql, 'create or replace function qbank.admin_upload_requests', 'وقائمة المشرف بأسماء أصحابها');
+  has(sql, 'create or replace function qbank.admin_request_status', 'ودالة تغيير الحال');
+  has(sql, 'create or replace function qbank.can_read_upload', '★ ودالة «هل يحقّ لك قراءة هذا الملف؟» للخادم');
+  has(sql, "or qbank.is_admin(), false)", 'تسمح للمشرف بملف الطالب');
+  has(sql, "'requests',  (select count(*) from qbank.upload_requests where status in ('new','doing'))", 'والوارد يعدّها');
+  has(sql, "notify pgrst, 'reload schema';", 'وتُعلم PostgREST');
+  no(sql, 'drop table', 'بلا حذف جدول');
+
+  const ingest = fs.readFileSync(path.join(__dirname, '..', 'api', 'ingest.js'), 'utf8');
+  has(ingest, 'async function canReadUpload(clean, userId, token){', '★ الخادم يسأل القاعدة لا يفترض');
+  has(ingest, "if (userId && clean.indexOf(userId + '/') === 0) return true;", 'ومجلده هو يمرّ بلا نداء');
+  has(ingest, "return (await supa.rpc('can_read_upload', { p_path: clean }, token)) === true;", 'وغيره يسأل برمز صاحب الجلسة — فلا يُزوَّر');
+  has(ingest, 'catch(e){ return false; }', 'والدالة غير المنشورة تُبقي الحكم القديم');
+}
+
+describe('١٨٨ب · الطالب يرسل، والمشرف يرفع');
+{
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  has(html, "QBANK.views.requestInvite(() => { wizard.requestMode = true; rerender(); })", '★ الخيار الثاني في معالج الرفع');
+  has(html, "async function runStored(){", 'وقراءةُ ملفٍ من المخزن بلا رفعٍ ثانٍ');
+  has(html, "wizard.uploader    = { id: q.user_id, name: q.student || 'طالب' };", '★ والمادة تُنسب لصاحب الطلب');
+  has(html, "await QBANK.requests.setStatus(w.requestId, publish ? 'done' : 'doing', newId)", 'والطلب يُختم بمادته');
+  has(html, "['requests',  'طلب رفع مادة','#/admin/content', 'upload','طالب أرسل ملفه لترفعه عنه']", 'والوارد يعرضه');
+  has(html, "content: (Number(d.drafts) || 0) + (Number(d.requests) || 0)", 'وشارة تبويب المحتوى تعدّه');
+
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  const R = A.requests;
+  eq(R.status('new')[1], 'في الطابور', 'حال الطلب تُقال بلسان صاحبها');
+  eq(R.status('done')[1], 'رُفعت ونُشرت', 'والمنتهية كذلك');
+  has(R.sizeText(2 * 1024 * 1024), 'م.ب', 'وحجم الملف بالعربية');
+  has(R.sizeText(5000), 'ك.ب', 'والصغير بالكيلوبايت');
+
+  A.store.set('session', { user:{ id:'stu1', email:'s@x.y' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  A.store.set('is_admin_check', { uid:'stu1', ok:false });
+  const calls = [];
+  let reqRow = null;
+  A.api._fetch = (url, opts) => {
+    const body = opts && opts.body && typeof opts.body === 'string' ? JSON.parse(opts.body) : null;
+    calls.push({ url, method:(opts && opts.method) || 'GET', body });
+    let data = [];
+    if (/storage\/v1\/object\/uploads/.test(url)) return Promise.resolve({ ok:true, status:200, headers:{ get:()=>null }, text:()=>Promise.resolve('{}'), json:()=>Promise.resolve({}) });
+    if (/upload_requests\?select=id/.test(url) && opts.method === 'POST'){ reqRow = body; data = [{ id:'r1' }]; }
+    if (/upload_requests\?user_id/.test(url)) data = reqRow ? [Object.assign({ id:'r1' }, reqRow)] : [];
+    return Promise.resolve({ ok:true, status:200, headers:{ get:()=>'application/json' },
+      text:()=>Promise.resolve(JSON.stringify(data)), json:()=>Promise.resolve(data) });
+  };
+
+  pending.push((async () => {
+    /* بلا اسم أو بلا ملف: لا طلب */
+    let r = await R.create({ name:'', file:{ name:'f.pdf', size:10 } });
+    ok(!r.ok && /اسم المادة/.test(r.error), '★ الاسم شرط');
+    r = await R.create({ name:'علم الأدوية' });
+    ok(!r.ok && /ملف/.test(r.error), 'والملف شرط');
+
+    r = await R.create({ name:'علم الأدوية', note:'د. خالد', file:{ name:'bank.pdf', size:2048 } });
+    ok(r.ok && r.id === 'r1', '★ الطلب يُسجَّل بعد رفع الملف');
+    ok(calls.some(c => /storage\/v1\/object\/uploads\/stu1\//.test(c.url)), 'والملف في مجلد صاحبه');
+    eq(reqRow.user_id, 'stu1', 'والصفّ باسمه');
+    eq(reqRow.status, 'new', 'وحاله «جديد»');
+    ok(reqRow.storage_path.indexOf('stu1/') === 0, '★ ومساره يبدأ بمعرّفه — الشرط نفسه الذي تفرضه السياسة');
+    eq(reqRow.name, 'علم الأدوية', 'واسم المادة كما كتبه');
+
+    /* شاشة الطالب: نموذجٌ من حقلين */
+    const form = A.views.requestForm(null);
+    doc.body.appendChild(form);
+    has(form.textContent, 'أرسلها للمشرف يرفعها عنك', 'العنوان يقول ما هو');
+    has(form.textContent, 'اسم المادة *', 'وحقل الاسم');
+    has(form.textContent, 'ملف الأسئلة *', 'وحقل الملف');
+    ok(!/جامعة|كلية|رمز المقرر/.test(form.textContent), '★ ولا يُطلب منه غيرهما');
+
+    /* «طلباتي» في حسابه */
+    W.location.hash = '#/account/uploads'; A.router.render('#/account/uploads');
+    await new Promise(r2 => setTimeout(r2, 80));
+    const main = doc.querySelector('#main');
+    has(main.textContent, 'طلباتي عند المشرف', '★ وطلباته تُتابَع من حسابه');
+    has(main.textContent, 'في الطابور', 'بحالها');
+    ok(!!Array.prototype.find.call(main.querySelectorAll('button'), b => b.textContent === 'ألغِ'), 'وله إلغاؤه ما دام في الطابور');
+  })());
+}
+
+describe('١٨٨ج · المشرف ينفّذ الطلب من طابوره');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  A.store.set('session', { user:{ id:'adm', email:'a@b.c' }, access_token:'t', expires_abs: Date.now() + 9e6 });
+  A.store.set('is_admin_check', { uid:'adm', ok:true });
+  const req = { id:'r1', name:'علم الأدوية', note:'د. خالد', storage_path:'stu1/1-bank.pdf',
+    filename:'bank.pdf', size_bytes:2048, status:'new', user_id:'stu1', student:'سارة العتيبي',
+    university:'جامعة نجران', created_at:new Date(Date.now() - 2*3600e3).toISOString() };
+  const calls = [];
+  A.api._fetch = (url, opts) => {
+    const body = opts && opts.body && typeof opts.body === 'string' ? JSON.parse(opts.body) : null;
+    calls.push({ url, method:(opts && opts.method) || 'GET', body });
+    let data = [];
+    if (/rpc\/admin_upload_requests/.test(url)) data = [req];
+    if (/rpc\/admin_request_status/.test(url)) data = { ok:true };
+    if (/rpc\/admin_inbox/.test(url)) data = { requests:1, drafts:0, purchases:0, phones:0, payouts:0, reports:0 };
+    if (/subjects\?select/.test(url) || /drafts\?select/.test(url)) data = [];
+    return Promise.resolve({ ok:true, status:200, headers:{ get:()=>'application/json' },
+      text:()=>Promise.resolve(JSON.stringify(data)), json:()=>Promise.resolve(data) });
+  };
+  W.location.hash = '#/admin/content'; A.router.render('#/admin/content');
+  pending.push(new Promise(r => setTimeout(r, 100)).then(async () => {
+    const main = doc.querySelector('#main');
+    has(main.textContent, 'طلبات رفع مادة', '★ الطابور في تبويب المحتوى');
+    has(main.textContent, 'سارة العتيبي', 'باسم صاحبه');
+    has(main.textContent, 'bank.pdf', 'واسم ملفه');
+    has(main.textContent, 'ملاحظته: د. خالد', 'وملاحظته');
+    const go = main.querySelector('a[href="#/admin/upload?req=r1"]');
+    ok(!!go, '★ و«ارفعها الآن» يفتح المعالج بالطلب');
+
+    /* المعالج يبدأ ممتلئًا: الاسم والرافع والملف */
+    A.views.ViewUpload._reset();
+    W.location.hash = '#/admin/upload?req=r1'; A.router.render('#/admin/upload?req=r1');
+    await new Promise(r2 => setTimeout(r2, 120));
+    const w = A.views.ViewUpload._get();
+    eq(w.subjectName, 'علم الأدوية', '★ الاسم من الطلب');
+    eq(w.uploader && w.uploader.id, 'stu1', 'والرافع صاحبه');
+    eq(w.reqPath, 'stu1/1-bank.pdf', 'والملف مساره في المخزن');
+    eq(A.admin.ownerOf(w), 'stu1', 'فتُنشر المادة باسمه');
+    const body = doc.querySelector('#main');
+    has(body.textContent, 'طلب رفع من سارة العتيبي', 'واللافتة تقول لمن يرفع');
+    ok(!!Array.prototype.find.call(body.querySelectorAll('button'), b => /اقرأ ملف الطالب/.test(b.textContent)),
+      '★ وضغطةٌ واحدة تقرأ ملفه — بلا اختيار ملف ولا رفع ثانٍ');
+    ok(!body.querySelector('.reqinvite'), 'ولا تُعرض دعوة الطلب للمشرف وهو ينفّذ طلبًا');
+  }));
+}
+
+/* ============ ١٨٩ · مزوّدو الدخول — أكثر من جوجل ============ */
+/*
+  ★ بطلب علي: الطالب يدخل بمنصات أخرى لا بجوجل وحده. والأزرار تُكتشف من
+  الخادم (‎/auth/v1/settings‎) لا تُكتب في الكود — فزرٌّ لمزوّدٍ غير مضبوط
+  في Supabase يقود إلى صفحة خطأ إنجليزية، وهو أسوأ من غيابه.
+*/
+describe('١٨٩ · أزرار الدخول تُكتشف لا تُكتب');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  const P = A.authProviders;
+  ok(!!P, 'وحدة المزوّدين محمّلة');
+  eq(P.meta('azure').brand, 'microsoft', 'azure هو مايكروسوفت');
+  eq(P.dedupe(['linkedin_oidc','linkedin']).length, 1, '★ لينكدإن بمعرّفيه زرٌّ واحد لا اثنان');
+  eq(P.dedupe(['nope']).length, 0, 'ومزوّدٌ لا نعرف شعاره لا يُرسم زرًّا مجهولًا');
+  eq(A.brand('google').tagName.toLowerCase(), 'svg', 'الشعار SVG مرسوم');
+  eq(A.brand('google').querySelectorAll('path').length, 4, '★ جوجل بأربعة مسارات — شعارٌ متعدّد الألوان لا يُختصر لونًا واحدًا');
+  eq(A.brand('google').querySelector('path').getAttribute('fill'), '#4285F4', 'بألوانه الحقيقية');
+  eq(A.brand('microsoft').querySelectorAll('path').length, 4, 'ومايكروسوفت أربعة مربّعات ملوّنة');
+  eq(A.brand('facebook', { fill:'#ffffff' }).querySelector('path').getAttribute('fill'), '#ffffff',
+     'والشعار الأحادي يقبل لونًا يقابل قرصه');
+  eq(A.brand('google', { mono:true }).querySelector('path').getAttribute('fill'), 'currentColor',
+     'وmono يُرجعه لونًا واحدًا حين يلزم');
+  ok(!!A.BRAND_MARKS.apple && !!A.BRAND_MARKS.microsoft && !!A.BRAND_MARKS.x && !!A.BRAND_MARKS.snapchat,
+     'وآبل ومايكروسوفت وX وسناب شات مرسومة');
+
+  const css = fs.readFileSync(path.join(__dirname,'css','80-pro.css'), 'utf8');
+  has(css, '.oauth__tile{', 'وقرصٌ لكل منصة');
+  has(css, 'width:54px; height:54px', 'بحجمٍ فوق حدّ اللمس');
+  has(css, 'background:var(--tile);', 'ولونه يأتي من المزوّد لا من الورقة');
+
+  /* بلا سؤالٍ ناجح: جوجل وحده — الزرّ الذي كان يعمل يبقى يعمل */
+  A.store.remove(P.KEY);
+  A.api._fetch = () => Promise.resolve({ ok:false, status:500, headers:{ get:()=>null },
+    text:()=>Promise.resolve(''), json:()=>Promise.resolve({}) });
+  const row0 = A.views.oauthRow({});
+  doc.body.appendChild(row0);
+  eq(row0.querySelectorAll('[data-provider]').length, 1, '★ تعذّر السؤال ⇦ جوجل وحده لا صفٌّ فارغ');
+  eq(row0.querySelector('[data-provider]').getAttribute('data-provider'), 'google', 'وهو جوجل');
+  has(row0.textContent, 'الدخول بحساب جوجل', '★ والمزوّد الواحد زرٌّ عريض باسمه — لا قرصًا وحيدًا يبدو زينة');
+
+  pending.push((async () => {
+    /* الخادم يقول ما المفعَّل — والصفّ يتبعه */
+    A.api._fetch = (url) => Promise.resolve({ ok:true, status:200, headers:{ get:()=>'application/json' },
+      text:()=>Promise.resolve('{}'),
+      json:()=>Promise.resolve({ external:{ google:true, azure:true, apple:false, facebook:true,
+        github:false, email:true, phone:false } }) });
+    const list = await P.load();
+    eq(list.join(','), 'google,azure,facebook', '★ المفعَّل وحده يُقرأ — وapple المطفأ لا يُذكر');
+    ok(P.fresh(), 'والقائمة تُخبَّأ فلا نسأل مع كل فتح');
+
+    const row = A.views.oauthRow({ after:'#/admin' });
+    doc.body.appendChild(row);
+    await new Promise(r => setTimeout(r, 30));
+    const ids = Array.prototype.map.call(row.querySelectorAll('[data-provider]'), b => b.getAttribute('data-provider'));
+    eq(ids.join(','), 'google,azure,facebook', 'وثلاثة أزرار تُرسم');
+    ok(!!row.querySelector('.oauth__tiles'), '★ ومع التعدّد تصير أقراصًا بشعاراتها لا صفًّا من النصوص');
+    eq(row.querySelector('[data-provider="facebook"]').getAttribute('style'), '--tile:#1877F2',
+       'ولكل قرصٍ لون منصّته');
+    eq(row.querySelector('[data-provider="azure"]').getAttribute('title'), 'الدخول بحساب مايكروسوفت',
+       'والاسم باقٍ في التلميح لمن تردّد');
+    ok(!!row.querySelector('[data-provider="azure"] svg'), 'ولكلٍّ شعاره');
+    eq(row.querySelector('[data-provider="google"]').getAttribute('aria-label'), 'الدخول بحساب جوجل',
+       'ولكل زرٍّ اسمٌ يُقرأ');
+
+    /* الضغط يحفظ الوجهة قبل المغادرة — وإلا هبط المشرف على واجهة الطالب */
+    let asked = '';
+    A.api.auth.oauthUrl = (p) => { asked = p; return null; };   // null ⇦ لا مغادرة للصفحة في الفحص
+    row.querySelector('[data-provider="azure"]').click();
+    eq(asked, 'azure', 'والضغط يطلب رابط مزوّده هو');
+    A.api.auth.oauthUrl = (p) => 'https://x.test/authorize?provider=' + p;
+    A.store.set('after_login', '');
+    row.querySelector('[data-provider="google"]').click();
+    eq(A.store.get('after_login', ''), '#/admin', '★ والوجهة تُحفظ قبل الخروج إلى المزوّد');
+
+    /* شاشة الدخول نفسها تحمل الصفّ */
+    A.store.remove('session');
+    const card = A.views.ViewLogin.view();
+    doc.body.appendChild(card);
+    ok(!!card.querySelector('.oauth__grid'), '★ وشاشة دخول الطالب تعرضه');
+    ok(card.querySelectorAll('[data-provider]').length >= 3, 'بكل المفعَّل');
+  })());
+}
+
+/* ============ ١٩٠ · التطبيق الأصلي — الجسر ============ */
+/*
+  ★ الملف نفسه يعمل في المتصفح وفي تطبيق آيفون. داخل التطبيق يوجد
+  window.Capacitor يحقنه النظام؛ وبدونه لا يتغيّر في الويب حرف.
+*/
+describe('١٩٠ · بلا جسر: الويب كما هو');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK;
+  ok(!!A.native, 'وحدة الجسر محمّلة');
+  ok(!A.native.active, '★ ولا تعمل في المتصفح');
+  ok(!W.QBANK_NATIVE_APP, 'والويب لا يظنّ نفسه تطبيقًا');
+  ok(!A.authProviders.opener, 'والدخول ينتقل بالصفحة كما كان');
+  has(A.api.auth.oauthUrl('google'), encodeURIComponent('https://qbank.local/'), 'ويعود إلى الصفحة نفسها');
+  const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
+  no(html, 'cdn.jsdelivr', 'ولا مكتبة من الشبكة — الجسر يحقنه التطبيق لا نحن');
+  no(html, '@capacitor/', 'ولا استيراد لحزم Capacitor في الويب');
+}
+
+describe('١٩٠ب · مع الجسر: الدخول عبر Safari ويعود بالرابط العميق');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  const calls = [];
+  const listeners = {};
+  W.Capacitor = {
+    isNativePlatform: () => true, getPlatform: () => 'ios',
+    Plugins: {
+      Browser: { open: o => { calls.push(['open', o.url]); return Promise.resolve(); }, close: () => { calls.push(['close']); return Promise.resolve(); } },
+      App: { addListener: (n, cb) => { listeners[n] = cb; return Promise.resolve({ remove(){} }); }, exitApp: () => calls.push(['exit']) },
+      Haptics: { notification: o => calls.push(['haptic', o.type]), impact: o => calls.push(['impact', o.style]) },
+      StatusBar: { setStyle: o => calls.push(['status', o.style]) },
+      Share: { share: o => { calls.push(['share', o.url]); return Promise.resolve(); } },
+      SplashScreen: { hide: () => calls.push(['splash']) }
+    }
+  };
+  ok(A.native.init(), '★ الجسر يُكتشف');
+  ok(W.QBANK_NATIVE_APP === true, 'والمنصة تعرف أنها داخل تطبيق (بطاقة الشراء تُخفي طرق الويب)');
+  eq(A.store.get('api_base', ''), 'https://amsuq.alsoqoor.com', '★ ونداءات الخادم تذهب إلى الإنتاج لا إلى capacitor://localhost');
+  has(A.api.auth.oauthUrl('apple'), encodeURIComponent('muraja://auth'), '★ والمزوّد يعود إلى الرابط العميق');
+
+  A.authProviders.launch('apple', '#/account');
+  ok(calls.some(c => c[0] === 'open' && /provider=apple/.test(c[1])), '★ الدخول يُفتح في Safari الحقيقي لا داخل WebView (جوجل ترفض المضمَّن)');
+  eq(A.store.get('after_login', ''), '#/account', 'والوجهة محفوظة');
+
+  /* العودة: الرمز في هاش الرابط العميق — الدالة نفسها التي تقرأ هاش الصفحة على الويب */
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-native', email:'n@x.y', exp: 9999999999 }))));
+  const tok = 'h.' + pl + '.s';
+  ok(typeof listeners.appUrlOpen === 'function', 'ومستمع الرابط العميق مركَّب');
+  listeners.appUrlOpen({ url: 'muraja://auth#access_token=' + tok + '&refresh_token=r&expires_in=3600&token_type=bearer' });
+  ok(!!A.api.user() && A.api.user().id === 'u-native', '★ الجلسة التُقطت من الرابط العميق');
+  ok(calls.some(c => c[0] === 'close'), 'وSafari أُغلق');
+  eq(A.store.get('after_login', 'gone'), 'gone', 'والوجهة اُستُهلكت');
+  eq(W.location.hash, '#/account', 'ووصل حيث قصد');
+
+  /* خطأ المزوّد يُقال لا يُبتلع */
+  const before = doc.getElementById('toast').textContent;
+  listeners.appUrlOpen({ url: 'muraja://auth?error=access_denied&error_description=User+cancelled' });
+  has(doc.getElementById('toast').textContent, 'تعذّر الدخول', 'إلغاء الطالب يُقال بجملة');
+  void before;
+
+  /* ما يجعله تطبيقًا لا موقعًا في غلاف */
+  ok(A.native.haptic('success') && calls.some(c => c[0] === 'haptic' && c[1] === 'SUCCESS'), 'اهتزاز النجاح');
+  A.theme.apply('light');
+  ok(calls.some(c => c[0] === 'status' && c[1] === 'LIGHT'), '★ شريط الحالة يتبع الوضع');
+  pending.push(A.share.sharePlain('https://amsuq.alsoqoor.com/#/s/x', 'مادة', 'نص').then(r => {
+    ok(r.ok && r.via === 'share' && calls.some(c => c[0] === 'share'), 'وورقة المشاركة الأصلية');
+  }));
+  const fb = A.views.examFeedback({ id:'q1', q:'?', options:['a','b'], correct:0 }, { choice:1 }, { sub:{ id:'s1' } });
+  ok(!!fb && calls.some(c => c[0] === 'haptic' && c[1] === 'ERROR'), 'والخطأ في الاختبار يُحسّ في اليد');
+  pending.push(new Promise(r => setTimeout(r, 400)).then(() => {
+    ok(calls.some(c => c[0] === 'splash'), 'وشاشة البداية تُخفى بعد أول رسم');
+  }));
+
+  /* ★ قاعدة المتجر ٣.١.١: لا شراء ولا رمز ولا سعر ولا واتساب داخل التطبيق */
+  const pw = A.gate.paywallCard({ id:'s9', name:'التشريح', price:29, free:false });
+  has(pw.textContent, 'غير متاحة في التطبيق حاليًا', 'المادة المدفوعة تُقال بجملة');
+  no(pw.textContent, 'ريال', 'بلا سعر');
+  no(pw.textContent, 'اشترِ', 'بلا زرّ شراء');
+  no(pw.textContent, 'رمز', 'بلا رمز تفعيل');
+  no(pw.textContent, 'واتساب', 'بلا واتساب');
+  ok(!pw.querySelector('a[target="_blank"]'), 'ولا رابط خارجي');
+  const ex = A.trial.expiredCard({ id:'s9', name:'التشريح', price:29 });
+  no(ex.textContent, 'اشترِ', 'وانتهاء التجربة كذلك');
+  eq(A.pay.coinShop(), null, 'ومتجر الكوينز مخفي');
+}
+
+describe('١٩٠ج · سياسة الخصوصية — صفحة داخل المنصة');
+{
+  const dom = makeDom(), W = dom.window, A = W.QBANK, doc = W.document;
+  W.location.hash = '#/privacy'; A.router.render('#/privacy');
+  const main = doc.querySelector('#main');
+  has(main.textContent, 'سياسة الخصوصية', '★ الصفحة موجودة على #/privacy — المتجران يشترطان رابطًا');
+  has(main.textContent, 'حذف حسابك وكل بياناته نهائيًا', 'وتذكر حذف الحساب (شرط أبل ٥.١.١)');
+  has(main.textContent, 'لا نبيع بياناتك، ولا نعرض إعلانات', 'وتقول ما لا نفعله');
+  has(main.textContent, 'Supabase', 'وتسمّي من يصل إلى البيانات');
+  ok(A.PRIVACY_SECTIONS.length >= 6, 'ستة أقسام فأكثر');
+  ok(!!doc.querySelector('.footer a[href="#/privacy"]'), 'ورابطها في التذييل على كل صفحة');
+}
+
+/* ============ ١٩١ · غلاف التطبيق وخطّ البناء ============ */
+describe('١٩١ · مشروع التطبيق: الملفات التي يحتاجها البناء موجودة وصحيحة');
+{
+  const fs2 = require('fs');
+  const M = p => path.join(__dirname, '..', 'mobile', p);
+  const pkg = JSON.parse(fs2.readFileSync(M('package.json'), 'utf8'));
+  ok(!!pkg.dependencies['@capacitor/ios'] && !!pkg.dependencies['@capacitor/browser'], '★ Capacitor iOS وإضافة المتصفح (للدخول عبر Safari)');
+  ['@capacitor/app','@capacitor/haptics','@capacitor/share','@capacitor/status-bar','@capacitor/splash-screen']
+    .forEach(d => ok(!!pkg.dependencies[d], 'إضافة ' + d));
+  const cfg = JSON.parse(fs2.readFileSync(M('capacitor.config.json'), 'utf8'));
+  eq(cfg.appId, 'com.alsoqoor.muraja', '★ معرّف التطبيق Muraja — يطابق App ID في حساب أبل');
+  eq(cfg.appName, 'مراجعة', 'والاسم الظاهر «مراجعة»');
+  eq(cfg.webDir, 'www', 'وwww هو ما يجهّزه prepare.js');
+  eq(cfg.plugins.SplashScreen.launchAutoHide, false, 'وشاشة البداية تُخفيها الطبقة بعد أول رسم لا المؤقّت');
+  const prep = fs2.readFileSync(M('prepare.js'), 'utf8');
+  has(prep, "if (html.indexOf('QBANK.native') === -1)", '★ التجهيز يرفض index.html بلا طبقة التطبيق');
+  const patch = fs2.readFileSync(M('ios-patch.js'), 'utf8');
+  has(patch, "<string>muraja</string>", '★ مخطّط الرابط العميق muraja:// في Info.plist');
+  has(patch, "setString('CFBundleDisplayName', 'مراجعة')", 'والاسم العربي');
+  has(patch, "addOnce('ITSAppUsesNonExemptEncryption', '\\t<false/>')", 'وبلا سؤال التشفير مع كل رفع');
+  const wf = fs2.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'ios.yml'), 'utf8');
+  has(wf, 'runs-on: macos-15', '★ يبني على macOS في GitHub — بلا جهاز ماك');
+  has(wf, 'node src/tests.js', 'ولا يُرفع بناءٌ لم تمرّ فحوصه');
+  has(wf, '-allowProvisioningUpdates', 'والتوقيع سحابي — لا شهادة في المستودع');
+  ['ASC_KEY_ID','ASC_ISSUER_ID','ASC_API_KEY_P8'].forEach(k => has(wf, 'secrets.' + k, 'السرّ ' + k));
+  has(wf, 'DEVELOPMENT_TEAM=327HJYMMD2', 'وفريق علي');
+  has(wf, 'TARGETED_DEVICE_FAMILY=1', 'وآيفون وحده في الإصدار الأول — لا لقطات آيباد');
+  no(wf, '.p8\n', 'ولا مفتاح مكتوب في الملف');
+  const exp = fs2.readFileSync(M('ExportOptions.plist'), 'utf8');
+  has(exp, '<string>app-store-connect</string>', 'والتصدير إلى App Store Connect');
+  has(exp, '<string>upload</string>', 'رفعًا مباشرًا');
+  ['icon-only.png','icon-foreground.png','icon-background.png','splash.png','splash-dark.png']
+    .forEach(f => ok(fs2.existsSync(M('assets/' + f)), 'أصل ' + f));
+  ['icon-192.png','icon-512.png','icon-maskable-512.png','apple-touch-icon.png']
+    .forEach(f => ok(fs2.existsSync(path.join(__dirname, '..', f)), '★ أيقونة PWA ' + f + ' — كان manifest يشير إلى ملفات لا وجود لها'));
+  const gi = fs2.readFileSync(M('.gitignore'), 'utf8');
+  has(gi, '*.p8', 'ومفاتيح أبل لا تدخل المستودع أبدًا');
 }
 
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */
