@@ -43,6 +43,8 @@ function makeDom(hash){
   if (dom.window.document.readyState === 'loading') {
     dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
   }
+  /* jsdom بلا crypto.subtle — نمنحه تشفير Node كي تُفحص بصمة PKCE كما في المتصفح */
+  try { Object.defineProperty(dom.window, 'crypto', { value: require('crypto').webcrypto, configurable: true }); } catch(e){}
   return dom;
 }
 
@@ -201,7 +203,7 @@ describe('٦ · الشاشات الفارغة تُرسم');
 
   // تبويبات لوحة التحكم — تحتاج جلسة، وطلبات الشبكة تفشل بأمان في jsdom (بلا إعداد)
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'admin-1', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=3600');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=3600');
   A.router.render('#/admin');
   eq(doc.querySelector('[data-tab="dash"]').getAttribute('aria-selected'), 'true', 'تبويب اللوحة هو الافتراضي');
   A.router.render('#/admin/content');
@@ -343,8 +345,8 @@ describe('١٢ · الجلسة: التقاط، فكّ، تجديد');
   // JWT وهمي حمولته {sub:"uid-1", email:"a@b.c"}
   const payload = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'uid-1', email:'a@b.c' }))));
   const jwt = 'h.' + payload + '.s';
-  eq(A.api.auth.captureFromHash('#/'), false, 'هاش عادي لا يُلتقط كجلسة');
-  eq(A.api.auth.captureFromHash('#access_token=' + jwt + '&refresh_token=rt1&expires_in=3600'), true, 'رموز الدخول تُلتقط من الهاش');
+  eq(A.api.auth.markPending() && A.api.auth.captureFromHash('#/'), false, 'هاش عادي لا يُلتقط كجلسة');
+  eq(A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=' + jwt + '&refresh_token=rt1&expires_in=3600'), true, 'رموز الدخول تُلتقط من الهاش');
   eq(A.api.user().id, 'uid-1', 'هوية المستخدم تُقرأ من الـJWT بلا نداء شبكة');
   eq(A.api.user().email, 'a@b.c', 'البريد يُقرأ من الـJWT');
   eq(A.api.session().refresh_token, 'rt1', 'رمز التجديد محفوظ');
@@ -461,7 +463,7 @@ describe('١٦ · شاشات الدخول والحساب');
 
   // بجلسة: يعرض الحساب الكامل
   const payload = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'uid-9', email:'s@t.sa' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + payload + '.s&refresh_token=r&expires_in=3600');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + payload + '.s&refresh_token=r&expires_in=3600');
   A.router.render('#/account');
   has(doc.getElementById('main').textContent, 's@t.sa', 'بريد المستخدم يظهر في حسابي');
   ok(!!doc.getElementById('accName'), 'حقل الاسم موجود');
@@ -624,7 +626,7 @@ describe('٢١ · منطق اللوحة: الدفعات، التقدير، ال�
 
   // محاكاة التخصيب بخادم وهمي: انقطاع في الدفعة الثانية ثم استئناف
   const payload = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'ad1', email:'a@a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + payload + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + payload + '.s&refresh_token=r&expires_in=9999');
   A.store.set('api_base', 'https://srv.test');
   let calls = 0, saved = 0;
   Ad.server = async (path, body) => {
@@ -637,11 +639,11 @@ describe('٢١ · منطق اللوحة: الدفعات، التقدير، ال�
   };
   Ad.saveDraft = async (wz) => { saved++; wz.draftId = wz.draftId || 'd-1'; return { ok:true }; };
 
-  // رصيد وهمي: نُحاكي القاعدة كي يسلك الفحص المسار المدفوع
+  /* ★ الخصم والردّ صارا في الخادم (تدقيق H-02): المتصفح لا ينادي spend_credits ولا refund_credits —
+     يرسل draft_id مع الدفعة والخادم يحسم ويردّ. هنا نتأكد أن الواجهة كفّت يدها فعلًا. */
   const spent = [];
   A.api.rpc = (name, args) => {
-    if (name === 'spend_credits'){ spent.push(args.n); return Promise.resolve({ ok:true, data:{ ok:true, spent:args.n, balance:9999 } }); }
-    if (name === 'refund_credits'){ spent.push(-args.n); return Promise.resolve({ ok:true, data:{ ok:true } }); }
+    if (name === 'spend_credits' || name === 'refund_credits'){ spent.push(name); }
     return Promise.resolve({ ok:true, data:{} });
   };
   const w2 = Ad.newWizard();
@@ -656,7 +658,7 @@ describe('٢١ · منطق اللوحة: الدفعات، التقدير، ال�
   })();
   pending.push(W.__t.then(r => {
     ok(r.afterFail.done >= 12 && r.afterFail.done < 60, 'انقطاع دفعة: منجز الدفعات الناجحة محفوظ لا ضائع');
-    ok(spent.some(x => x < 0), 'ورصيد الدفعة المنقطعة رُدّ — الطالب لا يدفع ثمن عطلنا');
+    eq(spent.length, 0, '★ المتصفح لا يخصم ولا يردّ رصيدًا — الخادم وحده (تدقيق H-02)');
     has(r.afterFail.error, 'انقطاع', 'الخطأ يُبلَّغ صراحة');
     ok(r.afterFail.saved >= 1, 'المسوّدة حُفظت بعد الدفعة الأولى');
     eq(r.final.done, 60, 'الاستئناف يكمل الستين');
@@ -672,7 +674,7 @@ describe('٢٢ · شاشات اللوحة والمعالج');
   const d = makeDom('#/');
   const W = d.window, A = W.QBANK, doc = W.document;
   const payload = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'ad1', email:'a@a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + payload + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + payload + '.s&refresh_token=r&expires_in=9999');
 
   A.router.render('#/admin/settings');
   ok(!!doc.getElementById('cfgUrl'), 'حقل رابط Supabase في إعدادات اللوحة');
@@ -817,7 +819,7 @@ describe('٢٥ · الرئيسية والبطاقات');
   A.store.set('my_subjects', ['s1','s2']);
   // بطاقات المواد للطالب المسجَّل — الزائر يرى صفحة الهبوط بدلها
   const pl25 = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'stu-1', email:'s@t.sa' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl25 + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl25 + '.s&refresh_token=r&expires_in=9999');
   A.router.render('#/');
   const t = doc.getElementById('main').textContent;
   has(t, 'أهلًا بك في QBANK', 'نص الترحيب من الإعدادات يظهر');
@@ -1040,10 +1042,12 @@ describe('٢٩ · بوابة المحتوى: المجاني مفتوح والم�
 /* ============ ٣٠ · المرحلة ٥: خادم التحقق من المشتريات ============ */
 describe('٣٠ · التحقق من الشراء في الخادم حصرًا');
 {
-  const vf = fs.readFileSync(path.join(ROOT, 'api', 'verify.js'), 'utf8');
-  has(vf, 'SUPABASE_SERVICE_KEY', 'الاستحقاق يُكتب بمفتاح الخدمة من الخادم');
-  has(vf, "p.status !== 'paid'", 'لا استحقاق قبل تأكيد البوابة أن الدفعة مكتملة');
-  has(vf, '150 * 86400000', 'الصلاحية بنهاية الفصل لا اشتراك شهري');
+  /* ★ api/verify.js حُذف في التدقيق الأمني (C-01): كان يمنح استحقاقًا لأي user_id بلا جلسة.
+     مسار الشراء الوحيد الآن /api/pay → settle_payment بمفتاح الخدمة بعد تأكيد Tap. */
+  ok(!fs.existsSync(path.join(ROOT, 'api', 'verify.js')), 'لا يوجد api/verify.js — لا مسار يمنح استحقاقًا بلا جلسة');
+  const payf = fs.readFileSync(path.join(ROOT, 'api', 'pay.js'), 'utf8');
+  has(payf, "rpc('settle_payment'", 'الاستحقاق يُكتب عبر settle_payment بمفتاح الخدمة من الخادم');
+  has(payf, 'if (!ch.paid) return', 'لا استحقاق قبل تأكيد البوابة أن الدفعة مكتملة');
   no(html, 'SUPABASE_SERVICE_KEY', 'مفتاح الخدمة لا يقترب من المتصفح');
   no(html, 'PAYMENT_API_KEY', 'مفتاح بوابة الدفع لا يقترب من المتصفح');
   // جدول الاستحقاقات لا يقبل كتابة الطالب — سياسة قاعدة البيانات
@@ -1203,7 +1207,7 @@ describe('٣٣ · صفحة الهبوط للزائر');
 
   // الطالب المسجَّل لا يرى الهبوط بل مواده
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-lp', email:'a@b.c' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
   A.router.render('#/');
   const t2 = doc.getElementById('main').textContent;
   eq(doc.querySelector('#main h1').textContent, 'موادي', 'المسجَّل يرى مواده مباشرة لا الصفحة التعريفية');
@@ -1242,7 +1246,7 @@ describe('٣٥ · لوحة المشرف');
 
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'adm', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   // بيانات وهمية بشكل ردّ admin_dashboard الحقيقي — تحققنا من الشكل على PostgreSQL فعلي
   const DATA = {
@@ -1325,7 +1329,7 @@ describe('٣٦ · محرر المادة');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'adm', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   const SUB = { id:'s1', name:'التسمم', color:'subject-2', icon:'☤', descr:'وصف',
                 topics:['مقدمة','الترياق'], published:false, free:false, ord:1, q_count:3, exam_date:null };
@@ -1448,7 +1452,7 @@ describe('٣٧ · الإعدادات');
 
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'adm', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   const ROW = { id:1, platform_name:'QBANK', tagline:'', welcome_text:'أهلًا', support_email:'', whatsapp:'',
     exam_count:25, exam_minutes:30, pass_mark:60, shuffle_q:true, shuffle_opts:true, instant_feedback:true,
@@ -1600,7 +1604,7 @@ describe('٣٩ · تجربة العشر دقائق');
   eq(T.fmt(-5), '0:00', 'الوقت السالب يُعرض صفرًا لا بإشارة');
 
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'creator-1', email:'c@c.c' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   // نُحاكي القاعدة: كل نبضة تستهلك ٣٠ ثانية من ٦٠٠
   let used = 540;   // بقيت دقيقة — نصل للقفل بسرعة
@@ -1684,12 +1688,12 @@ describe('٤٠ · الزميل والرابط والكوينز');
      كان يُوسم «تجربة» — والتجربة عيّنةٌ تُنتزع، والملكية حقٌّ يُمنح.
      الاسم يغيّر ما تعرضه الشاشة: عدّادٌ يركض، أم سطرٌ يقول «هذه مادتك». */
   const mk = id => W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:id, email:'x@x.x' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + mk('creator-9') + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + mk('creator-9') + '.s&refresh_token=r&expires_in=9999');
   eq(G.localGuess(SUB).reason, 'owner', '★ المنشئ يدخل بصفته مالكًا');
   ok(G.localGuess(SUB).allowed, 'ومسموح له بلا انتظار القاعدة');
 
   // الزميل ⇦ شراء مباشر بلا تجربة (جوهر الطلب)
-  A.api.auth.captureFromHash('#access_token=h.' + mk('mate-7') + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + mk('mate-7') + '.s&refresh_token=r&expires_in=9999');
   const mate = G.localGuess(SUB);
   eq(mate.allowed, false, 'الزميل لا يدخل المحتوى');
   eq(mate.reason, 'paywall', 'الزميل يذهب للشراء لا للتجربة');
@@ -1729,7 +1733,7 @@ describe('٤٠ · الزميل والرابط والكوينز');
     ok(!doc.querySelector('.trialbar'), 'لا شريط تجربة للزميل');
 
     // المنشئ على نفس الرابط يرى أداة المشاركة
-    A.api.auth.captureFromHash('#access_token=h.' + mk('creator-9') + '.s&refresh_token=r&expires_in=9999');
+    A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + mk('creator-9') + '.s&refresh_token=r&expires_in=9999');
     A.router.render('#s/physio-x1');
     await until(W, () => doc.getElementById('main').textContent.indexOf('هذه مادتك') !== -1);
     has(doc.getElementById('main').textContent, 'كوينز', 'المنشئ يُذكَّر بمكافأة المشاركة');
@@ -1745,7 +1749,7 @@ describe('٤١ · رفع الطالب والمحفظة');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const mk = id => W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:id, email:'s@s.s' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + mk('stud-1') + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + mk('stud-1') + '.s&refresh_token=r&expires_in=9999');
 
   eq(A.admin.newWizard().mode, 'strict', 'النمط الافتراضي strict — القداسة هي الأصل');
 
@@ -1791,7 +1795,7 @@ describe('٤٢ · إدارة مواد الطلاب');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'adm', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
   const sent = [];
   A.api.rest = (p2, opt) => { if (opt) sent.push({ path:p2, method:opt.method, body: JSON.parse(opt.body||'{}') });
     return Promise.resolve({ ok:true, data:[] }); };
@@ -1858,10 +1862,9 @@ describe('٤٣ · أمان الكوينز');
   no(html, 'SUPABASE_SERVICE_KEY', 'لا اسم لمفتاح الخدمة في ملف المتصفح');
   no(html, 'award_referral_coins', 'المتصفح لا يعرف دالة منح الكوينز أصلًا');
 
-  const verify = fs.readFileSync(path.join(ROOT,'api','verify.js'), 'utf8');
-  ok(verify.indexOf('award_referral_coins') > verify.indexOf('await verifiers[source]'),
-     'الكوينز تُمنح بعد تأكيد الدفعة لا قبلها');
-  has(verify, 'coins = { ok:false', 'فشل المكافأة لا يُبطل شراءً تمّ');
+  /* مكافأة الإحالة تُمنح داخل settle_payment في القاعدة بعد تأكيد الدفعة — لا من دالة خادم مفتوحة */
+  const paySql = fs.readFileSync(path.join(ROOT,'db','PAY.sql'), 'utf8');
+  has(paySql, 'for update', 'التسوية تقفل صف الدفعة — لا تُمنح مرتين');
 
   const supa = fs.readFileSync(path.join(ROOT,'api','_lib','supa.js'), 'utf8');
   has(supa, '/auth/v1/user', 'هوية الرمز تُسأل من Supabase لا تُفكّ محليًا');
@@ -2083,7 +2086,7 @@ describe('٤٩ · اكتشاف رفع المادة');
 
   // الطالب المسجَّل يرى الدعوة أعلى شاشة مواده
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'stud-9', email:'s@s.s' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
   A.data.savePack({ subjects:[{ id:'a', name:'مادة', q_count:10, color:'subject-1', icon:'▤', topics:[] }], settings:{} });
   A.router.render('#/');
   const up = doc.querySelector('.upsell');
@@ -2284,7 +2287,7 @@ describe('٥٤ · بنك الأسئلة');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u1', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   const SUB = { id:'s1', name:'السموم', q_count:2, color:'subject-1', icon:'☤',
                 topics:['الترياق'], free:true, course_code:'EMS 301' };
@@ -2336,7 +2339,7 @@ describe('٥٥ · بطاقة المادة');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u2', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   const soon = new Date(Date.now() + 5 * 86400000).toISOString();
   const past = new Date(Date.now() - 3 * 86400000).toISOString();
@@ -2525,7 +2528,7 @@ describe('٦٠ · شاشة الرفع');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'s9', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   pending.push((async () => {
     A.views.ViewUpload._reset();
@@ -2579,7 +2582,7 @@ describe('٦١ · اتّساق اللوحة');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'adm', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   A.api.rpc = name => {
     if (name === 'admin_stats') return Promise.resolve({ ok:true,
@@ -2774,7 +2777,7 @@ describe('٦٥ · اختيار المسار');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'s1', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   // ١٢٠ سؤالًا: ٢٠ بلا خيارات، ومنها ١٠ بلا إجابة معلنة إطلاقًا
   const raw = [];
@@ -2840,7 +2843,7 @@ describe('٦٦ · نقص الرصيد');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'s2', email:'b@b.b' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   const raw = [];
   for (let i = 0; i < 300; i++) raw.push({ q:'Q'+i, options:['a','b'], answer:0, has_options:true });
@@ -3056,7 +3059,7 @@ describe('٧١ · جامعتي');
 {
   const dom = makeDom(), W = dom.window, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u1', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   const calls = [];
   A.api.rpc = (name, args) => {
@@ -3094,7 +3097,7 @@ describe('٧٢ · شريط الجامعة');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u2', email:'b@b.b' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
   A.data.savePack({ subjects:[{ id:'s1', name:'مادة', q_count:10, color:'subject-1', icon:'▤', topics:[] }], settings:{} });
   A.api.rpc = () => new Promise(() => {});      // الخادم صامت: نختبر الرسم الفوري من المخزَّن
 
@@ -3194,7 +3197,7 @@ describe('٧٥ · الرفع يملأ الجامعة');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u3', email:'c@c.c' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
   A.api.rpc = () => new Promise(() => {});
   A.store.set('campus', { university_id:'U1', university:'جامعة نجران', college:'كلية الطب', country:'SA' });
 
@@ -4094,7 +4097,7 @@ describe('١٠٤ · حارس المادة الفارغة');
   */
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u1', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
   A.api.rpc = () => new Promise(() => {});
 
   // ★ القفل الأول: الاستيراد
@@ -4721,7 +4724,7 @@ describe('١٢٢ · محرر شامل وملف شخصي وعين المشرف');
   /* بطل الملف يرسم فعلًا */
   const dom = makeDom('#/'), W = dom.window, A = W.QBANK, doc = W.document;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-pf', email:'pf@t.t' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
   /* ★ الملف المخزّن يحمل هوية صاحبه — وبدونها لا يُعرض (فحص ١٢٩) */
   A.store.set('profile', { uid:'u-pf', name:'عليّ', avatar:'🩺', phone:'0555',
                            bio:'أُراجع طوارئ', avatar_url:'' });
@@ -4760,7 +4763,7 @@ describe('١٢٣ · تقييم الطلاب والملف العام');
   /* اللوحة بتبويبات، والتبويب في الهاش فيبقى بعد التحديث */
   const dom = makeDom('#/'), W = dom.window, A = W.QBANK, doc = W.document;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-acc', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
   A.router.render('#/account');
   ok(!!doc.querySelector('.tabs__btn[aria-selected="true"]'), 'لوحة الطالب صارت تبويبات');
   has(doc.getElementById('main').textContent, 'ملفي', 'وتبويب الملف أولًا');
@@ -4779,7 +4782,7 @@ describe('١٢٤ · الإثراء مجانًا');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'s9', email:'z@z.z' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   // ── الحساب المجرّد ──
   eq(A.admin.costPerQ({ cost_per_q: 0 }), 0, 'صفرُ القاعدة يصل كصفر لا كواحد');
@@ -4825,7 +4828,7 @@ describe('١٢٥ · لا حسم حين لا ثمن');
 {
   const dom = makeDom(), W = dom.window, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'s8', email:'y@y.y' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   const w = A.admin.newWizard();
   w.step = 2; w.enrich = true; w.costPerQ = 0; w.total = 2; w.draftId = 'd9';
@@ -5028,7 +5031,7 @@ describe('١٢٩ · الملف يحمل هوية صاحبه');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'acc-2', email:'two@x.com' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   /* ملفٌ لصاحبٍ آخر تسلّل إلى التخزين (نسخة قديمة كتبته بلا هوية، أو
      بقي من قبل الحارس) — يجب ألا يُعرض حرفًا واحدًا منه */
@@ -5096,7 +5099,7 @@ describe('١٣١ · مخرج النشر بلا إثراء');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'q1', email:'q@q.q' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   const raw = [];
   for (let i = 0; i < 12; i++) raw.push({ q:'Q'+i, options:['a','b'], answer:0, has_options:true });
@@ -5226,7 +5229,7 @@ describe('١٣٤ · الترويسة تتبع الجلسة');
 
   // بعد الدخول: بطاقة الحساب
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'hdr-1', email:'ali@t.t' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
   A.store.set('profile', { uid:'hdr-1', name:'علي', avatar:'🩺', avatar_url:'' });
   A.router.render('#/');
   ok(!slot.querySelector('[data-nav="#/login"]'), '★ وبعد الدخول يختفي زرّ «دخول»');
@@ -5441,7 +5444,7 @@ describe('١٤٠ · شرح الخطأ');
   A.api.fetchFn = () => (url, o) => { calls++; return Promise.resolve({
     ok:true, json: () => Promise.resolve({ ok:true, why:'خلطتَ بين الأفيونات والكيتامين.' }) }); };
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'ex1', email:'e@e.e' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
   A.store.set('api_base', 'https://x.dev');
 
   pending.push((async () => {
@@ -5483,7 +5486,7 @@ describe('١٤٢ · حفظ المسوّدة وفشله');
 {
   const dom = makeDom(), W = dom.window, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'dr1', email:'d@d.d' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   // ── الفشل يُسجَّل ولا يُبتلع ──
   const w = A.admin.newWizard();
@@ -5546,7 +5549,7 @@ describe('١٤٤ · الإثراء لا يُضاعف');
 {
   const dom = makeDom(), W = dom.window, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'dup', email:'x@x.x' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   const raw = [];
   for (let i = 0; i < 65; i++) raw.push({ q:'Q'+i, options:['a','b'], answer:0, has_options:true });
@@ -5593,7 +5596,7 @@ describe('١٤٥ · رابط المادة الحقيقي');
 {
   const dom = makeDom(), W = dom.window, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'sl', email:'s@s.s' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   pending.push((async () => {
     A.api.rest = async (path) => {
@@ -5852,7 +5855,7 @@ describe('١٥٣ · الاسم مطلوب');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'nm', email:'n@n.n' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   pending.push((async () => {
     await nav(W, '#/upload');
@@ -5987,7 +5990,7 @@ describe('١٥٧ · زرّ اللوحة في الترويسة');
 {
   const dom = makeDom(), W = dom.window, doc = W.document, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'ad-1', email:'a@a.a' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
   A.store.set('profile', { uid:'ad-1', name:'علي' });
 
   // طالبٌ عادي: لا زرّ
@@ -6026,7 +6029,7 @@ describe('١٥٨ · لا يُمحى رابطٌ بتحديث جزئي');
 {
   const dom = makeDom(), W = dom.window, A = W.QBANK;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'sg', email:'g@g.g' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   pending.push((async () => {
     let sent = null;
@@ -6129,7 +6132,7 @@ describe('١٦٢ · اقتصاد النبضة');
   const dom = makeDom(), W = dom.window, A = W.QBANK;
   const P = A.presence;
   const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'pr', email:'p@p.p' }))));
-  A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
+  A.api.auth.markPending() && A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=9999');
 
   pending.push((async () => {
     const sent = [];
@@ -6910,7 +6913,7 @@ describe('١٧٣ب · القاعدة والخادم والعامل');
   ok(sql.indexOf('create policy push_subs_') === -1, 'ولا سياسة قراءة على المفاتيح');
 
   const api = require('fs').readFileSync(__dirname + '/../api/push.js', 'utf8');
-  has(api, "given !== secret) return res.status(401)", '★ والإرسال محروس بـCRON_SECRET — لا يُطلقه زائر');
+  has(api, "!safeEqual(given, secret)) return res.status(401)", '★ والإرسال محروس بـCRON_SECRET — لا يُطلقه زائر (مقارنة بزمن ثابت)');
   has(api, 'TTL: 12 * 3600', 'وإشعار الصباح لا يُسلَّم مساءً');
   has(api, 'e.statusCode === 404 || e.statusCode === 410', 'واشتراكٌ مات يُعرف من رمزه');
 
@@ -7530,7 +7533,7 @@ describe('١٨٣ · القراءة متوازية وعلى أجزاء');
   has(ingest, "if (typeof text_part === 'string'){", '★ وضع الجزء في /api/ingest');
   has(ingest, "if (parts.length > 4){", 'والملف الكبير يُعاد أجزاءً بدل أن يُقرأ في نداء واحد');
   has(ingest, "if (storage_path && !content_base64){", 'والملف الكبير يأتي من المخزن لا من الجسم');
-  has(ingest, "if (!clean || !(await canReadUpload(clean, userId, token)))", 'والخادم لا يجلب ملفًا إلا بإذن — مجلدُ صاحب الجلسة أو حكمُ القاعدة');
+  has(ingest, "if (!(await canReadUpload(clean, userId, token)))", 'والخادم لا يجلب ملفًا إلا بإذن — مجلدُ صاحب الجلسة أو حكمُ القاعدة');
   const vj = JSON.parse(fs2.readFileSync(path.join(__dirname, '..', 'vercel.json'), 'utf8'));
   eq(vj.functions['api/*.js'].maxDuration, 60, 'ومهلة الدوال ٦٠ ثانية — أقصى ما تعطيه الخطة');
   const ai = fs2.readFileSync(path.join(__dirname, '..', 'api', 'ai.js'), 'utf8');
@@ -7904,7 +7907,7 @@ describe('١٨٨ · قاعدة البيانات: طابور الطلبات');
 
   const ingest = fs.readFileSync(path.join(__dirname, '..', 'api', 'ingest.js'), 'utf8');
   has(ingest, 'async function canReadUpload(clean, userId, token){', '★ الخادم يسأل القاعدة لا يفترض');
-  has(ingest, "if (userId && clean.indexOf(userId + '/') === 0) return true;", 'ومجلده هو يمرّ بلا نداء');
+  has(ingest, "if (userId && clean.slice(0, 37) === userId + '/') return true;", 'ومجلده هو يمرّ بلا نداء');
   has(ingest, "return (await supa.rpc('can_read_upload', { p_path: clean }, token)) === true;", 'وغيره يسأل برمز صاحب الجلسة — فلا يُزوَّر');
   has(ingest, 'catch(e){ return false; }', 'والدالة غير المنشورة تُبقي الحكم القديم');
 }
@@ -8092,7 +8095,8 @@ describe('١٨٩ · أزرار الدخول تُكتشف لا تُكتب');
     eq(asked, 'azure', 'والضغط يطلب رابط مزوّده هو');
     A.api.auth.oauthUrl = (p) => 'https://x.test/authorize?provider=' + p;
     A.store.set('after_login', '');
-    row.querySelector('[data-provider="google"]').click();
+    /* launch لم تعد متزامنة (بصمة PKCE تُحسب أولًا) — الوجهة تُحفظ بعد وعد الرابط */
+    await A.authProviders.launch('google', '#/admin');
     eq(A.store.get('after_login', ''), '#/admin', '★ والوجهة تُحفظ قبل الخروج إلى المزوّد');
 
     /* شاشة الدخول نفسها تحمل الصفّ */
@@ -8116,7 +8120,14 @@ describe('١٩٠ · بلا جسر: الويب كما هو');
   ok(!A.native.active, '★ ولا تعمل في المتصفح');
   ok(!W.QBANK_NATIVE_APP, 'والويب لا يظنّ نفسه تطبيقًا');
   ok(!A.authProviders.opener, 'والدخول ينتقل بالصفحة كما كان');
-  has(A.api.auth.oauthUrl('google'), encodeURIComponent('https://qbank.local/'), 'ويعود إلى الصفحة نفسها');
+  pending.push(A.api.auth.oauthUrl('google').then(u => {
+    has(u, encodeURIComponent('https://qbank.local/'), 'ويعود إلى الصفحة نفسها');
+    /* ★ تدقيق H-01: PKCE — بصمة التحدّي في الرابط والسرّ في الجهاز، والدخول يُعلَّم «معلّقًا» */
+    has(u, 'code_challenge_method=s256', '★ والدخول بتدفق PKCE لا الضمني');
+    ok(/code_challenge=[A-Za-z0-9_-]{40,}/.test(u), 'وبصمة التحدّي في الرابط');
+    ok(/^[A-Za-z0-9_-]{40,}$/.test(A.store.get('pkce_verifier', '')), 'والسرّ محفوظ في الجهاز لا في الرابط');
+    ok(A.api.auth.isPending(), 'والدخول معلّق — الهاش العائد يُقبل خلال ربع ساعة');
+  }));
   const html = require('fs').readFileSync(__dirname + '/../index.html', 'utf8');
   no(html, 'cdn.jsdelivr', 'ولا مكتبة من الشبكة — الجسر يحقنه التطبيق لا نحن');
   no(html, '@capacitor/', 'ولا استيراد لحزم Capacitor في الويب');
@@ -8141,27 +8152,57 @@ describe('١٩٠ب · مع الجسر: الدخول عبر Safari ويعود ب�
   ok(A.native.init(), '★ الجسر يُكتشف');
   ok(W.QBANK_NATIVE_APP === true, 'والمنصة تعرف أنها داخل تطبيق (بطاقة الشراء تُخفي طرق الويب)');
   eq(A.store.get('api_base', ''), 'https://amsuq.alsoqoor.com', '★ ونداءات الخادم تذهب إلى الإنتاج لا إلى capacitor://localhost');
-  has(A.api.auth.oauthUrl('apple'), encodeURIComponent('muraja://auth'), '★ والمزوّد يعود إلى الرابط العميق');
+  pending.push((async () => {
+    has(await A.api.auth.oauthUrl('apple'), encodeURIComponent('muraja://auth'), '★ والمزوّد يعود إلى الرابط العميق');
 
-  A.authProviders.launch('apple', '#/account');
-  ok(calls.some(c => c[0] === 'open' && /provider=apple/.test(c[1])), '★ الدخول يُفتح في Safari الحقيقي لا داخل WebView (جوجل ترفض المضمَّن)');
-  eq(A.store.get('after_login', ''), '#/account', 'والوجهة محفوظة');
+    await A.authProviders.launch('apple', '#/account');
+    ok(calls.some(c => c[0] === 'open' && /provider=apple/.test(c[1])), '★ الدخول يُفتح في Safari الحقيقي لا داخل WebView (جوجل ترفض المضمَّن)');
+    ok(calls.some(c => c[0] === 'open' && /code_challenge=/.test(c[1])), 'وبتدفق PKCE');
+    eq(A.store.get('after_login', ''), '#/account', 'والوجهة محفوظة');
 
-  /* العودة: الرمز في هاش الرابط العميق — الدالة نفسها التي تقرأ هاش الصفحة على الويب */
-  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-native', email:'n@x.y', exp: 9999999999 }))));
-  const tok = 'h.' + pl + '.s';
-  ok(typeof listeners.appUrlOpen === 'function', 'ومستمع الرابط العميق مركَّب');
-  listeners.appUrlOpen({ url: 'muraja://auth#access_token=' + tok + '&refresh_token=r&expires_in=3600&token_type=bearer' });
-  ok(!!A.api.user() && A.api.user().id === 'u-native', '★ الجلسة التُقطت من الرابط العميق');
-  ok(calls.some(c => c[0] === 'close'), 'وSafari أُغلق');
-  eq(A.store.get('after_login', 'gone'), 'gone', 'والوجهة اُستُهلكت');
-  eq(W.location.hash, '#/account', 'ووصل حيث قصد');
+    /* العودة: الرمز في هاش الرابط العميق — الدالة نفسها التي تقرأ هاش الصفحة على الويب */
+    const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-native', email:'n@x.y', exp: 9999999999 }))));
+    const tok = 'h.' + pl + '.s';
+    ok(typeof listeners.appUrlOpen === 'function', 'ومستمع الرابط العميق مركَّب');
+    listeners.appUrlOpen({ url: 'muraja://auth#access_token=' + tok + '&refresh_token=r&expires_in=3600&token_type=bearer' });
+    ok(!!A.api.user() && A.api.user().id === 'u-native', '★ الجلسة التُقطت من الرابط العميق');
+    ok(calls.some(c => c[0] === 'close'), 'وSafari أُغلق');
+    eq(A.store.get('after_login', 'gone'), 'gone', 'والوجهة اُستُهلكت');
+    eq(W.location.hash, '#/account', 'ووصل حيث قصد');
 
-  /* خطأ المزوّد يُقال لا يُبتلع */
-  const before = doc.getElementById('toast').textContent;
-  listeners.appUrlOpen({ url: 'muraja://auth?error=access_denied&error_description=User+cancelled' });
-  has(doc.getElementById('toast').textContent, 'تعذّر الدخول', 'إلغاء الطالب يُقال بجملة');
-  void before;
+    /* ★ تدقيق H-01: رابط عميق برمزٍ لم يطلبه هذا الجهاز لا يصير جلسة */
+    A.api.saveSession(null); A.store.remove('login_pending');
+    const pl2 = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-attacker', email:'e@x.y' }))));
+    listeners.appUrlOpen({ url: 'muraja://auth#access_token=h.' + pl2 + '.s&refresh_token=r&expires_in=3600' });
+    ok(!A.api.user(), '★ رابطٌ مرسَل من غريب برمزه لا يُسجّل الضحية في حسابه');
+    has(doc.getElementById('toast').textContent, 'لم يطلبه هذا الجهاز', 'ويُقال له لماذا');
+
+    /* عودة PKCE: ?code= يُبدَّل بجلسة عبر /auth/v1/token?grant_type=pkce بالسرّ المحفوظ */
+    A.store.set('pkce_verifier', 'v'.repeat(43)); A.store.set('after_login', '#/review');
+    let exch = null;
+    A.api._fetch = async (u, o) => {
+      if (String(u).indexOf('grant_type=pkce') > -1){
+        exch = JSON.parse(o.body);
+        const pl3 = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-pkce', email:'p@x.y' }))));
+        return { ok:true, status:200, text: async () => JSON.stringify({ access_token:'h.' + pl3 + '.s', refresh_token:'r', expires_in:3600, user:{ id:'u-pkce', email:'p@x.y' } }) };
+      }
+      return { ok:true, status:200, text: async () => '[]' };
+    };
+    listeners.appUrlOpen({ url: 'muraja://auth?code=abcdef12-3456-7890-abcd-ef1234567890' });
+    await new Promise(r => setTimeout(r, 20));
+    eq(exch && exch.auth_code, 'abcdef12-3456-7890-abcd-ef1234567890', '★ رمز التبديل يُرسل مع السرّ');
+    eq(exch && exch.code_verifier, 'v'.repeat(43), 'والسرّ من الجهاز');
+    ok(!!A.api.user() && A.api.user().id === 'u-pkce', 'والجلسة وُلدت من التبديل');
+    eq(A.store.get('pkce_verifier', 'gone'), 'gone', 'والسرّ يُستهلك مرة واحدة');
+    eq(W.location.hash, '#/review', 'ووصل حيث قصد');
+    A.api._fetch = null;
+
+    /* خطأ المزوّد يُقال لا يُبتلع */
+    const before = doc.getElementById('toast').textContent;
+    listeners.appUrlOpen({ url: 'muraja://auth?error=access_denied&error_description=User+cancelled' });
+    has(doc.getElementById('toast').textContent, 'تعذّر الدخول', 'إلغاء الطالب يُقال بجملة');
+    void before;
+  })());
 
   /* ما يجعله تطبيقًا لا موقعًا في غلاف */
   ok(A.native.haptic('success') && calls.some(c => c[0] === 'haptic' && c[1] === 'SUCCESS'), 'اهتزاز النجاح');
@@ -8254,7 +8295,8 @@ describe('١٩٢ · القاعدة تحصر شكل الملف، والملف ا�
     has(sql, 'add column if not exists ' + c, 'عمود ' + c));
   has(sql, "check (layout in ('classic','cover','stripe','magazine','glass'))", '★ الستايلات الخمسة محصورة في القاعدة');
   has(sql, "check (accent in ('', 'subject-1'", '★ واللون اسمُ متغيّر من النظام لا hex يحقنه الطالب');
-  has(sql, "position('/storage/v1/object/public/avatars/' || id::text || '/' in cover_url) > 0", '★ والغلاف من مخزننا وفي مجلد صاحبه — لا رابط خارجي يتتبّع الزوار');
+  has(sql, "cover_url ~ ('^https://gbgjadqwqzxxyhydlgtj\\.supabase\\.co/storage/v1/object/public/avatars/'", '★ والغلاف من مخزننا وفي مجلد صاحبه — بادئة كاملة لا رابط خارجي يتتبّع الزوار');
+  has(sql, "profiles_avatar_url_chk", 'والصورة الشخصية مقيّدة بالمثل');
   has(sql, "'layout', p.layout, 'accent', p.accent,", 'والملف العام يُرجع الشكل');
   has(sql, "'cover_preset', p.cover_preset, 'cover_url', p.cover_url,", 'والغلاف');
   no(sql.slice(sql.indexOf('public_profile')), 'au.email', 'وما زال بلا إيميل');
@@ -8317,8 +8359,15 @@ describe('١٩٢ج · Look: قراءة آمنة، وحقن اللون متغيّ
   eq(root.style.getPropertyValue('--acc'), '', 'وبلا لون يعود لون المنصة');
   const c1 = L.cover({ cover_preset:'g3' });
   ok(c1.classList.contains('pf-cover--g3'), 'غلاف التدرّج صنف');
-  const c2 = L.cover({ cover_url:'https://x.supabase.co/storage/v1/object/public/avatars/u1/cover.jpg' });
+  const OWN = 'https://gbgjadqwqzxxyhydlgtj.supabase.co/storage/v1/object/public/avatars/11111111-2222-4333-8444-555555555555/cover.jpg?v=1725000000000';
+  const c2 = L.cover({ cover_url: OWN });
   ok(!!c2.querySelector('img.pf-cover__img'), 'وغلاف الصورة صورة');
+  /* ★ تدقيق M-08: البادئة كاملة لا جزءًا — رابط خارجي يحمل البادئة في استعلامه يتتبّع الزوار */
+  ok(L.ownImage(OWN), 'صورة من مخزننا في مجلد صاحبها تمرّ');
+  ok(!L.ownImage('https://evil.test/p.gif?/storage/v1/object/public/avatars/11111111-2222-4333-8444-555555555555/'), '★ ورابط خارجي يحمل البادئة في استعلامه لا يمرّ');
+  ok(!L.ownImage('https://gbgjadqwqzxxyhydlgtj.supabase.co/storage/v1/object/public/avatars/11111111-2222-4333-8444-555555555555/cover.jpg?x=<svg>'), 'ولا استعلام غير كاسر الذاكرة');
+  eq(L.read({ cover_url:'https://x.supabase.co/storage/v1/object/public/avatars/u1/cover.jpg' }).cover_url, '', 'وغلاف من مشروع آخر لا يمرّ');
+  ok(!A.peer.face({ avatar_url:'https://evil.test/a.jpg', name:'x' }).matches('img'), 'وصورة الطالب من خارج مخزننا تعود رمزية');
   const c3 = L.cover({});
   ok(c3.classList.contains('pf-cover--acc'), 'وبلا اختيار: تدرّج المحور (يُخفيه الكلاسيكي ويستعمله المجلّة والزجاجي)');
 }
@@ -8398,6 +8447,249 @@ describe('١٩٢هـ · محرّر «شكل ملفي»: معاينة حيّة و
     has(r.url, '/storage/v1/object/public/avatars/stu1/cover.jpg', '★ والمسار avatars/<معرّفه>/cover.jpg — الشرط الذي تفرضه القاعدة');
     ok(calls.some(c => /storage\/v1\/object\/avatars\/stu1\/cover\.jpg/.test(c.url) && c.method === 'POST'), 'ورُفع إلى مجلده');
   }));
+}
+
+/* ============ ١٩٣ · التدقيق الأمني (٥ سبتمبر ٢٠٢٦): الأبواب التي أُغلقت لا تُفتح ثانية ============ */
+describe('١٩٣أ · الخادم: لا دالة تكتب أو تُنفق بلا جلسة');
+{
+  const apiDir = path.join(ROOT, 'api');
+  ok(!fs.existsSync(path.join(apiDir, 'verify.js')), '★ C-01: api/verify.js حُذف — كان يمنح استحقاقًا لأي user_id بلا جلسة');
+  const handlers = fs.readdirSync(apiDir).filter(f => /\.js$/.test(f));
+  ok(handlers.length >= 6, 'دوال الخادم موجودة');
+  handlers.forEach(f => {
+    const src = fs.readFileSync(path.join(apiDir, f), 'utf8');
+    const guarded = /userFromToken\(|requireUser\(/.test(src) || /CRON_SECRET/.test(src);
+    ok(guarded, 'api/' + f + ' يتحقق من الهوية (جلسة أو سرّ الجدولة)');
+  });
+  const guard = fs.readFileSync(path.join(apiDir, '_lib', 'guard.js'), 'utf8');
+  has(guard, 'timingSafeEqual', 'L-03: مقارنة الأسرار بزمن ثابت');
+  has(guard, "rpc('rate_hit'", 'M-02: عدّاد الحدّ في القاعدة');
+  const ai = fs.readFileSync(path.join(apiDir, 'ai.js'), 'utf8');
+  has(ai, "rpc('spend_credits_for'", '★ H-02: الخصم من الخادم بمفتاح الخدمة');
+  ok(ai.indexOf("rpc('spend_credits_for'") < ai.indexOf('await callClaude('), 'والخصم قبل نداء الذكاء لا بعده');
+  has(ai, "rpc('refund_credits'", 'والردّ من الخادم عند سقوط الدفعة');
+  has(ai, 'guard.rateLimit(user.id', 'وسقفٌ لكل مستخدم');
+  no(html, "rpc('spend_credits'", '★ والمتصفح لم يعد يخصم الرصيد بنفسه');
+  no(html, "rpc('refund_credits'", 'ولا يردّه');
+  const ingest = fs.readFileSync(path.join(apiDir, 'ingest.js'), 'utf8');
+  ok(ingest.indexOf('guard.requireUser(req)') < ingest.indexOf("typeof text_part === 'string'"), '★ H-03: الجلسة قبل قراءة الأجزاء والصور لا بعدها');
+  has(ingest, 'MAX_IMAGES', 'وسقف الصور في الطلب');
+  const pay = fs.readFileSync(path.join(apiDir, 'pay.js'), 'utf8');
+  no(pay, 'const origin = body.origin', '★ M-01: الأصل لا يُؤخذ من الطلب');
+  has(pay, 'const origin = siteOrigin(req);', 'بل من نطاقنا المعروف');
+  has(pay, "webhookUrl: SITE + '/api/pay?hook=1'", 'والويب هوك إلى خادمنا دائمًا');
+  has(pay, "settleFromCharge(body.charge_id, user.id)", 'L-02: التسوية من المتصفح لصاحب العملية وحده');
+  const vj = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
+  const all = (vj.headers.find(h => h.source === '/(.*)') || { headers: [] }).headers;
+  const hdr = k => (all.find(h => h.key === k) || {}).value || '';
+  has(hdr('Content-Security-Policy'), "frame-ancestors 'self'", '★ M-03: لا تأطير من نطاق غريب (اختطاف النقر)');
+  has(hdr('Content-Security-Policy'), "connect-src 'self' https://gbgjadqwqzxxyhydlgtj.supabase.co", 'والاتصال إلى Supabase وأصلنا فقط');
+  has(hdr('Content-Security-Policy'), "object-src 'none'", 'ولا كائنات مضمَّنة');
+  eq(hdr('X-Content-Type-Options'), 'nosniff', 'وnosniff');
+  has(hdr('Strict-Transport-Security'), 'max-age=', 'وHSTS');
+  has(hdr('Referrer-Policy'), 'strict-origin', 'وسياسة المُحيل');
+}
+
+describe('١٩٣أ٢ · /api/ai من طرفٍ إلى طرف: جلسة ← خصم في الخادم ← ذكاء ← ردّ عند السقوط');
+{
+  const handler = require('../api/ai.js');
+  const mkRes = () => { const r = { code: 0, body: null, status(c){ r.code = c; return r; }, json(b){ r.body = b; return r; } }; return r; };
+  const Q = [{ q:'What is X?', has_options:true, options:['a','b','c','d'], answer:0 }];
+  const log = [];
+  const net = (opts) => async (u, o) => {
+    const url = String(u);
+    log.push(url.replace(/^https?:\/\/[^/]+/, ''));
+    if (url.indexOf('/auth/v1/user') > -1) return { ok: !!opts.user, json: async () => (opts.user || {}) };
+    if (url.indexOf('/rest/v1/rpc/rate_hit') > -1) return { ok:true, json: async () => true };
+    if (url.indexOf('/rest/v1/rpc/spend_credits_for') > -1){
+      const b = JSON.parse(o.body); log.push('spend:' + b.p_user + ':' + b.p_questions);
+      return { ok:true, json: async () => (opts.spend || { ok:true, spent: b.p_questions, balance: 40 }) };
+    }
+    if (url.indexOf('/rest/v1/rpc/refund_credits') > -1){ const b = JSON.parse(o.body); log.push('refund:' + b.n); return { ok:true, json: async () => ({ ok:true }) }; }
+    if (url.indexOf('generativelanguage') > -1){
+      if (opts.aiFail) return { ok:false, status:500, text: async () => 'boom' };
+      return { ok:true, json: async () => ({ candidates: [{ content: { parts: [{ text: JSON.stringify([{ answer_index:0, expl_ar:'شرح', expl_en:'x', translation:'ت', topic:'م', mnemonic:{} }]) }] } }] }) };
+    }
+    throw new Error('نداء غير متوقع ' + url);
+  };
+  const env = { GEMINI_API_KEY:'K', SUPABASE_URL:'https://proj.supabase.co', SUPABASE_SERVICE_KEY:'svc' };
+  const withEnv = (fetchImpl, body) => serial(async () => {
+    const save = {}; Object.keys(env).forEach(k => { save[k] = process.env[k]; process.env[k] = env[k]; });
+    const keys = ['AI_PROVIDER','AI_MODEL','ANTHROPIC_API_KEY']; keys.forEach(k => { save[k] = process.env[k]; delete process.env[k]; });
+    const savedFetch = global.fetch; global.fetch = fetchImpl;
+    try { await body(); } finally {
+      global.fetch = savedFetch;
+      Object.keys(save).forEach(k => { if (save[k] === undefined) delete process.env[k]; else process.env[k] = save[k]; });
+    }
+  });
+
+  withEnv(net({ user:null }), async () => {
+    const res = mkRes();
+    await handler({ method:'POST', headers:{}, body:{ questions:Q } }, res);
+    eq(res.code, 401, '★ H-02: بلا جلسة ٤٠١ — لا نداء ذكاء ولا خصم');
+    ok(!log.some(l => /generateContent|spend:/.test(l)), 'ولم يُنادَ مزوّد ولا خصم');
+  });
+  withEnv(net({ user:{ id:'u-1', email:'u@x.y' } }), async () => {
+    log.length = 0;
+    const res = mkRes();
+    await handler({ method:'POST', headers:{ authorization:'Bearer t1' }, body:{ questions:Q, draft_id:'11111111-2222-4333-8444-555555555555' } }, res);
+    eq(res.code, 200, 'بجلسة: ٢٠٠');
+    ok(log.some(l => l === 'spend:u-1:1'), '★ والخصم في الخادم باسم صاحب الجلسة وبعدد الأسئلة');
+    ok(log.findIndex(l => /spend:/.test(l)) < log.findIndex(l => /generateContent/.test(l)), 'الخصم قبل الذكاء');
+    eq(res.body.spent, 1, 'والمخصوم يعود في الردّ');
+    eq(res.body.questions[0].q, Q[0].q, 'والنص المقدّس كما هو');
+    ok(!log.some(l => /refund:/.test(l)), 'ولا ردّ حين تنجح');
+  });
+  withEnv(net({ user:{ id:'u-1' }, spend:{ ok:false, reason:'insufficient', balance:2, needed:1 } }), async () => {
+    log.length = 0;
+    const res = mkRes();
+    await handler({ method:'POST', headers:{ authorization:'Bearer t1' }, body:{ questions:Q } }, res);
+    eq(res.code, 402, 'رصيد لا يكفي: ٤٠٢');
+    eq(res.body.kind, 'insufficient', 'بسببه');
+    eq(res.body.balance, 2, 'ورصيده معه');
+    ok(!log.some(l => /generateContent/.test(l)), 'ولا نداء ذكاء بلا رصيد');
+  });
+  withEnv(net({ user:{ id:'u-1' }, aiFail:true }), async () => {
+    log.length = 0;
+    const res = mkRes();
+    await handler({ method:'POST', headers:{ authorization:'Bearer t1' }, body:{ questions:Q } }, res);
+    ok(res.code >= 500, 'سقوط المزوّد خطأ خادم');
+    ok(log.some(l => l === 'refund:1'), '★ والرصيد يُردّ من الخادم لا من المتصفح');
+  });
+}
+
+describe('١٩٣ب · الخادم: المسار والمحلّل والمضغوط والمعقّم');
+{
+  const ing = require('../api/ingest.js');
+  ok(ing.SAFE_PATH.test('11111111-2222-4333-8444-555555555555/1725000000000-bank.pdf'), 'مسار الرفع الطبيعي يمرّ');
+  ok(ing.SAFE_PATH.test('11111111-2222-4333-8444-555555555555/1725000000000-أسئلة_الفصل.docx'), 'وبالعربية');
+  ok(!ing.SAFE_PATH.test('11111111-2222-4333-8444-555555555555/../../auth/v1/admin/users'), '★ C-02: ../ لا يمرّ');
+  ok(!ing.SAFE_PATH.test('11111111-2222-4333-8444-555555555555/a/b.pdf'), 'ولا مجلد فرعي');
+  ok(!ing.SAFE_PATH.test('x/1.pdf'), 'ولا مجلد ليس معرّف مستخدم');
+  eq(ing.safeStoragePath('11111111-2222-4333-8444-555555555555/..'), null, 'ولا «..» اسمًا');
+  serial(async () => {
+    const saveUrl = process.env.SUPABASE_URL, saveKey = process.env.SUPABASE_SERVICE_KEY;
+    process.env.SUPABASE_URL = 'https://proj.supabase.co'; process.env.SUPABASE_SERVICE_KEY = 'svc';
+    let fetched = 0;
+    const fake = async () => { fetched++; return { ok:true, arrayBuffer: async () => new ArrayBuffer(1) }; };
+    let threw = '';
+    try { await ing.fetchFromStorage('11111111-2222-4333-8444-555555555555/../../auth/v1/admin/users', '11111111-2222-4333-8444-555555555555', 't', fake); }
+    catch(e){ threw = e.message; }
+    has(threw, 'غير صالح', '★ C-02: مسار عابث يُرفض');
+    eq(fetched, 0, 'قبل أي نداء شبكة');
+    await ing.fetchFromStorage('11111111-2222-4333-8444-555555555555/1-x.pdf', '11111111-2222-4333-8444-555555555555', 't', fake);
+    eq(fetched, 1, 'ومسار صاحب الجلسة يُجلب');
+    if (saveUrl === undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL = saveUrl;
+    if (saveKey === undefined) delete process.env.SUPABASE_SERVICE_KEY; else process.env.SUPABASE_SERVICE_KEY = saveKey;
+  });
+
+  const P = require('../api/_lib/parser.js');
+  let t = Date.now();
+  P.parse((' '.repeat(5000) + '\n').repeat(20));
+  P.parse(('ANSWER' + ' '.repeat(5000) + '\n').repeat(20));
+  P.parse(('Q' + ' '.repeat(5000) + '\n').repeat(20));
+  ok(Date.now() - t < 500, '★ H-04: سطور من خمسة آلاف فراغ تُقرأ في أقل من نصف ثانية (كانت ١١ ثانية للسطر)');
+  const qs = P.parse('1. What?\nA) one\nB) two\nANSWER: B\n\nس ٢) ما؟\nأ) أ\nب) ب\nالإجابة : ب');
+  eq(qs.length, 2, 'والملفات الطبيعية تُقرأ كما كانت');
+  eq(qs[0].answer, 1, 'بإجاباتها');
+  eq(qs[1].answer, 1, 'وبالعربية');
+
+  const X = require('../api/_lib/extract.js');
+  const { zipSync, strToU8 } = require('../api/node_modules/fflate');
+  const bomb = zipSync({ 'word/document.xml': new Uint8Array(30 * 1024 * 1024) }, { level: 9 });
+  ok(bomb.length < 100 * 1024, 'قنبلة ضغط: ٣٠ ميغابايت تصير أقل من ١٠٠ كيلوبايت');
+  let boom = '';
+  try { X.fromDocx(Buffer.from(bomb)); } catch(e){ boom = e.message; }
+  has(boom, 'أكبر من المسموح', '★ M-04: تُرفض قبل أن تنتفخ في الذاكرة');
+  eq(X.fromDocx(Buffer.from(zipSync({ 'word/document.xml': strToU8('<w:p><w:t>مرحبا</w:t></w:p>'), 'word/media/x.png': new Uint8Array(5) }))), 'مرحبا', 'وملف DOCX سليم يُقرأ');
+
+  const An = require('../api/_lib/analyst.js');
+  const san = An.sanitizeHtml;
+  eq(san('<svg/onload=alert(1)>'), '', '★ M-05: <svg/onload> لا يمرّ');
+  eq(san('<img/src/onerror=x>'), '', 'ولا <img/src/onerror>');
+  eq(san('<p onclick="x">hi</p>'), '<p>hi</p>', 'والسمات تُنزع من الوسوم المسموحة');
+  eq(san('a < b'), 'a &lt; b', 'وعلامة «أصغر» في النص تُهرَّب');
+  eq(san('<script'), '&lt;script', 'ووسم مبتور يصير نصًّا');
+}
+
+describe('١٩٣ج · القاعدة: HARDEN-1.sql يغلق ما وجده التدقيق');
+{
+  const h = fs.readFileSync(path.join(ROOT, 'db', 'HARDEN-1.sql'), 'utf8');
+  has(h, 'revoke update on qbank.profiles from anon, authenticated;', '★ C-03: لا تعديل شامل على profiles');
+  has(h, 'grant  update (name, avatar, avatar_url, bio, phone, university_id, college_id,', 'والمسموح أعمدةٌ مسمّاة');
+  no(h.slice(h.indexOf('grant  update ('), h.indexOf('on qbank.profiles to authenticated')), 'coins_balance', 'ليس منها الرصيد');
+  has(h, 'new.coins_balance     is distinct from old.coins_balance', 'وقادح يحرس الأعمدة المالية');
+  has(h, "current_user in ('authenticated', 'anon')", 'من دور الواجهة لا من الدوال المعرَّفة');
+  has(h, 'drop function if exists qbank.refund_credits(int, text, uuid);', '★ C-04: نسخة المتصفح من الردّ حُذفت');
+  has(h, 'grant execute on function qbank.refund_credits(uuid, int, text, uuid) to service_role;', 'والجديدة للخادم وحده');
+  has(h, 'back := least(back, greatest(spent - refunded, 0));', 'ومحدودة بما خُصم فعلًا');
+  has(h, 'grant execute on function qbank.spend_credits_for(uuid, int, uuid) to service_role;', 'H-02: الخصم للخادم وحده');
+  has(h, 'revoke execute on function qbank.spend_credits(int, text, uuid) from anon, authenticated;', 'والقديم سُحب من المتصفح');
+  has(h, "or (s.published = true and qbank.can_access(s.id))))", '★ C-05: أسئلة المادة لمن يحق له (سياسة الجدول)');
+  has(h, "or (s.published = true and qbank.can_access(sid)))", 'ودالة subject_questions كذلك');
+  has(h, 'alter table qbank.name_rules enable row level security;', '★ H-06: جدول القواعد تحت RLS');
+  has(h, 'alter default privileges in schema qbank revoke all on functions from anon, public;', 'ولا صلاحية افتراضية للزائر ولا لـPUBLIC');
+  has(h, 'revoke all on function qbank.log_admin(text, uuid, jsonb)  from public, anon, authenticated;', 'وسجلّ المشرف لا يكتبه زائر');
+  has(h, 'create policy subjects_delete on qbank.subjects for delete', '★ H-07: الحذف سياسة مستقلة');
+  has(h, 'and not exists (select 1 from qbank.entitlements e', 'والمبيعة لا يمحوها رافعها');
+  has(h, 'new.verified := false; new.rating_avg := 0; new.rating_n := 0;', 'والمادة الجديدة تبدأ بلا ثقة');
+  has(h, 'profiles_cover_url_chk', 'M-08: الغلاف مقيّد بالبادئة الكاملة');
+  has(h, 'profiles_avatar_url_chk', 'والصورة كذلك');
+  has(h, 'case when me is null then null', 'M-06: الحضور للمسجَّلين لا للزائر');
+  has(h, 'create or replace function qbank.rate_hit(', 'M-02: عدّاد الحدّ');
+  has(h, 'create trigger attempts_guard_trg before insert on qbank.attempts', 'M-10: نتائج ممكنة وبمعدّل معقول');
+  has(h, "delete from storage.objects", 'L-09: حذف الحساب يمسح ملفاته');
+  has(h, "alter role authenticator set pgrst.db_schemas = 'qbank';", 'M-07: مخطط واحد مكشوف');
+  no(h, 'drop table', 'بلا حذف جدول');
+  // ★ الملفات المصدر تتفق مع HARDEN — إعادة تنفيذ أيٍّ منها لا تُعيد الثغرة
+  const up = fs.readFileSync(path.join(ROOT, 'db', 'UPLOADER.sql'), 'utf8');
+  has(up, 'new.verified := false; new.rating_avg := 0; new.rating_n := 0;', 'UPLOADER.sql يحمل حارس الإدراج');
+  const so = fs.readFileSync(path.join(ROOT, 'db', 'SUBJECT-SLUG-OWNER.sql'), 'utf8');
+  has(so, 'create policy subjects_delete on qbank.subjects for delete', 'وSUBJECT-SLUG-OWNER.sql السياسات الثلاث');
+  no(so, 'create policy subjects_write on qbank.subjects for all', 'ولا «for all» فيه');
+  const bd = fs.readFileSync(path.join(ROOT, 'db', 'BOARD.sql'), 'utf8');
+  has(bd, 'case when me is null then null', 'وBOARD.sql يخفي الحضور عن الزائر');
+  // المستودع: المحتوى ليس كودًا
+  const gi = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
+  has(gi, 'IMPORT-AMSU*.sql', '★ H-05: بنوك الأسئلة لا تدخل المستودع');
+  has(gi, '*-backup-source.json', 'ولا نسخة المصدر');
+  const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'ios.yml'), 'utf8');
+  has(wf, 'permissions:\n  contents: read', 'M-09: رمز البناء يقرأ فقط');
+  ok(/uses: actions\/checkout@[0-9a-f]{40}/.test(wf), 'والإجراءات مثبّتة بالبصمة');
+  ok(/uses: actions\/setup-node@[0-9a-f]{40}/.test(wf), 'كلها');
+  ok(fs.existsSync(path.join(ROOT, 'mobile', 'package-lock.json')), 'وقفل اعتمادات الغلاف موجود');
+  has(wf, 'run: npm ci --no-audit --no-fund', 'ويُستعمل في البناء');
+}
+
+describe('١٩٣د · الواجهة: لا جلسة من رابط غريب، ولا سكربت في رابط');
+{
+  const dom = makeDom('#/'), W = dom.window, A = W.QBANK, doc = W.document;
+  const pl = W.btoa(unescape(encodeURIComponent(JSON.stringify({ sub:'u-x', email:'x@x.x' }))));
+  A.store.remove('login_pending');
+  eq(A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=3600'), false, '★ H-01: رمزٌ في الهاش بلا دخول معلّق لا يُقبل');
+  ok(!A.api.user(), 'ولا جلسة');
+  A.store.set('login_pending', Date.now() - 16 * 60 * 1000);
+  eq(A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=3600'), false, 'ودخولٌ معلّق قديم (١٦ دقيقة) لا يكفي');
+  A.api.auth.markPending();
+  eq(A.api.auth.captureFromHash('#access_token=h.' + pl + '.s&refresh_token=r&expires_in=3600'), true, 'ومع دخول معلّق حديث يُقبل');
+  eq(A.store.get('login_pending', 'gone'), 'gone', 'ويُستهلك');
+  eq(A.api.auth.captureFromHash('#access_token=%E0%A4%A&refresh_token=r'), false, 'L-07: ترميز معطوب لا يُسقط الإقلاع');
+  eq(A.api.auth.codeFrom('?code=abc123def456&x=1'), 'abc123def456', 'رمز التبديل يُقرأ من الاستعلام');
+  eq(A.api.auth.codeFrom('?code=<script>'), '', 'ولا يُقبل إلا بحروفه');
+  /* الرابط والمصدر لا يحملان سكربتًا */
+  const a = A.dom.el('a', { href:'javascript:alert(1)', text:'x' });
+  ok(!a.hasAttribute('href'), '★ L-06: href بمخطّط javascript: يُسقَط');
+  const a2 = A.dom.el('a', { href:'data:text/html,x', text:'x' });
+  ok(!a2.hasAttribute('href'), 'وdata: لا يصلح رابطًا');
+  eq(A.dom.el('a', { href:'#/p/u1' }).getAttribute('href'), '#/p/u1', 'ورابط داخلي يمرّ');
+  eq(A.dom.el('a', { href:'https://wa.me/966580805553' }).getAttribute('href'), 'https://wa.me/966580805553', 'ورابط https يمرّ');
+  eq(A.dom.el('img', { src:'data:image/png;base64,AAAA' }).getAttribute('src'), 'data:image/png;base64,AAAA', 'وصورة data: تمرّ مصدرًا');
+  ok(!A.dom.el('img', { src:' JavaScript:x' }).hasAttribute('src'), 'وjavascript: في المصدر يُسقَط ولو بحروف كبيرة');
+  ok(!A.dom.el('div', { onclick:'alert(1)' }).hasAttribute('onclick'), 'ولا سمات أحداث');
+  const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+  has(sw, "if (res.ok && res.type === 'basic')", 'L-08: عامل الخدمة لا يخبّئ ردًّا معطوبًا');
+  has(sw, "const target = new URL(hash, self.registration.scope).href;", 'ووجهة الإشعار داخل التطبيق نسبةً إلى نطاقه');
+  W.close();
 }
 
 /* --- التقرير: لا يُطبع قبل اكتمال كل فحص غير متزامن --- */
