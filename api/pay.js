@@ -13,8 +13,31 @@
   قد يتأخر أو يسقط. فوجودهما معًا يضمن وصول ما دُفع ثمنه، وتفرّد
   provider_ref في القاعدة يضمن ألّا يُمنح مرتين مهما وصل الاثنان.
 */
-const { rpc, userFromToken, bearer } = require('./_lib/supa.js');
+const { rpc, userFromToken, bearer, creds } = require('./_lib/supa.js');
 const gateway = require('./_lib/gateway.js');
+const guard = require('./_lib/guard.js');
+
+/*
+  ★ الأصل الذي تعود إليه البوابة أصلُنا نحن لا ما يرسله المتصفح.
+  كان body.origin يُصدَّق، فيستطيع طالبٌ أن يجعل Tap تعيد الدافع إلى
+  نطاقٍ شبيه بعد الدفع (تصيّد «أدخل بطاقتك ثانية») ويوجّه إشعار الويب هوك
+  إلى خادمه (تدقيق M-01). المسموح: موقعنا، أو نطاق معاينة Vercel.
+*/
+const SITE = 'https://amsuq.alsoqoor.com';
+function siteOrigin(req){
+  const host = String((req.headers && req.headers.host) || '').toLowerCase();
+  if (host === 'amsuq.alsoqoor.com' || /^[a-z0-9-]+\.vercel\.app$/.test(host)) return 'https://' + host;
+  return SITE;
+}
+
+/* صاحب نيّة الشراء — كي لا يُسوّي طالبٌ عمليةَ غيره ولا يقرأ نتيجتها (تدقيق L-02) */
+async function paymentOwner(paymentId){
+  const { url, key } = creds();
+  const r = await fetch(url + '/rest/v1/payments?id=eq.' + encodeURIComponent(paymentId) + '&select=user_id',
+    { headers: { 'apikey': key, 'Authorization': 'Bearer ' + key, 'Accept-Profile': 'qbank' } });
+  const rows = r.ok ? await r.json().catch(() => []) : [];
+  return rows && rows[0] ? rows[0].user_id : null;
+}
 
 /*
   التسوية المشتركة بين confirm وwebhook.
@@ -22,13 +45,15 @@ const gateway = require('./_lib/gateway.js');
   الحالة، أي دفعة — يأتي من Tap نفسها. فلو زوّر أحدٌ نداءً كاملًا لهذا
   المسار بمعرّف عملية لم تُدفع، سألنا Tap فأجابت بأنها لم تُقبض.
 */
-async function settleFromCharge(chargeId){
+async function settleFromCharge(chargeId, forUser){
   if (!chargeId) return { ok:false, reason:'no_charge' };
 
   const ch = await gateway.retrieveCharge(chargeId);
   if (!ch.ok) return { ok:false, reason:'gateway_unreachable' };
   if (!ch.paid) return { ok:false, reason:'not_paid', status: ch.status };
   if (!ch.paymentId) return { ok:false, reason:'no_reference' };
+  /* من المتصفح: العملية لصاحب الجلسة وحده. الويب هوك (forUser فارغ) يسوّي للجميع */
+  if (forUser && (await paymentOwner(ch.paymentId)) !== forUser) return { ok:false, reason:'not_yours' };
 
   // مفتاح الخدمة هنا فقط، وبعد أن صار الدفع مؤكدًا من مصدره
   const out = await rpc('settle_payment', {
@@ -66,7 +91,8 @@ module.exports = async function handler(req, res){
     if (!user) return res.status(401).json({ error:'جلسة غير صالحة' });
 
     if (action === 'confirm'){
-      const out = await settleFromCharge(body.charge_id);
+      const out = await settleFromCharge(body.charge_id, user.id);
+      if (out && out.reason === 'not_yours') return res.status(403).json({ error:'هذه العملية ليست لك' });
       return res.status(200).json({ ok: !!(out && out.ok), result: out });
     }
 
@@ -94,7 +120,7 @@ module.exports = async function handler(req, res){
       return res.status(400).json({ error: why, reason: intent && intent.reason });
     }
 
-    const origin = body.origin || ('https://' + (req.headers.host || ''));
+    const origin = siteOrigin(req);
     const charge = await gateway.createCharge({
       amountHalalas: intent.amount_halalas,
       currency: intent.currency,
@@ -102,7 +128,7 @@ module.exports = async function handler(req, res){
       paymentId: intent.payment_id,
       email: user.email,
       redirectUrl: origin + '/#/pay/' + intent.payment_id,
-      webhookUrl: origin + '/api/pay?hook=1'
+      webhookUrl: SITE + '/api/pay?hook=1'       // الإشعار إلى خادم الإنتاج دائمًا
     });
 
     if (!charge.ok)
@@ -114,7 +140,7 @@ module.exports = async function handler(req, res){
     });
 
   } catch(e){
-    console.error('pay: ' + e.message);
-    return res.status(500).json({ error:'خطأ في الخادم' });
+    return guard.fail(res, e, 'pay');
   }
 };
+module.exports.siteOrigin = siteOrigin;

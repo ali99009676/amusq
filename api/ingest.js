@@ -18,6 +18,7 @@ const { slugify } = require('./_lib/sanctity.js');
 const { aiRead, aiReadPart, aiReadMedia, chunkText } = require('./_lib/reader.js');
 const { callAI, pickProvider } = require('./_lib/provider.js');
 const supa = require('./_lib/supa.js');
+const guard = require('./_lib/guard.js');
 
 /*
   ★ الملف الكبير يأتي من مخزن Supabase لا في جسم الطلب.
@@ -34,17 +35,40 @@ const supa = require('./_lib/supa.js');
   وإن لم تكن الدالة منشورة بعد بقي الحكم القديم كما هو: مجلده وحده.
 */
 async function canReadUpload(clean, userId, token){
-  if (userId && clean.indexOf(userId + '/') === 0) return true;
+  if (userId && clean.slice(0, 37) === userId + '/') return true;
   try { return (await supa.rpc('can_read_upload', { p_path: clean }, token)) === true; }
   catch(e){ return false; }
 }
 
-async function fetchFromStorage(storagePath, userId, token){
-  const { url, key } = supa.creds();
+/*
+  ★ شكل المسار واحدٌ لا غير: <uuid>/<اسم ملف واحد> — كما يكتبه storageUpload
+  في المتصفح (معرّف الرافع، شرطة مائلة واحدة، ثم اسمٌ من حروف وأرقام ونقاط).
+  كان الحكم «يبدأ بمعرّفي» فيمرّ «معرّفي/../../auth/v1/admin/users»: النقطتان
+  لا يُرمّزهما encodeURIComponent، ومحلّل الروابط في fetch يطويهما — فيقرأ
+  الخادم بمفتاح الخدمة أي مسارٍ في المشروع لا ملفًا في المخزن (تدقيق C-02).
+  فالمسار يُرفض قبل أن يلمس الشبكة إن خرج عن الشكل، ثم يُحكم على الرابط
+  بعد تطبيعه: نفس الأصل ونفس المجلد وإلا لا طلب.
+*/
+const SAFE_PATH = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[\w.\-\u0600-\u06FF]{1,120}$/i;
+const UPLOADS = '/storage/v1/object/uploads/';
+function safeStoragePath(storagePath){
   const clean = String(storagePath || '').replace(/^\/+/, '');
-  if (!clean || !(await canReadUpload(clean, userId, token)))
-    throw new Error('مسار الملف ليس لصاحب الجلسة');
-  const r = await fetch(url + '/storage/v1/object/uploads/' + clean.split('/').map(encodeURIComponent).join('/'), {
+  if (!SAFE_PATH.test(clean)) return null;
+  const name = clean.split('/')[1];
+  if (name === '.' || name === '..') return null;
+  return clean;
+}
+
+async function fetchFromStorage(storagePath, userId, token, fetchFn){
+  const { url, key } = supa.creds();
+  const clean = safeStoragePath(storagePath);
+  if (!clean) throw Object.assign(new Error('مسار الملف غير صالح'), { status: 400, kind: 'file' });
+  if (!(await canReadUpload(clean, userId, token)))
+    throw Object.assign(new Error('مسار الملف ليس لصاحب الجلسة'), { status: 403, kind: 'file' });
+  const target = new URL(UPLOADS + clean.split('/').map(encodeURIComponent).join('/'), url);
+  if (target.origin !== new URL(url).origin || target.pathname.indexOf(UPLOADS) !== 0 || target.search || target.hash)
+    throw Object.assign(new Error('مسار الملف غير مسموح'), { status: 400, kind: 'file' });
+  const r = await (fetchFn || fetch)(target.href, {
     headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
   });
   if (!r.ok) throw new Error('تعذّر جلب الملف من المخزن (' + r.status + ')');
@@ -63,11 +87,27 @@ function rulesLookSound(qs){
   return (withOpts / qs.length) >= 0.6;
 }
 
+/* سقف الصور في الطلب الواحد: ورقةٌ مصوَّرة من زوايا، لا ألبومًا كاملًا */
+const MAX_IMAGES = 16;
+
 module.exports = async function handler(req, res){
   if (req.method !== 'POST') return res.status(405).json({ error:'POST فقط' });
   try{
+    /*
+      ★ الهوية أولًا — قبل أي قراءة. كانت الجلسة تُطلب في مسار المخزن وحده
+      لأنه الوحيد الذي يحتاج «من هو»؛ لكن قراءة الصور والأجزاء بالذكاء أغلى
+      ما في المنصة، وبابٌ بلا جلسة فاتورةٌ يدفعها علي عن غرباء (تدقيق H-03).
+    */
+    const who = await guard.requireUser(req);
+    if (!who) return res.status(401).json({ error:'جلسة غير صالحة', kind:'auth' });
+    const { user, token } = who;
+    await guard.rateLimit(user.id, 'ingest', 150, 600);
+
     const { filename, subject_name, sanctity_mode, force_ai, images, storage_path, text_part } = req.body || {};
     let content_base64 = (req.body || {}).content_base64;
+
+    if (Array.isArray(images) && images.length > MAX_IMAGES)
+      return res.status(400).json({ error:'حدّ الصور ' + MAX_IMAGES + ' في الطلب الواحد — أرسل الباقي في طلبٍ آخر', kind:'file' });
 
     /*
       ═══ وضع الجزء: قراءةُ نصٍّ واحدٍ بالذكاء ═══
@@ -76,15 +116,12 @@ module.exports = async function handler(req, res){
     */
     if (typeof text_part === 'string'){
       if (pickProvider() === 'none') return res.status(503).json({ error:'لا مفتاح ذكاء على الخادم', kind:'no_ai' });
-      const r = await aiReadPart(text_part, callAI);
+      const r = await aiReadPart(text_part.slice(0, 60000), callAI);
       return res.status(200).json({ ok:true, questions: r.questions, usage: r.usage || null });
     }
 
-    /* ملفٌ في المخزن بدل الجسم — يحتاج جلسةً صالحة ليُعرف صاحب المجلد */
+    /* ملفٌ في المخزن بدل الجسم — المسار يُفحص شكلًا وملكيةً قبل أي جلب */
     if (storage_path && !content_base64){
-      const token = supa.bearer(req);
-      const user = await supa.userFromToken(token);
-      if (!user) return res.status(401).json({ error:'جلسة غير صالحة' });
       const buf0 = await fetchFromStorage(storage_path, user.id, token);
       content_base64 = buf0.toString('base64');
     }
@@ -230,7 +267,10 @@ module.exports = async function handler(req, res){
       questions
     });
   } catch(e){
-    return res.status(500).json({ error:'تعذّرت قراءة الملف: ' + e.message });
+    return guard.fail(res, e, 'ingest');
   }
 };
 module.exports.rulesLookSound = rulesLookSound;
+module.exports.fetchFromStorage = fetchFromStorage;
+module.exports.safeStoragePath = safeStoragePath;
+module.exports.SAFE_PATH = SAFE_PATH;

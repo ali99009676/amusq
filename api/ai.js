@@ -7,6 +7,8 @@
 */
 const { enforce, verbatimOk } = require('./_lib/sanctity.js');
 const { callAI } = require('./_lib/provider.js');
+const supa = require('./_lib/supa.js');
+const guard = require('./_lib/guard.js');
 
 /*
   برومبتان لا واحد. السبب أن البرومبت الصارم يقول للنموذج «لا تلمس النص»،
@@ -105,10 +107,50 @@ async function callClaude(batch, mode){
   return parsed;
 }
 
+/*
+  ★ الخصم في الخادم لا في المتصفح.
+  كان المتصفح يخصم الرصيد (spend_credits) ثم ينادي هذا المسار — ولا شيء
+  يربط النداءين: من يتجاوز الخصم يُثري مجانًا على فاتورة المنصة، وكانت
+  الدالة نفسها بلا جلسة أصلًا (تدقيق H-02). الآن: الهوية من Supabase، ثم
+  الخصم بمفتاح الخدمة (spend_credits_for — لا تُنادى إلا من الخادم، والسعر
+  من الإعدادات لا من الطلب)، ثم الذكاء، وإن سقط الذكاء رُدّ الرصيد هنا.
+*/
+async function debit(userId, count, draftId){
+  let pay;
+  try {
+    pay = await supa.rpc('spend_credits_for', { p_user: userId, p_questions: count, p_draft: draftId || null });
+  } catch(e){
+    /* الدالة غير منشورة بعد = الباب مغلق لا مفتوح: لا إثراء بلا خصم */
+    const err = new Error('الإثراء متوقف مؤقتًا — نفّذ db/HARDEN-1.sql على القاعدة');
+    err.status = 503; err.kind = 'setup';
+    throw err;
+  }
+  if (!pay || !pay.ok){
+    const d = pay || {};
+    const err = new Error(d.reason === 'insufficient'
+      ? 'رصيدك ' + (d.balance || 0) + ' كوين ولا يكفي — يلزم ' + (d.needed || count)
+      : d.reason === 'closed' ? 'الإثراء موقوف مؤقتًا' : 'تعذّر حسم الرصيد');
+    err.status = 402; err.kind = d.reason || 'credits';
+    err.balance = d.balance || 0; err.needed = d.needed || 0;
+    throw err;
+  }
+  return pay;
+}
+
+async function refund(userId, n, draftId){
+  try { await supa.rpc('refund_credits', { p_user: userId, n, p_reason:'تعذّرت الدفعة', p_draft: draftId || null }); }
+  catch(e){ console.error('[ai] refund failed ' + e.message.slice(0, 120)); }
+}
+
 module.exports = async function handler(req, res){
   if (req.method !== 'POST') return res.status(405).json({ error:'POST فقط' });
   try{
-    const { questions, sanctity_mode } = req.body || {};
+    const who = await guard.requireUser(req);
+    if (!who) return res.status(401).json({ error:'جلسة غير صالحة', kind:'auth' });
+    const { user } = who;
+    await guard.rateLimit(user.id, 'ai', 90, 600);
+
+    const { questions, sanctity_mode, draft_id } = req.body || {};
     if (!Array.isArray(questions) || !questions.length)
       return res.status(400).json({ error:'أرسل مصفوفة questions' });
     // ٤٠ بدل ٢٥: التعليمات تُرسل مرة لكل دفعة، فالدفعة الأكبر توزّعها على أسئلة أكثر
@@ -116,27 +158,40 @@ module.exports = async function handler(req, res){
       return res.status(400).json({ error:'حد الدفعة ٤٠ سؤالًا — قسّم الملف دفعات' });
     // أي قيمة غير معروفة تسقط إلى strict: الافتراض الآمن هو عدم المساس بالنص
     const mode = sanctity_mode === 'enhanced' ? 'enhanced' : 'strict';
+    const draft = /^[0-9a-f-]{36}$/i.test(String(draft_id || '')) ? draft_id : null;
 
-    const aiOut = await callClaude(questions, mode);
+    const pay = await debit(user.id, questions.length, draft);
+
+    let aiOut;
+    try { aiOut = await callClaude(questions, mode); }
+    catch(e){ if (pay.spent > 0) await refund(user.id, pay.spent, draft); throw e; }
 
     // الطبقة الثانية من قاعدة القداسة: الأصل يُحفظ دائمًا، ويفوز على النموذج في strict
-    const enforced = questions.map((orig, i) => {
-      const item = enforce(orig, aiOut[i] || {}, mode);
-      if (!verbatimOk(orig, item))
-        throw new Error('فشل فحص المطابقة الحرفية للسؤال ' + (i + 1) + ' — أُوقفت الدفعة');
-      return item;
-    });
+    let enforced;
+    try {
+      enforced = questions.map((orig, i) => {
+        const item = enforce(orig, aiOut[i] || {}, mode);
+        if (!verbatimOk(orig, item))
+          throw Object.assign(new Error('فشل فحص المطابقة الحرفية للسؤال ' + (i + 1) + ' — أُوقفت الدفعة'),
+                              { status: 422, kind: 'sanctity' });
+        return item;
+      });
+    } catch(e){ if (pay.spent > 0) await refund(user.id, pay.spent, draft); throw e; }
     /* ★ كان هنا `model` مجرّدًا — متغيّرٌ محليٌّ داخل callClaude لا يراه هذا
        النطاق، فكان كل نجاحٍ ينتهي بـ ReferenceError يُلتقط أدناه ويُعاد ٥٠٠.
        أي أن المسار لم يكن ليعمل حتى بمفتاحٍ سليم. */
     return res.status(200).json({ ok:true, sanctity_mode: mode,
                                  model: aiOut._model || null,
                                  provider: aiOut._provider || null,
-                                 usage: aiOut._usage || null, questions: enforced });
+                                 usage: aiOut._usage || null, questions: enforced,
+                                 spent: pay.spent || 0, balance: pay.balance });
   } catch(e){
     /* ★ ٥٠٠ لكل شيء تكذب على المنادي: نفادُ حصّةٍ ليس عطلًا في خادمنا،
-       والواجهة تحتاج أن تفرّق كي تعرض المخرج المناسب لا «حاول ثانية». */
-    return res.status(e.status || 500).json({ error: e.message, kind: e.kind || 'other' });
+       والواجهة تحتاج أن تفرّق كي تعرض المخرج المناسب لا «حاول ثانية».
+       والرصيد يرافق خطأ النقص كي تعرضه الواجهة رقمًا. */
+    if (e && e.kind === 'insufficient')
+      return res.status(402).json({ error: e.message, kind: e.kind, balance: e.balance, needed: e.needed });
+    return guard.fail(res, e, 'ai');
   }
 };
 module.exports.callClaude = callClaude;

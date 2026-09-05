@@ -16,12 +16,13 @@
   فقط — ولا يجلب تقدّم ألف طالب ليعدّه بنفسه.
 */
 const { rpc } = require('./_lib/supa.js');
+const { safeEqual } = require('./_lib/guard.js');
 
 function keys(){
   return {
     pub:  process.env.VAPID_PUBLIC_KEY  || '',
     priv: process.env.VAPID_PRIVATE_KEY || '',
-    subject: process.env.VAPID_SUBJECT  || 'mailto:stop.shankl@gmail.com'
+    subject: process.env.VAPID_SUBJECT  || 'https://amsuq.alsoqoor.com'
   };
 }
 
@@ -76,7 +77,8 @@ module.exports = async function handler(req, res){
   const secret = process.env.CRON_SECRET || '';
   const auth = String(req.headers.authorization || '');
   const given = auth.indexOf('Bearer ') === 0 ? auth.slice(7) : String(req.headers['x-cron-secret'] || '');
-  if (!secret || given !== secret) return res.status(401).json({ error:'غير مصرَّح' });
+  // مقارنة بزمنٍ ثابت: «!==» تكشف طول السرّ وأول حرفٍ مختلف بالتوقيت (تدقيق L-03)
+  if (!secret || !safeEqual(given, secret)) return res.status(401).json({ error:'غير مصرَّح' });
   if (!k.pub || !k.priv) return res.status(503).json({ error:'مفاتيح VAPID غير مضبوطة' });
 
   let webpush;
