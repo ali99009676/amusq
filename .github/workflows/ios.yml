@@ -40,12 +40,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # ★ Node 22 لا 20: jsdom (للفحوص) يعتمد undici 8 الذي يشترط Node ≥ 22.19 —
+      #   على Node 20 ينهار الفحص قبل أن يبدأ (markAsUncloneable is not a function)
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: تثبيت اعتمادات الجذر (jsdom للفحوص)
         run: npm ci --ignore-scripts
+
+      # الفحوص تستدعي دوال الخادم نفسها (api/_lib) فتحتاج اعتماداتها: fflate وpdf-parse
+      - name: اعتمادات دوال الخادم
+        working-directory: api
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: بناء الموقع وفحصه — لا يُرفع ما لم يمرّ الفحص
         run: |
