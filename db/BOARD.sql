@@ -208,7 +208,9 @@ begin
          coalesce(sum(a.duration_s), 0)::int,
          max(a.created_at),
          qbank.name_blocked(p.name),
-         exists (select 1 from qbank.devices d where d.user_id = p.id and d.last_seen > now() - win)
+         /* ★ الحضور للمسجَّلين فقط: الزائر يرى الترتيب لا من يجلس أمام الشاشة الآن (تدقيق M-06) */
+         case when me is null then null
+              else exists (select 1 from qbank.devices d where d.user_id = p.id and d.last_seen > now() - win) end
     from qbank.attempts a
     join qbank.profiles p on p.id = a.user_id
     left join qbank.universities u on u.id = p.university_id

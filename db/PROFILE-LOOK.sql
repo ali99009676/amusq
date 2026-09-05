@@ -29,10 +29,20 @@ alter table qbank.profiles drop constraint if exists profiles_cover_preset_chk;
 alter table qbank.profiles add constraint profiles_cover_preset_chk
   check (cover_preset in ('', 'g1','g2','g3','g4','g5','g6','g7','g8'));
 
--- الغلاف من مخزننا وفي مجلد صاحبه فقط (سياسة المخزن تمنع الكتابة خارج مجلده أصلًا)
+/*
+  الغلاف والصورة من مخزننا وفي مجلد صاحبهما فقط — بادئةٌ كاملة لا جزءًا:
+  كان الشرط position(...) > 0 فيمرّ رابطٌ خارجي يحمل البادئة في استعلامه
+  ويتتبّع كل من فتح الصفحة (تدقيق M-08). المسموح: أصل المشروع، المجلد،
+  اسم ملف صورة، وكاسر ذاكرة ?v=أرقام لا غير.
+*/
 alter table qbank.profiles drop constraint if exists profiles_cover_url_chk;
 alter table qbank.profiles add constraint profiles_cover_url_chk
-  check (cover_url = '' or position('/storage/v1/object/public/avatars/' || id::text || '/' in cover_url) > 0);
+  check (cover_url = '' or cover_url ~ ('^https://gbgjadqwqzxxyhydlgtj\.supabase\.co/storage/v1/object/public/avatars/'
+                                       || id::text || '/[a-z0-9_-]+\.(jpg|jpeg|png|webp)(\?v=[0-9]{1,16})?$'));
+alter table qbank.profiles drop constraint if exists profiles_avatar_url_chk;
+alter table qbank.profiles add constraint profiles_avatar_url_chk
+  check (avatar_url = '' or avatar_url ~ ('^https://gbgjadqwqzxxyhydlgtj\.supabase\.co/storage/v1/object/public/avatars/'
+                                         || id::text || '/[a-z0-9_-]+\.(jpg|jpeg|png|webp)(\?v=[0-9]{1,16})?$'));
 
 -- ═══ الملف العام يُرجع الشكل مع البيانات — الصفحة تُرسم بستايل صاحبها ═══
 create or replace function qbank.public_profile(p_user uuid)

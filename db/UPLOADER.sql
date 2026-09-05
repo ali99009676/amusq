@@ -102,6 +102,14 @@ create or replace function qbank.subjects_owner_guard()
 returns trigger language plpgsql as $$
 begin
   if tg_op = 'INSERT' then
+    /* ★ الصف الجديد يبدأ بلا ثقة ولا سمعة — يمنحها المشرف لاحقًا.
+       كان الحارس يحمي التعديل وحده، فيُدرج الرافع مادةً «موثَّقة» بتقييم
+       خمس نجوم من مئة تقييم لم تحدث (تدقيق H-07). */
+    if auth.uid() is not null and not qbank.is_admin() then
+      new.verified := false; new.rating_avg := 0; new.rating_n := 0;
+      new.owner_edit := false; new.q_count := 0;
+      if new.status = 'suspended' then new.status := 'published'; end if;
+    end if;
     if not new.published and new.status = 'suspended' then new.status := 'published'; end if;
     return new;
   end if;

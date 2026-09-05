@@ -60,10 +60,24 @@ update qbank.subjects
  where slug is null or btrim(slug) = '';
 
 -- ═══ ٣) المالك يعدّل مادته — لا مواد الناس ═══
-drop policy if exists subjects_write on qbank.subjects;
-create policy subjects_write on qbank.subjects for all
+/*
+  ★ ثلاث سياسات لا «for all» واحدة: الحذف له شرطه الخاص.
+  مادةٌ اشتراها أحد لا يمحوها رافعها — الحذف يُسقط أسئلتها من تحت من
+  دفع ثمنها (تدقيق H-07). المشرف وحده يحذف المبيع.
+*/
+drop policy if exists subjects_write  on qbank.subjects;
+drop policy if exists subjects_insert on qbank.subjects;
+drop policy if exists subjects_update on qbank.subjects;
+drop policy if exists subjects_delete on qbank.subjects;
+create policy subjects_insert on qbank.subjects for insert
+  with check (qbank.is_admin() or created_by = auth.uid());
+create policy subjects_update on qbank.subjects for update
   using      (qbank.is_admin() or created_by = auth.uid())
   with check (qbank.is_admin() or created_by = auth.uid());
+create policy subjects_delete on qbank.subjects for delete
+  using (qbank.is_admin() or (created_by = auth.uid()
+         and not exists (select 1 from qbank.entitlements e
+                          where e.subject_id = qbank.subjects.id and e.user_id <> auth.uid())));
 
 -- ═══ تحقّق ═══
 select count(*) filter (where slug is null or btrim(slug) = '') as بلا_رابط,
