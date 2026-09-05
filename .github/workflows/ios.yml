@@ -96,6 +96,9 @@ jobs:
       - name: اختيار Xcode
         run: sudo xcode-select -s /Applications/Xcode.app && xcodebuild -version
 
+      # ★ هوية التوزيع صراحةً: بدونها يوقّع Xcode الأرشيف بهوية «تطوير» ويحتاج ملف
+      #   تعريف تطويريًا لا يُنشأ إلا بجهاز مسجَّل في الحساب — ولا جهاز على خادم GitHub.
+      #   بهوية التوزيع يُنشئ التوقيع السحابي ملف App Store مباشرةً بلا أي جهاز.
       - name: أرشفة موقّعة سحابيًا
         working-directory: mobile
         env:
@@ -112,6 +115,7 @@ jobs:
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM=327HJYMMD2 \
             CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             TARGETED_DEVICE_FAMILY=1 \
             MARKETING_VERSION="$MARKETING_VERSION" \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}"
