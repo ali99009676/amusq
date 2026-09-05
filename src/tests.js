@@ -8223,7 +8223,7 @@ describe('١٩١ · مشروع التطبيق: الملفات التي يحتا�
   has(patch, "setString('CFBundleDisplayName', 'مراجعة')", 'والاسم العربي');
   has(patch, "addOnce('ITSAppUsesNonExemptEncryption', '\\t<false/>')", 'وبلا سؤال التشفير مع كل رفع');
   const wf = fs2.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'ios.yml'), 'utf8');
-  has(wf, 'runs-on: macos-15', '★ يبني على macOS في GitHub — بلا جهاز ماك');
+  has(wf, 'runs-on: macos-26', '★ يبني على macOS 26 في GitHub (Xcode 26 — شرط أبل للرفع منذ أبريل ٢٠٢٦) — بلا جهاز ماك');
   has(wf, 'node src/tests.js', 'ولا يُرفع بناءٌ لم تمرّ فحوصه');
   has(wf, '-allowProvisioningUpdates', 'والتوقيع سحابي — لا شهادة في المستودع');
   ['ASC_KEY_ID','ASC_ISSUER_ID','ASC_API_KEY_P8'].forEach(k => has(wf, 'secrets.' + k, 'السرّ ' + k));
