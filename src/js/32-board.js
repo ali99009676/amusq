@@ -129,7 +129,8 @@ function lbPodium(rows){
     return el('div', { class:'lb-podium__p lb-podium__p--' + place }, [
       el('span', { class:'lb-podium__av', text: r.avatar_url ? '' : (r.avatar || '👤') },
         r.avatar_url ? [ el('img', { src: r.avatar_url, alt:'' }) ] : null),
-      el('span', { class:'lb-podium__name' + (r.blocked ? ' blk' : ''), text: r.name }),
+      /* ★ الاسم بابٌ إلى صاحبه: من تصدّر يستحق أن يُعرف — بنوكه وتقييماته خلف ضغطة */
+      el('a', { class:'lb-podium__name lb-link' + (r.blocked ? ' blk' : ''), href: QBANK.peer.href(r.id), text: r.name }),
       el('span', { class:'lb-podium__n num', text: Board.N(r.tries) + ' اختبارًا' }),
       el('span', { class:'lb-podium__rank num', 'aria-label':'المركز ' + Board.N(place), text: Board.N(place) })
     ]);
@@ -178,7 +179,7 @@ function lbTable(rows, meId){
         el('span', { class:'lb-row__av', 'aria-hidden':'true', text: r.avatar_url ? '' : (r.avatar || '👤') },
           r.avatar_url ? [ el('img', { src: r.avatar_url, alt:'' }) ] : null),
         el('span', { class:'lb-row__x' }, [
-          el('span', { class:'lb-row__name' + (r.blocked ? ' blk' : ''), text: r.name }, [
+          el('a', { class:'lb-row__name lb-link' + (r.blocked ? ' blk' : ''), href: QBANK.peer.href(r.id), text: r.name }, [
             mine ? el('span', { class:'badge badge--gold', text:'أنت' }) : null,
             r.blocked ? el('span', { class:'badge badge--bad', text:'محظور' }) : null,
             r.online ? el('i', { class:'lb-online__dot', title:'متصل الآن', 'aria-label':'متصل الآن' }) : null

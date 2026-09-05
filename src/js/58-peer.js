@@ -117,48 +117,32 @@ const ViewPeer = {
           return;
         }
 
+        /* ★ الصفحة بشكل صاحبها: ستايله ولونه وغلافه (78-look) — القيم من القاعدة
+           لا من الجهاز، والافتراضي كلاسيكي بلون المنصة لمن لم يختر بعد */
+        const L = QBANK.look;
+        L.apply(box, p);
+        box.appendChild(L.cover(p));
+
         /* البطل: وجهه واسمه وسمعته وعطاؤه */
         const me = QBANK.api.user();
         const isMe = me && me.id === p.id;
-        box.appendChild(el('div', { class:'card pf-hero' }, [
-          el('div', { class:'pf-hero__avwrap' }, [ Peer.face(p, 'peer-face--lg') ]),
-          el('div', { class:'pf-hero__x' }, [
-            el('strong', { class:'pf-hero__n', text: p.name || 'طالب مراجعة' }),
-            el('span', { class:'pf-hero__mail', text:
-              [p.university, p.college].filter(Boolean).join(' · ') || 'بلا جامعة محدّدة' }),
-            Peer.stars(p.rating_avg, p.rating_n),
-            p.bio ? el('p', { class:'pf-hero__bio', text: p.bio }) : null,
-            isMe ? el('a', { class:'btn btn--sm btn--soft', href:'#/account/profile',
-              style:'margin-top:8px', text:'هذا ملفك — حرّره' }) : null,
-            /* ★ ملفٌ لا يُرسَل لا يُرى. سمعةُ الرافع تُبنى بمن يفتح ملفه،
-               ولا أحد يفتحه ما لم يصل إليه رابطٌ من صاحبه أو من زميل. */
-            QBANK.share ? el('div', { style:'margin-top:10px' }, [
-              QBANK.share.shareButton({
-                url: QBANK.share.profileUrl(p.id),
-                title: (p.name || 'طالب') + ' على مراجعة',
-                text: isMe ? 'هذا ملفي على منصة مراجعة'
-                           : 'شوف ملف ' + (p.name || 'هذا الطالب') + ' على مراجعة',
-                label: isMe ? '⤴ انشر ملفك' : '⤴ انشر الملف' })
-            ]) : null
-          ])
-        ]));
+        box.appendChild(L.hero(p, { extra: [
+          isMe ? el('a', { class:'btn btn--sm btn--soft', href:'#/account/profile',
+            style:'margin-top:8px', text:'هذا ملفك — حرّره' }) : null,
+          /* ★ ملفٌ لا يُرسَل لا يُرى. سمعةُ الرافع تُبنى بمن يفتح ملفه،
+             ولا أحد يفتحه ما لم يصل إليه رابطٌ من صاحبه أو من زميل. */
+          QBANK.share ? el('div', { style:'margin-top:10px' }, [
+            QBANK.share.shareButton({
+              url: QBANK.share.profileUrl(p.id),
+              title: (p.name || 'طالب') + ' على مراجعة',
+              text: isMe ? 'هذا ملفي على منصة مراجعة'
+                         : 'شوف ملف ' + (p.name || 'هذا الطالب') + ' على مراجعة',
+              label: isMe ? '⤴ انشر ملفك' : '⤴ انشر الملف' })
+          ]) : null
+        ] }));
 
         /* عطاؤه بالأرقام */
-        box.appendChild(el('div', { class:'peer-stats' }, [
-          el('div', { class:'peer-stat' }, [
-            el('b', { class:'num', text: QBANK.views.arNum(p.uploads || 0) }),
-            el('span', { text:'مادة مرفوعة' }) ]),
-          el('div', { class:'peer-stat' }, [
-            el('b', { class:'num', text: QBANK.views.arNum(p.questions || 0) }),
-            el('span', { text:'سؤالًا أهداه' }) ]),
-          el('div', { class:'peer-stat' }, [
-            el('b', { class:'num', text: Number(p.rating_avg) ? Number(p.rating_avg).toFixed(1) : '—' }),
-            el('span', { text: p.rating_n ? 'من ' + QBANK.views.arNum(p.rating_n) + ' تقييم' : 'بلا تقييم بعد' }) ]),
-          /* ★ «كم اشترى منه غيري» — الرقم الذي يسبق تحويلًا بنكيًا إلى غريب */
-          el('div', { class:'peer-stat' }, [
-            el('b', { class:'num', text: QBANK.views.arNum(p.sales || 0) }),
-            el('span', { text:'طالبًا اشتروا منه' }) ])
-        ]));
+        box.appendChild(L.stats(p));
 
         /* شارات الثقة: تُقال كلمةً لا رقمًا حين تكون كلمة */
         const trust = [];

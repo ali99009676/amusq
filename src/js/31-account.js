@@ -428,6 +428,8 @@ const ViewAccount = {
     const body = el('div', { class:'stack' });
     if (active === 'profile'){
       body.appendChild(accountBody());
+      /* شكل ملفه العام: غلاف ولون وستايل (78-look) — يظهر تحت بياناته مباشرة */
+      if (QBANK.views.lookCard) body.appendChild(QBANK.views.lookCard());
       body.appendChild(campusCard());
     } else if (active === 'uploads'){
       /* ما توقّف رفعه قبل ما اكتمل: المسوّدة تُستأنف من هنا لا من ذاكرة صاحبها */

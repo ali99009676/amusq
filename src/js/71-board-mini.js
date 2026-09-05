@@ -53,7 +53,7 @@ function boardMini(opts){
     if (rest.length) body.appendChild(el('ol', { class:'lb-mini__list', start: rows.length >= 3 ? 4 : 1 }, rest.map(x =>
       el('li', { class:'lb-mini__row' }, [
         el('span', { class:'lb-mini__av', text: x.avatar || '👤' }),
-        el('span', { class:'lb-mini__n' + (x.blocked ? ' blk' : ''), text: x.name }),
+        el('a', { class:'lb-mini__n lb-link' + (x.blocked ? ' blk' : ''), href: QBANK.peer.href(x.id), text: x.name }),
         x.online ? el('i', { class:'lb-online__dot', title:'متصل الآن', 'aria-label':'متصل الآن' }) : null,
         el('span', { class:'spacer' }),
         el('span', { class:'lb-mini__k', text: B.N(x.tries) + ' اختبارًا · ' + B.N(x.best) + '٪' })
