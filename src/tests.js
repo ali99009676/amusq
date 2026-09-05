@@ -8228,7 +8228,7 @@ describe('١٩١ · مشروع التطبيق: الملفات التي يحتا�
   has(wf, '-allowProvisioningUpdates', 'والتوقيع سحابي — لا شهادة في المستودع');
   ['ASC_KEY_ID','ASC_ISSUER_ID','ASC_API_KEY_P8'].forEach(k => has(wf, 'secrets.' + k, 'السرّ ' + k));
   has(wf, 'DEVELOPMENT_TEAM=327HJYMMD2', 'وفريق علي');
-  has(wf, 'TARGETED_DEVICE_FAMILY=1', 'وآيفون وحده في الإصدار الأول — لا لقطات آيباد');
+  has(wf, 'TARGETED_DEVICE_FAMILY=1,2', '★ آيفون وآيباد معًا — بطلب علي؛ والآيباد بشاشة كاملة لا نافذة توافق');
   no(wf, '.p8\n', 'ولا مفتاح مكتوب في الملف');
   const exp = fs2.readFileSync(M('ExportOptions.plist'), 'utf8');
   has(exp, '<string>app-store-connect</string>', 'والتصدير إلى App Store Connect');
