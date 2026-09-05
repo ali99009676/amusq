@@ -281,3 +281,8 @@ a.up-row__x:hover .up-row__t{ color:var(--acc); }
 .oauth__mark{ display:grid; place-items:center; }
 .prov-badge{ display:inline-flex; align-items:center; gap:4px; }
 @media (prefers-reduced-motion: reduce){ .oauth__tile, .oauth__tile:hover{ transition:none; transform:none; } }
+
+/* ═══ ١٦) سياسة الخصوصية + فاصل التذييل ═══ */
+.footer__sep{ margin:0 var(--s2); color:var(--text-3); }
+.privacy__sec h2{ font-size:var(--fs-lg); }
+.privacy__p{ margin:0; max-width:68ch; text-wrap:pretty; }
