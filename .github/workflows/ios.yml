@@ -105,6 +105,7 @@ jobs:
       #   «تطوير» ويحتاج جهازًا مسجَّلًا في الحساب (ولا جهاز على خادم GitHub)، وفرضُ هوية
       #   التوزيع عليه يتعارض مع الآلي. فالتوقيع كله في خطوة التصدير: هناك يوقّع Xcode
       #   بهوية التوزيع السحابية وينشئ ملف App Store بنفسه — بلا جهاز ولا شهادة محفوظة.
+      #   وTARGETED_DEVICE_FAMILY=1,2: آيفون وآيباد معًا بطلب علي (الآيباد بشاشة كاملة لا نافذة توافق) — يلزمه لقطات آيباد في المتجر.
       #   وIPHONEOS_DEPLOYMENT_TARGET=15.0: أبل (ITMS-90068) تشترط من ربيع ٢٠٢٧ حدًّا أدنى iOS 15 — قالب Capacitor يضع 13.
       - name: أرشفة بلا توقيع (التوقيع في التصدير)
         working-directory: mobile
@@ -117,7 +118,7 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             DEVELOPMENT_TEAM=327HJYMMD2 \
-            TARGETED_DEVICE_FAMILY=1 \
+            TARGETED_DEVICE_FAMILY=1,2 \
             IPHONEOS_DEPLOYMENT_TARGET=15.0 \
             MARKETING_VERSION="$MARKETING_VERSION" \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}"
