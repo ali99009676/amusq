@@ -4,7 +4,7 @@
   المنصة ملف واحد، فالتخزين بسيط: نسخة من الصفحة تُقدَّم عند انقطاع الشبكة.
   لا يُسجَّل إلا على https — فتح file:// لا يمر من هنا أصلًا.
 */
-const CACHE = 'qbank-v4';   /* ★ الرقم يتغيّر مع كل إصلاح في هذا الملف — وإلا بقي الجهاز على عاملٍ قديم فلا يصله الإصلاح. v3 كان لنسخة علي العالقة، وv4 لحارس المخطّط أدناه */
+const CACHE = 'qbank-v3';   /* ★ v3: جوّال علي بقي على نسخة قديمة رغم رفع الجديدة — الرقم الجديد يمحو كل كاش سابق */
 const ASSETS = ['./', './index.html', './manifest.webmanifest'];
 
 self.addEventListener('install', e => {
@@ -19,14 +19,6 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  /*
-    ★ ما ليس http(s) لا يُعترض أصلًا.
-    إضافات المتصفح تطلب من مخطّط chrome-extension، وCache API ترفضه فترمي
-    «Request scheme is unsupported» عند كل طلب منها — خمس مرات في فتحةٍ
-    واحدة على جهاز فيه إضافات. الخطأ ليس من المنصة، لكنه يملأ سجلّ الأخطاء
-    فتختفي أخطاؤنا الحقيقية تحته، وسجلٌّ أحمر دائمًا لا يُقرأ.
-  */
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
   // نداءات Supabase وواجهة الخادم تمر للشبكة دائمًا — البيانات الحية لا تُخبَّأ هنا
   if (url.pathname.indexOf('/api/') === 0 || url.hostname.indexOf('supabase') !== -1) return;
   if (e.request.method !== 'GET') return;
@@ -42,10 +34,10 @@ self.addEventListener('fetch', e => {
   e.respondWith(
     fetch(req)
       .then(res => {
-        // ردٌّ فاشل أو مبهم لا يُخزَّن: وإلا قدّمنا ٤٠٤ محفوظًا بدل الصفحة عند الانقطاع
-        if (res && res.ok && res.type !== 'opaque') {
+        /* ★ لا نخبّئ إلا ردًّا سليمًا من أصلنا: صفحة خطأ ٥٠٠ مخبّأة تُقدَّم بلا إنترنت إلى الأبد (تدقيق L-08) */
+        if (res.ok && res.type === 'basic') {
           const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
+          caches.open(CACHE).then(c => c.put(e.request, copy));
         }
         return res;
       })
@@ -75,7 +67,11 @@ self.addEventListener('push', e => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const target = (e.notification.data && e.notification.data.url) || '#/';
+  /* ★ وجهة الإشعار داخل التطبيق فقط (#/…): حمولة الدفع بياناتٌ لا أوامر (تدقيق L-08) */
+  const raw = (e.notification.data && e.notification.data.url) || '#/';
+  const hash = /^#\//.test(String(raw)) ? String(raw) : '#/';
+  /* نسبةً إلى نطاق التطبيق لا إلى ملف العامل: «#/review» وحدها تُحلّ إلى sw.js#/review */
+  const target = new URL(hash, self.registration.scope).href;
   e.waitUntil(self.clients.matchAll({ type:'window', includeUncontrolled:true }).then(list => {
     for (const c of list){
       if ('focus' in c){ c.navigate ? c.navigate(target).catch(() => {}) : null; return c.focus(); }

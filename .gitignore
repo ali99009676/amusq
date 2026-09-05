@@ -4,3 +4,11 @@ api/node_modules/
 .env
 .env.local
 *.log
+
+# ★ المحتوى ليس كودًا: بنوك الأسئلة (المنتج المدفوع) لا تدخل مستودعًا عامًا (تدقيق H-05)
+IMPORT-AMSU*.sql
+db/IMPORT-*.sql
+*-backup-source.json
+استيراد-المواد/
+# تقارير داخلية
+security-audit.md

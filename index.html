@@ -3090,6 +3090,18 @@ const $$ = (sel, root) => { const d = docOf(root); return d ? Array.prototype.sl
 */
 const alive = () => !!docOf(null);
 
+/*
+  ★ الرابط والمصدر لا يحملان سكربتًا: href/src بمخطّط javascript: أو vbscript:
+  يُسقَطان، وdata: لا يصلح رابطًا (يصلح مصدر صورة). البيانات تأتي من القاعدة
+  ومن ملفات الطلاب، وحارسٌ في البنّاء نفسه أضمن من تذكّره عند كل استعمال.
+*/
+const BAD_URL = /^\s*(javascript|vbscript)\s*:/i;
+function safeUrlAttr(k, v){
+  const s = String(v);
+  if (BAD_URL.test(s)) return false;
+  if (k === 'href' && /^\s*data\s*:/i.test(s)) return false;
+  return true;
+}
 function el(tag, attrs, children){
   const node = document.createElement(tag);
   if (attrs) Object.keys(attrs).forEach(k => {
@@ -3098,6 +3110,8 @@ function el(tag, attrs, children){
     if (k === 'class') node.className = v;
     else if (k === 'text') node.textContent = v;
     else if (k === 'html') node.innerHTML = v;   // يُستعمل فقط مع نصوص نبنيها نحن
+    else if ((k === 'href' || k === 'src' || k === 'action' || k === 'formaction') && !safeUrlAttr(k, v)) return;
+    else if (/^on/i.test(k)) return;              // لا معالجات أحداث كسِمات — addEventListener فقط
     else node.setAttribute(k, v === true ? '' : String(v));
   });
   if (children) [].concat(children).forEach(c => {
@@ -3506,8 +3520,22 @@ const Api = {
       // نحذف الهاش كي لا يختلط مسار التطبيق برموز الجلسة العائدة
       return location.origin + location.pathname;
     },
+    /*
+      ★ «دخولٌ معلّق» — علامة أن هذا الجهاز هو من طلب الدخول.
+      رمزٌ يصل في هاش الصفحة بلا طلبٍ سبقه من هنا لا يُقبل: كان أي رابط
+      مُرسَل من غريب (#access_token=رمزه) يُسجّل الضحية في حساب الغريب،
+      فيرفع ويدفع في حسابٍ ليس له (تدقيق H-01). خمس عشرة دقيقة تكفي
+      لفتح البريد؛ ومن فتح الرابط في جهازٍ آخر يكتب الرمز الذي في البريد.
+    */
+    PENDING_MS: 15 * 60 * 1000,
+    markPending(){ QBANK.store.set('login_pending', Date.now()); return true; },
+    isPending(){
+      const t = Number(QBANK.store.get('login_pending', 0)) || 0;
+      return t > 0 && (Date.now() - t) < Api.auth.PENDING_MS;
+    },
     magic(email){
       const back = Api.auth.redirectTo();
+      Api.auth.markPending();
       return Api.raw('/auth/v1/otp' + (back ? '?redirect_to=' + encodeURIComponent(back) : ''), {
         method:'POST',
         body: JSON.stringify({
@@ -3516,8 +3544,28 @@ const Api = {
         })
       });
     },
+    /*
+      ★ PKCE: المتصفح يولّد سرًّا (verifier) ويرسل بصمته (challenge) مع طلب
+      الدخول، فلا يعود من المزوّد رمزُ جلسةٍ بل رمزُ تبديل (code) لا يُصرف
+      إلا بالسرّ — ورمزٌ في رابطٍ من غريب لا يساوي شيئًا بلا سرّه.
+      السرّ في مخزن الجهاز لأن العودة إعادةُ تحميلٍ كاملة للصفحة.
+      إن غاب crypto.subtle (متصفح قديم جدًا) عدنا للتدفق الضمني بحارس
+      «الدخول المعلّق» وحده.
+    */
+    async pkceChallenge(){
+      try {
+        if (typeof crypto === 'undefined' || !crypto.subtle || !crypto.getRandomValues) return '';
+        const bytes = crypto.getRandomValues(new Uint8Array(32));
+        const b64 = a => btoa(String.fromCharCode.apply(null, Array.from(a)))
+          .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        const verifier = b64(bytes);
+        const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
+        QBANK.store.set('pkce_verifier', verifier);
+        return '&code_challenge=' + b64(new Uint8Array(digest)) + '&code_challenge_method=s256';
+      } catch(e){ return ''; }
+    },
     // دخول جوجل/آبل: توجيه كامل للصفحة — يصلح للويب والتطبيق معًا
-    oauthUrl(provider){
+    async oauthUrl(provider){
       const c = QBANK.config.get();
       if (!c) return null;
       /* ★ داخل التطبيق الأصلي يعود المزوّد إلى رابطٍ عميق (muraja://auth) لا إلى
@@ -3525,7 +3573,32 @@ const Api = {
          الدخول لا يعرف طريق العودة إلى التطبيق إلا بالمخطّط المسجَّل له. */
       const back = (QBANK.native && QBANK.native.active) ? QBANK.native.REDIRECT
                  : (typeof location !== 'undefined') ? location.origin + location.pathname : '';
-      return c.url + '/auth/v1/authorize?provider=' + provider + '&redirect_to=' + encodeURIComponent(back);
+      Api.auth.markPending();
+      const pkce = await Api.auth.pkceChallenge();
+      return c.url + '/auth/v1/authorize?provider=' + encodeURIComponent(provider) +
+             '&redirect_to=' + encodeURIComponent(back) + pkce;
+    },
+    /* رمز التبديل من استعلام الرابط (?code=…) — عودة PKCE من المزوّد */
+    codeFrom(search){
+      const m = /[?&]code=([A-Za-z0-9._~-]{8,200})(?:&|$)/.exec(String(search || ''));
+      return m ? m[1] : '';
+    },
+    async captureFromCode(code){
+      const verifier = QBANK.store.get('pkce_verifier', '');
+      if (!code || !verifier) return false;
+      QBANK.store.remove('pkce_verifier');
+      const r = await Api.raw('/auth/v1/token?grant_type=pkce', {
+        method:'POST', body: JSON.stringify({ auth_code: code, code_verifier: verifier })
+      });
+      if (!r.ok || !r.data || !r.data.access_token) return false;
+      QBANK.store.remove('login_pending');
+      Api.saveSession({
+        access_token: r.data.access_token,
+        refresh_token: r.data.refresh_token || '',
+        expires_in: r.data.expires_in || 3600,
+        user: r.data.user || Api.auth.decodeUser(r.data.access_token)
+      });
+      return true;
     },
     // عند العودة من رابط سحري أو OAuth تصل الرموز في هاش الصفحة
     /*
@@ -3552,12 +3625,16 @@ const Api = {
     captureFromHash(hash){
       const h = String(hash || '');
       if (h.indexOf('access_token=') === -1) return false;
+      /* رمزٌ لم يطلبه هذا الجهاز خلال ربع ساعة لا يُقبل — انظر markPending */
+      if (!Api.auth.isPending()) return false;
       const p = {};
       h.replace(/^#/,'').split('&').forEach(kv => {
         const [k,v] = kv.split('=');
-        p[k] = decodeURIComponent(v || '');
+        // ترميزٌ معطوب في الرابط لا يُسقط الإقلاع كله (كان decodeURIComponent يرمي)
+        try { p[k] = decodeURIComponent(v || ''); } catch(e){ p[k] = ''; }
       });
       if (!p.access_token) return false;
+      QBANK.store.remove('login_pending');
       Api.saveSession({
         access_token: p.access_token,
         refresh_token: p.refresh_token || '',
@@ -4764,9 +4841,9 @@ function loginCard(opts){
      اللوحة؟ من هذا المفتاح — يقرؤه الإقلاع بعد التقاط الجلسة ثم يمحوه. */
   const rememberAfter = () => { if (opts.after) QBANK.store.set('after_login', opts.after); };
   const gBtn = el('button', { class:'btn btn--ghost btn--block', type:'button', text:'الدخول بحساب جوجل' });
-  gBtn.addEventListener('click', () => {
+  gBtn.addEventListener('click', async () => {
     if (QBANK.authProviders) return void QBANK.authProviders.launch('google', opts.after);
-    const u = QBANK.api.auth.oauthUrl('google'); if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد');
+    const u = await QBANK.api.auth.oauthUrl('google'); if (u) { rememberAfter(); location.href = u; } else QBANK.toast('المنصة غير موصولة بالخادم بعد');
   });
 
   /*
@@ -6099,27 +6176,28 @@ const Admin = {
       if (w.done >= (i + 1) * Admin.BATCH && w.enriched[i * Admin.BATCH]) return;   // مكتملة من استئناف سابق
       if (onProgress) onProgress(w.done, w.total, { batch: i + 1, batches: batches.length, running: true });
 
+      /*
+        ★ الخصم في الخادم لا هنا (تدقيق H-02).
+        كان المتصفح يحسم الرصيد ثم ينادي /api/ai، فمن يتجاوز الحسم يُثري
+        مجانًا. الآن /api/ai يتحقق من الجلسة، يحسم بالسعر الذي في الإعدادات،
+        ينادي الذكاء، ويردّ الرصيد بنفسه إن سقطت الدفعة. costPerQ هنا للتقدير
+        المعروض للطالب لا للحساب.
+      */
       const cpq = (typeof w.costPerQ === 'number' && w.costPerQ >= 0) ? w.costPerQ : 1;
       const need = batches[i].length * cpq;
-      const pay = need > 0
-        ? await QBANK.api.rpc('spend_credits',
-            { n: need, p_reason: 'إثراء ' + batches[i].length + ' سؤالًا', p_draft: w.draftId })
-        : { ok:true, data:{ ok:true, spent:0 } };
-      if (!pay.ok || !pay.data || !pay.data.ok) {
-        const d = (pay.data) || {};
-        w.error = d.reason === 'insufficient'
-          ? 'رصيدك ' + (d.balance || 0) + ' كوين ولا يكفي — يلزم ' + need
-          : (d.reason === 'closed' ? 'الإثراء موقوف مؤقتًا' : 'تعذّر حسم الرصيد');
-        w.needCoins = d.reason === 'insufficient' ? need - (d.balance || 0) : 0;
-        stop = true; return;
-      }
-
-      const r = await Admin.server('/api/ai', { questions: batches[i], sanctity_mode: w.mode || 'strict' });
+      const r = await Admin.server('/api/ai', { questions: batches[i], sanctity_mode: w.mode || 'strict',
+                                                draft_id: w.draftId || null });
       if (!r.ok) {
-        if (need > 0)
-          await QBANK.api.rpc('refund_credits', { n: need, p_reason: 'تعذّرت الدفعة', p_draft: w.draftId });
-        w.error = (r.data && r.data.error) || 'انقطعت الدفعة ' + (i + 1) + ' — رُدّ رصيدها';
-        w.errorKind = (r.data && r.data.kind) || 'other';
+        const d = r.data || {};
+        if (r.status === 402 && d.kind === 'insufficient') {
+          w.error = 'رصيدك ' + (d.balance || 0) + ' كوين ولا يكفي — يلزم ' + (d.needed || need);
+          w.needCoins = Math.max(0, (d.needed || need) - (d.balance || 0));
+        } else if (d.kind === 'closed') {
+          w.error = 'الإثراء موقوف مؤقتًا';
+        } else {
+          w.error = d.error || 'انقطعت الدفعة ' + (i + 1) + ' — رُدّ رصيدها';
+        }
+        w.errorKind = d.kind || 'other';
         stop = true; return;
       }
       const at = i * Admin.BATCH;
@@ -7763,7 +7841,7 @@ const ViewUpload = {
     if (route.query.draft && wizard.draftId !== route.query.draft) {
       wizard = QBANK.admin.newWizard();
       wizard.draftId = route.query.draft;
-      QBANK.api.rest('drafts?id=eq.' + route.query.draft + '&select=*').then(r => {
+      QBANK.api.rest('drafts?id=eq.' + encodeURIComponent(route.query.draft) + '&select=*').then(r => {
         if (r.ok && r.data && r.data[0]) {
           const d = r.data[0];
           wizard.filename = d.source_name; wizard.enriched = d.payload || [];
@@ -9424,16 +9502,46 @@ function boot(){
   QBANK.data.migrateDB();    // وأسئلة وضع عدم الاتصال — بلا انتظار، فهي ليست شرطًا للإقلاع
   QBANK.theme.init();
 
-  // رموز الدخول تعود من Supabase في هاش الصفحة — نلتقطها قبل أن يفسّرها الموجّه كمسار
-  if (QBANK.api.auth.captureFromHash(location.hash)) {
-    /* ★ الوجهة المحفوظة قبل المغادرة تفوز على الرئيسية: من دخل من بوابة
-       المشرف يعود إلى لوحته لا إلى واجهة الطالب. تُقرأ مرة ثم تُمحى. */
+  /* ★ الوجهة المحفوظة قبل المغادرة تفوز على الرئيسية: من دخل من بوابة
+     المشرف يعود إلى لوحته لا إلى واجهة الطالب. تُقرأ مرة ثم تُمحى.
+     والرابط يُنظَّف من الرمز (هاشًا كان أو ?code=) كي لا يبقى في التاريخ. */
+  const landed = () => {
     const after = QBANK.store.get('after_login', '#/');
     QBANK.store.remove('after_login');
     const dest = /^#\//.test(after) ? after : '#/';
-    try { history.replaceState(null, '', location.pathname + location.search + dest); }
+    try { history.replaceState(null, '', location.pathname + dest); }
     catch(e) { location.hash = dest; }
     QBANK.toast('تم تسجيل الدخول');
+    return dest;
+  };
+
+  // رموز الدخول تعود من Supabase في هاش الصفحة — نلتقطها قبل أن يفسّرها الموجّه كمسار
+  const hadToken = /access_token=/.test(location.hash);
+  if (QBANK.api.auth.captureFromHash(location.hash)) {
+    landed();
+  } else if (hadToken) {
+    /* رمزٌ في الهاش بلا دخولٍ معلّق من هذا الجهاز: لا يُقبل (تدقيق H-01) —
+       نمحوه ونوجّه إلى شاشة الدخول ليكتب الرمز الذي في بريده. */
+    try { history.replaceState(null, '', location.pathname + '#/login'); } catch(e) { location.hash = '#/login'; }
+    QBANK.toast('افتح رابط الدخول من الجهاز الذي طلبته منه، أو اكتب الرمز من البريد');
+  }
+
+  /* عودة PKCE (?code=…): التبديل نداء شبكة، فلا يعطّل الرسم الأول — الصفحة
+     تُرسم زائرًا ثم تنقلب إلى جلسة حين يصل الردّ */
+  const code = QBANK.api.auth.codeFrom(location.search);
+  if (code) {
+    QBANK.api.auth.captureFromCode(code).then(ok => {
+      if (!ok) {
+        try { history.replaceState(null, '', location.pathname + '#/login'); } catch(e){}
+        QBANK.toast('تعذّر إتمام الدخول — حاول مرة أخرى');
+        QBANK.router.render(location.hash);
+        return;
+      }
+      const dest = landed();
+      try { QBANK.progress.pull(); QBANK.gate.refresh(); if (QBANK.presence) QBANK.presence.start(); } catch(e){}
+      QBANK.router.go(dest);
+      QBANK.router.render(location.hash);
+    });
   }
 
   buildTabbar();
@@ -9760,13 +9868,13 @@ const SUBJ_ICONS  = ['▤','☤','✚','♥','◈','⚕','☣','◐','⌁','⚗'
 
 const SubjEditor = {
   patchSubject(id, body){
-    return QBANK.api.rest('subjects?id=eq.' + id, { method:'PATCH', body: JSON.stringify(body) });
+    return QBANK.api.rest('subjects?id=eq.' + encodeURIComponent(id), { method:'PATCH', body: JSON.stringify(body) });
   },
   patchQuestion(id, body){
-    return QBANK.api.rest('questions?id=eq.' + id, { method:'PATCH', body: JSON.stringify(body) });
+    return QBANK.api.rest('questions?id=eq.' + encodeURIComponent(id), { method:'PATCH', body: JSON.stringify(body) });
   },
   delQuestion(id){
-    return QBANK.api.rest('questions?id=eq.' + id, { method:'DELETE' });
+    return QBANK.api.rest('questions?id=eq.' + encodeURIComponent(id), { method:'DELETE' });
   },
   /* ★ سؤال جديد يدويًا: المشرف مؤلّف أيضًا لا ناقلًا فقط.
      يُوسم أنه من تأليف المنصة (derived=false، بلا وسم قداسة) وq_count
@@ -10380,8 +10488,8 @@ const AdminSubjectView = {
     const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
     function load(){
       Promise.all([
-        QBANK.api.rest('subjects?id=eq.' + id + '&select=*'),
-        QBANK.api.rest('questions?subject_id=eq.' + id + '&select=*&order=ord')
+        QBANK.api.rest('subjects?id=eq.' + encodeURIComponent(id) + '&select=*'),
+        QBANK.api.rest('questions?subject_id=eq.' + encodeURIComponent(id) + '&select=*&order=ord')
       ]).then(([sr, qr]) => {
         if (!body.isConnected) return;
         const sub = (sr.ok && sr.data && sr.data[0]) || null;
@@ -11281,9 +11389,10 @@ QBANK.cost = { estimate: estimateCost, compare: compareModels, money,
 /* ★ نسخةٌ حرفية من تعابير الخادم (api/_lib/parser.js) — وفحصٌ يحرس تطابقها.
    فاحصُ التنسيق يعد الطالبَ بما سيحدث عند الرفع، فإن اختلفت النسختان صار
    وعدًا كاذبًا: يُقال له «١٢ سؤالًا» ثم يرفع فيجد صفرًا. */
-const FMT_Q_START   = /^\s*(?:Q|س|السؤال|سؤال)?\s*\.?\s*([\d٠-٩]{1,4})\s*[).\-:]\s+/i;
-const FMT_OPT_START = /^\s*(هـ|[A-Ea-e]|[أابجده])\s*[).\-]\s+/;
-const FMT_ANS_LINE  = /^\s*(?:ANSWER|ANS|KEY|CORRECT|الاجابة|الإجابة|الجواب|الحل|الصحيح)\s*(?:الصحيحة?|الصحيح)?\s*(?:هي|هو)?\s*[:\-.]?\s*(هـ|[A-Ea-e]|[أابجده])(?=\s|$|[).,،])/i;
+/* ★ نسخة حرفية من parser.js في الخادم (الفحص ٥٨ يطابقهما) — فراغات محدودة العدد كي لا يتراجع النمط تكعيبيًا على سطرٍ من فراغات (تدقيق H-04) */
+const FMT_Q_START   = /^\s*(?:Q|س|السؤال|سؤال)?\s{0,8}\.?\s{0,8}([\d٠-٩]{1,4})\s{0,8}[).\-:]\s+/i;
+const FMT_OPT_START = /^\s*(هـ|[A-Ea-e]|[أابجده])\s{0,8}[).\-]\s+/;
+const FMT_ANS_LINE  = /^\s*(?:ANSWER|ANS|KEY|CORRECT|الاجابة|الإجابة|الجواب|الحل|الصحيح)\s{0,8}(?:الصحيحة?|الصحيح)?\s{0,8}(?:هي|هو)?\s{0,8}[:\-.]?\s{0,8}(هـ|[A-Ea-e]|[أابجده])(?=\s|$|[).,،])/i;
 
 /* فحص سريع: كم سؤالًا سيُستخرج من هذا النص؟ */
 function formatCheck(text){
@@ -11443,7 +11552,7 @@ function exCard(r){
   const color = QBANK.views.subjectColor(r.color);
   /* ★ بالشكل نفسه الذي في «موادي»: بلاطة ملوّنة بلون المادة تحمل أيقونتها،
      ثم الاسم وموضعه — بطاقةٌ واحدة في المنصة كلها لا بطاقتان */
-  const card = el('a', { class:'excard', href:'#s/' + (r.slug || '') , 'data-id': r.id, style:'--acc:' + color }, [
+  const card = el('a', { class:'excard', href:'#/subject/' + r.id , 'data-id': r.id, style:'--acc:' + color }, [
     el('span', { class:'excard__head' }, [
       el('span', { class:'excard__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(r.icon, 24) ]),
       el('span', { class:'excard__x' }, [
@@ -11739,7 +11848,7 @@ function campusPicker(current, onSaved){
 /* ═══ صفحة القسم ═══ */
 function uniSubjectCard(r){
   const color = QBANK.views.subjectColor(r.color);
-  return el('a', { class:'excard', href:'#s/' + (r.slug || ''), 'data-id': r.id, style:'--acc:' + color }, [
+  return el('a', { class:'excard', href:'#/subject/' + r.id, 'data-id': r.id, style:'--acc:' + color }, [
     el('span', { class:'excard__head' }, [
       el('span', { class:'excard__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(r.icon, 24) ]),
       el('span', { class:'excard__x' }, [
@@ -13609,7 +13718,8 @@ const Peer = {
 
   /* صورة الطالب: المرفوعة إن وُجدت، وإلا الرمزية — دالة واحدة لكل المنصة */
   face(p, cls){
-    if (p && p.avatar_url)
+    /* الصورة من مخزننا فقط (QBANK.look.ownImage) — وإلا الرمزية */
+    if (p && p.avatar_url && (!QBANK.look || QBANK.look.ownImage(p.avatar_url)))
       return el('img', { class:'peer-face ' + (cls || ''), src: p.avatar_url, alt: p.name || 'طالب' });
     return el('span', { class:'peer-face peer-face--emo ' + (cls || ''), 'aria-hidden':'true',
       text: (p && p.avatar) || '◍' });
@@ -16871,8 +16981,8 @@ const ViewOwnerEdit = {
     const body = el('div', { class:'stack' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
     function load(){
       Promise.all([
-        QBANK.api.rest('subjects?id=eq.' + id + '&select=*'),
-        QBANK.api.rest('questions?subject_id=eq.' + id + '&select=*&order=ord')
+        QBANK.api.rest('subjects?id=eq.' + encodeURIComponent(id) + '&select=*'),
+        QBANK.api.rest('questions?subject_id=eq.' + encodeURIComponent(id) + '&select=*&order=ord')
       ]).then(([sr, qr]) => {
         if (!body.isConnected) return;
         const sub = (sr.ok && sr.data && sr.data[0]) || null;
@@ -16958,7 +17068,7 @@ const ViewAdminPreview = {
 
     const wrap = el('div', { class:'stack ad-preview' }, [ el('p', { class:'page__sub', text:'جارٍ الجلب…' }) ]);
     /* من القاعدة مباشرةً لا من قائمة المنشور: المخفية تُعاين قبل نشرها */
-    QBANK.api.rest('subjects?id=eq.' + id + '&select=*').then(r => {
+    QBANK.api.rest('subjects?id=eq.' + encodeURIComponent(id) + '&select=*').then(r => {
       if (!wrap.isConnected) return;
       const sub = (r.ok && r.data && r.data[0]) || null;
       wrap.innerHTML = '';
@@ -17327,8 +17437,9 @@ const AuthProviders = {
     الجسر). والوجهة تُحفظ قبل المغادرة في الحالين: من قصد اللوحة يعود إليها.
   */
   opener: null,
-  launch(id, after){
-    const u = QBANK.api.auth.oauthUrl(id);
+  /* ★ الرابط يُبنى بلا تزامن (بصمة PKCE تُحسب بـcrypto.subtle) — الوجهة تُحفظ قبل المغادرة */
+  async launch(id, after){
+    const u = await QBANK.api.auth.oauthUrl(id);
     if (!u) { QBANK.toast('المنصة غير موصولة بالخادم بعد'); return false; }
     if (after) QBANK.store.set('after_login', after);
     if (AuthProviders.opener && AuthProviders.opener(u)) return true;
@@ -17537,9 +17648,23 @@ const Native = {
     };
   },
   /*
-    ★ الرمز يعود في هاش الرابط العميق تمامًا كما يعود في هاش الصفحة على الويب —
-    فالتقاطه هو الدالة نفسها (captureFromHash)، ولا مسارَ ثانٍ للجلسة.
+    ★ العودة من المزوّد إلى الرابط العميق بإحدى صورتين، وكلتاهما الدوال
+    نفسها التي يستعملها الويب — لا مسارَ ثانٍ للجلسة:
+      muraja://auth?code=…          تدفق PKCE (الأصل الآن): رمز تبديل لا يُصرف
+                                     إلا بسرٍّ في هذا الجهاز (تدقيق H-01)
+      muraja://auth#access_token=…  التدفق الضمني القديم: لا يُقبل إلا ودخولٌ
+                                     معلّق من هذا الجهاز خلال ربع ساعة
+    المخطّط muraja:// قد يسجّله تطبيقٌ آخر على الجهاز نفسه ويفتحه أي موقع —
+    لذلك لا يكفي أن «الرابط وصل» ليصير جلسة.
   */
+  afterLogin(){
+    const after = QBANK.store.get('after_login', '#/');
+    QBANK.store.remove('after_login');
+    QBANK.toast('تم تسجيل الدخول');
+    /* ما يفعله الإقلاع بعد الدخول يُفعل هنا أيضًا: التقدّم والاستحقاقات والحضور */
+    try { QBANK.progress.pull(); QBANK.gate.refresh(); if (QBANK.presence) QBANK.presence.start(); } catch(e){}
+    QBANK.router.go(/^#\//.test(after) ? after : '#/');
+  },
   handleUrl(url){
     const u = String(url || '');
     if (u.indexOf(Native.SCHEME + '://') !== 0) return false;
@@ -17547,18 +17672,27 @@ const Native = {
     if (B && B.close) { try { B.close(); } catch(e){} }
     const hashAt = u.indexOf('#');
     const hash = hashAt >= 0 ? u.slice(hashAt) : '';
+    const qAt = u.indexOf('?');
+    const search = qAt >= 0 ? u.slice(qAt, hashAt >= 0 && hashAt > qAt ? hashAt : undefined) : '';
+    const code = QBANK.api.auth.codeFrom(search);
+    if (code){
+      QBANK.api.auth.captureFromCode(code).then(ok => {
+        if (ok) Native.afterLogin();
+        else QBANK.toast('تعذّر إتمام الدخول — حاول مرة أخرى');
+      });
+      return true;
+    }
     if (hash && QBANK.api.auth.captureFromHash(hash)){
-      const after = QBANK.store.get('after_login', '#/');
-      QBANK.store.remove('after_login');
-      QBANK.toast('تم تسجيل الدخول');
-      /* ما يفعله الإقلاع بعد الدخول يُفعل هنا أيضًا: التقدّم والاستحقاقات والحضور */
-      try { QBANK.progress.pull(); QBANK.gate.refresh(); if (QBANK.presence) QBANK.presence.start(); } catch(e){}
-      QBANK.router.go(/^#\//.test(after) ? after : '#/');
+      Native.afterLogin();
+      return true;
+    }
+    if (/access_token=/.test(hash)){
+      QBANK.toast('رابط دخول لم يطلبه هذا الجهاز — ابدأ الدخول من التطبيق');
       return true;
     }
     /* خطأٌ من المزوّد يصل في الاستعلام: ?error=…&error_description=… */
     const m = /[?&#]error_description=([^&]+)/.exec(u) || /[?&#]error=([^&]+)/.exec(u);
-    if (m) QBANK.toast('تعذّر الدخول: ' + decodeURIComponent(m[1]).replace(/\+/g, ' '));
+    if (m) { try { QBANK.toast('تعذّر الدخول: ' + decodeURIComponent(m[1]).replace(/\+/g, ' ')); } catch(e){ QBANK.toast('تعذّر الدخول'); } }
     return true;
   },
   wireLinks(){
@@ -17737,6 +17871,18 @@ const Look = {
   DEFAULT: { layout:'classic', accent:'', cover_preset:'', cover_url:'' },
 
   /* ما لا نعرفه يعود إلى الافتراضي — صفٌّ قديم أو قيمة عابثة لا تكسر الصفحة */
+  /*
+    ★ صورةٌ من مخزننا فقط — بادئة كاملة لا «https://» وحدها (تدقيق M-08).
+    رابط خارجي في غلاف أو صورة يتتبّع كل من فتح الصفحة (عنوانه ووقته)،
+    ويُبدَّل بعد الرفع بما لا نستضيفه. القاعدة تقيّده أيضًا؛ هذا الحارس الثاني.
+  */
+  ownImage(u){
+    const c = QBANK.config.get();
+    if (typeof u !== 'string' || !u) return false;
+    const base = ((c && c.url) || 'https://gbgjadqwqzxxyhydlgtj.supabase.co') + '/storage/v1/object/public/avatars/';
+    if (u.indexOf(base) !== 0) return false;
+    return /^[0-9a-f-]{36}\/[a-z0-9_-]+\.(jpg|jpeg|png|webp)(\?v=\d{1,16})?$/i.test(u.slice(base.length));
+  },
   read(p){
     const o = p || {};
     const ok = (list, v) => list.some(x => x.id === v) ? v : '';
@@ -17744,7 +17890,7 @@ const Look = {
       layout:       Look.LAYOUTS.some(l => l.id === o.layout) ? o.layout : 'classic',
       accent:       ok(Look.ACCENTS, o.accent || ''),
       cover_preset: ok(Look.COVERS, o.cover_preset || ''),
-      cover_url:    (typeof o.cover_url === 'string' && /^https:\/\//.test(o.cover_url)) ? o.cover_url : ''
+      cover_url:    Look.ownImage(o.cover_url) ? o.cover_url : ''
     };
   },
 
