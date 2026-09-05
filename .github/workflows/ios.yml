@@ -33,7 +33,9 @@ concurrency:
 
 jobs:
   build:
-    runs-on: macos-15
+    # ★ macOS 26 (Xcode 26.6 افتراضيًا): أبل ترفض منذ أبريل ٢٠٢٦ أي رفعٍ بُني بغير iOS 26 SDK —
+    #   وصورة macos-15 افتراضيُّها Xcode 16.4 (iOS 18.5 SDK) فتُرفض عند الرفع بعد بناءٍ كامل.
+    runs-on: macos-26
     timeout-minutes: 60
     env:
       MARKETING_VERSION: ${{ github.event.inputs.version || '1.0.0' }}
@@ -93,8 +95,11 @@ jobs:
           chmod 600 "$HOME/asc/AuthKey_${ASC_KEY_ID}.p8"
           openssl pkey -in "$HOME/asc/AuthKey_${ASC_KEY_ID}.p8" -noout 2>/dev/null || { echo "✗ محتوى ASC_API_KEY_P8 ليس مفتاح .p8 صالحًا — الصق الملف كاملًا من BEGIN إلى END"; exit 1; }
 
-      - name: اختيار Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app && xcodebuild -version
+      - name: اختيار Xcode (الافتراضي في الصورة — ٢٦ فأحدث)
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i iphoneos
 
       # ★ الأرشيف يُبنى بلا توقيع عمدًا: التوقيع الآلي في مرحلة الأرشفة يستعمل هوية
       #   «تطوير» ويحتاج جهازًا مسجَّلًا في الحساب (ولا جهاز على خادم GitHub)، وفرضُ هوية
