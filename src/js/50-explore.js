@@ -66,7 +66,7 @@ function exCard(r){
   const color = QBANK.views.subjectColor(r.color);
   /* ★ بالشكل نفسه الذي في «موادي»: بلاطة ملوّنة بلون المادة تحمل أيقونتها،
      ثم الاسم وموضعه — بطاقةٌ واحدة في المنصة كلها لا بطاقتان */
-  const card = el('a', { class:'excard', href:'#/subject/' + r.id , 'data-id': r.id, style:'--acc:' + color }, [
+  const card = el('a', { class:'excard', href:'#s/' + (r.slug || ''), 'data-id': r.id, style:'--acc:' + color }, [
     el('span', { class:'excard__head' }, [
       el('span', { class:'excard__ico', 'aria-hidden':'true' }, [ QBANK.subjIcon(r.icon, 24) ]),
       el('span', { class:'excard__x' }, [
