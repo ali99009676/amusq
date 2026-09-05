@@ -105,6 +105,8 @@ function finishExam(){
 function examFeedback(item, answered, st){
   const right = answered.choice === item.correct;
   const N = QBANK.views.arNum;
+  /* داخل التطبيق: «أصبت» تُحسّ في اليد قبل أن تُقرأ — وفي المتصفح لا شيء يحدث */
+  if (QBANK.native && QBANK.native.active) QBANK.native.haptic(right ? 'success' : 'error');
   const panes = [];
   if (item.expl_ar) panes.push(['شرح', el('p', { class:'exfb__p', text: item.expl_ar })]);
   if (item.expl_en) panes.push(['English', el('p', { class:'exfb__p ltr', text: item.expl_en })]);

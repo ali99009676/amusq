@@ -741,7 +741,8 @@ function stepEnrich(box, rerender){
       creditBox.appendChild(el('span', { class:'costbox__s',
         text: enough ? 'سيتبقى لك ' + N(bal - cost) + ' كوين بعد الإثراء.'
                      : 'ينقصك ' + N(cost - bal) + ' كوين لإثراء هذا الملف.' }));
-      if (!enough)
+      /* داخل التطبيق لا «اشحن»: الشحن شراء، والشراء في التطبيق لأبل وحدها (٣.١.١) */
+      if (!enough && !(typeof window !== 'undefined' && window.QBANK_NATIVE_APP))
         creditBox.appendChild(el('a', { class:'btn btn--sm', href:'#/account', text:'اشحن رصيدك' }));
     }
     go.textContent = wizard.done ? 'أكمل من حيث توقفت (' + wizard.done + ')'

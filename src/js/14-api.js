@@ -95,7 +95,11 @@ const Api = {
     oauthUrl(provider){
       const c = QBANK.config.get();
       if (!c) return null;
-      const back = (typeof location !== 'undefined') ? location.origin + location.pathname : '';
+      /* ★ داخل التطبيق الأصلي يعود المزوّد إلى رابطٍ عميق (muraja://auth) لا إلى
+         الصفحة: أصل التطبيق capacitor://localhost لا يقبله أحد، وSafari الذي فتح
+         الدخول لا يعرف طريق العودة إلى التطبيق إلا بالمخطّط المسجَّل له. */
+      const back = (QBANK.native && QBANK.native.active) ? QBANK.native.REDIRECT
+                 : (typeof location !== 'undefined') ? location.origin + location.pathname : '';
       return c.url + '/auth/v1/authorize?provider=' + provider + '&redirect_to=' + encodeURIComponent(back);
     },
     // عند العودة من رابط سحري أو OAuth تصل الرموز في هاش الصفحة

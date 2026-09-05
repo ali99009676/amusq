@@ -203,6 +203,8 @@ function inboxPanel(){
     ['purchases', 'طلب شراء',   '#/admin/money',    'card',  'يدفع الطالب ولا يُفتح له حتى تعتمد'],
     ['phones',    'توثيق جوال', '#/admin/money',    'phone', 'رسالة واتساب وصلت وتنتظر ضغطة'],
     ['payouts',   'تحويل أرباح','#/admin/money',    'swap',  'رافعٌ طلب ماله'],
+    /* «ارفعها عنّي»: طالبٌ أرسل ملفه وينتظر أن أرفعه أنا — أثقل ما في الطابور */
+    ['requests',  'طلب رفع مادة','#/admin/content', 'upload','طالب أرسل ملفه لترفعه عنه'],
     ['drafts',    'مسوّدة',     '#/admin/content',  'edit',  'مادة رفعها طالب ولم تُنشر بعد'],
     ['reports',   'بلاغ',       '#/admin/quality',  'flag',  'سؤالٌ أبلغ عنه طالب']
   ];
@@ -233,7 +235,9 @@ function inboxPanel(){
       const it = x[0], n = x[1];
       /* عمر أقدم طلب شراء يظهر في صفّه هو — «منذ كم ينتظر» أهمّ من «كم ينتظرون» */
       const age = it[0] === 'purchases' && d.oldest_purchase
-        ? 'أقدمها منذ ' + QBANK.admin.charts.ago(d.oldest_purchase) : it[4];
+        ? 'أقدمها منذ ' + QBANK.admin.charts.ago(d.oldest_purchase)
+        : it[0] === 'requests' && d.oldest_request
+          ? 'أقدمها منذ ' + QBANK.admin.charts.ago(d.oldest_request) : it[4];
       list.appendChild(el('a', { class:'inbox__i is-on', href: it[2] }, [
         el('span', { class:'inbox__ic', 'aria-hidden':'true' }, [ QBANK.ico(it[3], { size:18 }) ]),
         el('span', { class:'inbox__x' }, [
