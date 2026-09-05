@@ -2200,8 +2200,9 @@ describe('٥١ · الاستكشاف');
     has(main.textContent, '34 مشترك', 'وعدد المشتركين');
     has(main.textContent, 'مجانية', 'والمادة المجانية موسومة');
     has(main.textContent, '49 ريال', 'والمدفوعة بسعرها');
-    eq(doc.querySelector('.excard').getAttribute('href'), '#s/anat-n1',
-       'البطاقة تقود إلى رابط المشاركة لا إلى المحتوى مباشرة');
+    /* ★ بقرار علي (٥ سبتمبر): بطاقة الاستكشاف تفتح المادة مباشرة لا شاشة المشاركة */
+    eq(doc.querySelector('.excard').getAttribute('href'), '#/subject/a',
+       'البطاقة تفتح المادة مباشرة لا شاشة المشاركة');
 
     // المرشّحات شرائح بأعدادها
     has(main.textContent, 'السعودية', 'الدولة بالعربية في المرشّحات');
