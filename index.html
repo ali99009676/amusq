@@ -2795,6 +2795,181 @@ a.up-row__x:hover .up-row__t{ color:var(--acc); }
 .privacy__p{ margin:0; max-width:68ch; text-wrap:pretty; }
 
 
+/* ===== 85-look.css ===== */
+/* ═══════════════════════════════════════════════════════════════════
+   شكل ملف الطالب — الغلاف والستايلات الخمسة ومحرّرها (78-look.js)
+   ═══════════════════════════════════════════════════════════════════
+   كل الألوان من المتغيّرات: لون الطالب يصل ‎--acc‎ محقونًا على .pf-page
+   كما تفعل بطاقة المادة، والتدرّجات مزيج من ألوان المواد — فلا hex هنا،
+   ويبقى كل ستايل مقروءًا في الوضعين الليلي والفاتح. */
+
+/* ── الاسم في المتصدرين رابطٌ يبدو رابطًا عند اللمس لا قبله ── */
+.lb-link{ color:inherit; text-decoration:none; }
+.lb-link:hover, .lb-link:focus-visible{ color:var(--acc); text-decoration:underline; text-underline-offset:.2em; }
+
+/* ── الغلاف ── */
+.pf-cover{
+  height:120px; border-radius:var(--r3); overflow:hidden; position:relative;
+  background:var(--surface-2); border:1px solid var(--line);
+}
+.pf-cover__img{ width:100%; height:100%; object-fit:cover; display:block; }
+/* تدرّج المحور: ما يُرسم حين لا غلاف — للستايلات التي لا تكتمل بدونه */
+.pf-cover--acc{ background:linear-gradient(135deg, var(--acc), color-mix(in srgb, var(--acc) 45%, var(--ink))); border:0; }
+.pf-cover--g1{ background:linear-gradient(135deg, var(--subject-1), var(--subject-6)); border:0; }
+.pf-cover--g2{ background:linear-gradient(135deg, var(--subject-3), var(--subject-4)); border:0; }
+.pf-cover--g3{ background:linear-gradient(135deg, var(--subject-5), var(--subject-2)); border:0; }
+.pf-cover--g4{ background:linear-gradient(135deg, var(--subject-4), var(--subject-2)); border:0; }
+.pf-cover--g5{ background:linear-gradient(135deg, var(--gold), var(--subject-3)); border:0; }
+.pf-cover--g6{ background:linear-gradient(135deg, var(--subject-6), var(--subject-5)); border:0; }
+.pf-cover--g7{ background:linear-gradient(135deg, var(--ink), var(--subject-2)); border:0; }
+.pf-cover--g8{ background:linear-gradient(135deg, var(--subject-2), var(--gold)); border:0; }
+/* ملمس خفيف يمنع التدرّج من أن يبدو صفيحة مسطّحة */
+.pf-cover:not(:has(.pf-cover__img))::before{
+  content:""; position:absolute; inset:0;
+  background:radial-gradient(60% 80% at 80% 20%, color-mix(in srgb, var(--surface) 22%, transparent), transparent 70%);
+}
+.pf-page{ position:relative; }
+.pf-page .peer-stats{ grid-template-columns:repeat(4,1fr); }
+@media (max-width:520px){ .pf-page .peer-stats{ grid-template-columns:repeat(2,1fr); } }
+
+/* ═══ ١) كلاسيكي: كما كان — والغلاف إن اختاره شريطٌ فوق البطل ═══ */
+.pf-look--classic .pf-cover--acc{ display:none; }
+.pf-look--classic .pf-cover{ height:110px; }
+
+/* ═══ ٢) غلاف: الصورة تتوسّط الغلاف والاسم تحتها في المنتصف ═══ */
+.pf-look--cover .pf-cover{ height:200px; border-radius:var(--r3) var(--r3) 0 0; }
+.pf-look--cover .pf-hero{
+  flex-direction:column; text-align:center; margin-top:-64px;
+  background:var(--surface); color:var(--text); border-color:var(--line);
+  border-radius:0 0 var(--r3) var(--r3); padding-top:0;
+}
+.pf-look--cover .pf-hero__x{ align-items:center; }
+.pf-look--cover .pf-hero .peer-face--lg{ width:112px; height:112px; border:4px solid var(--surface); box-shadow:var(--sh3); }
+.pf-look--cover .pf-hero .pf-hero__n{ color:var(--text); font-size:1.45rem; }
+.pf-look--cover .pf-hero .pf-hero__mail, .pf-look--cover .pf-hero .pf-hero__bio{ color:var(--text-2); }
+.pf-look--cover .pf-hero .pf-hero__bio{ max-width:52ch; }
+
+/* ═══ ٣) شريط: حافة لونية، ترتيب مضغوط، ومواده قائمة لا شبكة ═══ */
+.pf-look--stripe .pf-cover--acc{ display:none; }
+.pf-look--stripe .pf-cover{ height:14px; border-radius:999px; }
+.pf-look--stripe .pf-hero{
+  background:var(--surface); color:var(--text); border-color:var(--line);
+  border-inline-start:6px solid var(--acc); border-radius:var(--r2); gap:var(--s4); padding:var(--s4);
+}
+.pf-look--stripe .pf-hero .pf-hero__n{ color:var(--text); font-size:1.15rem; }
+.pf-look--stripe .pf-hero .pf-hero__mail, .pf-look--stripe .pf-hero .pf-hero__bio{ color:var(--text-2); }
+.pf-look--stripe .pf-hero .peer-face--lg{ width:64px; height:64px; font-size:2rem; border-width:2px; }
+.pf-look--stripe .pf-hero__avwrap{ width:64px; height:64px; }
+.pf-look--stripe .peer-stats{ gap:6px; }
+.pf-look--stripe .peer-stat{ flex-direction:row; align-items:baseline; justify-content:center; gap:6px; padding:var(--s3); border-inline-start:3px solid var(--acc); border-radius:var(--r1); }
+.pf-look--stripe .peer-stat b{ font-size:1.15rem; }
+.pf-look--stripe .grid{ grid-template-columns:1fr; gap:8px; }
+.pf-look--stripe h2{ border-inline-start:4px solid var(--acc); padding-inline-start:10px; font-size:1rem; }
+
+/* ═══ ٤) مجلّة: الاسم عنوانًا كبيرًا على الغلاف، والأرقام عمود ═══ */
+.pf-look--magazine .pf-cover{ height:280px; border-radius:var(--r4); }
+.pf-look--magazine .pf-cover::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(to top, color-mix(in srgb, var(--ink) 88%, transparent) 0%, color-mix(in srgb, var(--ink) 35%, transparent) 55%, transparent 100%);
+}
+.pf-look--magazine .pf-hero{
+  margin-top:-150px; background:transparent; border:0; box-shadow:none; color:var(--on-acc);
+  align-items:flex-end; padding:0 var(--s5) var(--s4); position:relative; z-index:1;
+}
+.pf-look--magazine .pf-hero .pf-hero__n{
+  color:var(--on-acc); font-size:clamp(1.8rem, 6vw, 2.6rem); line-height:1.1; letter-spacing:-.03em;
+  text-shadow:0 2px 12px color-mix(in srgb, var(--ink) 70%, transparent);
+}
+.pf-look--magazine .pf-hero .pf-hero__mail{ color:color-mix(in srgb, var(--on-acc) 82%, transparent); font-size:.95rem; }
+.pf-look--magazine .pf-hero .pf-hero__bio{ color:color-mix(in srgb, var(--on-acc) 90%, transparent); font-size:1.05rem; max-width:60ch; }
+.pf-look--magazine .pf-hero .peer-stars__n{ color:color-mix(in srgb, var(--on-acc) 75%, transparent); }
+.pf-look--magazine .pf-hero .peer-face--lg{ width:96px; height:96px; border:3px solid var(--on-acc); }
+.pf-look--magazine .peer-stats{ grid-template-columns:repeat(2,1fr); }
+.pf-look--magazine .peer-stat{ border:0; border-block-end:2px solid var(--acc); border-radius:0; background:transparent; box-shadow:none; text-align:start; align-items:flex-start; }
+.pf-look--magazine .peer-stat b{ font-size:2rem; }
+.pf-look--magazine h2{ font-family:var(--font-display); font-size:1.4rem; letter-spacing:-.02em; }
+@media (max-width:480px){ .pf-look--magazine .pf-hero{ align-items:center; } }
+
+/* ═══ ٥) زجاجي: بطاقات شفافة ضبابية تطفو فوق الغلاف ═══ */
+.pf-look--glass .pf-cover{ height:260px; border-radius:var(--r4); }
+.pf-look--glass .pf-hero, .pf-look--glass .peer-stat{
+  background:color-mix(in srgb, var(--surface) 62%, transparent);
+  -webkit-backdrop-filter:blur(16px) saturate(1.3); backdrop-filter:blur(16px) saturate(1.3);
+  border:1px solid color-mix(in srgb, var(--surface) 70%, var(--acc)); color:var(--text);
+}
+.pf-look--glass .pf-hero{ margin:-190px var(--s4) 0; position:relative; z-index:1; border-radius:var(--r3); }
+.pf-look--glass .peer-stats{ margin:0 var(--s4); position:relative; z-index:1; }
+.pf-look--glass .pf-hero .pf-hero__n{ color:var(--text); }
+.pf-look--glass .pf-hero .pf-hero__mail, .pf-look--glass .pf-hero .pf-hero__bio{ color:var(--text-2); }
+.pf-look--glass .pf-hero .peer-face--lg{ border:3px solid color-mix(in srgb, var(--surface) 80%, transparent); }
+@media (max-width:480px){ .pf-look--glass .pf-hero{ margin-top:-200px; } }
+
+/* ═══ محرّر «شكل ملفي» ═══ */
+.look__pv{
+  border:1px solid var(--line); border-radius:var(--r3); padding:var(--s4);
+  background:var(--bg-soft); display:flex; flex-direction:column; gap:var(--s3); font-size:.9em;
+}
+.look__pv .pf-hero{ margin-inline:0; }
+
+/* بلاطات الستايلات: رسم تخطيطي صغير يقول شكل الصفحة قبل اختياره */
+.look__tiles{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+@media (max-width:520px){ .look__tiles{ grid-template-columns:repeat(3,1fr); } }
+.look__tile{
+  display:flex; flex-direction:column; gap:6px; padding:6px; cursor:pointer; font-family:inherit;
+  background:var(--surface); color:var(--text); border:2px solid var(--line); border-radius:var(--r2);
+  transition:border-color .16s var(--ease), box-shadow .16s var(--ease);
+}
+.look__tile[aria-checked="true"]{ border-color:var(--acc); box-shadow:var(--ring); }
+.look__tile-l{ font-size:.8rem; font-weight:700; text-align:center; }
+.look__mini{ display:block; position:relative; height:56px; border-radius:6px; overflow:hidden; background:var(--bg-soft); border:1px solid var(--line-soft); }
+.look__mini i{ position:absolute; display:block; }
+.look__mini-cov{ inset:0 0 auto 0; height:40%; background:linear-gradient(135deg, var(--acc), color-mix(in srgb, var(--acc) 45%, var(--ink))); }
+.look__mini-av{ width:16px; height:16px; border-radius:50%; background:var(--acc); border:2px solid var(--surface); top:14px; inset-inline-end:8px; }
+.look__mini-t{ height:5px; width:40%; border-radius:3px; background:var(--text-3); top:18px; inset-inline-end:30px; }
+.look__mini-s{ height:8px; inset-inline:8px; bottom:8px; border-radius:3px; background:color-mix(in srgb, var(--acc) 30%, var(--surface)); }
+/* كلاسيكي: بلا غلاف، الصورة يمين والاسم بجوارها */
+.look__mini--classic .look__mini-cov{ display:none; }
+/* غلاف: الصورة تتوسّط حافة الغلاف */
+.look__mini--cover .look__mini-av{ inset-inline-end:calc(50% - 8px); top:14px; }
+.look__mini--cover .look__mini-t{ inset-inline-end:30%; top:36px; }
+/* شريط: حافة لونية بلا غلاف */
+.look__mini--stripe .look__mini-cov{ inset:0 0 0 auto; width:5px; height:100%; }
+.look__mini--stripe .look__mini-av{ top:10px; inset-inline-end:12px; }
+.look__mini--stripe .look__mini-t{ top:14px; inset-inline-end:34px; }
+.look__mini--stripe .look__mini-s{ height:5px; bottom:10px; }
+/* مجلّة: غلاف عالٍ وعنوان ضخم أسفله */
+.look__mini--magazine .look__mini-cov{ height:70%; }
+.look__mini--magazine .look__mini-av{ top:6px; inset-inline-end:6px; width:12px; height:12px; }
+.look__mini--magazine .look__mini-t{ height:9px; width:55%; top:26px; background:var(--surface); }
+/* زجاجي: غلاف كامل وبطاقة شفافة فوقه */
+.look__mini--glass .look__mini-cov{ height:100%; }
+.look__mini--glass .look__mini-s{ height:22px; bottom:6px; background:color-mix(in srgb, var(--surface) 55%, transparent); border:1px solid color-mix(in srgb, var(--surface) 60%, transparent); }
+.look__mini--glass .look__mini-t{ top:30px; inset-inline-end:14px; z-index:1; background:var(--text-2); }
+.look__mini--glass .look__mini-av{ top:8px; }
+
+/* نقاط اللون */
+.look__dots{ display:flex; flex-wrap:wrap; gap:10px; }
+.look__dot{
+  width:32px; height:32px; border-radius:50%; cursor:pointer; padding:0;
+  background:var(--dot); border:3px solid var(--surface); box-shadow:0 0 0 1px var(--line);
+  transition:transform .14s var(--ease), box-shadow .14s var(--ease);
+}
+.look__dot:hover{ transform:scale(1.08); }
+.look__dot[aria-checked="true"]{ box-shadow:0 0 0 2px var(--dot); transform:scale(1.12); }
+
+/* الأغلفة الجاهزة */
+.look__covers{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+@media (max-width:520px){ .look__covers{ grid-template-columns:repeat(3,1fr); } }
+.look__cover{
+  height:44px; border-radius:8px; cursor:pointer; padding:0 8px; font-family:inherit; font-size:.78rem; font-weight:700;
+  border:2px solid transparent; color:var(--text);
+  transition:border-color .16s var(--ease), box-shadow .16s var(--ease);
+}
+.look__cover[aria-checked="true"]{ border-color:var(--acc); box-shadow:var(--ring); }
+.look__cover--none, .look__cover--up{ background:var(--surface); border-color:var(--line); }
+.look__cover--up{ grid-column:span 2; }
+
+
 /* ===== 90-print.css ===== */
 /*
   تنسيق الطباعة مستقل تمامًا عن الشاشة (شرط في المواصفات).
@@ -5122,6 +5297,8 @@ const ViewAccount = {
     const body = el('div', { class:'stack' });
     if (active === 'profile'){
       body.appendChild(accountBody());
+      /* شكل ملفه العام: غلاف ولون وستايل (78-look) — يظهر تحت بياناته مباشرة */
+      if (QBANK.views.lookCard) body.appendChild(QBANK.views.lookCard());
       body.appendChild(campusCard());
     } else if (active === 'uploads'){
       /* ما توقّف رفعه قبل ما اكتمل: المسوّدة تُستأنف من هنا لا من ذاكرة صاحبها */
@@ -5362,7 +5539,8 @@ function lbPodium(rows){
     return el('div', { class:'lb-podium__p lb-podium__p--' + place }, [
       el('span', { class:'lb-podium__av', text: r.avatar_url ? '' : (r.avatar || '👤') },
         r.avatar_url ? [ el('img', { src: r.avatar_url, alt:'' }) ] : null),
-      el('span', { class:'lb-podium__name' + (r.blocked ? ' blk' : ''), text: r.name }),
+      /* ★ الاسم بابٌ إلى صاحبه: من تصدّر يستحق أن يُعرف — بنوكه وتقييماته خلف ضغطة */
+      el('a', { class:'lb-podium__name lb-link' + (r.blocked ? ' blk' : ''), href: QBANK.peer.href(r.id), text: r.name }),
       el('span', { class:'lb-podium__n num', text: Board.N(r.tries) + ' اختبارًا' }),
       el('span', { class:'lb-podium__rank num', 'aria-label':'المركز ' + Board.N(place), text: Board.N(place) })
     ]);
@@ -5411,7 +5589,7 @@ function lbTable(rows, meId){
         el('span', { class:'lb-row__av', 'aria-hidden':'true', text: r.avatar_url ? '' : (r.avatar || '👤') },
           r.avatar_url ? [ el('img', { src: r.avatar_url, alt:'' }) ] : null),
         el('span', { class:'lb-row__x' }, [
-          el('span', { class:'lb-row__name' + (r.blocked ? ' blk' : ''), text: r.name }, [
+          el('a', { class:'lb-row__name lb-link' + (r.blocked ? ' blk' : ''), href: QBANK.peer.href(r.id), text: r.name }, [
             mine ? el('span', { class:'badge badge--gold', text:'أنت' }) : null,
             r.blocked ? el('span', { class:'badge badge--bad', text:'محظور' }) : null,
             r.online ? el('i', { class:'lb-online__dot', title:'متصل الآن', 'aria-label':'متصل الآن' }) : null
@@ -13523,48 +13701,32 @@ const ViewPeer = {
           return;
         }
 
+        /* ★ الصفحة بشكل صاحبها: ستايله ولونه وغلافه (78-look) — القيم من القاعدة
+           لا من الجهاز، والافتراضي كلاسيكي بلون المنصة لمن لم يختر بعد */
+        const L = QBANK.look;
+        L.apply(box, p);
+        box.appendChild(L.cover(p));
+
         /* البطل: وجهه واسمه وسمعته وعطاؤه */
         const me = QBANK.api.user();
         const isMe = me && me.id === p.id;
-        box.appendChild(el('div', { class:'card pf-hero' }, [
-          el('div', { class:'pf-hero__avwrap' }, [ Peer.face(p, 'peer-face--lg') ]),
-          el('div', { class:'pf-hero__x' }, [
-            el('strong', { class:'pf-hero__n', text: p.name || 'طالب مراجعة' }),
-            el('span', { class:'pf-hero__mail', text:
-              [p.university, p.college].filter(Boolean).join(' · ') || 'بلا جامعة محدّدة' }),
-            Peer.stars(p.rating_avg, p.rating_n),
-            p.bio ? el('p', { class:'pf-hero__bio', text: p.bio }) : null,
-            isMe ? el('a', { class:'btn btn--sm btn--soft', href:'#/account/profile',
-              style:'margin-top:8px', text:'هذا ملفك — حرّره' }) : null,
-            /* ★ ملفٌ لا يُرسَل لا يُرى. سمعةُ الرافع تُبنى بمن يفتح ملفه،
-               ولا أحد يفتحه ما لم يصل إليه رابطٌ من صاحبه أو من زميل. */
-            QBANK.share ? el('div', { style:'margin-top:10px' }, [
-              QBANK.share.shareButton({
-                url: QBANK.share.profileUrl(p.id),
-                title: (p.name || 'طالب') + ' على مراجعة',
-                text: isMe ? 'هذا ملفي على منصة مراجعة'
-                           : 'شوف ملف ' + (p.name || 'هذا الطالب') + ' على مراجعة',
-                label: isMe ? '⤴ انشر ملفك' : '⤴ انشر الملف' })
-            ]) : null
-          ])
-        ]));
+        box.appendChild(L.hero(p, { extra: [
+          isMe ? el('a', { class:'btn btn--sm btn--soft', href:'#/account/profile',
+            style:'margin-top:8px', text:'هذا ملفك — حرّره' }) : null,
+          /* ★ ملفٌ لا يُرسَل لا يُرى. سمعةُ الرافع تُبنى بمن يفتح ملفه،
+             ولا أحد يفتحه ما لم يصل إليه رابطٌ من صاحبه أو من زميل. */
+          QBANK.share ? el('div', { style:'margin-top:10px' }, [
+            QBANK.share.shareButton({
+              url: QBANK.share.profileUrl(p.id),
+              title: (p.name || 'طالب') + ' على مراجعة',
+              text: isMe ? 'هذا ملفي على منصة مراجعة'
+                         : 'شوف ملف ' + (p.name || 'هذا الطالب') + ' على مراجعة',
+              label: isMe ? '⤴ انشر ملفك' : '⤴ انشر الملف' })
+          ]) : null
+        ] }));
 
         /* عطاؤه بالأرقام */
-        box.appendChild(el('div', { class:'peer-stats' }, [
-          el('div', { class:'peer-stat' }, [
-            el('b', { class:'num', text: QBANK.views.arNum(p.uploads || 0) }),
-            el('span', { text:'مادة مرفوعة' }) ]),
-          el('div', { class:'peer-stat' }, [
-            el('b', { class:'num', text: QBANK.views.arNum(p.questions || 0) }),
-            el('span', { text:'سؤالًا أهداه' }) ]),
-          el('div', { class:'peer-stat' }, [
-            el('b', { class:'num', text: Number(p.rating_avg) ? Number(p.rating_avg).toFixed(1) : '—' }),
-            el('span', { text: p.rating_n ? 'من ' + QBANK.views.arNum(p.rating_n) + ' تقييم' : 'بلا تقييم بعد' }) ]),
-          /* ★ «كم اشترى منه غيري» — الرقم الذي يسبق تحويلًا بنكيًا إلى غريب */
-          el('div', { class:'peer-stat' }, [
-            el('b', { class:'num', text: QBANK.views.arNum(p.sales || 0) }),
-            el('span', { text:'طالبًا اشتروا منه' }) ])
-        ]));
+        box.appendChild(L.stats(p));
 
         /* شارات الثقة: تُقال كلمةً لا رقمًا حين تكون كلمة */
         const trust = [];
@@ -16409,7 +16571,7 @@ function boardMini(opts){
     if (rest.length) body.appendChild(el('ol', { class:'lb-mini__list', start: rows.length >= 3 ? 4 : 1 }, rest.map(x =>
       el('li', { class:'lb-mini__row' }, [
         el('span', { class:'lb-mini__av', text: x.avatar || '👤' }),
-        el('span', { class:'lb-mini__n' + (x.blocked ? ' blk' : ''), text: x.name }),
+        el('a', { class:'lb-mini__n lb-link' + (x.blocked ? ' blk' : ''), href: QBANK.peer.href(x.id), text: x.name }),
         x.online ? el('i', { class:'lb-online__dot', title:'متصل الآن', 'aria-label':'متصل الآن' }) : null,
         el('span', { class:'spacer' }),
         el('span', { class:'lb-mini__k', text: B.N(x.tries) + ' اختبارًا · ' + B.N(x.best) + '٪' })
@@ -17528,6 +17690,301 @@ const ViewPrivacy = {
 QBANK.router.add('#/privacy', ViewPrivacy);
 QBANK.views.ViewPrivacy = ViewPrivacy;
 QBANK.PRIVACY_SECTIONS = PRIVACY_SECTIONS;
+
+
+/* ===== 78-look.js ===== */
+/*
+  ═══════════════════════════════════════════════════════════════════
+  شكل ملف الطالب — غلاف ولون وستايل
+  ═══════════════════════════════════════════════════════════════════
+  الملف العام هو وجه الطالب أمام دفعته: يُشارك رابطه، ويُفتح من لوحة
+  المتصدرين ومن سطر «رفعها فلان». وملفٌ يشبه كل الملفات لا يُحبّ ولا يُنشر.
+  فبطلب علي: غلافٌ يختاره (صورة يرفعها أو تدرّج جاهز)، ولونُ محور، وواحد
+  من خمسة ستايلات تغيّر التخطيط نفسه لا الألوان وحدها.
+
+  ★ الحرية داخل نظام التصميم لا خارجه:
+  اللون اسمُ متغيّر (subject-3، gold…) يُحقن ‎--acc‎ كما تفعل بطاقة المادة،
+  فيتلوّن كل شيء تحته آليًا ويبقى مقروءًا في الوضعين. لا hex يكتبه الطالب.
+  والقاعدة تحصر القيم بقيود check — فالواجهة تعرض ما تسمح به القاعدة لا العكس.
+*/
+const Look = {
+  /* الخمسة — الاسم للطالب، والوصف يقول ما الذي يتغيّر فعلًا */
+  LAYOUTS: [
+    { id:'classic',  label:'كلاسيكي', desc:'صورة يمين الاسم وبطاقات هادئة — كما بدأت المنصة' },
+    { id:'cover',    label:'غلاف',    desc:'غلاف عريض والصورة تتوسّطه — كصفحات المشاهير' },
+    { id:'stripe',   label:'شريط',    desc:'شريط لونيّ على الحافة وترتيب مضغوط — للعمليّين' },
+    { id:'magazine', label:'مجلّة',   desc:'اسمك عنوانًا ضخمًا على الغلاف وإحصاءاتك عمودًا' },
+    { id:'glass',    label:'زجاجي',   desc:'بطاقات شفافة تطفو فوق الغلاف' }
+  ],
+  /* ألوان المحور: أسماء متغيّرات النظام لا قيم — والفراغ يعني لون المنصة */
+  ACCENTS: [
+    { id:'',          label:'لون المنصة' },
+    { id:'subject-1', label:'أخضر' },
+    { id:'subject-2', label:'بنفسجي' },
+    { id:'subject-3', label:'كهرماني' },
+    { id:'subject-4', label:'وردي' },
+    { id:'subject-5', label:'أزرق' },
+    { id:'subject-6', label:'فيروزي' },
+    { id:'gold',      label:'ذهبي' },
+    { id:'brand',     label:'رمادي' }
+  ],
+  /* تدرّجات الغلاف الجاهزة — مرسومة في CSS من ألوان النظام */
+  COVERS: [
+    { id:'g1', label:'زمرّد' }, { id:'g2', label:'غروب' }, { id:'g3', label:'بحر' },
+    { id:'g4', label:'توت' },   { id:'g5', label:'رمال' }, { id:'g6', label:'نعناع' },
+    { id:'g7', label:'ليل' },   { id:'g8', label:'فجر' }
+  ],
+  DEFAULT: { layout:'classic', accent:'', cover_preset:'', cover_url:'' },
+
+  /* ما لا نعرفه يعود إلى الافتراضي — صفٌّ قديم أو قيمة عابثة لا تكسر الصفحة */
+  read(p){
+    const o = p || {};
+    const ok = (list, v) => list.some(x => x.id === v) ? v : '';
+    return {
+      layout:       Look.LAYOUTS.some(l => l.id === o.layout) ? o.layout : 'classic',
+      accent:       ok(Look.ACCENTS, o.accent || ''),
+      cover_preset: ok(Look.COVERS, o.cover_preset || ''),
+      cover_url:    (typeof o.cover_url === 'string' && /^https:\/\//.test(o.cover_url)) ? o.cover_url : ''
+    };
+  },
+
+  /* يصبغ حاوية بستايل ولون: الصنف يقود CSS، والمتغيّر يقود اللون */
+  apply(root, look){
+    const L = Look.read(look);
+    Look.LAYOUTS.forEach(l => root.classList.remove('pf-look--' + l.id));
+    root.classList.add('pf-page', 'pf-look--' + L.layout);
+    if (L.accent) root.style.setProperty('--acc', 'var(--' + L.accent + ')');
+    else root.style.removeProperty('--acc');
+    return root;
+  },
+
+  /* الغلاف: صورة إن رُفعت، وإلا تدرّج، وإلا لا شيء (الستايلات التي تحتاجه ترسم تدرّج المحور) */
+  cover(look){
+    const L = Look.read(look);
+    const c = el('div', { class:'pf-cover' + (L.cover_preset ? ' pf-cover--' + L.cover_preset : '') +
+                                (!L.cover_url && !L.cover_preset ? ' pf-cover--acc' : ''), 'aria-hidden':'true' });
+    if (L.cover_url) c.appendChild(el('img', { class:'pf-cover__img', src: L.cover_url, alt:'' }));
+    return c;
+  },
+
+  /*
+    رفع الغلاف: يُقصّ ٣:١ من الوسط ويُصغَّر إلى ١٥٠٠ بكسل قبل الرفع — صورة
+    جوال خام ٥ ميغابايت تصير ~١٥٠ كيلوبايت. المسار في مجلد صاحبه لأن سياسة
+    المخزن (PROFILE-ADMIN.sql) لا تسمح بغيره، وقيد cover_url في القاعدة يتحقق.
+  */
+  async uploadCover(file){
+    const u = QBANK.api.user(), c = QBANK.config.get(), s = QBANK.api.session();
+    if (!u || !c || !s) return { ok:false, error:'سجّل دخولك أولًا' };
+    let img;
+    try {
+      img = await new Promise((res, rej) => {
+        const i = new Image(); i.onload = () => res(i); i.onerror = rej;
+        i.src = URL.createObjectURL(file);
+      });
+    } catch(e){ return { ok:false, error:'تعذّر قراءة الصورة' }; }
+    const W = 1500, H = 500;
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    const g = cv.getContext('2d');
+    const r = Math.max(W / img.width, H / img.height);
+    const sw = W / r, sh = H / r;
+    g.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, 0, 0, W, H);
+    const blob = await new Promise(res => cv.toBlob(res, 'image/jpeg', .82));
+    const path = u.id + '/cover.jpg';
+    const f = QBANK.api.fetchFn();
+    let res;
+    try {
+      res = await f(c.url + '/storage/v1/object/avatars/' + path, {
+        method:'POST',
+        headers:{ 'Authorization':'Bearer ' + s.access_token, 'apikey': c.anonKey,
+                  'Content-Type':'image/jpeg', 'x-upsert':'true' },
+        body: blob
+      });
+    } catch(e){ return { ok:false, error:'لا اتصال بالخادم' }; }
+    if (!res.ok) return { ok:false, error:'تعذّر رفع الغلاف' };
+    return { ok:true, url: c.url + '/storage/v1/object/public/avatars/' + path + '?v=' + Date.now() };
+  },
+
+  /* ═══ بطل الملف — الدالة نفسها للصفحة العامة ولمعاينة المحرّر (ما تراه هو ما يُنشر) ═══ */
+  hero(p, opts){
+    const o = opts || {};
+    const P = QBANK.peer;
+    return el('div', { class:'card pf-hero' }, [
+      el('div', { class:'pf-hero__avwrap' }, [ P.face(p, 'peer-face--lg') ]),
+      el('div', { class:'pf-hero__x' }, [
+        el('strong', { class:'pf-hero__n', text: p.name || 'طالب مراجعة' }),
+        el('span', { class:'pf-hero__mail', text:
+          [p.university, p.college].filter(Boolean).join(' · ') || 'بلا جامعة محدّدة' }),
+        P.stars(p.rating_avg, p.rating_n),
+        p.bio ? el('p', { class:'pf-hero__bio', text: p.bio }) : null
+      ].concat(o.extra || []))
+    ]);
+  },
+
+  /* الإحصاءات الأربع — مشتركة كذلك */
+  stats(p){
+    const N = QBANK.views.arNum;
+    return el('div', { class:'peer-stats' }, [
+      el('div', { class:'peer-stat' }, [ el('b', { class:'num', text: N(p.uploads || 0) }), el('span', { text:'مادة مرفوعة' }) ]),
+      el('div', { class:'peer-stat' }, [ el('b', { class:'num', text: N(p.questions || 0) }), el('span', { text:'سؤالًا أهداه' }) ]),
+      el('div', { class:'peer-stat' }, [
+        el('b', { class:'num', text: Number(p.rating_avg) ? Number(p.rating_avg).toFixed(1) : '—' }),
+        el('span', { text: p.rating_n ? 'من ' + N(p.rating_n) + ' تقييم' : 'بلا تقييم بعد' }) ]),
+      el('div', { class:'peer-stat' }, [ el('b', { class:'num', text: N(p.sales || 0) }), el('span', { text:'طالبًا اشتروا منه' }) ])
+    ]);
+  }
+};
+QBANK.look = Look;
+
+/* ═══════════════════════════════════════════════════════════════════
+   بطاقة «شكل ملفي» في حسابي — معاينة حيّة فوق، والخيارات تحتها
+   ═══════════════════════════════════════════════════════════════════
+   ★ المعاينة هي الصفحة العامة نفسها مصغّرة (الدوال نفسها)، فلا يفاجأ
+   الطالب بعد الحفظ. والحفظ زرٌّ صريح: تجربة عشرة ستايلات لا تُرسل عشرة طلبات.
+*/
+function lookCard(){
+  const u = QBANK.api.user();
+  if (!u) return el('div');
+  const cached = QBANK.store.get('profile', null) || {};
+  const prof = (cached.uid === u.id) ? cached : {};
+  const state = Look.read(prof);
+  let saved = JSON.stringify(state);
+
+  const box = el('div', { class:'card stack look' });
+  box.appendChild(el('h2', { style:'margin:0', text:'شكل ملفي' }));
+  box.appendChild(el('p', { class:'field__hint', style:'margin:0',
+    text:'غلاف ولون وستايل — هذا ما يراه زملاؤك حين يفتحون ملفك من المتصدرين أو من رابطك.' }));
+
+  /* ── المعاينة ── */
+  const pv = el('div', { class:'look__pv', 'aria-label':'معاينة ملفك' });
+  function paint(){
+    pv.innerHTML = '';
+    Look.apply(pv, state);
+    const p = {
+      name: prof.name || 'اسمك', avatar: prof.avatar, avatar_url: prof.avatar_url,
+      university: prof.university, college: prof.college, bio: prof.bio,
+      rating_avg: prof.rating_avg, rating_n: prof.rating_n,
+      uploads: prof.uploads, questions: prof.questions, sales: prof.sales
+    };
+    pv.appendChild(Look.cover(state));
+    pv.appendChild(Look.hero(p));
+    pv.appendChild(Look.stats(p));
+    saveBtn.disabled = JSON.stringify(state) === saved;
+    saveBtn.textContent = saveBtn.disabled ? 'محفوظ ✓' : 'احفظ الشكل';
+  }
+  box.appendChild(pv);
+
+  /* ── الستايلات الخمسة: بلاطة لكل واحد برسم تخطيطي من CSS ── */
+  const lay = el('div', { class:'look__tiles', role:'radiogroup', 'aria-label':'الستايل' });
+  Look.LAYOUTS.forEach(l => {
+    const t = el('button', { class:'look__tile', type:'button', role:'radio', 'data-layout': l.id,
+      'aria-checked': state.layout === l.id ? 'true' : 'false', title: l.desc }, [
+      el('span', { class:'look__mini look__mini--' + l.id, 'aria-hidden':'true' }, [
+        el('i', { class:'look__mini-cov' }), el('i', { class:'look__mini-av' }),
+        el('i', { class:'look__mini-t' }), el('i', { class:'look__mini-s' }) ]),
+      el('span', { class:'look__tile-l', text: l.label })
+    ]);
+    t.addEventListener('click', () => {
+      state.layout = l.id;
+      lay.querySelectorAll('[role=radio]').forEach(x => x.setAttribute('aria-checked', x === t ? 'true' : 'false'));
+      paint();
+    });
+    lay.appendChild(t);
+  });
+  box.appendChild(el('div', { class:'field' }, [ el('span', { class:'field__label', text:'الستايل' }), lay ]));
+
+  /* ── اللون ── */
+  const acc = el('div', { class:'look__dots', role:'radiogroup', 'aria-label':'لون المحور' });
+  Look.ACCENTS.forEach(a => {
+    const d = el('button', { class:'look__dot', type:'button', role:'radio', 'data-accent': a.id,
+      'aria-checked': state.accent === a.id ? 'true' : 'false', 'aria-label': a.label, title: a.label,
+      style: a.id ? '--dot:var(--' + a.id + ')' : '--dot:var(--brand)' });
+    d.addEventListener('click', () => {
+      state.accent = a.id;
+      acc.querySelectorAll('[role=radio]').forEach(x => x.setAttribute('aria-checked', x === d ? 'true' : 'false'));
+      paint();
+    });
+    acc.appendChild(d);
+  });
+  box.appendChild(el('div', { class:'field' }, [ el('span', { class:'field__label', text:'اللون' }), acc ]));
+
+  /* ── الغلاف: تدرّجات جاهزة + صورة من الجهاز + بلا غلاف ── */
+  const cov = el('div', { class:'look__covers', role:'radiogroup', 'aria-label':'الغلاف' });
+  const covBtns = [];
+  const syncCov = () => covBtns.forEach(b => b.setAttribute('aria-checked',
+    (b.dataset.cover === state.cover_preset && !state.cover_url) ||
+    (b.dataset.cover === 'url' && !!state.cover_url) ? 'true' : 'false'));
+  const none = el('button', { class:'look__cover look__cover--none', type:'button', role:'radio', 'data-cover':'', text:'بلا غلاف' });
+  none.addEventListener('click', () => { state.cover_preset = ''; state.cover_url = ''; syncCov(); paint(); });
+  covBtns.push(none); cov.appendChild(none);
+  Look.COVERS.forEach(c => {
+    const b = el('button', { class:'look__cover pf-cover--' + c.id, type:'button', role:'radio', 'data-cover': c.id,
+      'aria-label': c.label, title: c.label });
+    b.addEventListener('click', () => { state.cover_preset = c.id; state.cover_url = ''; syncCov(); paint(); });
+    covBtns.push(b); cov.appendChild(b);
+  });
+  const fileIn = el('input', { type:'file', accept:'image/*', style:'display:none', 'aria-hidden':'true' });
+  const up = el('button', { class:'look__cover look__cover--up', type:'button', role:'radio', 'data-cover':'url',
+    text: state.cover_url ? 'صورتي ✓' : '⇪ صورة من جهازي' });
+  up.addEventListener('click', () => fileIn.click());
+  const msg = el('p', { class:'field__hint', role:'status', style:'margin:0' });
+  fileIn.addEventListener('change', async () => {
+    const f = fileIn.files && fileIn.files[0];
+    if (!f) return;
+    up.textContent = '… يُرفع'; msg.className = 'field__hint'; msg.textContent = '';
+    const r = await Look.uploadCover(f);
+    if (!r.ok){ up.textContent = '⇪ صورة من جهازي'; msg.className = 'field__hint is-bad'; msg.textContent = '⚠ ' + r.error; return; }
+    state.cover_url = r.url; state.cover_preset = '';
+    up.textContent = 'صورتي ✓'; syncCov(); paint();
+  });
+  covBtns.push(up); cov.appendChild(up); cov.appendChild(fileIn);
+  syncCov();
+  box.appendChild(el('div', { class:'field' }, [ el('span', { class:'field__label', text:'الغلاف' }), cov ]));
+
+  /* ── الحفظ ── */
+  const saveBtn = el('button', { class:'btn btn--block', type:'button', text:'احفظ الشكل' });
+  saveBtn.addEventListener('click', async () => {
+    saveBtn.disabled = true; saveBtn.textContent = '… يُحفظ';
+    const r = await QBANK.api.saveProfile({ layout: state.layout, accent: state.accent,
+      cover_preset: state.cover_preset, cover_url: state.cover_url });
+    if (!r.ok){
+      saveBtn.disabled = false; saveBtn.textContent = 'احفظ الشكل';
+      msg.className = 'field__hint is-bad';
+      msg.textContent = r.offline ? '⚠ لا اتصال — حاول بعد قليل' : '⚠ تعذّر الحفظ — نفّذ db/PROFILE-LOOK.sql';
+      return;
+    }
+    saved = JSON.stringify(state);
+    Object.assign(prof, state, { uid: u.id });
+    QBANK.store.set('profile', prof);
+    msg.className = 'field__hint is-ok'; msg.textContent = 'حُفظ — افتح ملفك لتراه كما يراه زملاؤك.';
+    QBANK.toast('حُفظ شكل ملفك');
+    paint();
+  });
+  box.appendChild(saveBtn);
+  box.appendChild(msg);
+  box.appendChild(el('a', { class:'btn btn--sm btn--ghost', href:'#/p/' + u.id, text:'👁 افتح ملفي العام' }));
+
+  paint();
+
+  /* الخادم هو الحقيقة: الأرقام والشكل المحفوظ يأتيان منه لا من ذاكرة الجهاز */
+  QBANK.api.myProfile().then(r => {
+    if (!r.ok || !r.data || !box.isConnected) return;
+    const d = r.data;
+    Object.assign(prof, { name: d.name || prof.name, bio: d.bio || prof.bio, avatar: d.avatar || prof.avatar,
+      avatar_url: d.avatar_url || prof.avatar_url, rating_avg: d.rating_avg, rating_n: d.rating_n });
+    /* لا يُداس اختيارٌ لم يُحفظ بعد: لو غيّر الطالب قبل وصول الرد نُبقي اختياره */
+    if (JSON.stringify(state) === saved){
+      Object.assign(state, Look.read(d)); saved = JSON.stringify(state);
+      lay.querySelectorAll('[role=radio]').forEach(x => x.setAttribute('aria-checked', x.dataset.layout === state.layout ? 'true' : 'false'));
+      acc.querySelectorAll('[role=radio]').forEach(x => x.setAttribute('aria-checked', x.dataset.accent === state.accent ? 'true' : 'false'));
+      up.textContent = state.cover_url ? 'صورتي ✓' : '⇪ صورة من جهازي';
+      syncCov();
+    }
+    paint();
+  });
+  return box;
+}
+
+QBANK.views.lookCard = lookCard;
 
 })();
 
